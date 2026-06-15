@@ -1020,6 +1020,7 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
       <div class="nav-item" data-view="automacoes" data-icon="ti-mail" data-title="Mensagens e Automações"><i class="ti ti-mail lead"></i> Mensagens e Notificações</div>
       <div class="nav-item" data-view="disparos" data-icon="ti-brand-whatsapp" data-title="Disparos WhatsApp API"><i class="ti ti-brand-whatsapp lead"></i> Disparos WhatsApp API <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="crm" data-icon="ti-affiliate" data-title="CRM"><i class="ti ti-affiliate lead"></i> CRM</div>
+      <div class="nav-item" data-view="indiques" data-icon="ti-gift" data-title="Gestão de Indiques"><i class="ti ti-gift lead"></i> Gestão de Indiques <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-submenu="rh"><i class="ti ti-briefcase lead"></i> Recursos Humanos <i class="ti ti-chevron-right chev"></i></div>
       <div class="submenu" id="sub-rh">
         <div class="sub-item" data-view="pontoDigital" data-icon="ti-map-pin-check" data-title="Ponto Digital (GPS)"><i class="ti ti-map-pin-check"></i> Ponto Digital <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">GPS</span></div>
@@ -2470,6 +2471,12 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
         <div class="rel-head"><div class="ri" style="background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-ad-2"></i></div><div><h2>Marketing da Rede</h2><p>Central de materiais para o franqueado — campanhas, banco de imagens e vídeos, materiais físicos, redes sociais e notícias da rede</p></div></div>
         <div id="mktTabs"></div>
         <div id="mktWrap"></div>
+      </section>
+
+      <section class="view" id="view-indiques">
+        <div class="rel-head"><div class="ri" style="background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-gift"></i></div><div><h2>Gestão de Indiques</h2><p>Indicação premiada: clientes indicam novos leads para a sua unidade, que entram no CRM de indicações — e a cada mês há um sorteio entre quem indicou</p></div></div>
+        <div id="indTabs"></div>
+        <div id="indWrap"></div>
       </section>
 
       <section class="view" id="view-ponto-digital">
@@ -6706,7 +6713,8 @@ const PERMS=[
 ['Checklist',['Abrir e gerenciar','Criar checklists personalizados','Copiar/editar checklists','Visualizar']],
 ['Comunicados oficiais',['Enviar comunicados','Relatório de leitura (quem leu / quando)','Visualizar']],
 ['App do Cliente',['Gerenciar','Visualizar']],
-['Ponto Digital',['Registrar o próprio ponto (GPS)','Ver espelho de ponto da unidade','Configurar cerca virtual e chave Google Maps','Aprovar / ajustar marcações']]
+['Ponto Digital',['Registrar o próprio ponto (GPS)','Ver espelho de ponto da unidade','Configurar cerca virtual e chave Google Maps','Aprovar / ajustar marcações']],
+['Gestão de Indiques',['Registrar indicação manual','Ver lista de indicações da unidade','Atualizar status (CRM de indicações)','Configurar prêmio do mês','Gerar/compartilhar link da unidade','Realizar sorteio','Notificar ganhador']]
 ];
 function renderPerfilEditor(nome){
   document.getElementById('permNome').value=nome||'';
@@ -7381,6 +7389,210 @@ function openDocEditor(id){
 
 /* ---------- Router ---------- */
 /* =========================================================================
+   GESTÃO DE INDIQUES — indicação premiada + CRM de indicações + sorteio
+   ========================================================================= */
+const _IND_FIRST=['Amanda','Bruna','Carla','Daniela','Eduarda','Fernanda','Gabriela','Helena','Isabela','Juliana','Karina','Larissa','Marina','Natália','Patrícia','Renata','Sabrina','Tatiane','Vanessa','Yasmin','Beatriz','Camila','Letícia','Mariana','Priscila','Rafaela','Aline','Bianca','Carolina','Débora','Elaine','Flávia'];
+const _IND_LAST=['Silva','Souza','Oliveira','Costa','Pereira','Almeida','Lima','Gomes','Ribeiro','Carvalho','Martins','Rocha','Barbosa','Nunes','Moraes','Teixeira','Cardoso','Araújo'];
+function _indNome(s){return _IND_FIRST[s%_IND_FIRST.length]+' '+_IND_LAST[(s>>>4)%_IND_LAST.length];}
+function _indWhats(s){return '('+(11+(s%79))+') 9'+(1000+s%9000)+'-'+(1000+((s>>>3)%9000));}
+function _indCPF(s){return (100+(s%900))+'.'+(100+((s>>>3)%900))+'.'+(100+((s>>>6)%900))+'-'+(10+((s>>>9)%90));}
+const IND_STATUS=['Novo','Em contato','Sem retorno','Agendado','Compareceu','Fechado','Perdido'];
+function indStatusCor(s){return ({'Novo':'#64748b','Em contato':'#0ea5e9','Sem retorno':'#f59e0b','Agendado':'#8b5cf6','Compareceu':'#a855f7','Fechado':'#10b981','Perdido':'#ef4444'})[s]||'#64748b';}
+function indStatusBadge(s){const c=indStatusCor(s);return `<span class="os-st" style="background:${c}22;color:${c}">${s}</span>`;}
+const IND_MES_LBL='Junho/2026', IND_MES_KEY='2026-06', IND_SORTEIO_DATA='01/07/2026';
+let IND_PREMIO={premio:'1 Rejuvenescimento Facial 4D (sessão completa)',valor:'R$ 1.199',obs:'Sorteio ao vivo no Instagram da unidade.'};
+let IND_ULTIMO_SORTEIO=null;
+let INDIQUES=(function(){
+  const arr=[];const us=(typeof UNIDADES!=='undefined'?UNIDADES.filter(u=>u.status!=='Teste'):[{nome:'Florianópolis - Centro'}]);
+  for(let i=0;i<16;i++){const h=hashStr('indic'+i);const u=us[h%us.length];const qtd=3+(h%3);
+    const indicados=[];for(let k=0;k<qtd;k++){const hh=hashStr('indic'+i+'_'+k);indicados.push({nome:_indNome(hh),whats:_indWhats(hh),status:IND_STATUS[hh%IND_STATUS.length],ult:'há '+(1+hh%9)+' dia(s)'});}
+    arr.push({id:i+1,unidade:u.nome,nome:_indNome(h),cpf:_indCPF(h),whats:_indWhats(h),email:'cliente'+(i+1)+'@email.com',indicados,data:String(1+(h%14)).padStart(2,'0')+'/06/2026',mes:IND_MES_KEY,origem:(h%3===0?'Site (indicação premiada)':'Manual (unidade)')});
+  }
+  return arr;
+})();
+function indSlug(u){return (u||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function indLink(u){return 'https://indique.laserco.com.br/'+indSlug(u);}
+function indUltimaInfo(reg){
+  // a "última informação" = o status mais avançado/recente entre os indicados (mostra se a lista está sendo trabalhada)
+  const ordem=IND_STATUS;let best=reg.indicados[0]||{status:'Novo',ult:'—'};
+  reg.indicados.forEach(x=>{if(ordem.indexOf(x.status)>ordem.indexOf(best.status))best=x;});
+  return best;
+}
+let _indTab='lista', _indFiltroUni='__todas__';
+function indTabs(){
+  const tabs=[['lista','Lista de indicações','ti-table'],['manual','Indicação manual','ti-user-plus'],['premio','Prêmio & Link','ti-gift'],['sorteio','Sorteio','ti-confetti']];
+  return `<div class="rel-tabs" style="margin-bottom:14px">${tabs.map(t=>`<div class="rel-tab ${t[0]===_indTab?'active':''}" onclick="indGo('${t[0]}')"><i class="ti ${t[2]}"></i> ${t[1]}</div>`).join('')}</div>`;
+}
+function indGo(t){_indTab=t;buildIndiques();}
+function indListaFiltrada(){const uni=(_indFiltroUni==='__todas__')?null:_indFiltroUni;return INDIQUES.filter(r=>r.mes===IND_MES_KEY&&(!uni||r.unidade===uni));}
+function buildIndiques(){
+  const tb=document.getElementById('indTabs');if(tb)tb.innerHTML=indTabs();
+  const w=document.getElementById('indWrap');if(!w)return;
+  if(_indTab==='lista')w.innerHTML=indListaHTML();
+  else if(_indTab==='manual')w.innerHTML=indManualHTML();
+  else if(_indTab==='premio')w.innerHTML=indPremioHTML();
+  else if(_indTab==='sorteio')w.innerHTML=indSorteioHTML();
+}
+function _indUniOptions(sel){const us=(typeof UNIDADES!=='undefined'?UNIDADES.filter(u=>u.status!=='Teste'):[]);return us.map(u=>`<option ${u.nome===sel?'selected':''}>${u.nome}</option>`).join('');}
+function indListaHTML(){
+  const lista=indListaFiltrada();
+  const totalIndicados=lista.reduce((a,r)=>a+r.indicados.length,0);
+  const trabalhadas=lista.filter(r=>r.indicados.some(x=>x.status!=='Novo')).length;
+  const fechados=lista.reduce((a,r)=>a+r.indicados.filter(x=>x.status==='Fechado').length,0);
+  const filtro=`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-filter flt"></i> Período: <b>01 a 30/06/2026</b> · ${IND_MES_LBL}</span></div><div class="rel-filgrid"><div class="rf"><label>Unidade</label><select onchange="_indFiltroUni=this.value;buildIndiques()"><option value="__todas__" ${_indFiltroUni==='__todas__'?'selected':''}>Todas as unidades</option>${_indUniOptions(_indFiltroUni==='__todas__'?'':_indFiltroUni)}</select></div></div></div>`;
+  const cards=lista.map(r=>{const u=indUltimaInfo(r);return `<div class="rel-card" style="margin-bottom:12px">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">
+      <div class="ri" style="width:38px;height:38px;background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-user-heart"></i></div>
+      <div style="flex:1;min-width:200px"><div style="font-weight:700">${r.nome}</div><div style="font-size:11.5px;color:var(--text-3)">CPF ${r.cpf} · <i class="ti ti-brand-whatsapp" style="color:#25D366"></i> ${r.whats}</div></div>
+      <div style="font-size:11.5px;color:var(--text-2);text-align:right"><div>${r.unidade}</div><div style="color:var(--text-3)">${r.data} · ${r.origem}</div></div>
+      <div style="text-align:right"><div style="font-size:10.5px;color:var(--text-3)">Última informação</div>${indStatusBadge(u.status)} <span style="font-size:11px;color:var(--text-3)">${u.ult}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${r.indicados.map((x,k)=>`<div style="display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:8px;padding:8px 10px">
+      <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600">${x.nome}</div><div style="font-size:11px;color:var(--text-3)">${x.whats}</div></div>
+      <select onchange="indSetStatus(${r.id},${k},this.value)" style="border:1px solid var(--line-strong);border-radius:7px;padding:4px 6px;font-size:11px;font-family:inherit">${IND_STATUS.map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select>
+    </div>`).join('')}</div></div>`;}).join('');
+  return filtro
+    +relKpis([['Indicadores no mês',String(lista.length),'ti-user-heart'],['Leads indicados',String(totalIndicados),'ti-users'],['Listas sendo trabalhadas',trabalhadas+'/'+lista.length,'ti-progress-check'],['Fechados',String(fechados),'ti-circle-check']])
+    +`<div class="rel-acts" style="margin:0 0 12px"><button class="btn btn-ghost" onclick="indEnviarCRM()"><i class="ti ti-affiliate"></i> Enviar novos ao CRM de indicações</button><button class="btn btn-ghost" onclick="showToast('Exportando planilha de indicações…','ti-file-spreadsheet')"><i class="ti ti-download"></i> Exportar Excel</button></div>`
+    +(lista.length?cards:'<div class="rel-card" style="text-align:center;color:var(--text-3);padding:30px">Nenhuma indicação neste mês para o filtro selecionado.</div>');
+}
+function indSetStatus(id,k,v){const r=INDIQUES.find(x=>x.id===id);if(!r||!r.indicados[k])return;r.indicados[k].status=v;r.indicados[k].ult='agora';if(typeof auditLog==='function')auditLog('Indiques · CRM',r.nome+' → '+r.indicados[k].nome+': '+v);if(typeof persistState==='function')persistState();buildIndiques();showToast('Status atualizado e sincronizado com o CRM de indicações','ti-affiliate');}
+function indEnviarCRM(){
+  let n=0;indListaFiltrada().forEach(r=>r.indicados.forEach(x=>{if(x.status==='Novo'&&typeof CRM_LEADS!=='undefined'){CRM_LEADS.unshift({id:Date.now()+Math.random(),nome:x.nome,tel:(x.whats||'').replace(/\D/g,''),origem:'Indicação',servico:'Indicação premiada · '+r.nome,valor:0,resp:'SA',temp:'morno',stage:'novo',tags:['Indicação','Gestão Indicações'],ultima:'agora'});x.status='Em contato';x.ult='agora';n++;}}));
+  if(typeof auditLog==='function')auditLog('Indiques · CRM',n+' lead(s) de indicação enviados ao CRM');
+  buildIndiques();showToast(n+' lead(s) enviados ao CRM (quadro Gestão Indicações)','ti-affiliate');
+}
+function indManualHTML(){
+  const uni=(typeof uniAtual==='function')?uniAtual():'';
+  let linhas='';for(let k=0;k<5;k++)linhas+=`<div style="display:flex;gap:8px;margin-bottom:8px"><div class="mf" style="flex:2"><input id="indI${k}n" placeholder="${k<3?'Nome do indicado '+(k+1)+' *':'Nome do indicado '+(k+1)+' (opcional)'}"></div><div class="mf" style="flex:1.4"><input id="indI${k}w" placeholder="WhatsApp"></div></div>`;
+  return `<div class="rel-legend">A indicação será registrada <b>a favor da unidade ${uni}</b>. Informe quem indicou e de <b>3 a 5 pessoas</b> indicadas. Os indicados entram automaticamente no <b>CRM de indicações</b> (quadro "Gestão Indicações").</div>
+  <div class="dash-grid" style="grid-template-columns:1fr 1fr">
+    <div class="dash-w"><h4><i class="ti ti-user-heart"></i> Quem está indicando</h4>
+      <div class="mf" style="margin-bottom:8px"><label>Nome <span class="req">*</span></label><input id="indQnome" placeholder="Nome completo"></div>
+      <div style="display:flex;gap:8px"><div class="mf" style="flex:1"><label>CPF</label><input id="indQcpf" placeholder="000.000.000-00"></div><div class="mf" style="flex:1"><label>WhatsApp <span class="req">*</span></label><input id="indQwhats" placeholder="(11) 90000-0000"></div></div>
+    </div>
+    <div class="dash-w"><h4><i class="ti ti-users"></i> Pessoas indicadas (3 a 5)</h4>${linhas}
+      <button class="btn btn-primary" style="margin-top:6px" onclick="indSalvarManual()"><i class="ti ti-check"></i> Registrar indicação</button>
+    </div>
+  </div>`;
+}
+function indSalvarManual(){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const nome=g('indQnome').trim();if(!nome){showToast('Informe quem está indicando','ti-alert-triangle');return;}
+  const whats=g('indQwhats').trim();
+  const indicados=[];for(let k=0;k<5;k++){const n=g('indI'+k+'n').trim();if(n)indicados.push({nome:n,whats:g('indI'+k+'w').trim(),status:'Novo',ult:'agora'});}
+  if(indicados.length<3){showToast('Informe ao menos 3 pessoas indicadas','ti-alert-triangle');return;}
+  const uni=(typeof uniAtual==='function')?uniAtual():'';
+  INDIQUES.unshift({id:Date.now(),unidade:uni,nome,cpf:g('indQcpf').trim()||'—',whats,email:'',indicados,data:'15/06/2026',mes:IND_MES_KEY,origem:'Manual (unidade)'});
+  // entra no CRM de indicações
+  indicados.forEach(x=>{if(typeof CRM_LEADS!=='undefined')CRM_LEADS.unshift({id:Date.now()+Math.random(),nome:x.nome,tel:(x.whats||'').replace(/\D/g,''),origem:'Indicação',servico:'Indicação de '+nome,valor:0,resp:'SA',temp:'morno',stage:'novo',tags:['Indicação','Gestão Indicações'],ultima:'agora'});});
+  if(typeof auditLog==='function')auditLog('Indiques · indicação manual',nome+' indicou '+indicados.length+' pessoa(s) · '+uni);
+  if(typeof persistState==='function')persistState();
+  _indTab='lista';buildIndiques();showToast('Indicação registrada e enviada ao CRM de indicações','ti-gift');
+}
+function indPremioHTML(){
+  const adm=(typeof isAdmin==='function')&&isAdmin();
+  const uni=(typeof uniAtual==='function')?uniAtual():'';
+  const link=indLink(uni);
+  const msg=`🎁 Indique de 3 a 5 amigos(as) e concorra a ${IND_PREMIO.premio}! Sorteio ${IND_SORTEIO_DATA} às 18h, ao vivo no Instagram da ${uni}. Participe: ${link}`;
+  return `<div class="rel-legend">Cada unidade tem um <b>link próprio</b> da indicação premiada (preenchido automaticamente). Quem preencher no site cai na <b>Lista de indicações</b> e no CRM. As listas começam no <b>dia 1</b> e fecham no <b>último dia do mês</b>; o sorteio é no <b>dia 1 do mês seguinte às 18h</b> na rede social da unidade.</div>
+  <div class="dash-grid" style="grid-template-columns:1fr 1fr">
+    <div class="dash-w"><h4><i class="ti ti-gift"></i> Prêmio do mês ${adm?'(admin)':''}</h4>
+      ${adm?`<div class="mf" style="margin-bottom:8px"><label>Prêmio sorteado</label><input id="indPremio" value="${IND_PREMIO.premio.replace(/"/g,'&quot;')}"></div>
+      <div style="display:flex;gap:8px"><div class="mf" style="flex:1"><label>Valor de referência</label><input id="indPremioVal" value="${IND_PREMIO.valor}"></div></div>
+      <div class="mf" style="margin-top:8px"><label>Observação</label><input id="indPremioObs" value="${(IND_PREMIO.obs||'').replace(/"/g,'&quot;')}"></div>
+      <button class="btn btn-primary" style="margin-top:10px" onclick="indSalvarPremio()"><i class="ti ti-device-floppy"></i> Salvar prêmio</button>`
+      :`<div class="metric-box gold" style="margin-bottom:8px"><span>Prêmio</span><b>${IND_PREMIO.premio}</b></div><div style="font-size:12.5px;color:var(--text-2)">Valor de referência: <b>${IND_PREMIO.valor}</b></div>`}
+      <div class="sim-msg next" style="margin-top:12px"><i class="ti ti-calendar-event"></i> Sorteio do mês: <b>${IND_SORTEIO_DATA} às 18h</b> · ao vivo no Instagram da ${uni}.</div>
+    </div>
+    <div class="dash-w"><h4><i class="ti ti-link"></i> Link compartilhável da unidade</h4>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px">${link}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="indCopiar('${link}')"><i class="ti ti-copy"></i> Copiar link</button><button class="btn btn-ghost" onclick="indCopiar(${JSON.stringify(msg).replace(/"/g,'&quot;')})"><i class="ti ti-brand-whatsapp"></i> Copiar mensagem</button></div>
+      <div class="rel-card" style="margin-top:12px;background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;padding:16px">
+        <div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:1px">Indicação Premiada · ${uni}</div>
+        <div style="font-size:17px;font-weight:800;margin:6px 0">Indique e concorra a<br>${IND_PREMIO.premio}</div>
+        <div style="font-size:12px;opacity:.9">Sorteio ${IND_SORTEIO_DATA} · 18h · Instagram</div>
+      </div>
+    </div>
+  </div>`;
+}
+function indSalvarPremio(){IND_PREMIO.premio=(document.getElementById('indPremio')||{}).value||IND_PREMIO.premio;IND_PREMIO.valor=(document.getElementById('indPremioVal')||{}).value||IND_PREMIO.valor;IND_PREMIO.obs=(document.getElementById('indPremioObs')||{}).value||'';if(typeof auditLog==='function')auditLog('Indiques · prêmio','Prêmio do mês: '+IND_PREMIO.premio);if(typeof persistState==='function')persistState();buildIndiques();showToast('Prêmio do mês salvo','ti-gift');}
+function indCopiar(t){try{navigator.clipboard.writeText(t);}catch(e){}showToast('Copiado para a área de transferência','ti-copy');}
+function indParticipantes(uni){const seen={};const out=[];INDIQUES.filter(r=>r.mes===IND_MES_KEY&&(uni==='__todas__'||r.unidade===uni)).forEach(r=>{const key=r.nome+r.whats;if(!seen[key]){seen[key]=1;out.push({nome:r.nome,whats:r.whats,email:r.email,unidade:r.unidade});}});return out;}
+function indSorteioHTML(){
+  const uni=(typeof uniAtual==='function')?uniAtual():'';
+  const pool=indParticipantes(uni);
+  return `<style>
+    @keyframes indglow{0%,100%{box-shadow:0 0 0 0 rgba(224,178,82,.0)}50%{box-shadow:0 0 60px 6px rgba(224,178,82,.55)}}
+    @keyframes indpop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+    @keyframes indfall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(560px) rotate(540deg);opacity:0}}
+    #indSorteioBox.won{animation:indglow 1.6s ease-in-out infinite}
+    #indSorteioBox.won #indSorteioNome{animation:indpop .6s ease-out}
+    .ind-conf{position:absolute;top:0;width:10px;height:16px;border-radius:2px;animation:indfall linear forwards}
+  </style>
+  <div class="rel-legend">Sorteio entre <b>todos que indicaram no mês</b> (${IND_MES_LBL}). Selecione a unidade, clique em <b>Sortear</b> e transmita ao vivo no Instagram. O sistema rola pelos nomes e destaca o(a) ganhador(a).</div>
+  <div class="rel-card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <div class="rf" style="min-width:240px;flex:1"><label>Unidade do sorteio</label><select id="indSortUni"><option value="${uni}">${uni}</option>${_indUniOptions(uni)}<option value="__todas__">Rede inteira (todas)</option></select></div>
+    <div style="font-size:12.5px;color:var(--text-2)"><i class="ti ti-users"></i> <b id="indPoolN">${pool.length}</b> participantes · prêmio: <b>${IND_PREMIO.premio}</b></div>
+    <button class="btn btn-primary" style="margin-left:auto;padding:11px 22px;font-size:15px" onclick="indSortear()"><i class="ti ti-confetti"></i> Sortear</button>
+  </div>
+  <div id="indSorteioBox" style="position:relative;overflow:hidden;border-radius:18px;padding:46px 24px;text-align:center;background:linear-gradient(135deg,#3A2357 0%,#5A3E8C 45%,#8466BB 100%);color:#fff;box-shadow:0 18px 50px rgba(36,17,57,.35)">
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:.8">Indicação Premiada · ${IND_MES_LBL}</div>
+    <div style="font-size:15px;opacity:.92;margin-top:6px">🎁 ${IND_PREMIO.premio}</div>
+    <div id="indSorteioNome" style="font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(30px,6vw,64px);margin:26px 0 10px;min-height:70px;display:flex;align-items:center;justify-content:center;text-shadow:0 4px 24px rgba(0,0,0,.3)">Pronto para sortear ✨</div>
+    <div id="indSorteioSub" style="font-size:14px;opacity:.85">Clique em <b>Sortear</b> para começar</div>
+  </div>
+  <div id="indWinnerCard" style="display:none;margin-top:16px"></div>`;
+}
+let _indSorteioRunning=false;
+function indConfetti(){
+  const box=document.getElementById('indSorteioBox');if(!box)return;
+  const cores=['#E0B252','#8466BB','#25D366','#ffffff','#E9C46A','#A98FD6'];
+  for(let i=0;i<70;i++){const c=document.createElement('div');c.className='ind-conf';c.style.left=(Math.random()*100)+'%';c.style.background=cores[i%cores.length];c.style.animationDuration=(1.8+Math.random()*1.8)+'s';c.style.animationDelay=(Math.random()*.6)+'s';box.appendChild(c);setTimeout(()=>c.remove(),4200);}
+}
+function indSortear(){
+  if(_indSorteioRunning)return;
+  const uni=(document.getElementById('indSortUni')||{}).value||uniAtual();
+  const pool=indParticipantes(uni);
+  if(pool.length<2){showToast('São necessários ao menos 2 participantes no mês','ti-alert-triangle');return;}
+  _indSorteioRunning=true;
+  const box=document.getElementById('indSorteioBox');if(box)box.classList.remove('won');
+  const wc=document.getElementById('indWinnerCard');if(wc)wc.style.display='none';
+  const sub=document.getElementById('indSorteioSub');if(sub)sub.textContent='Sorteando…';
+  const disp=document.getElementById('indSorteioNome');
+  const winner=pool[Math.floor(Math.random()*pool.length)];
+  let t=55,elapsed=0;const total=4300;
+  (function tick(){
+    const r=pool[Math.floor(Math.random()*pool.length)];if(disp)disp.textContent=r.nome;
+    elapsed+=t;
+    if(elapsed<total){t=t*1.09;setTimeout(tick,t);}
+    else indSorteioReveal(winner,uni);
+  })();
+}
+function indSorteioReveal(w,uni){
+  _indSorteioRunning=false;
+  const disp=document.getElementById('indSorteioNome'),box=document.getElementById('indSorteioBox'),sub=document.getElementById('indSorteioSub');
+  if(disp)disp.textContent=w.nome;if(box)box.classList.add('won');if(sub)sub.innerHTML='🎉 <b>GANHADOR(A) DO MÊS!</b>';
+  indConfetti();
+  IND_ULTIMO_SORTEIO={nome:w.nome,whats:w.whats,unidade:w.unidade,premio:IND_PREMIO.premio,data:'15/06/2026'};
+  if(typeof auditLog==='function')auditLog('Indiques · Sorteio','Ganhador(a): '+w.nome+' · '+(uni==='__todas__'?'Rede':w.unidade)+' · prêmio: '+IND_PREMIO.premio);
+  const wc=document.getElementById('indWinnerCard');
+  if(wc){wc.style.display='block';wc.innerHTML=`<div class="rel-card" style="border:1.5px solid var(--gold-400);background:var(--gold-soft)">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <div class="ri" style="width:46px;height:46px;background:var(--gold-500);color:#3A2A06"><i class="ti ti-trophy"></i></div>
+      <div style="flex:1;min-width:200px"><div style="font-size:12px;color:var(--gold-600);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Ganhador(a) · ${IND_MES_LBL}</div><div style="font-size:19px;font-weight:800">${w.nome}</div><div style="font-size:12.5px;color:var(--text-2)"><i class="ti ti-brand-whatsapp" style="color:#25D366"></i> ${w.whats} · ${w.unidade}</div></div>
+      <div style="text-align:right"><div style="font-size:11px;color:var(--text-3)">Prêmio</div><div style="font-weight:700;color:var(--gold-600)">${IND_PREMIO.premio}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" onclick="indNotificarGanhador()"><i class="ti ti-send"></i> Notificar ganhador(a) (e-mail + WhatsApp)</button><button class="btn btn-ghost" onclick="indSortear()"><i class="ti ti-refresh"></i> Sortear de novo</button></div>
+  </div>`;}
+}
+function indNotificarGanhador(){
+  if(!IND_ULTIMO_SORTEIO){showToast('Realize o sorteio primeiro','ti-alert-triangle');return;}
+  const w=IND_ULTIMO_SORTEIO;
+  if(typeof auditLog==='function')auditLog('Indiques · Notificação','Parabéns enviado a '+w.nome+' (e-mail + WhatsApp) · agendar sessão');
+  showToast('🎉 Mensagem enviada a '+w.nome+' por e-mail e WhatsApp: parabéns + link para agendar a sessão!','ti-mail-check');
+}
+/* =========================================================================
    MARKETING — central de materiais da rede para o franqueado
    Pastas (Campanhas / Banco de Imagens & Vídeos / Materiais Físicos /
    Redes Sociais / Extras), feed de atualizações com notificação e Notícias.
@@ -7747,7 +7959,7 @@ function expControle(){
     +relKpis([['Logins (período)','38','ti-login-2'],['Ações registradas','214','ti-activity'],['Usuários ativos',String(EXP_USERS.filter(u=>u.a).length),'ti-user-check'],['Última atividade','hoje 14:22','ti-clock']])
     +relTable(['Usuário','Logins','Leads criados','Leads movidos','Última atividade'],EXP_USERS.map((u,i)=>[u.n,String(8-i),String(12-i*2),String(20-i*3),'1'+(4-i)+'/06 1'+i+':30']));
 }
-const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',ph:'view-ph'};
+const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',ph:'view-ph'};
 function showView(view,el){
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[view]).classList.add('active');
@@ -7794,6 +8006,7 @@ function showView(view,el){
   if(view==='notas')buildNotas();
   if(view==='pontoDigital')buildPontoDigital();
   if(view==='marketing')buildMarketing();
+  if(view==='indiques')buildIndiques();
   const title=el?.dataset.title||'Dashboard';
   const icon=el?.dataset.icon||'ti-layout-dashboard';
   document.getElementById('pageTitle').innerHTML=`<i class="ti ${icon}"></i> ${title}`;
