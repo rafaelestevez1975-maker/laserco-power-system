@@ -4813,7 +4813,7 @@ function finReceberHTML(){
   return `<div class="rel-legend">Todo recebível das unidades entra aqui, com <b>categorias separadas</b>: Royalties (10% do bruto), Taxa de franquia, Fundo de marketing, Aluguel de máquinas e outros — cadastráveis em Configurações. Vencimento padrão <b>dia ${FIN_CFG.vencDia}</b>.</div>
   <div class="dash-filter" style="margin-bottom:8px"><span class="flabel">Categoria</span>${chipsC}</div>
   <div class="dash-filter" style="margin-bottom:14px"><span class="flabel">Status</span>${chipsS}</div>
-  <div class="rel-acts" style="justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;color:var(--text-2)">Total filtrado: <b style="color:#0f6b3a">${finMoney(tot)}</b> · ${list.length} lançamento(s)</div><div style="display:flex;gap:8px"><button class="btn" onclick="finImportExcel('receber')" title="Colunas reconhecidas: Unidade/Cliente, Categoria, Descrição, Valor, Vencimento, Status"><i class="ti ti-file-import"></i> Importar Excel</button><button class="btn" onclick="finFiltroOpen('receber')"><i class="ti ti-filter"></i> Editar filtros${fcount?` <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 6px;font-size:10px;margin-left:4px">${fcount}</span>`:''}</button><button class="btn btn-primary" onclick="finTab('royalties',document.querySelector('#finTabs .rel-tab:nth-child(5)'))"><i class="ti ti-robot"></i> Gerar cobrança automática</button></div></div>
+  <div class="rel-acts" style="justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;color:var(--text-2)">Total filtrado: <b style="color:#0f6b3a">${finMoney(tot)}</b> · ${list.length} lançamento(s)</div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="finModeloExcel('receber')" title="Baixar um modelo .xlsx com as colunas certas"><i class="ti ti-download"></i> Modelo</button><button class="btn btn-primary" onclick="finImportExcel('receber')" title="Colunas reconhecidas: Unidade/Cliente, Categoria, Descrição, Valor, Vencimento, Status"><i class="ti ti-file-spreadsheet"></i> Importar lançamentos (Excel)</button><button class="btn" onclick="finFiltroOpen('receber')"><i class="ti ti-filter"></i> Editar filtros${fcount?` <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 6px;font-size:10px;margin-left:4px">${fcount}</span>`:''}</button><button class="btn btn-primary" onclick="finTab('royalties',document.querySelector('#finTabs .rel-tab:nth-child(5)'))"><i class="ti ti-robot"></i> Gerar cobrança automática</button></div></div>
   <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>Unidade</th><th>Categoria</th><th>Competência</th><th class="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function finRecAcoes(r){
@@ -4846,7 +4846,7 @@ function finPagarHTML(){
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px"><div class="rel-card" style="padding:10px 14px;flex:1;min-width:140px;border-left:3px solid var(--red)"><div style="font-size:11.5px;color:var(--text-2)">Em aberto · Prioridade ALTA</div><div style="font-size:16px;font-weight:800;color:var(--red)">${finMoney(pAlta)}</div></div><div class="rel-card" style="padding:10px 14px;flex:1;min-width:140px;border-left:3px solid #B26A00"><div style="font-size:11.5px;color:var(--text-2)">Prioridade Média</div><div style="font-size:16px;font-weight:800;color:#B26A00">${finMoney(pMedia)}</div></div><div class="rel-card" style="padding:10px 14px;flex:1;min-width:140px;border-left:3px solid #1565C0"><div style="font-size:11.5px;color:var(--text-2)">Prioridade Baixa</div><div style="font-size:16px;font-weight:800;color:#1565C0">${finMoney(pBaixa)}</div></div></div>
   <div class="dash-filter" style="margin-bottom:8px"><span class="flabel">Escopo</span>${chips}</div>
   <div class="dash-filter" style="margin-bottom:14px"><span class="flabel">Prioridade</span>${prChips}</div>
-  <div class="rel-acts" style="justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;color:var(--text-2)">Total: <b>${finMoney(tot)}</b> · Em aberto: <b style="color:var(--red)">${finMoney(aberto)}</b></div><div style="display:flex;gap:8px"><button class="btn" onclick="finImportExcel('pagar')" title="Colunas reconhecidas: Categoria, Descrição, Escopo/Unidade, Valor, Vencimento, Prioridade, Status"><i class="ti ti-file-import"></i> Importar Excel</button><button class="btn" onclick="finFiltroOpen('pagar')"><i class="ti ti-filter"></i> Editar filtros${fcount?` <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 6px;font-size:10px;margin-left:4px">${fcount}</span>`:''}</button><button class="btn btn-ghost" onclick="showToast('Nova despesa — cadastro disponível na versão integrada','ti-plus')"><i class="ti ti-plus"></i> Nova despesa</button></div></div>
+  <div class="rel-acts" style="justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:13px;color:var(--text-2)">Total: <b>${finMoney(tot)}</b> · Em aberto: <b style="color:var(--red)">${finMoney(aberto)}</b></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="finModeloExcel('pagar')" title="Baixar um modelo .xlsx com as colunas certas"><i class="ti ti-download"></i> Modelo</button><button class="btn btn-primary" onclick="finImportExcel('pagar')" title="Colunas reconhecidas: Categoria, Descrição, Escopo/Unidade, Valor, Vencimento, Prioridade, Status"><i class="ti ti-file-spreadsheet"></i> Importar lançamentos (Excel)</button><button class="btn" onclick="finFiltroOpen('pagar')"><i class="ti ti-filter"></i> Editar filtros${fcount?` <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 6px;font-size:10px;margin-left:4px">${fcount}</span>`:''}</button><button class="btn btn-ghost" onclick="showToast('Nova despesa — cadastro disponível na versão integrada','ti-plus')"><i class="ti ti-plus"></i> Nova despesa</button></div></div>
   <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>Prioridade</th><th>Categoria</th><th>Descrição</th><th>Escopo</th><th class="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Definir prio.</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function finPagar(id){const p=FIN_PAG.find(x=>x.id===id);if(!p)return;p.status='pago';auditLog('Financeiro · pagamento',p.categoria+' · '+p.descricao+' · '+finMoney(p.valor));showToast('Pagamento lançado','ti-cash');finRender();}
@@ -4877,7 +4877,10 @@ function finImportExcel(ctx){
             FIN_PAG.push({id:nextId(FIN_PAG),categoria:cat||'Outras',descricao:desc||cat||'Importado',escopo:cUni>=0?String(r[cUni]||'Rede').trim():'Rede',valor,venc:cVenc>=0?String(r[cVenc]||'').trim():'',status:(cStat>=0&&/pag|sim/i.test(String(r[cStat])))?'pago':'aberto',prio:cPrio>=0?(/(alta|high)/i.test(String(r[cPrio]))?'alta':/(baixa|low)/i.test(String(r[cPrio]))?'baixa':'media'):finPrioPadrao(cat)});
           } else {
             const cat=cCat>=0?String(r[cCat]||'Outros').trim():'Outros';
-            FIN_REC.push({id:nextId(FIN_REC),unidade:cUni>=0?String(r[cUni]||'—').trim():'—',categoria:cat||'Outros',ref:desc||'Importado',valor,venc:cVenc>=0?String(r[cVenc]||'').trim():'',status:(cStat>=0&&/pag|sim/i.test(String(r[cStat])))?'pago':'aberto',diasAtraso:0,bruto:0,boleto:null,enviado:false,dataPag:null,jurId:null});
+            const vencStr=cVenc>=0?String(r[cVenc]||'').trim():'';
+            let st=(cStat>=0&&/pag|sim/i.test(String(r[cStat])))?'pago':'aberto',dA=0;
+            if(st!=='pago'){const d=(typeof calcDias==='function')?calcDias(vencStr):0;if(d>0){st='atrasado';dA=d;}}
+            FIN_REC.push({id:nextId(FIN_REC),unidade:cUni>=0?String(r[cUni]||'—').trim():'—',categoria:cat||'Outros',ref:desc||'Importado',valor,venc:vencStr,status:st,diasAtraso:dA,bruto:0,boleto:null,enviado:false,dataPag:st==='pago'?vencStr:null,jurId:null});
           }
           n++;
         });
@@ -4889,6 +4892,29 @@ function finImportExcel(ctx){
     reader.readAsBinaryString(f);
   };
   inp.click();
+}
+/* baixa um modelo de planilha (.xlsx) com as colunas certas, pronto para preencher e importar */
+function finModeloExcel(ctx){
+  if(!window.XLSX){showToast('Leitor de Excel indisponível','ti-alert-triangle');return;}
+  let aoa;
+  if(ctx==='pagar'){
+    aoa=[['Categoria','Descrição','Escopo/Unidade','Valor','Vencimento','Prioridade','Status'],
+      ['Salários','Folha de pagamento — equipe','Florianópolis - Centro','14200,00','05/07/2026','alta','aberto'],
+      ['Aluguel','Aluguel da matriz','Escritório','12000,00','10/07/2026','media','aberto'],
+      ['Impostos','DAS Simples Nacional','Escritório','9800,50','20/07/2026','alta','aberto']];
+  } else {
+    aoa=[['Unidade/Cliente','Categoria','Descrição','Valor','Vencimento','Status'],
+      ['Manaus - Ponta Negra Shopping','Royalties','Royalties · 06/2026','6850,00','10/07/2026','aberto'],
+      ['Caruaru - Caruaru','Taxa de franquia','Parcela 4/6','8333,33','10/07/2026','aberto'],
+      ['Cuiabá - Pantanal Shopping','Locação de equipamentos','Locação UltraCel · 06/2026','3600,00','05/07/2026','aberto']];
+  }
+  try{
+    const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=aoa[0].map(()=>({wch:24}));
+    const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Lançamentos');
+    XLSX.writeFile(wb,'modelo-lancamentos-contas-a-'+ctx+'.xlsx');
+    if(typeof auditLog==='function')auditLog('Financeiro · modelo de importação','Baixou modelo de planilha (contas a '+ctx+')');
+    showToast('Modelo de planilha baixado — preencha e clique em Importar Excel','ti-file-spreadsheet');
+  }catch(e){showToast('Não foi possível gerar o modelo','ti-alert-triangle');}
 }
 /* ---- Conciliação Bancária ---- */
 function finConciliacaoHTML(){
