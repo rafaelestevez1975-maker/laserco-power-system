@@ -7404,7 +7404,9 @@ let IND_PREMIO={premio:'1 Rejuvenescimento Facial 4D (sessão completa)',valor:'
 let IND_ULTIMO_SORTEIO=null;
 let INDIQUES=(function(){
   const arr=[];const us=(typeof UNIDADES!=='undefined'?UNIDADES.filter(u=>u.status!=='Teste'):[{nome:'Florianópolis - Centro'}]);
-  for(let i=0;i<16;i++){const h=hashStr('indic'+i);const u=us[h%us.length];const qtd=3+(h%3);
+  for(let i=0;i<26;i++){const h=hashStr('indic'+i);
+    // as 9 primeiras ficam na unidade padrão (Florianópolis - Centro) p/ o sorteio ter participantes; o restante distribuído
+    const u=(i<9)?(us.find(x=>x.nome==='Florianópolis - Centro')||us[0]):us[h%us.length];const qtd=3+(h%3);
     const indicados=[];for(let k=0;k<qtd;k++){const hh=hashStr('indic'+i+'_'+k);indicados.push({nome:_indNome(hh),whats:_indWhats(hh),status:IND_STATUS[hh%IND_STATUS.length],ult:'há '+(1+hh%9)+' dia(s)'});}
     arr.push({id:i+1,unidade:u.nome,nome:_indNome(h),cpf:_indCPF(h),whats:_indWhats(h),email:'cliente'+(i+1)+'@email.com',indicados,data:String(1+(h%14)).padStart(2,'0')+'/06/2026',mes:IND_MES_KEY,origem:(h%3===0?'Site (indicação premiada)':'Manual (unidade)')});
   }
