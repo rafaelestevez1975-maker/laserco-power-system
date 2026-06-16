@@ -941,6 +941,12 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 .help-lbl{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--brand-500);background:var(--surface-2);border:1px solid var(--line);padding:1px 7px;border-radius:6px;margin-bottom:3px}
 .help-blk p{margin:3px 0 0;font-size:13.5px;line-height:1.5;color:var(--text)}
 </style>
+<style>
+.sac-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.sac-tab{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid var(--line);background:var(--surface-2);border-radius:9px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+.sac-tab:hover{border-color:var(--brand-400);color:var(--brand-500)}
+.sac-tab.on{background:var(--brand-500);color:#fff;border-color:var(--brand-500)}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1061,7 +1067,8 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
         <div class="sub-item" data-view="expansao" data-exppage="tipos" data-icon="ti-tag" data-title="Expansão · Tipo de Lead"><i class="ti ti-tag"></i> Tipo de Lead</div>
       </div>
       <div class="nav-item" data-view="implantacao" data-icon="ti-building-plus" data-title="Implantação de Unidade"><i class="ti ti-building-plus lead"></i> Implantação <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
-      <div class="nav-item" data-view="sac" data-icon="ti-headset" data-title="SAC"><i class="ti ti-headset lead"></i> SAC <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
+      <div class="nav-item" data-submenu="sacm"><i class="ti ti-headset lead"></i> SAC <span style="margin-left:auto;margin-right:6px;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span><i class="ti ti-chevron-right chev"></i></div>
+      <div class="submenu" id="sub-sacm"><div class="sub-item" data-view="sac" data-sacpage="dashboard" data-icon="ti-layout-dashboard" data-title="SAC · Dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div><div class="sub-item" data-view="sac" data-sacpage="chamados" data-icon="ti-headset" data-title="SAC · Chamados"><i class="ti ti-headset"></i> Chamados</div><div class="sub-item" data-view="sac" data-sacpage="kanban" data-icon="ti-layout-kanban" data-title="SAC · Kanban"><i class="ti ti-layout-kanban"></i> Kanban</div><div class="sub-item" data-view="sac" data-sacpage="triagem" data-icon="ti-brand-whatsapp" data-title="SAC · Triagem WhatsApp"><i class="ti ti-brand-whatsapp"></i> Triagem WhatsApp</div><div class="sub-item" data-view="sac" data-sacpage="relatorios" data-icon="ti-chart-bar" data-title="SAC · Relatórios"><i class="ti ti-chart-bar"></i> Relatórios</div><div class="sub-item" data-view="sac" data-sacpage="atendentes" data-icon="ti-users" data-title="SAC · Atendentes"><i class="ti ti-users"></i> Atendentes</div><div class="sub-item" data-view="sac" data-sacpage="premiacao" data-icon="ti-trophy" data-title="SAC · Premiação"><i class="ti ti-trophy"></i> Premiação</div><div class="sub-item" data-view="sac" data-sacpage="importar" data-icon="ti-file-import" data-title="SAC · Importar Leads"><i class="ti ti-file-import"></i> Importar Leads</div><div class="sub-item" data-view="sac" data-sacpage="config" data-icon="ti-settings" data-title="SAC · Configurações"><i class="ti ti-settings"></i> Configurações</div></div>
       <div class="nav-item" data-view="finFranq" data-icon="ti-businessplan" data-title="Financeiro Franqueadora" data-admin="1"><i class="ti ti-businessplan lead"></i> Financeiro Franqueadora <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
       <div class="nav-item" data-view="juridico" data-icon="ti-gavel" data-title="Jurídico" data-admin="1"><i class="ti ti-gavel lead"></i> Jurídico <span id="jurBadge" style="margin-left:auto;margin-right:6px;font-size:9px;background:var(--red);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px;display:none">0</span><span style="font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
       <div class="nav-item" data-view="auditoria" data-icon="ti-history" data-title="Auditoria" data-admin="1"><i class="ti ti-history lead"></i> Auditoria <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
@@ -2489,10 +2496,11 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
       </section>
 
       <section class="view" id="view-sac">
-        <div class="rel-head"><div class="ri" style="background:#E7F0EC;color:#0f6b3a"><i class="ti ti-headset"></i></div><div><h2>SAC</h2><p>Central de atendimento ao cliente da rede — sistema SAC Laser&Co integrado</p></div></div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px"><button class="btn btn-ghost" onclick="var f=document.getElementById('sacFrame');if(f){f.src=f.src;}showToast('SAC atualizado','ti-refresh')"><i class="ti ti-refresh"></i> Atualizar</button><button class="btn" onclick="window.open('https://sac-laserco.vercel.app','_blank')"><i class="ti ti-external-link"></i> Abrir em nova aba</button></div>
-        <div style="height:calc(100vh - 230px);min-height:560px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)"><iframe id="sacFrame" data-src="https://sac-laserco.vercel.app" title="SAC — Laser&Co" style="width:100%;height:100%;border:0;display:block" referrerpolicy="no-referrer"></iframe></div>
+        <div class="rel-head"><div class="ri" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-headset"></i></div><div><h2>SAC · Central de Atendimento</h2><p>Sistema de Gestão de Atendimento ao cliente da rede — chamados, Kanban, triagem WhatsApp, reembolsos, premiação e relatórios.</p></div></div>
+        <div id="sacTabsBar"></div>
+        <div id="sacWrap"></div>
       </section>
+      <div class="modal-ov" id="sacMod"><div class="modal" style="max-width:840px"><div class="modal-head"><h3 id="sacModTitle"><i class="ti ti-headset"></i> Chamado</h3><button class="modal-close" onclick="sacFechar()">&times;</button></div><div class="modal-body" id="sacModBody" style="display:block"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="sacFechar()">Cancelar</button><button class="btn btn-primary" onclick="sacSalvar()"><i class="ti ti-check"></i> Salvar chamado</button></div></div></div>
 
       <section class="view" id="view-ponto-digital">
         <div class="rel-head"><div class="ri" style="background:#E7F0EC;color:#0f6b3a"><i class="ti ti-map-pin-check"></i></div><div><h2>Ponto Digital</h2><p>Registro de ponto por <b>geolocalização (GPS)</b> com mapa Google Maps · valida se o colaborador está no local da unidade (cerca virtual)</p></div></div>
@@ -8209,6 +8217,184 @@ function buildAjuda(){const w=document.getElementById('ajudaWrap');if(!w)return;
  w.innerHTML='<div class="rel-card" style="margin-bottom:14px"><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end"><div style="flex:1;min-width:260px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Sobre qual assunto você precisa de ajuda?</label><div style="position:relative"><i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)"></i><input id="ajudaQ" type="text" placeholder="Digite um assunto (ex.: nota fiscal, royalties, ponto, comissão)..." oninput="ajudaSearch()" style="width:100%;padding:10px 12px 10px 34px;border:1px solid var(--line);border-radius:10px;font-size:14px"></div></div><div style="min-width:240px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Ou escolha um item já definido</label><select id="ajudaSel" onchange="ajudaPick(this.value)" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff">'+opts+'</select></div></div><div style="font-size:11px;color:var(--muted);margin-top:10px"><i class="ti ti-refresh"></i> Base de conhecimento do sistema · atualizada em '+HELP_UPDATED+' · '+HELP_KB.length+' tópicos. Esta base é revisada sempre que o sistema é alterado.</div></div><div id="ajudaRes"></div>';
  ajudaHome();}
 
+/* ===== SAC · Sistema de Gestão de Atendimento (nativo) ===== */
+const SAC_CANAIS=['WhatsApp','Sults','Blip','E-mail','Reclame Aqui','Procon','Instagram'];
+const SAC_MOTIVOS=['Agendamento','Atendimento da unidade','Cancelamento','Reembolso','Insatisfação com resultados','Demora no atendimento','Cobrança indevida','Qualidade do procedimento','Produto/Pacote'];
+const SAC_FASES=['Novo','Contato com cliente','Contato com unidade','Aguardando cliente','Aguardando retorno interno','Em pagamento','Concluído'];
+const SAC_PRIOS=[{k:'baixa',l:'Baixa',c:'#2563EB',b:'#E7EEFB'},{k:'media',l:'Média',c:'#B7791F',b:'#FBF3E2'},{k:'alta',l:'Alta',c:'#C2410C',b:'#FCEBE0'},{k:'critica',l:'Crítica',c:'#B91C1C',b:'#FBE6E6'}];
+const SAC_ATEND=[
+ {nome:'Camila Souza',email:'camila.sac@lasercompany.com',perfil:'Administrador',ativo:true},
+ {nome:'Bruno Lima',email:'bruno.sac@lasercompany.com',perfil:'Atendente',ativo:true},
+ {nome:'Patrícia Reis',email:'patricia.sac@lasercompany.com',perfil:'Atendente',ativo:true},
+ {nome:'Diego Martins',email:'diego.sac@lasercompany.com',perfil:'Atendente',ativo:true},
+ {nome:'Larissa Antunes',email:'larissa.sac@lasercompany.com',perfil:'Atendente',ativo:false}
+];
+const SAC_CFG={slaHoras:48,integr:[{n:'BLIP (chatbot WhatsApp)',ic:'ti-brand-whatsapp',on:true},{n:'Sults (franqueadora)',ic:'ti-building',on:true},{n:'Reclame Aqui',ic:'ti-message-report',on:true},{n:'Procon',ic:'ti-gavel',on:false},{n:'Instagram Direct',ic:'ti-brand-instagram',on:true}]};
+function _sacUnis(){return (typeof UNIDADES!=='undefined'?UNIDADES.map(u=>u.nome):['Florianópolis - Centro','Balneário Camboriú','Joinville']);}
+function _sd(daysAgo){const d=new Date();d.setDate(d.getDate()-daysAgo);return d.toISOString().slice(0,10);}
+function _sacHash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h;}
+let SAC_SEQ=24050;
+const SAC_CHAMADOS=(function(){
+ const cli=['Mariana Alves','João Pedro Castro','Fernanda Dias','Rafael Moraes','Aline Cardoso','Tiago Nunes','Beatriz Ramos','Paulo Henrique','Carla Bezerra','Renata Lopes','Gustavo Pires','Sofia Mendes','Lucas Barreto','Juliana Freitas','Marcos Vinícius','Patrícia Gomes'];
+ const motDef={0:'Agendamento',1:'Atendimento da unidade',2:'Cancelamento',3:'Reembolso',4:'Insatisfação com resultados'};
+ const unis=_sacUnis();
+ const arr=[];
+ for(let i=0;i<16;i++){
+  const h=_sacHash(cli[i]+i);
+  const canal=SAC_CANAIS[h%SAC_CANAIS.length];
+  const motivo=SAC_MOTIVOS[(h>>>3)%SAC_MOTIVOS.length];
+  const prio=SAC_PRIOS[(h>>>5)%SAC_PRIOS.length];
+  const uni=unis[(h>>>7)%unis.length];
+  const tipo=((h>>>9)%3===0)?'Própria':'Franquia';
+  const resp=SAC_ATEND[(h>>>11)%4].nome;
+  const recl=2+((h>>>13)%40);
+  const concl=(i%3===0);
+  const fase=concl?'Concluído':SAC_FASES[(h>>>15)%(SAC_FASES.length-1)];
+  const atras=(!concl && recl>SAC_CFG.slaHoras/24+5);
+  const reemb=(motivo==='Reembolso'||motivo==='Cancelamento')?(200+((h>>>17)%1800)):0;
+  arr.push({
+   id:'SAC-'+(SAC_SEQ++),
+   cliente:cli[i], cpf:('0'+((h%9)+1))+'X.XXX.XXX-'+((h>>>4)%90+10),
+   whats:'+55 (48) 9'+(8000+(h%1999))+'-'+(1000+(h%8999)),
+   email:cli[i].toLowerCase().replace(/[^a-z]/g,'.')+'@email.com',
+   canal, unidade:uni, tipo, motivo, prio:prio.k,
+   fase, resp, dataRecl:_sd(recl), dataAtend:_sd(Math.max(0,recl-2)),
+   servico:['Depilação a laser','Ultrassom microfocado','Limpeza de pele','Pacote corporal','PDRN'][(h>>>2)%5],
+   valorPago:300+((h>>>6)%2700), reembSolic:reemb, multa:(reemb>0&&(h%2===0)), pagto:concl&&reemb>0,
+   dataReemb:(concl&&reemb>0)?_sd(Math.max(0,recl-1)):'', protocolo:'PRC'+(100000+(h%899999)),
+   status:concl?'Concluído':(atras?'Em atraso':'Em andamento'),
+   obs: motDef[i%5]?('Tratativa: '+motDef[i%5]+'.'):''
+  });
+ }
+ return arr;
+})();
+const SAC_TRIAGEM=[
+ {nome:'Vanessa Coelho',whats:'+55 (47) 99812-3321',msg:'Fui atendida ontem e fiquei com dúvida sobre o resultado da sessão de ultrassom.',canal:'WhatsApp',quando:'há 12 min'},
+ {nome:'Roberto Fagundes',whats:'+55 (48) 99654-7788',msg:'Quero cancelar meu pacote e saber sobre reembolso.',canal:'WhatsApp',quando:'há 38 min'},
+ {nome:'Eduarda Pinto',whats:'+55 (41) 99233-1190',msg:'O agendamento foi remarcado sem me avisar.',canal:'Instagram',quando:'há 1 h'},
+ {nome:'Sandro Aquino',whats:'+55 (51) 99871-4567',msg:'Cobrança em duplicidade no cartão, preciso de ajuda.',canal:'WhatsApp',quando:'há 2 h'}
+];
+function sacPrio(k){return SAC_PRIOS.find(p=>p.k===k)||SAC_PRIOS[0];}
+function sacBadgePrio(k){const p=sacPrio(k);return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+p.b+';color:'+p.c+'">'+p.l+'</span>';}
+function sacBadgeStatus(s){const m={'Em andamento':['#1E3A8A','#E7EEFB'],'Concluído':['#0F6B3A','#E7F0EC'],'Em atraso':['#B91C1C','#FBE6E6']}[s]||['#555','#eee'];return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+m[1]+';color:'+m[0]+'">'+s+'</span>';}
+function sacCount(f){return SAC_CHAMADOS.filter(f).length;}
+const SAC_PAGES=[['dashboard','Dashboard','ti-layout-dashboard'],['chamados','Chamados','ti-headset'],['kanban','Kanban','ti-layout-kanban'],['triagem','Triagem WhatsApp','ti-brand-whatsapp'],['relatorios','Relatórios','ti-chart-bar'],['atendentes','Atendentes','ti-users'],['premiacao','Premiação','ti-trophy'],['importar','Importar Leads','ti-file-import'],['config','Configurações','ti-settings']];
+let SAC_PAGE='dashboard';
+function buildSac(page){SAC_PAGE=page||SAC_PAGE||'dashboard';
+ const bar=document.getElementById('sacTabsBar');
+ if(bar)bar.innerHTML='<div class="sac-tabs">'+SAC_PAGES.map(p=>'<button class="sac-tab'+(p[0]===SAC_PAGE?' on':'')+'" onclick="buildSac(\''+p[0]+'\')"><i class="ti '+p[2]+'"></i> '+p[1]+'</button>').join('')+'</div>';
+ const w=document.getElementById('sacWrap');if(!w)return;
+ ({dashboard:sacDashboard,chamados:sacChamados,kanban:sacKanban,triagem:sacTriagem,relatorios:sacRelatorios,atendentes:sacAtendentes,premiacao:sacPremiacao,importar:sacImportar,config:sacConfig}[SAC_PAGE]||sacDashboard)(w);
+}
+function sacDashboard(w){
+ const tot=SAC_CHAMADOS.length, and=sacCount(c=>c.status==='Em andamento'), con=sacCount(c=>c.status==='Concluído'), atr=sacCount(c=>c.status==='Em atraso');
+ const sla=tot?Math.round((tot-atr)/tot*100):100;
+ const reemb=SAC_CHAMADOS.reduce((a,c)=>a+(c.reembSolic||0),0);
+ const kpis=relKpis([['Total de chamados',tot,'ti-headset'],['Em andamento',and,'ti-progress'],['Concluídos',con,'ti-circle-check'],['Em atraso',atr,'ti-alert-triangle'],['Tempo médio resolução','3,2 dias','ti-clock'],['Taxa SLA cumprido',sla+'%','ti-shield-check']]);
+ const porCanal=SAC_CANAIS.map(c=>[c,sacCount(x=>x.canal===c)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+ const porMotivo=SAC_MOTIVOS.map(m=>[m,sacCount(x=>x.motivo===m)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+ const porFase=SAC_FASES.map(f=>[f,sacCount(x=>x.fase===f)]);
+ const recent=SAC_CHAMADOS.slice().sort((a,b)=>b.dataRecl<a.dataRecl?-1:1).slice(0,6);
+ w.innerHTML=kpis+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0">'+
+   dashWidget('Chamados por canal','ti-radio',barChart(porCanal,false))+
+   dashWidget('Chamados por motivo','ti-list-details',barChart(porMotivo,true))+
+  '</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'+
+   dashWidget('Distribuição no Kanban','ti-layout-kanban',barChart(porFase,false))+
+   dashWidget('Reembolsos solicitados (período)','ti-cash','<div style="padding:8px 4px"><div style="font-size:30px;font-weight:800;color:var(--brand-500)">R$ '+reemb.toLocaleString('pt-BR')+'</div><div style="font-size:12px;color:var(--muted)">'+sacCount(c=>c.reembSolic>0)+' chamados com reembolso · '+sacCount(c=>c.pagto)+' já pagos</div></div>')+
+  '</div>'+
+  dashWidget('Chamados recentes','ti-clock-hour-4',relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Status'],recent.map(c=>['<b>'+c.id+'</b>',c.cliente,c.canal,c.unidade,c.motivo,sacBadgePrio(c.prio),sacBadgeStatus(c.status)])));
+}
+function sacChamados(w){
+ const rows=SAC_CHAMADOS.map((c,i)=>['<b>'+c.id+'</b>',c.cliente+'<div style="font-size:11px;color:var(--muted)">'+c.whats+'</div>',c.canal,c.unidade+'<div style="font-size:11px;color:var(--muted)">'+c.tipo+'</div>',c.motivo,sacBadgePrio(c.prio),c.fase,sacBadgeStatus(c.status),'<button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" onclick="sacForm('+i+')"><i class="ti ti-edit"></i></button>']);
+ w.innerHTML='<div class="rel-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;gap:8px;align-items:center"><i class="ti ti-headset" style="color:var(--brand-500);font-size:18px"></i><b>'+SAC_CHAMADOS.length+' chamados</b> <span style="font-size:12px;color:var(--muted)">· '+sacCount(c=>c.status==="Em atraso")+' em atraso</span></div><div style="display:flex;gap:8px"><input id="sacBusca" placeholder="Buscar cliente, protocolo..." oninput="sacFiltrar()" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;min-width:200px"><button class="btn btn-primary" onclick="sacForm()"><i class="ti ti-plus"></i> Novo chamado</button></div></div>'+
+  '<div id="sacTbl">'+relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Fase','Status',''],rows)+'</div>';
+}
+function sacFiltrar(){const q=(document.getElementById('sacBusca').value||'').toLowerCase();const f=SAC_CHAMADOS.map((c,i)=>({c,i})).filter(o=>(o.c.cliente+o.c.id+o.c.unidade+o.c.motivo).toLowerCase().includes(q));
+ const rows=f.map(o=>{const c=o.c;return['<b>'+c.id+'</b>',c.cliente+'<div style="font-size:11px;color:var(--muted)">'+c.whats+'</div>',c.canal,c.unidade+'<div style="font-size:11px;color:var(--muted)">'+c.tipo+'</div>',c.motivo,sacBadgePrio(c.prio),c.fase,sacBadgeStatus(c.status),'<button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" onclick="sacForm('+o.i+')"><i class="ti ti-edit"></i></button>'];});
+ document.getElementById('sacTbl').innerHTML=relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Fase','Status',''],rows);}
+function sacKanban(w){
+ const cols=SAC_FASES.map(f=>{const items=SAC_CHAMADOS.map((c,i)=>({c,i})).filter(o=>o.c.fase===f);
+  return '<div style="min-width:230px;flex:0 0 230px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px"><div style="font-weight:700;font-size:12px;padding:4px 6px;display:flex;justify-content:space-between;color:var(--brand-600)">'+f+' <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 7px;font-size:10px">'+items.length+'</span></div>'+
+  items.map(o=>{const c=o.c;const idx=SAC_FASES.indexOf(c.fase);const next=idx<SAC_FASES.length-1?SAC_FASES[idx+1]:null;
+   return '<div style="background:var(--surface);border:1px solid var(--line);border-left:3px solid '+sacPrio(c.prio).c+';border-radius:9px;padding:8px;margin-top:7px"><div style="font-size:11px;color:var(--muted)">'+c.id+'</div><div style="font-weight:600;font-size:13px">'+c.cliente+'</div><div style="font-size:11px;color:var(--muted);margin:2px 0">'+c.motivo+' · '+c.canal+'</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">'+sacBadgePrio(c.prio)+(next?'<button class="btn btn-ghost" style="padding:2px 7px;font-size:11px" onclick="sacAvancar('+o.i+')" title="Avançar para '+next+'">→</button>':'<i class="ti ti-circle-check" style="color:#0F6B3A"></i>')+'</div></div>';}).join('')+'</div>';}).join('');
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-layout-kanban" style="color:var(--brand-500)"></i> Quadro de atendimentos</b><span style="font-size:12px;color:var(--muted)">Clique em → para avançar a fase</span></div><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">'+cols+'</div>';
+}
+function sacAvancar(i){const c=SAC_CHAMADOS[i];if(!c)return;const idx=SAC_FASES.indexOf(c.fase);if(idx<SAC_FASES.length-1){c.fase=SAC_FASES[idx+1];if(c.fase==='Concluído')c.status='Concluído';showToast('Chamado '+c.id+' → '+c.fase,'ti-arrow-right');buildSac('kanban');if(typeof auditLog==='function')auditLog('SAC','Avançou '+c.id+' para '+c.fase);}}
+function sacTriagem(w){
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-brand-whatsapp" style="color:#0F6B3A"></i> Triagem WhatsApp</b> <span style="font-size:12px;color:var(--muted)">— mensagens recebidas aguardando virar chamado ('+SAC_TRIAGEM.length+')</span></div>'+
+  SAC_TRIAGEM.map((t,i)=>'<div class="rel-card" style="display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:10px"><div style="flex:1"><div style="font-weight:700">'+t.nome+' <span style="font-size:11px;color:var(--muted);font-weight:400">· '+t.whats+' · '+t.canal+' · '+t.quando+'</span></div><div style="font-size:13px;color:var(--text);margin-top:3px">“'+t.msg+'”</div></div><button class="btn btn-primary" onclick="sacTriagemCriar('+i+')"><i class="ti ti-plus"></i> Criar chamado</button></div>').join('');
+}
+function sacTriagemCriar(i){const t=SAC_TRIAGEM[i];if(!t)return;sacForm(null,{cliente:t.nome,whats:t.whats,canal:t.canal,obs:t.msg});}
+function sacRelatorios(w){
+ const porCanal=SAC_CANAIS.map(c=>[c,sacCount(x=>x.canal===c)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+ const porMotivo=SAC_MOTIVOS.map(m=>[m,sacCount(x=>x.motivo===m)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
+ const unis=_sacUnis();const porUni=unis.map(u=>[u,sacCount(x=>x.unidade===u)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+ const reembRows=SAC_CHAMADOS.filter(c=>c.reembSolic>0).map(c=>[c.id,c.cliente,c.unidade,'R$ '+c.reembSolic.toLocaleString('pt-BR'),c.multa?'Sim':'Não',c.pagto?'<span style="color:#0F6B3A;font-weight:700">Pago</span>':'<span style="color:#B7791F">Pendente</span>']);
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">'+rfPeriod('Período')+'<button class="btn btn-primary" onclick="showToast(\'Relatório atualizado\',\'ti-refresh\')"><i class="ti ti-filter"></i> Aplicar</button></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'+dashWidget('Por canal','ti-radio',barChart(porCanal,false))+dashWidget('Por motivo','ti-list-details',barChart(porMotivo,true))+'</div>'+
+  dashWidget('Chamados por unidade (Top 10)','ti-building',barChart(porUni,false))+
+  '<div style="margin-top:14px">'+dashWidget('Reembolsos','ti-cash',relTable(['Protocolo','Cliente','Unidade','Valor','Multa','Pagamento'],reembRows))+'</div>';
+}
+function sacAtendentes(w){
+ const rows=SAC_ATEND.map((a,i)=>[a.nome,a.email,'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+(a.perfil==='Administrador'?'var(--brand-500);color:#fff':'#EEE;color:#555')+'">'+a.perfil+'</span>',a.ativo?'<span style="color:#0F6B3A;font-weight:700">Ativo</span>':'<span style="color:#999">Inativo</span>',sacCount(c=>c.resp===a.nome)+' chamados']);
+ w.innerHTML='<div class="rel-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b><i class="ti ti-users" style="color:var(--brand-500)"></i> Atendentes do SAC ('+SAC_ATEND.length+')</b><button class="btn btn-primary" onclick="sacAtendAdd()"><i class="ti ti-plus"></i> Novo atendente</button></div>'+relTable(['Nome','E-mail','Perfil','Status','Carteira'],rows);
+}
+function sacAtendAdd(){const nome=prompt('Nome do atendente:');if(!nome)return;const email=prompt('E-mail:')||'';SAC_ATEND.push({nome,email,perfil:'Atendente',ativo:true});showToast('Atendente adicionado','ti-user-plus');buildSac('atendentes');if(typeof auditLog==='function')auditLog('SAC','Novo atendente '+nome);}
+function sacPremiacao(w){
+ const rank=SAC_ATEND.filter(a=>a.ativo).map(a=>{const tot=sacCount(c=>c.resp===a.nome);const con=sacCount(c=>c.resp===a.nome&&c.status==='Concluído');const atr=sacCount(c=>c.resp===a.nome&&c.status==='Em atraso');const sla=tot?Math.round((tot-atr)/tot*100):100;const pts=con*10+(atr===0?20:0)+Math.round(sla/10);return{a,tot,con,atr,sla,pts};}).sort((x,y)=>y.pts-x.pts);
+ const medal=['🥇','🥈','🥉'];
+ const rows=rank.map((r,i)=>[(medal[i]||(i+1)+'º'),r.a.nome,r.tot,r.con,(r.atr===0?'<span style="color:#0F6B3A;font-weight:700">Zero ✓</span>':r.atr),r.sla+'%','<b>'+r.pts+'</b>']);
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-trophy" style="color:var(--gold-500)"></i> Premiação dos atendentes</b><span style="font-size:12px;color:var(--muted)">Pontuação = resolvidos×10 + bônus Zero Atrasos (20) + SLA</span></div>'+
+  '<div class="rel-card" style="background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;margin-bottom:12px"><div style="font-size:12px;opacity:.85">Destaque do mês</div><div style="font-size:22px;font-weight:800">'+(rank[0]?rank[0].a.nome:'—')+'</div><div style="font-size:13px;opacity:.9">'+(rank[0]?rank[0].pts+' pontos · '+rank[0].con+' chamados resolvidos':'')+'</div></div>'+
+  relTable(['#','Atendente','Total','Resolvidos','Atrasos','SLA','Pontos'],rows);
+}
+function sacImportar(w){
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-file-import" style="color:var(--brand-500)"></i> Importar leads / reclamações</b><p style="font-size:13px;color:var(--muted);margin:6px 0 0">Importe uma planilha (.xlsx) com reclamações vindas de Sults, Reclame Aqui, Procon ou planilhas internas. Colunas: Cliente, CPF, WhatsApp, Canal, Unidade, Motivo, Data, Valor Pago, Reembolso.</p></div>'+
+  '<div class="rel-card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn btn-ghost" onclick="sacModelo()"><i class="ti ti-download"></i> Baixar modelo</button><label class="btn btn-primary" style="cursor:pointer"><i class="ti ti-upload"></i> Selecionar planilha<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="sacImportFile(this)"></label><span id="sacImpInfo" style="font-size:12px;color:var(--muted)"></span></div>';
+}
+function sacModelo(){if(typeof XLSX==='undefined'){showToast('Biblioteca de planilha indisponível','ti-alert-triangle');return;}const ws=XLSX.utils.aoa_to_sheet([['Cliente','CPF','WhatsApp','Canal','Unidade','Motivo','Data','Valor Pago','Reembolso Solicitado'],['Maria Exemplo','000.000.000-00','+55 (48) 99999-0000','Reclame Aqui','Florianópolis - Centro','Reembolso','2026-06-10','1200','1200']]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Modelo');XLSX.writeFile(wb,'modelo-sac-laserco.xlsx');showToast('Modelo baixado','ti-download');}
+function sacImportFile(inp){const f=inp.files&&inp.files[0];if(!f)return;if(typeof XLSX==='undefined'){showToast('Biblioteca indisponível','ti-alert-triangle');return;}const rd=new FileReader();rd.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'binary'});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);let n=0;rows.forEach(r=>{const nome=r.Cliente||r.cliente;if(!nome)return;SAC_CHAMADOS.unshift({id:'SAC-'+(SAC_SEQ++),cliente:nome,cpf:r.CPF||'',whats:r.WhatsApp||'',email:'',canal:r.Canal||'Importado',unidade:r.Unidade||_sacUnis()[0],tipo:'Franquia',motivo:r.Motivo||'Importado',prio:'media',fase:'Novo',resp:'—',dataRecl:(r.Data||_sd(0))+'',dataAtend:'',servico:'',valorPago:+r['Valor Pago']||0,reembSolic:+r['Reembolso Solicitado']||0,multa:false,pagto:false,dataReemb:'',protocolo:'IMP'+(SAC_SEQ),status:'Em andamento',obs:'Importado de planilha'});n++;});document.getElementById('sacImpInfo').textContent=n+' chamado(s) importado(s).';showToast(n+' chamados importados','ti-check');if(typeof auditLog==='function')auditLog('SAC','Importou '+n+' chamados via Excel');}catch(err){showToast('Falha ao ler a planilha','ti-alert-triangle');}};rd.readAsBinaryString(f);}
+function sacConfig(w){
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-settings" style="color:var(--brand-500)"></i> Configurações do SAC</b></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+   '<div class="rel-card"><div style="font-weight:700;margin-bottom:8px">SLA de atendimento</div><label style="font-size:12px;color:var(--muted)">Prazo (horas) para resolução antes de marcar “Em atraso”</label><input type="number" value="'+SAC_CFG.slaHoras+'" onchange="SAC_CFG.slaHoras=+this.value;showToast(\'SLA atualizado\',\'ti-check\')" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;margin-top:5px"></div>'+
+   '<div class="rel-card"><div style="font-weight:700;margin-bottom:8px">Canais ativos</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+SAC_CANAIS.map(c=>'<span style="font-size:12px;background:var(--surface-2);border:1px solid var(--line);padding:3px 10px;border-radius:20px">'+c+'</span>').join('')+'</div></div>'+
+  '</div>'+
+  '<div class="rel-card" style="margin-top:14px"><div style="font-weight:700;margin-bottom:10px">Integrações</div>'+SAC_CFG.integr.map(it=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)"><span><i class="ti '+it.ic+'" style="color:var(--brand-500);margin-right:8px"></i>'+it.n+'</span><span style="font-size:12px;font-weight:700;color:'+(it.on?'#0F6B3A':'#999')+'">'+(it.on?'Conectado':'Desativado')+'</span></div>').join('')+'</div>'+
+  '<div class="rel-card" style="margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Motivos de reclamação</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+SAC_MOTIVOS.map(m=>'<span style="font-size:12px;background:var(--surface-2);border:1px solid var(--line);padding:3px 10px;border-radius:20px">'+m+'</span>').join('')+'</div></div>';
+}
+function sacForm(idx,pre){
+ const c=(idx!=null&&idx>=0)?SAC_CHAMADOS[idx]:Object.assign({id:'(novo)',cliente:'',cpf:'',whats:'',email:'',canal:'WhatsApp',unidade:_sacUnis()[0],tipo:'Franquia',motivo:SAC_MOTIVOS[0],prio:'media',fase:'Novo',resp:SAC_ATEND[0].nome,dataRecl:_sd(0),dataAtend:'',servico:'',valorPago:0,reembSolic:0,multa:false,pagto:false,dataReemb:'',obs:'',status:'Em andamento'},pre||{});
+ window._sacEdit=(idx!=null&&idx>=0)?idx:null; window._sacDraft=c;
+ const opt=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join('');
+ const fld=(lab,inner)=>'<div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">'+lab+'</label>'+inner+'</div>';
+ const inp=(k,v,t)=>'<input id="sf_'+k+'" value="'+(v||'')+'" type="'+(t||'text')+'" style="padding:8px;border:1px solid var(--line);border-radius:8px">';
+ const body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'+
+  fld('Nome do cliente *',inp('cliente',c.cliente))+fld('CPF',inp('cpf',c.cpf))+fld('WhatsApp / Telefone',inp('whats',c.whats))+
+  fld('E-mail',inp('email',c.email))+fld('Canal *','<select id="sf_canal" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_CANAIS,c.canal)+'</select>')+fld('Unidade *','<select id="sf_unidade" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(_sacUnis(),c.unidade)+'</select>')+
+  fld('Tipo','<select id="sf_tipo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(['Franquia','Própria'],c.tipo)+'</select>')+fld('Motivo *','<select id="sf_motivo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_MOTIVOS,c.motivo)+'</select>')+fld('Prioridade','<select id="sf_prio" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+SAC_PRIOS.map(p=>'<option value="'+p.k+'"'+(p.k===c.prio?' selected':'')+'>'+p.l+'</option>').join('')+'</select>')+
+  fld('Responsável','<select id="sf_resp" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_ATEND.map(a=>a.nome),c.resp)+'</select>')+fld('Fase (Kanban)','<select id="sf_fase" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_FASES,c.fase)+'</select>')+fld('Data da reclamação *',inp('dataRecl',c.dataRecl,'date'))+
+  fld('Serviço/pacote reclamado',inp('servico',c.servico))+fld('Valor pago (R$)',inp('valorPago',c.valorPago,'number'))+fld('Reembolso solicitado (R$)',inp('reembSolic',c.reembSolic,'number'))+
+  '</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sf_multa" '+(c.multa?'checked':'')+'> Multa aplicada</label><label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sf_pagto" '+(c.pagto?'checked':'')+'> Pagamento/reembolso realizado</label></div>'+
+  '<div style="margin-top:10px;display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">Observações / tratativa</label><textarea id="sf_obs" rows="3" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+(c.obs||'')+'</textarea></div>';
+ document.getElementById('sacModTitle').innerHTML='<i class="ti ti-headset"></i> '+(window._sacEdit!=null?('Chamado '+c.id):'Novo chamado');
+ document.getElementById('sacModBody').innerHTML=body;
+ document.getElementById('sacMod').classList.add('open');
+}
+function sacFechar(){document.getElementById('sacMod').classList.remove('open');}
+function sacSalvar(){const g=k=>{const e=document.getElementById('sf_'+k);return e?(e.type==='checkbox'?e.checked:e.value):'';};
+ if(!g('cliente')){showToast('Informe o nome do cliente','ti-alert-triangle');return;}
+ const d={cliente:g('cliente'),cpf:g('cpf'),whats:g('whats'),email:g('email'),canal:g('canal'),unidade:g('unidade'),tipo:g('tipo'),motivo:g('motivo'),prio:g('prio'),resp:g('resp'),fase:g('fase'),dataRecl:g('dataRecl'),servico:g('servico'),valorPago:+g('valorPago')||0,reembSolic:+g('reembSolic')||0,multa:g('multa'),pagto:g('pagto'),obs:g('obs')};
+ d.status=d.fase==='Concluído'?'Concluído':(window._sacDraft.status||'Em andamento');
+ if(window._sacEdit!=null){Object.assign(SAC_CHAMADOS[window._sacEdit],d);showToast('Chamado atualizado','ti-check');}
+ else{d.id='SAC-'+(SAC_SEQ++);d.protocolo='PRC'+(100000+(SAC_SEQ%899999));d.dataAtend=_sd(0);d.dataReemb='';SAC_CHAMADOS.unshift(d);showToast('Chamado criado: '+d.id,'ti-check');}
+ if(typeof auditLog==='function')auditLog('SAC',(window._sacEdit!=null?'Editou ':'Criou ')+'chamado '+(d.id||''));
+ sacFechar();buildSac(SAC_PAGE==='dashboard'?'chamados':SAC_PAGE);
+}
+
 function showView(view,el){
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[view]).classList.add('active');
@@ -8256,7 +8442,7 @@ function showView(view,el){
   if(view==='pontoDigital')buildPontoDigital();
   if(view==='marketing')buildMarketing();
   if(view==='indiques')buildIndiques();
-  if(view==='sac'){const f=document.getElementById('sacFrame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
+  if(view==='sac')buildSac((el&&el.dataset&&el.dataset.sacpage)||'dashboard');
   if(view==='ajuda')buildAjuda();
   const title=el?.dataset.title||'Dashboard';
   const icon=el?.dataset.icon||'ti-layout-dashboard';
