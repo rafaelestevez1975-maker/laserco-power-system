@@ -82,3 +82,38 @@ Este repositório contém o **protótipo/produto**. **Não** versione dados reai
 ---
 
 © 2026 Laser&Co — uso interno.
+
+---
+
+## 🔗 Link compartilhável (produção)
+
+**App:** https://laserco-power-system.vercel.app
+**Repositório (público):** https://github.com/rafaelestevez1975-maker/laserco-power-system
+
+O link de produção pode ser compartilhado com terceiros para **revisão** e desenvolvimento de **automações**. O repositório é público — qualquer desenvolvedor pode ler o código, abrir *issues* e enviar *Pull Requests*.
+
+## 📱 PWA — instalar como aplicativo
+
+O sistema é um **Progressive Web App**: pode ser instalado com ícone na tela inicial (Android, iOS e desktop), abrindo em tela cheia (standalone) e funcionando offline (cache do app).
+
+- **Android/Chrome/Edge:** aparece o botão **“Instalar app”** (canto inferior direito) ou menu ⋮ → *Instalar aplicativo*.
+- **iOS/Safari:** botão *Compartilhar* → *Adicionar à Tela de Início*.
+- **Desktop:** ícone de instalação na barra de endereço.
+
+Arquivos PWA: `manifest.webmanifest`, `sw.js` (service worker, *network-first* para manter o app sempre atualizado e com *fallback* offline) e os ícones `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`.
+
+## 👩‍💻 Para desenvolvedores terceiros (revisão & automações)
+
+1. **Clone/serve:** `python3 -m http.server 8080` e abra `http://localhost:8080` (recomendado por causa dos iframes e do Supabase).
+2. **Modo demonstração:** na tela de login há *“Entrar em modo demonstração (sem nuvem)”* — roda sem backend, com dados em memória/localStorage. Ideal para revisar sem credenciais.
+3. **Onde mexer:** `index.html` concentra a SPA; cada módulo tem uma função `buildX()`. Veja **`ARQUITETURA.md`** para localizar rapidamente.
+4. **Validação rápida (sem framework):** comando em `ARQUITETURA.md` que extrai o JS inline e roda `node --check`.
+5. **Contribuir:** crie uma branch, faça as alterações, valide no navegador (modo demonstração) e abra um Pull Request.
+
+## 🗄️ Backend — Supabase
+
+- **Projeto:** `riutcbwillvqjrpaefkb` (região us-east-2, Postgres 17) — *ACTIVE_HEALTHY*.
+- **Auth:** e-mail/senha. **RLS habilitado em todas as tabelas** (`public`).
+- A **anon key** embutida no `index.html` é **pública por design** e protegida por RLS — segura para repositório público.
+- **Service role key nunca** deve ser commitada nem usada no front-end.
+- Automações de terceiros devem usar a anon key + políticas RLS, ou um backend próprio com a service key guardada em variável de ambiente (fora do repositório).

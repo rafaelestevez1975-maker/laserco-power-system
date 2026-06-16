@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Laser&Co Power System</title>
-<meta name="theme-color" content="#6A1B9A">
+<meta name="theme-color" content="#230A10">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Laser&Co">
-<link rel="manifest" href='data:application/json,{"name":"Laser%26Co Power System","short_name":"Laser%26Co","start_url":".","display":"standalone","background_color":"%23ffffff","theme_color":"%236A1B9A","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27192%27 height=%27192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2742%27 fill=%27%236A1B9A%27/%3E%3Ctext x=%2796%27 y=%27124%27 font-size=%2796%27 font-family=%27Arial%27 font-weight=%27bold%27 fill=%27white%27 text-anchor=%27middle%27%3EL%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -952,6 +955,12 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 .sac-chip:hover{border-color:var(--brand-400);color:var(--brand-500)}
 .sac-chip.on{background:var(--brand-500);color:#fff;border-color:var(--brand-500)}
 </style>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaPrompt=e;var b=document.getElementById('pwaInstallBtn');if(b)b.style.display='inline-flex';});
+window.addEventListener('appinstalled',function(){window.__pwaPrompt=null;var b=document.getElementById('pwaInstallBtn');if(b)b.style.display='none';});
+function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userChoice.finally(function(){window.__pwaPrompt=null;var b=document.getElementById('pwaInstallBtn');if(b)b.style.display='none';});}
+</script>
 </head>
 <body>
 <div class="app">
@@ -5263,7 +5272,8 @@ function calcDemonstrativo(){
   <div class="grand">Valor total atualizado: ${finMoney(totT)}</div>
   <div class="ft"><b>Metodologia:</b> correção = valor × (1 + índice<sub>período</sub>)<sup>(dias/360)</sup>; multa = % sobre o valor corrigido; juros de mora = % a.m. × (dias/30) sobre o valor corrigido. Índices oficiais (FGV/IBGE/Banco Central). Documento gerado pelo Laser&amp;Co Power System — confira a regra contratual e jurídica aplicável antes da cobrança.</div>
   <div class="noprint" style="margin-top:20px;text-align:center"><button onclick="window.print()" style="background:#6A1B9A;color:#fff;border:0;padding:10px 22px;border-radius:8px;font-size:14px;cursor:pointer">Imprimir / Salvar como PDF</button></div>
-  </body></html>`;
+  <button id="pwaInstallBtn" onclick="pwaInstall()" title="Instalar como aplicativo" style="display:none;position:fixed;right:18px;bottom:18px;z-index:9996;background:var(--brand-500);color:#fff;border:0;border-radius:30px;padding:11px 18px;font-weight:700;font-size:13px;font-family:inherit;box-shadow:0 6px 22px rgba(138,42,65,.45);cursor:pointer;align-items:center;gap:8px">⬇️ Instalar app</button>
+</body></html>`;
 }
 function calcGerarHTML(){
   const html=calcDemonstrativo();
