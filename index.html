@@ -8454,33 +8454,116 @@ function sacConfig(w){
   '<div class="rel-card" style="margin-top:14px"><div style="font-weight:700;margin-bottom:10px">Integrações</div>'+SAC_CFG.integr.map(it=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)"><span><i class="ti '+it.ic+'" style="color:var(--brand-500);margin-right:8px"></i>'+it.n+'</span><span style="font-size:12px;font-weight:700;color:'+(it.on?'#0F6B3A':'#999')+'">'+(it.on?'Conectado':'Desativado')+'</span></div>').join('')+'</div>'+
   '<div class="rel-card" style="margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Motivos de reclamação</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+SAC_MOTIVOS.map(m=>'<span style="font-size:12px;background:var(--surface-2);border:1px solid var(--line);padding:3px 10px;border-radius:20px">'+m+'</span>').join('')+'</div></div>';
 }
+function sacBuscarCliente(nome,cpf){
+ const key=(nome||'').trim().toLowerCase();
+ if(!key)return {found:false};
+ const h=_sacHash(key+'|'+(cpf||''));
+ if(h%7===0)return {found:false};
+ const unis=_sacUnis();
+ const uniC=unis[h%unis.length];
+ const servicos=['Depilação a laser — Corpo todo','Ultrassom microfocado facial','Pacote Rejuvenescimento facial','Limpeza de pele profunda','PDRN capilar','Pacote corporal redutor'];
+ const serv=servicos[(h>>>3)%servicos.length];
+ const sessoesContr=[10,12,8,6,10,8][(h>>>5)%6];
+ const sessoesFeitas=(h>>>7)%(sessoesContr+1);
+ const valorSess=[180,250,300,150,220,200][(h>>>9)%6];
+ const valorPago=valorSess*sessoesContr;
+ const formas=['Cartão de crédito 12x','PIX à vista','Crédito recorrente (PagoLivre)','Boleto 6x'];
+ const forma=formas[(h>>>11)%formas.length];
+ const exec=((h>>>13)%4===0)?unis[(h>>>15)%unis.length]:uniC;
+ return {found:true,contratos:[{servico:serv,valorPago:valorPago,forma:forma,dataAssin:_sd(60+(h%140)),unidadeContrat:uniC,sessoesContr:sessoesContr,sessoesFeitas:sessoesFeitas,unidadeExec:exec}]};
+}
+function sacCalcReembolso(valorPago,sessoesContr,sessoesFeitas,multaPct,semMulta){
+ const vSess=sessoesContr?valorPago/sessoesContr:0;
+ const restantes=Math.max(0,sessoesContr-sessoesFeitas);
+ const consumido=vSess*sessoesFeitas;
+ const saldo=vSess*restantes;
+ const multa=semMulta?0:saldo*((multaPct||0)/100);
+ const fim=Math.max(0,saldo-multa);
+ return {vSess:vSess,restantes:restantes,consumido:consumido,saldo:saldo,multa:multa,fim:fim};
+}
+function sacFichaLookup(){
+ const nome=(document.getElementById('sf_cliente')||{}).value||'';
+ const cpf=(document.getElementById('sf_cpf')||{}).value||'';
+ const r=sacBuscarCliente(nome,cpf);window._sacFicha=r;
+ const el=document.getElementById('sacFicha');if(!el)return;
+ if(!r.found){el.innerHTML='<div style="background:#FBF3E2;border:1px solid #F0E0B8;color:#8a6d1f;border-radius:9px;padding:10px;font-size:13px"><i class="ti ti-alert-triangle"></i> Nenhum contrato ou dado de pagamento localizado para este cliente no sistema.</div>';var rw=document.getElementById('sacReembWrap');if(rw)rw.innerHTML='';return;}
+ el.innerHTML=r.contratos.map(function(c){return '<div style="border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-2);font-size:13px"><div style="font-weight:700;margin-bottom:5px"><i class="ti ti-file-certificate" style="color:var(--brand-500)"></i> '+c.servico+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;color:var(--text)"><span>Valor pago: <b>R$ '+c.valorPago.toLocaleString('pt-BR')+'</b></span><span>Forma: <b>'+c.forma+'</b></span><span>Assinado em: <b>'+c.dataAssin.split('-').reverse().join('/')+'</b></span><span>Sessões: <b>'+c.sessoesFeitas+' de '+c.sessoesContr+' feitas</b></span><span>Unid. contratação: <b>'+c.unidadeContrat+'</b></span><span>Unid. execução: <b>'+c.unidadeExec+'</b></span></div></div>';}).join('');
+ var c0=r.contratos[0];
+ var uf=document.getElementById('sf_unidade');if(uf&&c0.unidadeContrat)uf.value=c0.unidadeContrat;
+ var vf=document.getElementById('sf_valorPago');if(vf)vf.value=c0.valorPago;
+ var sf=document.getElementById('sf_servico');if(sf)sf.value=c0.servico;
+ sacReembRender();
+}
+function sacReembRender(){
+ const wrap=document.getElementById('sacReembWrap');if(!wrap)return;
+ if(!window._sacFicha||!window._sacFicha.found){wrap.innerHTML='';return;}
+ wrap.innerHTML='<div class="rel-card" style="background:var(--surface-2);margin:0"><div style="font-weight:700;font-size:13px;margin-bottom:8px"><i class="ti ti-receipt-refund" style="color:var(--brand-500)"></i> Cancelamento e reembolso — cálculo automático</div>'+
+  '<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:8px">'+
+  '<label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sacAplMulta" checked onchange="sacReembCalc()"> Aplicar multa de rescisão</label>'+
+  '<label style="font-size:12px;display:flex;align-items:center;gap:6px">Multa (%) <input type="number" id="sacMulta" value="30" min="0" max="100" onchange="sacReembCalc()" style="width:68px;padding:5px;border:1px solid var(--line);border-radius:7px"></label>'+
+  '<label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sacCulpa" onchange="sacReembCalc()"> Rescisão por nossa culpa (ex.: fechamento de unidade) — sem multa</label>'+
+  '</div><div id="sacReembCalc"></div>'+
+  '<button class="btn btn-primary" style="margin-top:10px" onclick="sacGerarPedido()"><i class="ti ti-file-text"></i> Gerar pedido de cancelamento e abrir fluxo</button></div>';
+ sacReembCalc();
+}
+function sacReembCalc(){
+ const c=(window._sacFicha&&window._sacFicha.found)?window._sacFicha.contratos[0]:null;if(!c)return;
+ const apl=document.getElementById('sacAplMulta').checked;
+ const culpa=document.getElementById('sacCulpa').checked;
+ const pct=parseFloat(document.getElementById('sacMulta').value)||0;
+ const semMulta=culpa||!apl;
+ if(culpa){var mi=document.getElementById('sacMulta');if(mi)mi.disabled=true;}else{var mi2=document.getElementById('sacMulta');if(mi2)mi2.disabled=false;}
+ const R=sacCalcReembolso(c.valorPago,c.sessoesContr,c.sessoesFeitas,pct,semMulta);window._sacReemb=R;
+ const m=function(v){return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});};
+ document.getElementById('sacReembCalc').innerHTML='<div style="font-size:13px;display:grid;grid-template-columns:1fr auto;gap:3px 12px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px">'+
+  '<span>Total pago</span><b style="text-align:right">'+m(c.valorPago)+'</b>'+
+  '<span>Valor por sessão ('+c.sessoesContr+' sessões)</span><span style="text-align:right">'+m(R.vSess)+'</span>'+
+  '<span>Sessões já feitas ('+c.sessoesFeitas+') — abatidas</span><span style="text-align:right;color:#B91C1C">− '+m(R.consumido)+'</span>'+
+  '<span>Saldo das '+R.restantes+' sessões restantes</span><b style="text-align:right">'+m(R.saldo)+'</b>'+
+  '<span>Multa de rescisão'+(semMulta?' (isenta)':(' '+pct+'%'))+'</span><span style="text-align:right;color:#B91C1C">− '+m(R.multa)+'</span>'+
+  '<span style="font-weight:800;border-top:1px solid var(--line);padding-top:5px;margin-top:3px">Valor a reembolsar</span><b style="text-align:right;font-weight:800;border-top:1px solid var(--line);padding-top:5px;margin-top:3px;color:var(--brand-500)">'+m(R.fim)+'</b>'+
+  '</div>';
+}
+function sacGerarPedido(){
+ const R=window._sacReemb;
+ var mo=document.getElementById('sf_motivo');if(mo)mo.value='Reembolso';
+ var fa=document.getElementById('sf_fase');if(fa)fa.value='Em pagamento';
+ var rs=document.getElementById('sf_reembSolic');if(rs&&R)rs.value=Math.round(R.fim);
+ var ob=document.getElementById('sf_obs');if(ob)ob.value=(ob.value?ob.value+'\n':'')+'PEDIDO DE CANCELAMENTO anexado à ficha. Reembolso calculado automaticamente: R$ '+(R?R.fim.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0')+' (saldo de '+(R?R.restantes:0)+' sessões restantes'+(R&&R.multa>0?', menos multa de rescisão':', sem multa')+').';
+ window._sacPedido=true;
+ showToast('Pedido de cancelamento gerado — fluxo de reembolso aberto. Clique em Salvar.','ti-file-text');
+}
 function sacForm(idx,pre){
  const c=(idx!=null&&idx>=0)?SAC_CHAMADOS[idx]:Object.assign({id:'(novo)',cliente:'',cpf:'',whats:'',email:'',canal:'WhatsApp',unidade:_sacUnis()[0],tipo:'Franquia',motivo:SAC_MOTIVOS[0],prio:'media',fase:'Novo',resp:SAC_ATEND[0].nome,dataRecl:_sd(0),dataAtend:'',servico:'',valorPago:0,reembSolic:0,multa:false,pagto:false,dataReemb:'',obs:'',status:'Em andamento'},pre||{});
- window._sacEdit=(idx!=null&&idx>=0)?idx:null; window._sacDraft=c;
- const opt=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join('');
- const fld=(lab,inner)=>'<div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">'+lab+'</label>'+inner+'</div>';
- const inp=(k,v,t)=>'<input id="sf_'+k+'" value="'+(v||'')+'" type="'+(t||'text')+'" style="padding:8px;border:1px solid var(--line);border-radius:8px">';
+ window._sacEdit=(idx!=null&&idx>=0)?idx:null;window._sacDraft=c;window._sacFicha=null;window._sacReemb=null;window._sacPedido=false;
+ const opt=function(arr,sel){return arr.map(function(o){return '<option'+(o===sel?' selected':'')+'>'+o+'</option>';}).join('');};
+ const fld=function(lab,inner){return '<div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">'+lab+'</label>'+inner+'</div>';};
+ const inp=function(k,v,t){return '<input id="sf_'+k+'" value="'+(v||'')+'" type="'+(t||'text')+'" style="padding:8px;border:1px solid var(--line);border-radius:8px">';};
  const body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'+
   fld('Nome do cliente *',inp('cliente',c.cliente))+fld('CPF',inp('cpf',c.cpf))+fld('WhatsApp / Telefone',inp('whats',c.whats))+
   fld('E-mail',inp('email',c.email))+fld('Canal *','<select id="sf_canal" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_CANAIS,c.canal)+'</select>')+fld('Unidade *','<select id="sf_unidade" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(_sacUnis(),c.unidade)+'</select>')+
-  fld('Tipo','<select id="sf_tipo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(['Franquia','Própria'],c.tipo)+'</select>')+fld('Motivo *','<select id="sf_motivo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_MOTIVOS,c.motivo)+'</select>')+fld('Prioridade','<select id="sf_prio" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+SAC_PRIOS.map(p=>'<option value="'+p.k+'"'+(p.k===c.prio?' selected':'')+'>'+p.l+'</option>').join('')+'</select>')+
-  fld('Responsável','<select id="sf_resp" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_ATEND.map(a=>a.nome),c.resp)+'</select>')+fld('Fase (Kanban)','<select id="sf_fase" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_FASES,c.fase)+'</select>')+fld('Data da reclamação *',inp('dataRecl',c.dataRecl,'date'))+
+  fld('Tipo','<select id="sf_tipo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(['Franquia','Própria'],c.tipo)+'</select>')+fld('Motivo *','<select id="sf_motivo" onchange="sacReembRender()" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_MOTIVOS,c.motivo)+'</select>')+fld('Prioridade','<select id="sf_prio" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+SAC_PRIOS.map(function(p){return '<option value="'+p.k+'"'+(p.k===c.prio?' selected':'')+'>'+p.l+'</option>';}).join('')+'</select>')+
+  fld('Responsável','<select id="sf_resp" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_ATEND.map(function(a){return a.nome;}),c.resp)+'</select>')+fld('Fase (Kanban)','<select id="sf_fase" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+opt(SAC_FASES,c.fase)+'</select>')+fld('Data da reclamação *',inp('dataRecl',c.dataRecl,'date'))+
   fld('Serviço/pacote reclamado',inp('servico',c.servico))+fld('Valor pago (R$)',inp('valorPago',c.valorPago,'number'))+fld('Reembolso solicitado (R$)',inp('reembSolic',c.reembSolic,'number'))+
   '</div>'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sf_multa" '+(c.multa?'checked':'')+'> Multa aplicada</label><label style="font-size:12px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="sf_pagto" '+(c.pagto?'checked':'')+'> Pagamento/reembolso realizado</label></div>'+
-  '<div style="margin-top:10px;display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">Observações / tratativa</label><textarea id="sf_obs" rows="3" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+(c.obs||'')+'</textarea></div>';
+  '<div style="margin-top:10px;display:flex;flex-direction:column;gap:3px"><label style="font-size:11px;font-weight:600;color:var(--muted)">Observações / tratativa</label><textarea id="sf_obs" rows="3" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+(c.obs||'')+'</textarea></div>'+
+  '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b style="font-size:13px"><i class="ti ti-id-badge-2" style="color:var(--brand-500)"></i> Ficha do cliente no sistema</b><button class="btn btn-ghost" style="font-size:12px" onclick="sacFichaLookup()"><i class="ti ti-search"></i> Buscar contratos, pagamentos e sessões</button></div><div id="sacFicha" style="margin-top:8px"></div></div>'+
+  '<div id="sacReembWrap" style="margin-top:12px"></div>';
  document.getElementById('sacModTitle').innerHTML='<i class="ti ti-headset"></i> '+(window._sacEdit!=null?('Chamado '+c.id):'Novo chamado');
  document.getElementById('sacModBody').innerHTML=body;
  document.getElementById('sacMod').classList.add('open');
+ if(c.cliente)sacFichaLookup();
 }
 function sacFechar(){document.getElementById('sacMod').classList.remove('open');}
-function sacSalvar(){const g=k=>{const e=document.getElementById('sf_'+k);return e?(e.type==='checkbox'?e.checked:e.value):'';};
+function sacSalvar(){const g=function(k){var e=document.getElementById('sf_'+k);return e?(e.type==='checkbox'?e.checked:e.value):'';};
  if(!g('cliente')){showToast('Informe o nome do cliente','ti-alert-triangle');return;}
  const d={cliente:g('cliente'),cpf:g('cpf'),whats:g('whats'),email:g('email'),canal:g('canal'),unidade:g('unidade'),tipo:g('tipo'),motivo:g('motivo'),prio:g('prio'),resp:g('resp'),fase:g('fase'),dataRecl:g('dataRecl'),servico:g('servico'),valorPago:+g('valorPago')||0,reembSolic:+g('reembSolic')||0,multa:g('multa'),pagto:g('pagto'),obs:g('obs')};
- d.status=d.fase==='Concluído'?'Concluído':(window._sacDraft.status||'Em andamento');
+ d.pedidoCancel=window._sacPedido||(window._sacDraft&&window._sacDraft.pedidoCancel)||false;
+ d.status=d.fase==='Concluído'?'Concluído':((window._sacDraft&&window._sacDraft.status)||'Em andamento');
  if(window._sacEdit!=null){Object.assign(SAC_CHAMADOS[window._sacEdit],d);showToast('Chamado atualizado','ti-check');}
  else{d.id='SAC-'+(SAC_SEQ++);d.protocolo='PRC'+(100000+(SAC_SEQ%899999));d.dataAtend=_sd(0);d.dataReemb='';SAC_CHAMADOS.unshift(d);showToast('Chamado criado: '+d.id,'ti-check');}
- if(typeof auditLog==='function')auditLog('SAC',(window._sacEdit!=null?'Editou ':'Criou ')+'chamado '+(d.id||''));
+ if(typeof auditLog==='function')auditLog('SAC',(window._sacEdit!=null?'Editou ':'Criou ')+'chamado '+(d.id||'')+(d.pedidoCancel?' (pedido de cancelamento)':''));
  sacFechar();buildSac(SAC_PAGE==='dashboard'?'chamados':SAC_PAGE);
 }
 
