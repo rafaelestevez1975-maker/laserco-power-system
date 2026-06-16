@@ -8250,7 +8250,7 @@ const SAC_CHAMADOS=(function(){
   const recl=2+((h>>>13)%40);
   const concl=(i%3===0);
   const fase=concl?'Concluído':SAC_FASES[(h>>>15)%(SAC_FASES.length-1)];
-  const atras=(!concl && recl>SAC_CFG.slaHoras/24+5);
+  const atras=(!concl && (h>>>19)%5===0);
   const reemb=(motivo==='Reembolso'||motivo==='Cancelamento')?(200+((h>>>17)%1800)):0;
   arr.push({
    id:'SAC-'+(SAC_SEQ++),
