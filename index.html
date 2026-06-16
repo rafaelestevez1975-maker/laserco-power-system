@@ -947,6 +947,11 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 .sac-tab:hover{border-color:var(--brand-400);color:var(--brand-500)}
 .sac-tab.on{background:var(--brand-500);color:#fff;border-color:var(--brand-500)}
 </style>
+<style>
+.sac-chip{padding:5px 12px;border:1px solid var(--line);background:var(--surface-2);border-radius:20px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+.sac-chip:hover{border-color:var(--brand-400);color:var(--brand-500)}
+.sac-chip.on{background:var(--brand-500);color:#fff;border-color:var(--brand-500)}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1068,7 +1073,7 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
       </div>
       <div class="nav-item" data-view="implantacao" data-icon="ti-building-plus" data-title="Implantação de Unidade"><i class="ti ti-building-plus lead"></i> Implantação <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-submenu="sacm"><i class="ti ti-headset lead"></i> SAC <span style="margin-left:auto;margin-right:6px;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span><i class="ti ti-chevron-right chev"></i></div>
-      <div class="submenu" id="sub-sacm"><div class="sub-item" data-view="sac" data-sacpage="dashboard" data-icon="ti-layout-dashboard" data-title="SAC · Dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div><div class="sub-item" data-view="sac" data-sacpage="chamados" data-icon="ti-headset" data-title="SAC · Chamados"><i class="ti ti-headset"></i> Chamados</div><div class="sub-item" data-view="sac" data-sacpage="kanban" data-icon="ti-layout-kanban" data-title="SAC · Kanban"><i class="ti ti-layout-kanban"></i> Kanban</div><div class="sub-item" data-view="sac" data-sacpage="triagem" data-icon="ti-brand-whatsapp" data-title="SAC · Triagem WhatsApp"><i class="ti ti-brand-whatsapp"></i> Triagem WhatsApp</div><div class="sub-item" data-view="sac" data-sacpage="relatorios" data-icon="ti-chart-bar" data-title="SAC · Relatórios"><i class="ti ti-chart-bar"></i> Relatórios</div><div class="sub-item" data-view="sac" data-sacpage="atendentes" data-icon="ti-users" data-title="SAC · Atendentes"><i class="ti ti-users"></i> Atendentes</div><div class="sub-item" data-view="sac" data-sacpage="premiacao" data-icon="ti-trophy" data-title="SAC · Premiação"><i class="ti ti-trophy"></i> Premiação</div><div class="sub-item" data-view="sac" data-sacpage="importar" data-icon="ti-file-import" data-title="SAC · Importar Leads"><i class="ti ti-file-import"></i> Importar Leads</div><div class="sub-item" data-view="sac" data-sacpage="config" data-icon="ti-settings" data-title="SAC · Configurações"><i class="ti ti-settings"></i> Configurações</div></div>
+      <div class="submenu" id="sub-sacm"><div class="sub-item" data-view="sac" data-sacpage="dashboard" data-icon="ti-layout-dashboard" data-title="SAC · Dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div><div class="sub-item" data-view="sac" data-sacpage="chamados" data-icon="ti-headset" data-title="SAC · Chamados"><i class="ti ti-headset"></i> Chamados</div><div class="sub-item" data-view="sac" data-sacpage="kanban" data-icon="ti-layout-kanban" data-title="SAC · Kanban"><i class="ti ti-layout-kanban"></i> Kanban</div><div class="sub-item" data-view="sac" data-sacpage="triagem" data-icon="ti-brand-whatsapp" data-title="SAC · Triagem WhatsApp"><i class="ti ti-brand-whatsapp"></i> Triagem WhatsApp</div><div class="sub-item" data-view="sac" data-sacpage="relatorios" data-icon="ti-chart-bar" data-title="SAC · Relatórios"><i class="ti ti-chart-bar"></i> Relatórios</div><div class="sub-item" data-view="sac" data-sacpage="atendentes" data-icon="ti-users" data-title="SAC · Atendentes"><i class="ti ti-users"></i> Atendentes</div><div class="sub-item" data-view="sac" data-sacpage="premiacao" data-icon="ti-trophy" data-title="SAC · Ranking"><i class="ti ti-trophy"></i> Ranking</div><div class="sub-item" data-view="sac" data-sacpage="importar" data-icon="ti-file-import" data-title="SAC · Importar Leads"><i class="ti ti-file-import"></i> Importar Leads</div><div class="sub-item" data-view="sac" data-sacpage="config" data-icon="ti-settings" data-title="SAC · Configurações"><i class="ti ti-settings"></i> Configurações</div></div>
       <div class="nav-item" data-view="finFranq" data-icon="ti-businessplan" data-title="Financeiro Franqueadora" data-admin="1"><i class="ti ti-businessplan lead"></i> Financeiro Franqueadora <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
       <div class="nav-item" data-view="juridico" data-icon="ti-gavel" data-title="Jurídico" data-admin="1"><i class="ti ti-gavel lead"></i> Jurídico <span id="jurBadge" style="margin-left:auto;margin-right:6px;font-size:9px;background:var(--red);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px;display:none">0</span><span style="font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
       <div class="nav-item" data-view="auditoria" data-icon="ti-history" data-title="Auditoria" data-admin="1"><i class="ti ti-history lead"></i> Auditoria <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
@@ -2497,7 +2502,6 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 
       <section class="view" id="view-sac">
         <div class="rel-head"><div class="ri" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-headset"></i></div><div><h2>SAC · Central de Atendimento</h2><p>Sistema de Gestão de Atendimento ao cliente da rede — chamados, Kanban, triagem WhatsApp, reembolsos, premiação e relatórios.</p></div></div>
-        <div id="sacTabsBar"></div>
         <div id="sacWrap"></div>
       </section>
       <div class="modal-ov" id="sacMod"><div class="modal" style="max-width:840px"><div class="modal-head"><h3 id="sacModTitle"><i class="ti ti-headset"></i> Chamado</h3><button class="modal-close" onclick="sacFechar()">&times;</button></div><div class="modal-body" id="sacModBody" style="display:block"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="sacFechar()">Cancelar</button><button class="btn btn-primary" onclick="sacSalvar()"><i class="ti ti-check"></i> Salvar chamado</button></div></div></div>
@@ -6799,7 +6803,8 @@ const COM_CATS=[
   {nome:'Gerente',base:{individual:{on:true,pct:2},loja:{on:true,pct:1.5},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}},
   {nome:'Sub Gerente',base:{individual:{on:true,pct:1.5},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:8,t100:20,t120:40}},
   {nome:'Profissional da Saúde',base:{individual:{on:false,pct:0},loja:{on:false,pct:0},sessao:{on:true,pct:5}},tiers:{t80:5,t100:15,t120:30}},
-  {nome:'Consultoras de Vendas',base:{individual:{on:true,pct:3},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}}
+  {nome:'Consultoras de Vendas',base:{individual:{on:true,pct:3},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}},
+  {nome:'Atendente (SAC)',base:{individual:{on:true,pct:2},loja:{on:false,pct:0},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}}
 ];
 const SESSAO_TICKET=250, META_UNIDADE=100000; let DIVISOR=1;
 const money=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
@@ -8278,7 +8283,7 @@ function sacPrio(k){return SAC_PRIOS.find(p=>p.k===k)||SAC_PRIOS[0];}
 function sacBadgePrio(k){const p=sacPrio(k);return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+p.b+';color:'+p.c+'">'+p.l+'</span>';}
 function sacBadgeStatus(s){const m={'Em andamento':['#1E3A8A','#E7EEFB'],'Concluído':['#0F6B3A','#E7F0EC'],'Em atraso':['#B91C1C','#FBE6E6']}[s]||['#555','#eee'];return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+m[1]+';color:'+m[0]+'">'+s+'</span>';}
 function sacCount(f){return SAC_CHAMADOS.filter(f).length;}
-const SAC_PAGES=[['dashboard','Dashboard','ti-layout-dashboard'],['chamados','Chamados','ti-headset'],['kanban','Kanban','ti-layout-kanban'],['triagem','Triagem WhatsApp','ti-brand-whatsapp'],['relatorios','Relatórios','ti-chart-bar'],['atendentes','Atendentes','ti-users'],['premiacao','Premiação','ti-trophy'],['importar','Importar Leads','ti-file-import'],['config','Configurações','ti-settings']];
+const SAC_PAGES=[['dashboard','Dashboard','ti-layout-dashboard'],['chamados','Chamados','ti-headset'],['kanban','Kanban','ti-layout-kanban'],['triagem','Triagem WhatsApp','ti-brand-whatsapp'],['relatorios','Relatórios','ti-chart-bar'],['atendentes','Atendentes','ti-users'],['premiacao','Ranking','ti-trophy'],['importar','Importar Leads','ti-file-import'],['config','Configurações','ti-settings']];
 let SAC_PAGE='dashboard';
 function buildSac(page){SAC_PAGE=page||SAC_PAGE||'dashboard';
  const bar=document.getElementById('sacTabsBar');
@@ -8286,34 +8291,84 @@ function buildSac(page){SAC_PAGE=page||SAC_PAGE||'dashboard';
  const w=document.getElementById('sacWrap');if(!w)return;
  ({dashboard:sacDashboard,chamados:sacChamados,kanban:sacKanban,triagem:sacTriagem,relatorios:sacRelatorios,atendentes:sacAtendentes,premiacao:sacPremiacao,importar:sacImportar,config:sacConfig}[SAC_PAGE]||sacDashboard)(w);
 }
+let SAC_DFILT={per:'Mês atual',ini:'',fim:'',at:[]};
+function _sacIso(d){return d.toISOString().slice(0,10);}
+function sacRange(){const t=new Date();t.setHours(0,0,0,0);const per=SAC_DFILT.per;let ini=new Date(t),fim=new Date(t);
+ if(per==='Ontem'){ini.setDate(t.getDate()-1);fim.setDate(t.getDate()-1);}
+ else if(per==='Última semana'){ini.setDate(t.getDate()-6);}
+ else if(per==='Mês atual'){ini=new Date(t.getFullYear(),t.getMonth(),1);}
+ else if(per==='Mês passado'){ini=new Date(t.getFullYear(),t.getMonth()-1,1);fim=new Date(t.getFullYear(),t.getMonth(),0);}
+ else if(per==='Período'){return [SAC_DFILT.ini||'2000-01-01',SAC_DFILT.fim||_sacIso(t)];}
+ return [_sacIso(ini),_sacIso(fim)];}
+function sacFiltered(){const r=sacRange();return SAC_CHAMADOS.filter(function(c){const okD=c.dataRecl&&c.dataRecl>=r[0]&&c.dataRecl<=r[1];const okA=!SAC_DFILT.at.length||SAC_DFILT.at.indexOf(c.resp)>=0;return okD&&okA;});}
+function sacSetPer(p){SAC_DFILT.per=p;document.querySelectorAll('#sacPerRow .sac-chip').forEach(function(b){b.classList.toggle('on',b.dataset.per===p);});var dr=document.getElementById('sacDateRow');if(dr)dr.style.display=(p==='Período')?'flex':'none';sacDashRender();}
+function sacDateCh(){SAC_DFILT.ini=document.getElementById('sacDI').value;SAC_DFILT.fim=document.getElementById('sacDF').value;sacDashRender();}
+function sacToggleAt(n){if(n==='__all'){SAC_DFILT.at=[];}else{var i=SAC_DFILT.at.indexOf(n);if(i>=0)SAC_DFILT.at.splice(i,1);else SAC_DFILT.at.push(n);}
+ document.querySelectorAll('#sacAtRow .sac-chip').forEach(function(b){if(b.dataset.at==='__all')b.classList.toggle('on',!SAC_DFILT.at.length);else b.classList.toggle('on',SAC_DFILT.at.indexOf(b.dataset.at)>=0);});sacDashRender();}
 function sacDashboard(w){
- const tot=SAC_CHAMADOS.length, and=sacCount(c=>c.status==='Em andamento'), con=sacCount(c=>c.status==='Concluído'), atr=sacCount(c=>c.status==='Em atraso');
+ const pers=['Hoje','Ontem','Última semana','Mês atual','Mês passado','Período'];
+ const ats=SAC_ATEND.map(function(a){return a.nome;});
+ w.innerHTML='<div class="rel-card" style="margin-bottom:14px"><div style="display:flex;flex-wrap:wrap;gap:18px">'+
+  '<div style="flex:1;min-width:280px"><div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px"><i class="ti ti-calendar"></i> Período</div>'+
+  '<div id="sacPerRow" style="display:flex;flex-wrap:wrap;gap:6px">'+pers.map(function(p){return '<button class="sac-chip'+(p===SAC_DFILT.per?' on':'')+'" data-per="'+p+'" onclick="sacSetPer(\''+p+'\')">'+p+'</button>';}).join('')+'</div>'+
+  '<div id="sacDateRow" style="display:'+(SAC_DFILT.per==='Período'?'flex':'none')+';gap:8px;align-items:center;margin-top:8px"><input type="date" id="sacDI" value="'+(SAC_DFILT.ini||'')+'" onchange="sacDateCh()" style="padding:7px;border:1px solid var(--line);border-radius:8px"><span style="color:var(--muted);font-size:13px">até</span><input type="date" id="sacDF" value="'+(SAC_DFILT.fim||'')+'" onchange="sacDateCh()" style="padding:7px;border:1px solid var(--line);border-radius:8px"></div></div>'+
+  '<div style="flex:1;min-width:280px"><div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px"><i class="ti ti-user-cog"></i> Atendente</div>'+
+  '<div id="sacAtRow" style="display:flex;flex-wrap:wrap;gap:6px"><button class="sac-chip'+(!SAC_DFILT.at.length?' on':'')+'" data-at="__all" onclick="sacToggleAt(\'__all\')">Todos</button>'+ats.map(function(n){return '<button class="sac-chip'+(SAC_DFILT.at.indexOf(n)>=0?' on':'')+'" data-at="'+n+'" onclick="sacToggleAt(\''+n+'\')">'+n+'</button>';}).join('')+'</div></div>'+
+  '</div></div><div id="sacDashBody"></div>';
+ sacDashRender();
+}
+function sacDashRender(){
+ const body=document.getElementById('sacDashBody');if(!body)return;
+ const D=sacFiltered();
+ const tot=D.length,and=D.filter(function(c){return c.status==='Em andamento';}).length,con=D.filter(function(c){return c.status==='Concluído';}).length,atr=D.filter(function(c){return c.status==='Em atraso';}).length;
  const sla=tot?Math.round((tot-atr)/tot*100):100;
- const reemb=SAC_CHAMADOS.reduce((a,c)=>a+(c.reembSolic||0),0);
- const kpis=relKpis([['Total de chamados',tot,'ti-headset'],['Em andamento',and,'ti-progress'],['Concluídos',con,'ti-circle-check'],['Em atraso',atr,'ti-alert-triangle'],['Tempo médio resolução','3,2 dias','ti-clock'],['Taxa SLA cumprido',sla+'%','ti-shield-check']]);
- const porCanal=SAC_CANAIS.map(c=>[c,sacCount(x=>x.canal===c)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
- const porMotivo=SAC_MOTIVOS.map(m=>[m,sacCount(x=>x.motivo===m)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
- const porFase=SAC_FASES.map(f=>[f,sacCount(x=>x.fase===f)]);
- const recent=SAC_CHAMADOS.slice().sort((a,b)=>b.dataRecl<a.dataRecl?-1:1).slice(0,6);
- w.innerHTML=kpis+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0">'+
-   dashWidget('Chamados por canal','ti-radio',barChart(porCanal,false))+
-   dashWidget('Chamados por motivo','ti-list-details',barChart(porMotivo,true))+
-  '</div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'+
-   dashWidget('Distribuição no Kanban','ti-layout-kanban',barChart(porFase,false))+
-   dashWidget('Reembolsos solicitados (período)','ti-cash','<div style="padding:8px 4px"><div style="font-size:30px;font-weight:800;color:var(--brand-500)">R$ '+reemb.toLocaleString('pt-BR')+'</div><div style="font-size:12px;color:var(--muted)">'+sacCount(c=>c.reembSolic>0)+' chamados com reembolso · '+sacCount(c=>c.pagto)+' já pagos</div></div>')+
-  '</div>'+
-  dashWidget('Chamados recentes','ti-clock-hour-4',relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Status'],recent.map(c=>['<b>'+c.id+'</b>',c.cliente,c.canal,c.unidade,c.motivo,sacBadgePrio(c.prio),sacBadgeStatus(c.status)])));
+ const reemb=D.reduce(function(a,c){return a+(c.reembSolic||0);},0);
+ const cnt=function(f){return D.filter(f).length;};
+ const porCanal=SAC_CANAIS.map(function(c){return [c,cnt(function(x){return x.canal===c;})];}).filter(function(r){return r[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+ const porMotivo=SAC_MOTIVOS.map(function(m){return [m,cnt(function(x){return x.motivo===m;})];}).filter(function(r){return r[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+ const porFase=SAC_FASES.map(function(f){return [f,cnt(function(x){return x.fase===f;})];});
+ const recent=D.slice().sort(function(a,b){return b.dataRecl<a.dataRecl?-1:1;}).slice(0,6);
+ const rg=sacRange();
+ body.innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:10px"><i class="ti ti-filter"></i> '+tot+' chamado(s) · '+SAC_DFILT.per+' ('+rg[0].split('-').reverse().join('/')+' a '+rg[1].split('-').reverse().join('/')+')'+(SAC_DFILT.at.length?(' · '+SAC_DFILT.at.length+' atendente(s)'):' · todos os atendentes')+'</div>'+
+  relKpis([['Total de chamados',tot,'ti-headset'],['Em andamento',and,'ti-progress'],['Concluídos',con,'ti-circle-check'],['Em atraso',atr,'ti-alert-triangle'],['Tempo médio resolução','3,2 dias','ti-clock'],['Taxa SLA cumprido',sla+'%','ti-shield-check']])+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0">'+dashWidget('Chamados por canal','ti-radio',barChart(porCanal,false))+dashWidget('Chamados por motivo','ti-list-details',barChart(porMotivo,true))+'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'+dashWidget('Distribuição no Kanban','ti-layout-kanban',barChart(porFase,false))+dashWidget('Reembolsos solicitados (período)','ti-cash','<div style="padding:8px 4px"><div style="font-size:30px;font-weight:800;color:var(--brand-500)">R$ '+reemb.toLocaleString('pt-BR')+'</div><div style="font-size:12px;color:var(--muted)">'+cnt(function(c){return c.reembSolic>0;})+' chamados com reembolso · '+cnt(function(c){return c.pagto;})+' já pagos</div></div>')+'</div>'+
+  dashWidget('Chamados recentes','ti-clock-hour-4',relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Status'],recent.map(function(c){return ['<b>'+c.id+'</b>',c.cliente,c.canal,c.unidade,c.motivo,sacBadgePrio(c.prio),sacBadgeStatus(c.status)];})));
 }
+
+let SAC_CFILT={motivo:'',at:'',uni:'',canal:'',status:'',per:'Todos',ini:'',fim:'',busca:''};
+function sacPerRange(per,ini,fim){const t=new Date();t.setHours(0,0,0,0);var a=new Date(t),b=new Date(t);
+ if(per==='Ontem'){a.setDate(t.getDate()-1);b.setDate(t.getDate()-1);}
+ else if(per==='Última semana'){a.setDate(t.getDate()-6);}
+ else if(per==='Mês atual'){a=new Date(t.getFullYear(),t.getMonth(),1);}
+ else if(per==='Mês passado'){a=new Date(t.getFullYear(),t.getMonth()-1,1);b=new Date(t.getFullYear(),t.getMonth(),0);}
+ else if(per==='Período'){return [ini||'2000-01-01',fim||'2999-12-31'];}
+ else if(per!=='Hoje'){return ['2000-01-01','2999-12-31'];}
+ return [a.toISOString().slice(0,10),b.toISOString().slice(0,10)];}
+function sacChamApplied(){const r=sacPerRange(SAC_CFILT.per,SAC_CFILT.ini,SAC_CFILT.fim);const q=(SAC_CFILT.busca||'').toLowerCase();
+ return SAC_CHAMADOS.map(function(c,i){return {c:c,i:i};}).filter(function(o){var c=o.c;
+  if(SAC_CFILT.motivo&&c.motivo!==SAC_CFILT.motivo)return false;
+  if(SAC_CFILT.at&&c.resp!==SAC_CFILT.at)return false;
+  if(SAC_CFILT.uni&&c.unidade!==SAC_CFILT.uni)return false;
+  if(SAC_CFILT.canal&&c.canal!==SAC_CFILT.canal)return false;
+  if(SAC_CFILT.status&&c.status!==SAC_CFILT.status)return false;
+  if(SAC_CFILT.per!=='Todos'&&!(c.dataRecl&&c.dataRecl>=r[0]&&c.dataRecl<=r[1]))return false;
+  if(q&&(c.cliente+c.id+c.unidade+c.motivo+c.canal).toLowerCase().indexOf(q)<0)return false;
+  return true;});}
+function sacChamRows(){const f=sacChamApplied();
+ const rows=f.map(function(o){var c=o.c;return ['<b>'+c.id+'</b>',c.cliente+'<div style="font-size:11px;color:var(--muted)">'+c.whats+'</div>',c.canal,c.unidade+'<div style="font-size:11px;color:var(--muted)">'+c.tipo+'</div>',c.motivo,sacBadgePrio(c.prio),c.fase,sacBadgeStatus(c.status),'<button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" onclick="sacForm('+o.i+')"><i class="ti ti-edit"></i></button>'];});
+ var el=document.getElementById('sacTbl');if(el)el.innerHTML='<div style="font-size:12px;color:var(--muted);margin:0 0 8px"><i class="ti ti-filter"></i> '+f.length+' de '+SAC_CHAMADOS.length+' chamados</div>'+relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Fase','Status',''],rows);}
+function sacChamSet(k,v){SAC_CFILT[k]=v;if(k==='per'){var dr=document.getElementById('sacCPerDate');if(dr)dr.style.display=(v==='Período')?'inline-flex':'none';}sacChamRows();}
+function sacChamLimpar(){SAC_CFILT={motivo:'',at:'',uni:'',canal:'',status:'',per:'Todos',ini:'',fim:'',busca:''};buildSac('chamados');}
 function sacChamados(w){
- const rows=SAC_CHAMADOS.map((c,i)=>['<b>'+c.id+'</b>',c.cliente+'<div style="font-size:11px;color:var(--muted)">'+c.whats+'</div>',c.canal,c.unidade+'<div style="font-size:11px;color:var(--muted)">'+c.tipo+'</div>',c.motivo,sacBadgePrio(c.prio),c.fase,sacBadgeStatus(c.status),'<button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" onclick="sacForm('+i+')"><i class="ti ti-edit"></i></button>']);
- w.innerHTML='<div class="rel-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;gap:8px;align-items:center"><i class="ti ti-headset" style="color:var(--brand-500);font-size:18px"></i><b>'+SAC_CHAMADOS.length+' chamados</b> <span style="font-size:12px;color:var(--muted)">· '+sacCount(c=>c.status==="Em atraso")+' em atraso</span></div><div style="display:flex;gap:8px"><input id="sacBusca" placeholder="Buscar cliente, protocolo..." oninput="sacFiltrar()" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;min-width:200px"><button class="btn btn-primary" onclick="sacForm()"><i class="ti ti-plus"></i> Novo chamado</button></div></div>'+
-  '<div id="sacTbl">'+relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Fase','Status',''],rows)+'</div>';
+ const sel=function(k,lab,arr){return '<select onchange="sacChamSet(\''+k+'\',this.value)" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff"><option value="">'+lab+'</option>'+arr.map(function(o){return '<option'+(SAC_CFILT[k]===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';};
+ const perSel='<select onchange="sacChamSet(\'per\',this.value)" style="padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff">'+['Todos','Hoje','Ontem','Última semana','Mês atual','Mês passado','Período'].map(function(o){return '<option'+(SAC_CFILT.per===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px"><div style="display:flex;gap:8px;align-items:center"><i class="ti ti-headset" style="color:var(--brand-500);font-size:18px"></i><b>Chamados</b></div><div style="display:flex;gap:8px"><input value="'+(SAC_CFILT.busca||'')+'" placeholder="Buscar cliente, protocolo..." oninput="SAC_CFILT.busca=this.value;sacChamRows()" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;min-width:200px"><button class="btn btn-primary" onclick="sacForm()"><i class="ti ti-plus"></i> Novo chamado</button></div></div>'+
+  '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+sel('motivo','Motivo (todos)',SAC_MOTIVOS)+sel('at','Atendente (todos)',SAC_ATEND.map(function(a){return a.nome;}))+sel('uni','Unidade (todas)',_sacUnis())+sel('canal','Canal (todos)',SAC_CANAIS)+sel('status','Status (todos)',['Em andamento','Concluído','Em atraso'])+perSel+'<span id="sacCPerDate" style="display:'+(SAC_CFILT.per==='Período'?'inline-flex':'none')+';gap:6px;align-items:center"><input type="date" value="'+(SAC_CFILT.ini||'')+'" onchange="SAC_CFILT.ini=this.value;sacChamRows()" style="padding:6px;border:1px solid var(--line);border-radius:8px"><span style="color:var(--muted);font-size:12px">até</span><input type="date" value="'+(SAC_CFILT.fim||'')+'" onchange="SAC_CFILT.fim=this.value;sacChamRows()" style="padding:6px;border:1px solid var(--line);border-radius:8px"></span><button class="btn btn-ghost" onclick="sacChamLimpar()" style="font-size:12px"><i class="ti ti-eraser"></i> Limpar</button></div></div>'+
+  '<div id="sacTbl"></div>';
+ sacChamRows();
 }
-function sacFiltrar(){const q=(document.getElementById('sacBusca').value||'').toLowerCase();const f=SAC_CHAMADOS.map((c,i)=>({c,i})).filter(o=>(o.c.cliente+o.c.id+o.c.unidade+o.c.motivo).toLowerCase().includes(q));
- const rows=f.map(o=>{const c=o.c;return['<b>'+c.id+'</b>',c.cliente+'<div style="font-size:11px;color:var(--muted)">'+c.whats+'</div>',c.canal,c.unidade+'<div style="font-size:11px;color:var(--muted)">'+c.tipo+'</div>',c.motivo,sacBadgePrio(c.prio),c.fase,sacBadgeStatus(c.status),'<button class="btn btn-ghost" style="padding:3px 8px;font-size:12px" onclick="sacForm('+o.i+')"><i class="ti ti-edit"></i></button>'];});
- document.getElementById('sacTbl').innerHTML=relTable(['Protocolo','Cliente','Canal','Unidade','Motivo','Prioridade','Fase','Status',''],rows);}
+
 function sacKanban(w){
  const cols=SAC_FASES.map(f=>{const items=SAC_CHAMADOS.map((c,i)=>({c,i})).filter(o=>o.c.fase===f);
   return '<div style="min-width:230px;flex:0 0 230px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:8px"><div style="font-weight:700;font-size:12px;padding:4px 6px;display:flex;justify-content:space-between;color:var(--brand-600)">'+f+' <span style="background:var(--brand-500);color:#fff;border-radius:20px;padding:0 7px;font-size:10px">'+items.length+'</span></div>'+
@@ -8322,11 +8377,41 @@ function sacKanban(w){
  w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-layout-kanban" style="color:var(--brand-500)"></i> Quadro de atendimentos</b><span style="font-size:12px;color:var(--muted)">Clique em → para avançar a fase</span></div><div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">'+cols+'</div>';
 }
 function sacAvancar(i){const c=SAC_CHAMADOS[i];if(!c)return;const idx=SAC_FASES.indexOf(c.fase);if(idx<SAC_FASES.length-1){c.fase=SAC_FASES[idx+1];if(c.fase==='Concluído')c.status='Concluído';showToast('Chamado '+c.id+' → '+c.fase,'ti-arrow-right');buildSac('kanban');if(typeof auditLog==='function')auditLog('SAC','Avançou '+c.id+' para '+c.fase);}}
+let SAC_TRIA_SEL=0;
+function _sacConv(t){return t.conv||[{de:'cli',t:t.msg,h:t.quando},{de:'bot',t:'Olá! Aqui é o atendimento Laser&Co. Vou registrar sua solicitação. Pode confirmar seu nome completo, CPF, e-mail e a unidade onde você foi atendido(a)?',h:'agora'}];}
 function sacTriagem(w){
- w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-brand-whatsapp" style="color:#0F6B3A"></i> Triagem WhatsApp</b> <span style="font-size:12px;color:var(--muted)">— mensagens recebidas aguardando virar chamado ('+SAC_TRIAGEM.length+')</span></div>'+
-  SAC_TRIAGEM.map((t,i)=>'<div class="rel-card" style="display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:10px"><div style="flex:1"><div style="font-weight:700">'+t.nome+' <span style="font-size:11px;color:var(--muted);font-weight:400">· '+t.whats+' · '+t.canal+' · '+t.quando+'</span></div><div style="font-size:13px;color:var(--text);margin-top:3px">“'+t.msg+'”</div></div><button class="btn btn-primary" onclick="sacTriagemCriar('+i+')"><i class="ti ti-plus"></i> Criar chamado</button></div>').join('');
+ if(SAC_TRIA_SEL>=SAC_TRIAGEM.length)SAC_TRIA_SEL=0;
+ if(!SAC_TRIAGEM.length){w.innerHTML='<div class="rel-card" style="text-align:center;padding:34px"><i class="ti ti-checks" style="font-size:32px;color:#0F6B3A"></i><p style="font-weight:700;margin:10px 0 2px">Nenhuma conversa pendente na triagem</p><p style="font-size:13px;color:var(--muted)">Todas as conversas recebidas já viraram chamados.</p></div>';return;}
+ const list=SAC_TRIAGEM.map(function(t,i){return '<div onclick="SAC_TRIA_SEL='+i+';buildSac(\'triagem\')" style="padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;background:'+(i===SAC_TRIA_SEL?'var(--surface-2)':'transparent')+';border-left:3px solid '+(i===SAC_TRIA_SEL?'var(--brand-500)':'transparent')+'"><div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:13px">'+t.nome+'</b><span style="font-size:10px;color:var(--muted);white-space:nowrap">'+t.quando+'</span></div><div style="font-size:11px;color:var(--muted)"><i class="ti ti-brand-whatsapp"></i> '+t.canal+' · '+t.whats+'</div><div style="font-size:12px;color:var(--text);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.msg+'</div></div>';}).join('');
+ const t=SAC_TRIAGEM[SAC_TRIA_SEL];const conv=_sacConv(t);const unis=_sacUnis();
+ const bubbles=conv.map(function(m){var cli=(m.de==='cli');return '<div style="display:flex;justify-content:'+(cli?'flex-start':'flex-end')+';margin:6px 0"><div style="max-width:78%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.4;background:'+(cli?'var(--surface)':'var(--brand-500)')+';color:'+(cli?'var(--text)':'#fff')+';border:'+(cli?'1px solid var(--line)':'none')+'">'+m.t+'<div style="font-size:9px;opacity:.7;margin-top:3px;text-align:right">'+m.h+'</div></div></div>';}).join('');
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-brand-whatsapp" style="color:#0F6B3A"></i> Triagem WhatsApp</b><span style="font-size:12px;color:var(--muted)">Veja as conversas e abra o chamado com 1 clique</span></div>'+
+  '<div style="display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start">'+
+  '<div class="rel-card" style="padding:0;overflow:hidden"><div style="padding:10px 12px;font-weight:700;font-size:13px;border-bottom:1px solid var(--line)">Conversas ('+SAC_TRIAGEM.length+')</div><div style="max-height:580px;overflow:auto">'+list+'</div></div>'+
+  '<div class="rel-card"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:8px"><div><b>'+t.nome+'</b><div style="font-size:11px;color:var(--muted)">'+t.whats+' · '+t.canal+' · '+t.quando+'</div></div><span style="font-size:11px;background:#FBF3E2;color:#B7791F;font-weight:700;padding:2px 9px;border-radius:20px">Aguardando triagem</span></div>'+
+  '<div style="background:var(--bg);border-radius:10px;padding:10px;max-height:220px;overflow:auto">'+bubbles+'</div>'+
+  '<div style="margin-top:12px;border:1px dashed var(--line);border-radius:10px;padding:12px;background:var(--surface-2)"><div style="font-weight:700;font-size:13px;margin-bottom:2px"><i class="ti ti-forms" style="color:var(--brand-500)"></i> Fluxo inicial — dados do cliente</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">Confirme os dados e o chamado é aberto automaticamente com eles.</div>'+
+   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+   '<input id="tf_nome" value="'+t.nome+'" placeholder="Nome completo *" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+
+   '<input id="tf_cpf" placeholder="CPF" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+
+   '<input id="tf_whats" value="'+t.whats+'" placeholder="WhatsApp" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+
+   '<input id="tf_email" placeholder="E-mail" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+
+   '<select id="tf_uni" style="padding:8px;border:1px solid var(--line);border-radius:8px"><option value="">Unidade atendida *</option>'+unis.map(function(u){return '<option>'+u+'</option>';}).join('')+'</select>'+
+   '<select id="tf_motivo" style="padding:8px;border:1px solid var(--line);border-radius:8px">'+SAC_MOTIVOS.map(function(m){return '<option>'+m+'</option>';}).join('')+'</select>'+
+   '</div>'+
+   '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary" onclick="sacTriAbrir()"><i class="ti ti-ticket"></i> Abrir chamado automaticamente</button><button class="btn btn-ghost" onclick="sacTriDescartar()"><i class="ti ti-trash"></i> Descartar</button></div></div>'+
+  '</div></div>';
 }
-function sacTriagemCriar(i){const t=SAC_TRIAGEM[i];if(!t)return;sacForm(null,{cliente:t.nome,whats:t.whats,canal:t.canal,obs:t.msg});}
+function sacTriAbrir(){const t=SAC_TRIAGEM[SAC_TRIA_SEL];if(!t)return;const g=function(k){var e=document.getElementById('tf_'+k);return e?e.value:'';};
+ if(!g('nome')){showToast('Informe o nome do cliente','ti-alert-triangle');return;}
+ if(!g('uni')){showToast('Selecione a unidade atendida','ti-alert-triangle');return;}
+ const d={id:'SAC-'+(SAC_SEQ++),cliente:g('nome'),cpf:g('cpf'),whats:g('whats'),email:g('email'),canal:t.canal,unidade:g('uni'),tipo:'Franquia',motivo:g('motivo'),prio:'media',fase:'Novo',resp:SAC_ATEND[0].nome,dataRecl:_sd(0),dataAtend:_sd(0),servico:'',valorPago:0,reembSolic:0,multa:false,pagto:false,dataReemb:'',protocolo:'PRC'+(100000+(SAC_SEQ%899999)),status:'Em andamento',obs:'Aberto via Triagem WhatsApp. Mensagem: "'+t.msg+'"'};
+ SAC_CHAMADOS.unshift(d);SAC_TRIAGEM.splice(SAC_TRIA_SEL,1);SAC_TRIA_SEL=0;
+ if(typeof auditLog==='function')auditLog('SAC','Triagem → chamado '+d.id+' ('+d.cliente+')');
+ showToast('Chamado '+d.id+' aberto a partir da conversa','ti-ticket');buildSac('triagem');
+}
+function sacTriDescartar(){if(SAC_TRIAGEM[SAC_TRIA_SEL]){SAC_TRIAGEM.splice(SAC_TRIA_SEL,1);SAC_TRIA_SEL=0;showToast('Conversa descartada','ti-trash');buildSac('triagem');}}
+
 function sacRelatorios(w){
  const porCanal=SAC_CANAIS.map(c=>[c,sacCount(x=>x.canal===c)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
  const porMotivo=SAC_MOTIVOS.map(m=>[m,sacCount(x=>x.motivo===m)]).filter(r=>r[1]>0).sort((a,b)=>b[1]-a[1]);
@@ -8337,16 +8422,20 @@ function sacRelatorios(w){
   dashWidget('Chamados por unidade (Top 10)','ti-building',barChart(porUni,false))+
   '<div style="margin-top:14px">'+dashWidget('Reembolsos','ti-cash',relTable(['Protocolo','Cliente','Unidade','Valor','Multa','Pagamento'],reembRows))+'</div>';
 }
+function sacIrColaboradores(){var el=document.querySelector('[data-view="colaboradores"]');if(el){el.click();}else if(typeof showView==='function'){showView('colaboradores',{dataset:{title:'Colaboradores',icon:'ti-users'}});}showToast('Cadastre o atendente como colaborador (perfil Atendente)','ti-user-plus');}
+function sacIrComissoes(){var el=document.querySelector('[data-view="comissoes"]');if(el){el.click();}else if(typeof showView==='function'){showView('comissoes',{dataset:{title:'Matriz de Comissões',icon:'ti-percentage'}});}}
 function sacAtendentes(w){
- const rows=SAC_ATEND.map((a,i)=>[a.nome,a.email,'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+(a.perfil==='Administrador'?'var(--brand-500);color:#fff':'#EEE;color:#555')+'">'+a.perfil+'</span>',a.ativo?'<span style="color:#0F6B3A;font-weight:700">Ativo</span>':'<span style="color:#999">Inativo</span>',sacCount(c=>c.resp===a.nome)+' chamados']);
- w.innerHTML='<div class="rel-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b><i class="ti ti-users" style="color:var(--brand-500)"></i> Atendentes do SAC ('+SAC_ATEND.length+')</b><button class="btn btn-primary" onclick="sacAtendAdd()"><i class="ti ti-plus"></i> Novo atendente</button></div>'+relTable(['Nome','E-mail','Perfil','Status','Carteira'],rows);
+ const rows=SAC_ATEND.map(function(a){var tot=SAC_CHAMADOS.filter(function(c){return c.resp===a.nome;}).length;var con=SAC_CHAMADOS.filter(function(c){return c.resp===a.nome&&c.status==='Concluído';}).length;var atr=SAC_CHAMADOS.filter(function(c){return c.resp===a.nome&&c.status==='Em atraso';}).length;var sla=tot?Math.round((tot-atr)/tot*100):100;return [a.nome,a.email,'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+(a.perfil==='Administrador'?'var(--brand-500);color:#fff':'#EEE;color:#555')+'">'+a.perfil+'</span>',a.ativo?'<span style="color:#0F6B3A;font-weight:700">Ativo</span>':'<span style="color:#999">Inativo</span>',tot,con,sla+'%'];});
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center"><div><b><i class="ti ti-users" style="color:var(--brand-500)"></i> Atendentes do SAC</b><div style="font-size:12px;color:var(--muted);margin-top:2px;max-width:620px">O cadastro de atendentes (com acessos, perfil e login) é feito no módulo <b>Colaboradores</b>. Aqui você acompanha a performance e a premiação.</div></div><button class="btn btn-primary" onclick="sacIrColaboradores()"><i class="ti ti-user-plus"></i> Cadastrar no Colaboradores</button></div>'+
+  relTable(['Nome','E-mail','Perfil','Status','Chamados','Resolvidos','SLA'],rows)+
+  '<div class="rel-card" style="margin-top:12px;display:flex;gap:10px;align-items:center;background:var(--surface-2)"><i class="ti ti-percentage" style="color:var(--gold-500);font-size:20px"></i><div style="font-size:13px"><b>Premiação por desempenho:</b> o perfil <b>Atendente</b> participa da <a href="javascript:void(0)" onclick="sacIrComissoes()" style="color:var(--brand-500);font-weight:700">Matriz de Comissões</a> com critérios de SAC (casos resolvidos, rapidez e SLA). Configure metas e prêmios por lá.</div></div>';
 }
-function sacAtendAdd(){const nome=prompt('Nome do atendente:');if(!nome)return;const email=prompt('E-mail:')||'';SAC_ATEND.push({nome,email,perfil:'Atendente',ativo:true});showToast('Atendente adicionado','ti-user-plus');buildSac('atendentes');if(typeof auditLog==='function')auditLog('SAC','Novo atendente '+nome);}
+
 function sacPremiacao(w){
  const rank=SAC_ATEND.filter(a=>a.ativo).map(a=>{const tot=sacCount(c=>c.resp===a.nome);const con=sacCount(c=>c.resp===a.nome&&c.status==='Concluído');const atr=sacCount(c=>c.resp===a.nome&&c.status==='Em atraso');const sla=tot?Math.round((tot-atr)/tot*100):100;const pts=con*10+(atr===0?20:0)+Math.round(sla/10);return{a,tot,con,atr,sla,pts};}).sort((x,y)=>y.pts-x.pts);
  const medal=['🥇','🥈','🥉'];
  const rows=rank.map((r,i)=>[(medal[i]||(i+1)+'º'),r.a.nome,r.tot,r.con,(r.atr===0?'<span style="color:#0F6B3A;font-weight:700">Zero ✓</span>':r.atr),r.sla+'%','<b>'+r.pts+'</b>']);
- w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-trophy" style="color:var(--gold-500)"></i> Premiação dos atendentes</b><span style="font-size:12px;color:var(--muted)">Pontuação = resolvidos×10 + bônus Zero Atrasos (20) + SLA</span></div>'+
+ w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-trophy" style="color:var(--gold-500)"></i> Ranking dos atendentes</b><span style="font-size:12px;color:var(--muted)">Pontuação = resolvidos×10 + bônus Zero Atrasos (20) + SLA</span></div>'+
   '<div class="rel-card" style="background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;margin-bottom:12px"><div style="font-size:12px;opacity:.85">Destaque do mês</div><div style="font-size:22px;font-weight:800">'+(rank[0]?rank[0].a.nome:'—')+'</div><div style="font-size:13px;opacity:.9">'+(rank[0]?rank[0].pts+' pontos · '+rank[0].con+' chamados resolvidos':'')+'</div></div>'+
   relTable(['#','Atendente','Total','Resolvidos','Atrasos','SLA','Pontos'],rows);
 }
