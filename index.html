@@ -933,6 +933,14 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 .mu-opt{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:4px 10px 4px 20px;cursor:pointer}
 .mu-opt:hover{background:var(--surface-2);border-radius:6px}
 </style>
+<style>
+.help-tile{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-size:13px;text-align:left;color:var(--text);transition:.15s}
+.help-tile:hover{border-color:var(--brand-400);background:var(--surface-2);transform:translateY(-1px)}
+.help-tile i{color:var(--brand-500);font-size:16px;flex-shrink:0}
+.help-blk{margin:8px 0}
+.help-lbl{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--brand-500);background:var(--surface-2);border:1px solid var(--line);padding:1px 7px;border-radius:6px;margin-bottom:3px}
+.help-blk p{margin:3px 0 0;font-size:13.5px;line-height:1.5;color:var(--text)}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1064,7 +1072,7 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
       <div class="nav-item" data-view="minhaConta" data-icon="ti-user-circle" data-title="Minha conta"><i class="ti ti-user-circle lead"></i> Minha conta</div>
       <div class="nav-item" data-view="appCliente" data-icon="ti-device-mobile" data-title="App do Cliente"><i class="ti ti-device-mobile lead"></i> App do Cliente <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="ph" data-icon="ti-download" data-title="Exportações" data-route="/exports" data-desc="Geração e download de exportações de dados e relatórios."><i class="ti ti-download lead"></i> Exportações</div>
-      <div class="nav-item" data-view="ph" data-icon="ti-help-circle" data-title="Ajuda" data-route="https://ajuda.bemp.com.br" data-desc="Central de ajuda, tutoriais e suporte do sistema."><i class="ti ti-help-circle lead"></i> Ajuda</div>
+      <div class="nav-item" data-view="ajuda" data-icon="ti-help-circle" data-title="Ajuda"><i class="ti ti-help-circle lead"></i> Ajuda <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">BASE</span></div>
     </nav>
     <div class="sidebar-foot"><i class="ti ti-settings"></i> Configurações &amp; suporte</div>
   </aside>
@@ -2503,6 +2511,11 @@ select.ff-i{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg x
 
       <section class="view" id="view-relatorio">
         <div id="relWrap"></div>
+      </section>
+
+      <section class="view" id="view-ajuda">
+        <div class="rel-head"><div class="ri" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-help-circle"></i></div><div><h2>Ajuda</h2><p>Base de conhecimento do sistema — escolha um item ou descreva o assunto e veja o que cada recurso é, para que serve e como usar.</p></div></div>
+        <div id="ajudaWrap"></div>
       </section>
 
       <section class="view" id="view-ph">
@@ -7968,7 +7981,234 @@ function expControle(){
     +relKpis([['Logins (período)','38','ti-login-2'],['Ações registradas','214','ti-activity'],['Usuários ativos',String(EXP_USERS.filter(u=>u.a).length),'ti-user-check'],['Última atividade','hoje 14:22','ti-clock']])
     +relTable(['Usuário','Logins','Leads criados','Leads movidos','Última atividade'],EXP_USERS.map((u,i)=>[u.n,String(8-i),String(12-i*2),String(20-i*3),'1'+(4-i)+'/06 1'+i+':30']));
 }
-const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ph:'view-ph'};
+const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ajuda:'view-ajuda',ph:'view-ph'};
+/* ===== AJUDA · Base de Conhecimento do Sistema ===== */
+const HELP_UPDATED='16/06/2026';
+const HELP_KB=[
+/* Operação da Loja */
+{id:'dashboard',cat:'Operação da Loja',t:'Dashboard',ic:'ti-layout-dashboard',k:'inicio home metas funil ranking corridinha visao geral indicadores',
+ oque:'É a tela inicial da unidade, com uma visão executiva do dia e do mês: faturamento, metas, funil de vendas, ranking de colaboradores e a "corridinha" de metas.',
+ serve:'Serve para o gestor da loja enxergar, em segundos, como a unidade está performando e onde precisa agir.',
+ uso:'Acompanhe diariamente. Os cartões de meta mostram o quanto falta para bater o objetivo; o funil mostra onde os atendimentos estão parando; o ranking incentiva a equipe.'},
+{id:'agenda',cat:'Operação da Loja',t:'Agenda',ic:'ti-calendar',k:'agendamento horario marcacao sessao bloqueio nova venda calendario',
+ oque:'Calendário de atendimentos por profissional, com cores por status, bloqueios e criação de agendamentos e vendas.',
+ serve:'Serve para marcar, remarcar e controlar sessões, evitando sobreposição e respeitando o GAP de horário configurado na Minha Unidade.',
+ uso:'Clique num horário livre para criar um agendamento ou uma "Nova Venda". As cores indicam confirmado, em atendimento, finalizado, falta (no-show) e bloqueio.'},
+{id:'clientes',cat:'Operação da Loja',t:'Clientes',ic:'ti-users',k:'cadastro cliente ficha anamnese foto camera historico sessoes prontuario',
+ oque:'Base de clientes da unidade com ficha completa (dados, anamnese/ficha técnica, fotos, contratos, histórico de sessões e financeiro).',
+ serve:'Serve para centralizar tudo do cliente e dar segurança clínica e comercial ao atendimento.',
+ uso:'Abra a ficha para ver as 6 abas. Use a câmera para registrar evolução, registre a anamnese antes do primeiro procedimento e consulte o histórico de sessões.'},
+{id:'os',cat:'Operação da Loja',t:'Ordens de Serviço',ic:'ti-clipboard-list',k:'os ordem servico execucao atendimento comanda procedimento',
+ oque:'Registro de execução dos serviços/procedimentos realizados (a "comanda" do atendimento).',
+ serve:'Serve para comprovar o que foi efetivamente executado — é a base da Visão Execução e do fato gerador da Nota Fiscal.',
+ uso:'Abra/− finalize a OS ao realizar a sessão. A OS finalizada alimenta comissões, faturamento por execução e a emissão de NFS-e (quando a política é "emitir na execução").'},
+{id:'crm',cat:'Operação da Loja',t:'CRM (Funil Kanban)',ic:'ti-layout-kanban',k:'crm funil kanban lead oportunidade follow up acompanhamento quadro',
+ oque:'Funil de relacionamento em quadro Kanban, com etapas personalizáveis e cartões de leads/clientes.',
+ serve:'Serve para não perder oportunidade: organiza contatos, follow-ups e conversões.',
+ uso:'Arraste os cartões entre as etapas. Crie quadros personalizados e registre o histórico de cada contato.'},
+{id:'automacoes',cat:'Operação da Loja',t:'Automações',ic:'ti-bolt',k:'automacao no-show falta regua lembrete gatilho',
+ oque:'Regras automáticas que disparam ações (ex.: lembrete de sessão, régua de no-show/falta).',
+ serve:'Serve para reduzir faltas e padronizar a comunicação sem trabalho manual.',
+ uso:'Ative as automações desejadas; a régua de no-show notifica o cliente automaticamente após uma falta.'},
+/* Cadastros */
+{id:'servicos',cat:'Cadastros',t:'Serviços',ic:'ti-sparkles',k:'servico procedimento tempo duracao preco area',
+ oque:'Cadastro dos serviços/procedimentos ofertados, com tempo de execução e preço.',
+ serve:'Serve de base para agenda, vendas, comissões e relatórios.',
+ uso:'Adicione, edite ou inative serviços. O tempo definido controla a duração do bloco na Agenda.'},
+{id:'pacotes',cat:'Cadastros',t:'Pacotes',ic:'ti-package',k:'pacote combo sessoes plano oferta',
+ oque:'Conjuntos de sessões/serviços vendidos como pacote.',
+ serve:'Serve para vender e controlar quantas sessões o cliente adquiriu e já executou.',
+ uso:'Crie pacotes com nº de sessões; o consumo é abatido a cada OS executada.'},
+{id:'produtos',cat:'Cadastros',t:'Produtos',ic:'ti-box',k:'produto pdrn estoque venda item',
+ oque:'Cadastro de produtos comercializados (ex.: PDRN).',
+ serve:'Serve para vender produtos avulsos e controlar item de venda.',
+ uso:'Cadastre novos produtos, edite preço ou inative os que saíram de linha.'},
+{id:'planos',cat:'Cadastros',t:'Planos de Assinatura',ic:'ti-repeat',k:'assinatura recorrente mensalidade plano clube',
+ oque:'Planos de assinatura (recorrência) que o cliente contrata.',
+ serve:'Serve para gerar receita recorrente (MRR) e fidelizar.',
+ uso:'Configure valor e periodicidade; as cobranças entram na Visão Recorrência dos relatórios.'},
+{id:'contas',cat:'Cadastros',t:'Contas a Pagar/Receber',ic:'ti-cash',k:'financeiro conta pagar receber fluxo caixa lancamento',
+ oque:'Lançamentos financeiros da unidade (a pagar e a receber), organizados por categorias hierárquicas.',
+ serve:'Serve para controlar o fluxo de caixa da loja.',
+ uso:'Lance contas com categoria, vencimento e valor; acompanhe no fluxo de caixa e nos dashboards financeiros.'},
+{id:'catpag',cat:'Cadastros',t:'Categorias a Pagar / Receber',ic:'ti-category',k:'categoria plano de contas hierarquia despesa receita',
+ oque:'Estrutura hierárquica de categorias para classificar contas a pagar e a receber.',
+ serve:'Serve para organizar o DRE e os relatórios financeiros por natureza.',
+ uso:'Crie categorias e subcategorias; vincule cada lançamento à categoria correta.'},
+{id:'descontos',cat:'Cadastros',t:'Descontos',ic:'ti-discount',k:'desconto promocao abatimento cupom',
+ oque:'Cadastro de descontos/políticas comerciais aplicáveis em vendas.',
+ serve:'Serve para padronizar e controlar concessões de desconto.',
+ uso:'Defina o desconto e aplique no momento da venda conforme a permissão do perfil.'},
+{id:'pgto',cat:'Cadastros',t:'Formas de Pagamento',ic:'ti-credit-card',k:'pagamento forma cartao pix recorrente pago livre parcelamento ultrassom',
+ oque:'Formas de pagamento aceitas, incluindo o Crédito Recorrente (parceiro PagoLivre).',
+ serve:'Serve para definir como o cliente paga e como a venda é contabilizada (valor integral vs. parcela mês a mês).',
+ uso:'No Crédito Recorrente o parcelamento é de até 12x e NÃO se aplica ao grupo Ultrassom; integra via token do parceiro PagoLivre.'},
+{id:'grpserv',cat:'Cadastros',t:'Grupos (Serviço/Produto/Assinatura)',ic:'ti-stack-2',k:'grupo agrupamento categoria servico produto assinatura ultrassom',
+ oque:'Agrupadores de serviços, produtos e assinaturas.',
+ serve:'Serve para regras e relatórios por grupo (ex.: o grupo Ultrassom tem regras próprias).',
+ uso:'Organize itens em grupos para facilitar comissões, descontos e exclusões (ex.: Ultrassom sem parcelamento recorrente).'},
+{id:'origens',cat:'Cadastros',t:'Origens do Cliente',ic:'ti-route',k:'origem captacao canal indicacao marketing',
+ oque:'Cadastro das origens/canais por onde o cliente chegou.',
+ serve:'Serve para medir de onde vêm os clientes e o ROI de marketing.',
+ uso:'Selecione a origem ao cadastrar o cliente; analise os canais nos relatórios.'},
+{id:'fornecedores',cat:'Cadastros',t:'Fornecedores',ic:'ti-truck',k:'fornecedor compra insumo parceiro',
+ oque:'Cadastro de fornecedores da unidade.',
+ serve:'Serve para vincular contas a pagar e controlar compras.',
+ uso:'Cadastre fornecedores e relacione-os aos lançamentos a pagar.'},
+{id:'contratos',cat:'Cadastros',t:'Modelos de Contrato',ic:'ti-file-text',k:'contrato modelo termo assinatura documento',
+ oque:'Modelos de contrato/termos com editor próprio.',
+ serve:'Serve para padronizar a documentação de venda e consentimento.',
+ uso:'Edite o modelo e gere o contrato do cliente a partir dele.'},
+{id:'motivos',cat:'Cadastros',t:'Motivos de Cancelamento',ic:'ti-ban',k:'cancelamento motivo no-show falta justificativa',
+ oque:'Lista de motivos para cancelamentos e faltas.',
+ serve:'Serve para padronizar e analisar por que vendas/sessões são canceladas.',
+ uso:'Selecione o motivo ao cancelar; analise os motivos nos relatórios.'},
+{id:'comissoes',cat:'Cadastros',t:'Matriz de Comissões',ic:'ti-percentage',k:'comissao premiacao meta matriz tier simulador 80 100 120',
+ oque:'Matriz de metas e comissões por faixa de atingimento (base e tiers 80/100/120%), com simulador.',
+ serve:'Serve para definir e simular quanto a equipe ganha conforme as metas.',
+ uso:'Configure as faixas; o simulador mostra a comissão para diferentes níveis de venda. Alimenta o Relatório de Pagamentos/Premiações.'},
+{id:'metas',cat:'Cadastros',t:'Metas',ic:'ti-target',k:'meta objetivo mensal unidade colaborador',
+ oque:'Definição das metas (da unidade e por colaborador).',
+ serve:'Serve de referência para Dashboard, comissões e premiações.',
+ uso:'Defina a meta do mês; ela aparece no Dashboard e no Relatório de Faturamento (meta e projeção).'},
+/* Vendas & Financeiro */
+{id:'notas',cat:'Vendas & Financeiro',t:'Notas Fiscais (NFS-e)',ic:'ti-file-invoice',k:'nota fiscal nfse emissor iss prefeitura por sessao token execucao venda',
+ oque:'Emissor de Nota Fiscal de Serviço eletrônica integrado, com política de emissão (não emitir / emitir na venda / emitir na execução).',
+ serve:'Serve para emitir NFS-e automaticamente conforme a regra escolhida, calculando por sessão (preço total ÷ nº de sessões) e recolhendo o ISS do município.',
+ uso:'Defina a política por unidade, configure o token da prefeitura. Filtre por unidade (todas/franquias/próprias) e por data (hoje, ontem, semana, 30 dias, mês, mês anterior, período).'},
+{id:'pdv',cat:'Vendas & Financeiro',t:'PDV / Nova Venda',ic:'ti-shopping-cart',k:'pdv venda caixa frente checkout',
+ oque:'Ponto de venda para registrar vendas de serviços, pacotes e produtos.',
+ serve:'Serve para fechar a venda e gerar o recebimento e a OS.',
+ uso:'Selecione itens, forma de pagamento e finalize; a venda reflete nos relatórios conforme a visão (venda/recorrência/execução).'},
+{id:'appCliente',cat:'Vendas & Financeiro',t:'App do Cliente',ic:'ti-device-mobile',k:'aplicativo cliente mobile agendamento fidelidade',
+ oque:'Protótipo do aplicativo do cliente (mobile) para agendamento e relacionamento.',
+ serve:'Serve para o cliente interagir com a unidade pelo celular.',
+ uso:'Use como demonstração da experiência do cliente final.'},
+/* Relatórios & Dashboards */
+{id:'relatorio',cat:'Relatórios & Dashboards',t:'Relatórios',ic:'ti-report',k:'relatorio faturamento pagamentos premiacao assinaturas periodo filtro',
+ oque:'Central de relatórios com filtro de período. Destaques: Faturamento (todas as unidades, comparativo com mês anterior, meta e projeção) e Pagamentos/Premiações.',
+ serve:'Serve para analisar resultados e remunerar a equipe corretamente.',
+ uso:'No Faturamento veja venda do período, mês passado, meta e projeção (média diária × dias). Em Pagamentos veja as premiações devidas pela matriz e as projeções +20%/+30%/+50%.'},
+{id:'relFat',cat:'Relatórios & Dashboards',t:'Relatório de Faturamento',ic:'ti-chart-bar',k:'faturamento vendas recorrencia execucao meta projecao comparativo unidades',
+ oque:'Faturamento por unidade em três visões: Vendas (valor cheio, inclui recorrência total), Recorrência (parcela mês a mês, inclui royalties) e Execução (adquirido+executado = fato gerador da NF).',
+ serve:'Serve para comparar unidades e acompanhar meta vs. realizado.',
+ uso:'Liste todas as unidades, filtre por franquia/própria/ambas e por período; compare com o mês anterior e veja a projeção do mês.'},
+{id:'relPrem',cat:'Relatórios & Dashboards',t:'Pagamentos / Premiações',ic:'ti-award',k:'pagamento premiacao comissao colaborador meta projecao 20 30 50',
+ oque:'Relatório que calcula as premiações devidas a cada colaborador pela matriz de metas.',
+ serve:'Serve para o colaborador saber quanto precisa vender para começar a ganhar e quanto ganharia em cenários melhores.',
+ uso:'Veja o quanto falta para o gatilho de premiação e as projeções de ganho para +20%, +30% e +50% de vendas.'},
+{id:'dashb',cat:'Relatórios & Dashboards',t:'Dashboards',ic:'ti-chart-dots',k:'dashboard financeiro contabil gerencial grafico top 10 funil',
+ oque:'Painéis analíticos (Financeiro/Contábil e Gerencial) com gráficos, Top 10 e Funil de Vendas.',
+ serve:'Serve para uma leitura visual e profunda do desempenho.',
+ uso:'Escolha o painel; explore os gráficos e rankings para apoiar decisões.'},
+/* Gestão (Rede) */
+{id:'disparos',cat:'Gestão (Rede)',t:'Disparos WhatsApp API',ic:'ti-brand-whatsapp',k:'whatsapp disparo mensagem campanha api notificacao',
+ oque:'Envio de mensagens via WhatsApp API para listas e campanhas.',
+ serve:'Serve para comunicação em escala com clientes e leads.',
+ uso:'Monte a lista e a mensagem; dispare e acompanhe o resultado.'},
+{id:'comunicados',cat:'Gestão (Rede)',t:'Comunicados / Mensagens',ic:'ti-speakerphone',k:'comunicado mensagem notificacao padrao personalizada unidade',
+ oque:'Mensagens e notificações da rede. As criadas pela administração são "padrão" (não editáveis por outros); a unidade só escolhe usar ou não.',
+ serve:'Serve para padronizar a comunicação da rede e ainda permitir mensagens locais.',
+ uso:'A unidade pode criar mensagens personalizadas, visíveis só para ela. As padrão da franqueadora ficam bloqueadas para edição.'},
+{id:'chamados',cat:'Gestão (Rede)',t:'Chamados',ic:'ti-ticket',k:'chamado suporte ticket solicitacao atendimento interno',
+ oque:'Abertura e acompanhamento de chamados/solicitações internas à franqueadora.',
+ serve:'Serve para registrar e resolver demandas das unidades.',
+ uso:'Abra o chamado, acompanhe o status até a resolução.'},
+{id:'checklist',cat:'Gestão (Rede)',t:'Checklist Mensal (PDCA)',ic:'ti-checklist',k:'checklist indicador pdca plano de acao ticket medio agendamento auditoria',
+ oque:'Checklist de indicadores da unidade no modelo PDCA; perguntas sobre dados da rede (ticket médio, agendamentos, dados da unidade) são preenchidas automaticamente.',
+ serve:'Serve para diagnosticar a unidade e gerar planos de ação para o indicador que se quer melhorar.',
+ uso:'Responda o checklist; o sistema preenche o que já conhece e sugere planos de ação conforme o indicador a melhorar.'},
+{id:'universidade',cat:'Gestão (Rede)',t:'Universidade Corporativa',ic:'ti-school',k:'universidade treinamento curso prova ead capacitacao',
+ oque:'Trilhas de treinamento e provas para a equipe.',
+ serve:'Serve para capacitar e padronizar a operação da rede.',
+ uso:'Acesse os cursos e responda as provas para concluir as trilhas.'},
+{id:'rh',cat:'Gestão (Rede)',t:'Recursos Humanos',ic:'ti-users-group',k:'rh recursos humanos colaborador ponto folha admissao portal',
+ oque:'Portal de RH integrado (gestão de colaboradores e processos de pessoal).',
+ serve:'Serve para centralizar a gestão de pessoas da rede.',
+ uso:'Acesse o portal de RH; colaboradores de escritório e loja podem ter acesso restrito apenas ao Ponto Digital.'},
+{id:'pontoDigital',cat:'Gestão (Rede)',t:'Ponto Digital',ic:'ti-map-pin-check',k:'ponto digital gps geolocalizacao google maps cerca virtual registro jornada',
+ oque:'Registro de ponto por geolocalização (GPS) com mapa (Google Maps), validando se o colaborador está no local da unidade (cerca virtual/geofence).',
+ serve:'Serve para controlar a jornada com prova de presença no local.',
+ uso:'Habilite o GPS e marque o ponto. Configure a chave da API do Google Maps; o perfil "Ponto" dá acesso somente a esta tela.'},
+{id:'marketing',cat:'Gestão (Rede)',t:'Marketing',ic:'ti-photo',k:'marketing materiais campanhas banco de imagens videos redes sociais noticias atualizacoes',
+ oque:'Central de materiais da rede para o franqueado: Campanhas, Banco de Imagens & Vídeos, Materiais Físicos, Redes Sociais, Extras — além de Atualizações e Notícias.',
+ serve:'Serve para o franqueado acessar sempre a versão mais recente dos materiais da marca.',
+ uso:'Navegue pelas pastas; veja as últimas atualizações (data, o que é, onde está) e receba notificação quando algo novo é publicado. Em Notícias a rede posta matérias e divulgações.'},
+{id:'indiques',cat:'Gestão (Rede)',t:'Gestão de Indiques',ic:'ti-gift',k:'indicacao indique lead cliente sorteio premio whatsapp cpf campanha',
+ oque:'Programa de indicações: clientes indicam novos leads (nome, CPF e WhatsApp de quem indica + indicados), com CRM próprio e sorteio mensal premiado.',
+ serve:'Serve para gerar leads por indicação a favor da unidade e premiar quem mais indica.',
+ uso:'Use o link compartilhável por unidade; leads do site entram automaticamente. As listas vão do 1º ao último dia do mês. Cadastre o prêmio e rode o sorteio animado (bonito para Instagram); o ganhador recebe e-mail/WhatsApp de parabéns pedindo para agendar.'},
+/* Administração (Franqueadora) */
+{id:'expansao',cat:'Administração (Franqueadora)',t:'Expansão (CRM de Franquias)',ic:'ti-map-pin-plus',k:'expansao franquia cof captacao funil lead candidato disparo whatsapp',
+ oque:'CRM de captação e qualificação de candidatos a franqueado (Ultracell, Quanta e Franquia), com pipeline até a COF e fechamento.',
+ serve:'Serve para vender novas franquias de forma organizada.',
+ uso:'Acompanhe o funil, registre leads, dispare comunicação e avance os candidatos pelas etapas até a assinatura.'},
+{id:'implantacao',cat:'Administração (Franqueadora)',t:'Implantação de Unidade',ic:'ti-building-plus',k:'implantacao abertura nova unidade onboarding obra cronograma',
+ oque:'Acompanhamento do processo de implantação de uma nova unidade.',
+ serve:'Serve para padronizar a abertura de lojas da rede.',
+ uso:'Siga as etapas de implantação até a inauguração da unidade.'},
+{id:'sac',cat:'Administração (Franqueadora)',t:'SAC',ic:'ti-headset',k:'sac atendimento cliente central reclamacao suporte',
+ oque:'Central de atendimento ao cliente da rede (sistema SAC Laser&Co integrado).',
+ serve:'Serve para registrar e tratar manifestações e atendimentos de clientes.',
+ uso:'Acesse o SAC pelo menu; registre e acompanhe os atendimentos da rede.'},
+{id:'finFranq',cat:'Administração (Franqueadora)',t:'Financeiro Franqueadora',ic:'ti-businessplan',k:'financeiro franqueadora royalties taxa franquia reembolso locacao receber pagar dre fluxo importar excel juros multa atualizacao monetaria',
+ oque:'Financeiro da franqueadora: recebíveis (royalties, taxa de franquia, reembolso de disparos de Ultrassom, locação de equipamentos), pagamentos, fluxo, DRE e cálculos de atualização.',
+ serve:'Serve para gerir o que a franqueadora tem a receber das unidades e a pagar, com atualização automática de valores vencidos.',
+ uso:'Os valores a receber são atualizados automaticamente; ao vencer, aplica atualização monetária, juros de 1% e multa de 10% (padrão), com multas/juros separados do principal e valor nominal ou com acréscimos (editável/excluível). Importe lançamentos por planilha Excel (use o "Modelo").'},
+{id:'finDre',cat:'Administração (Franqueadora)',t:'DRE da Franqueadora',ic:'ti-table',k:'dre demonstrativo resultado proprias franquias consolidado',
+ oque:'Demonstrativo de Resultado da franqueadora (lojas próprias, franquias e consolidado).',
+ serve:'Serve para analisar o resultado da operação da franqueadora.',
+ uso:'Alterne entre as visões próprias/franquias/consolidado para leitura gerencial.'},
+{id:'juridico',cat:'Administração (Franqueadora)',t:'Jurídico',ic:'ti-gavel',k:'juridico cobranca notificacao inadimplencia atraso ok enviar financeiro',
+ oque:'Módulo jurídico integrado ao recebimento do Financeiro Franqueadora: identifica unidades que atrasaram pagamento e monta automaticamente a notificação padrão.',
+ serve:'Serve para cobrar inadimplentes com respaldo e rastreabilidade.',
+ uso:'Ao haver atraso, o sistema importa os dados (unidade, valores, a que se refere) e gera a notificação; o Jurídico revisa/ajusta e clica em "OK — Enviar".'},
+{id:'auditoria',cat:'Administração (Franqueadora)',t:'Auditoria',ic:'ti-history',k:'auditoria log historico rastreabilidade acao registro',
+ oque:'Registro de auditoria de ações relevantes feitas no sistema.',
+ serve:'Serve para rastreabilidade, segurança e compliance.',
+ uso:'Consulte o log para saber quem fez o quê e quando.'},
+/* Rede & Conta */
+{id:'minhaUnidade',cat:'Rede & Conta',t:'Minha Unidade',ic:'ti-building-bank',k:'minha unidade cadastro gap horario tipo loja shopping rua dados',
+ oque:'Cadastro e configurações da sua unidade, incluindo o GAP de horário (padrão 10 min) e o tipo de loja.',
+ serve:'Serve para ajustar como a unidade opera (intervalos da agenda, dados cadastrais).',
+ uso:'Configure o GAP de horário (intervalo entre atendimentos). Em tipo de loja escolha Shopping ou Loja de Rua.'},
+{id:'unidades',cat:'Rede & Conta',t:'Todas as Unidades',ic:'ti-buildings',k:'unidades rede todas enderecos telefone email mapa lista',
+ oque:'Visão de todas as 59 unidades ativas da rede, com endereço, telefone e e-mail.',
+ serve:'Serve para a franqueadora e as unidades enxergarem toda a rede.',
+ uso:'Pesquise a unidade; veja dados de contato e localização.'},
+{id:'minhaConta',cat:'Rede & Conta',t:'Minha Conta',ic:'ti-user-circle',k:'conta perfil senha usuario dados pessoais',
+ oque:'Dados da sua conta de usuário.',
+ serve:'Serve para gerenciar seu acesso e preferências.',
+ uso:'Atualize seus dados; a alteração de senha/credenciais deve ser feita por você diretamente.'},
+{id:'perfis',cat:'Rede & Conta',t:'Perfis de Acesso',ic:'ti-shield-lock',k:'perfil acesso permissao editor visualizar alterar restricao ponto',
+ oque:'Perfis de acesso e editor de permissões: define, por menu, quem visualiza, altera, etc. — inclusive perfis restritos (ex.: acesso só ao Ponto).',
+ serve:'Serve para controlar a segurança e o que cada usuário pode fazer.',
+ uso:'No editor, marque/desmarque as permissões de cada novo menu do sistema. Use perfis como "Ponto" para liberar somente o Ponto Digital.'},
+{id:'ajuda',cat:'Rede & Conta',t:'Ajuda (esta tela)',ic:'ti-help-circle',k:'ajuda base conhecimento duvida como funciona suporte busca',
+ oque:'Base de conhecimento do próprio sistema: explica o que cada item é, para que serve e como usar.',
+ serve:'Serve para tirar dúvidas sem sair do sistema.',
+ uso:'Escolha um tópico na lista ou digite o assunto que deseja. A base é atualizada sempre que o sistema muda.'}
+];
+function ajudaCats(){const o={};HELP_KB.forEach(e=>{(o[e.cat]=o[e.cat]||[]).push(e);});return o;}
+function ajudaCard(e){return '<div class="rel-card" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div class="ri" style="background:var(--brand-50,#F7E7EB);color:var(--brand-500)"><i class="ti '+e.ic+'"></i></div><div><div style="font-weight:700;font-size:15px">'+e.t+'</div><div style="font-size:11px;color:var(--muted)">'+e.cat+'</div></div></div>'+
+ '<div class="help-blk"><span class="help-lbl">O que é</span><p>'+e.oque+'</p></div>'+
+ '<div class="help-blk"><span class="help-lbl">Para que serve</span><p>'+e.serve+'</p></div>'+
+ '<div class="help-blk"><span class="help-lbl">Como usar / utilidade</span><p>'+e.uso+'</p></div></div>';}
+function ajudaScore(e,terms){let s=0;const hay=(e.t+' '+e.cat+' '+e.k+' '+e.oque+' '+e.serve+' '+e.uso).toLowerCase();terms.forEach(t=>{if(!t)return;if((e.t).toLowerCase().includes(t))s+=6;if((e.k).toLowerCase().includes(t))s+=4;if(hay.includes(t))s+=1;});return s;}
+function ajudaSearch(){const q=(document.getElementById('ajudaQ').value||'').trim().toLowerCase();const res=document.getElementById('ajudaRes');const sel=document.getElementById('ajudaSel');if(sel)sel.value='';if(!q){ajudaHome();return;}
+ const terms=q.split(/\s+/);const ranked=HELP_KB.map(e=>[e,ajudaScore(e,terms)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+ if(!ranked.length){res.innerHTML='<div class="rel-card" style="text-align:center;padding:24px"><i class="ti ti-mood-empty" style="font-size:30px;color:var(--muted)"></i><p style="margin:8px 0 0;font-weight:600">Não encontramos um tópico para "'+q+'".</p><p style="font-size:13px;color:var(--muted)">Tente outras palavras (ex.: <i>agenda</i>, <i>nota fiscal</i>, <i>royalties</i>, <i>ponto</i>, <i>comissão</i>) ou abra um <b>Chamado</b> para o suporte.</p></div>';return;}
+ res.innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+ranked.length+' resultado(s) para <b>"'+q+'"</b></div>'+ranked.map(x=>ajudaCard(x[0])).join('');}
+function ajudaPick(id){if(!id){ajudaHome();return;}const e=HELP_KB.find(x=>x.id===id);if(!e)return;document.getElementById('ajudaQ').value='';document.getElementById('ajudaRes').innerHTML=ajudaCard(e);}
+function ajudaHome(){const res=document.getElementById('ajudaRes');const cats=ajudaCats();const pop=['agenda','notas','finFranq','comissoes','indiques','pontoDigital','relFat','perfis'];
+ let chips='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'+pop.map(id=>{const e=HELP_KB.find(x=>x.id===id);return e?'<button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="ajudaPick(\''+id+'\')"><i class="ti '+e.ic+'"></i> '+e.t+'</button>':'';}).join('')+'</div>';
+ let grid='';Object.keys(cats).forEach(c=>{grid+='<div style="margin:10px 0 6px;font-weight:700;font-size:13px;color:var(--brand-500)">'+c+'</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">'+cats[c].map(e=>'<button class="help-tile" onclick="ajudaPick(\''+e.id+'\')"><i class="ti '+e.ic+'"></i><span>'+e.t+'</span></button>').join('')+'</div>';});
+ res.innerHTML='<div class="rel-card" style="margin-bottom:12px"><div style="font-weight:700;margin-bottom:6px"><i class="ti ti-bulb" style="color:var(--gold-500)"></i> Tópicos mais procurados</div>'+chips+'<div style="font-size:12px;color:var(--muted)">Ou navegue por todos os tópicos do sistema:</div></div>'+grid;}
+function buildAjuda(){const w=document.getElementById('ajudaWrap');if(!w)return;const cats=ajudaCats();
+ let opts='<option value="">— Selecione um tópico de ajuda —</option>';Object.keys(cats).forEach(c=>{opts+='<optgroup label="'+c+'">'+cats[c].map(e=>'<option value="'+e.id+'">'+e.t+'</option>').join('')+'</optgroup>';});
+ w.innerHTML='<div class="rel-card" style="margin-bottom:14px"><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end"><div style="flex:1;min-width:260px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Sobre qual assunto você precisa de ajuda?</label><div style="position:relative"><i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)"></i><input id="ajudaQ" type="text" placeholder="Digite um assunto (ex.: nota fiscal, royalties, ponto, comissão)..." oninput="ajudaSearch()" style="width:100%;padding:10px 12px 10px 34px;border:1px solid var(--line);border-radius:10px;font-size:14px"></div></div><div style="min-width:240px"><label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Ou escolha um item já definido</label><select id="ajudaSel" onchange="ajudaPick(this.value)" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff">'+opts+'</select></div></div><div style="font-size:11px;color:var(--muted);margin-top:10px"><i class="ti ti-refresh"></i> Base de conhecimento do sistema · atualizada em '+HELP_UPDATED+' · '+HELP_KB.length+' tópicos. Esta base é revisada sempre que o sistema é alterado.</div></div><div id="ajudaRes"></div>';
+ ajudaHome();}
+
 function showView(view,el){
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[view]).classList.add('active');
@@ -8017,6 +8257,7 @@ function showView(view,el){
   if(view==='marketing')buildMarketing();
   if(view==='indiques')buildIndiques();
   if(view==='sac'){const f=document.getElementById('sacFrame');if(f&&!f.getAttribute('src'))f.setAttribute('src',f.dataset.src);}
+  if(view==='ajuda')buildAjuda();
   const title=el?.dataset.title||'Dashboard';
   const icon=el?.dataset.icon||'ti-layout-dashboard';
   document.getElementById('pageTitle').innerHTML=`<i class="ti ${icon}"></i> ${title}`;
