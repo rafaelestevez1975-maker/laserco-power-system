@@ -1067,6 +1067,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
       <div class="nav-item" data-view="chamados" data-icon="ti-ticket" data-title="Chamados"><i class="ti ti-ticket lead"></i> Chamados <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="checklist" data-icon="ti-checklist" data-title="Checklist de Indicadores"><i class="ti ti-checklist lead"></i> Checklist <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="universidade" data-icon="ti-school" data-title="Universidade Corporativa"><i class="ti ti-school lead"></i> Universidade <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
+      <div class="nav-item" data-view="disco" data-icon="ti-cloud" data-title="Disco Virtual"><i class="ti ti-cloud lead"></i> Disco Virtual <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="notas" data-icon="ti-file-invoice" data-title="Notas Fiscais"><i class="ti ti-file-invoice lead"></i> Notas Fiscais</div>
 
       <div class="nav-section">Administração</div>
@@ -2537,6 +2538,11 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
       <section class="view" id="view-ajuda">
         <div class="rel-head"><div class="ri" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-help-circle"></i></div><div><h2>Ajuda</h2><p>Base de conhecimento do sistema — escolha um item ou descreva o assunto e veja o que cada recurso é, para que serve e como usar.</p></div></div>
         <div id="ajudaWrap"></div>
+      </section>
+
+      <section class="view" id="view-disco">
+        <div class="rel-head"><div class="ri" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-cloud"></i></div><div><h2>Disco Virtual</h2><p>Drive da rede — pastas e documentos (planilhas, PDFs, materiais técnicos). Administradores criam pastas e podem vincular um Google Drive; todos os usuários acessam e enviam arquivos.</p></div></div>
+        <div id="discoWrap"></div>
       </section>
 
       <section class="view" id="view-ph">
@@ -6709,6 +6715,7 @@ function buildPerfis(){const b=document.getElementById('perfisBody');if(!b)retur
 const PERMS=[
 ['Agenda',['Incluir/Alterar/Cancelar','Visualizar']],
 ['Ajuda',['Consultar base de conhecimento']],
+['Disco Virtual',['Criar pastas','Vincular Google Drive','Enviar arquivos','Visualizar','Excluir']],
 ['Anamnese',['Incluir/Alterar/Inativar','Visualizar']],
 ['Assinatura',['Aprovar pagamento manual','Forçar cobrança via Asaas','Incluir/Alterar/Inativar']],
 ['Bloqueio',['Configurar Assiduidade','Incluir/Alterar/Excluir Bloqueios da Unidade','Incluir/Alterar/Excluir Bloqueios do Profissional']],
@@ -8008,7 +8015,7 @@ function expControle(){
     +relKpis([['Logins (período)','38','ti-login-2'],['Ações registradas','214','ti-activity'],['Usuários ativos',String(EXP_USERS.filter(u=>u.a).length),'ti-user-check'],['Última atividade','hoje 14:22','ti-clock']])
     +relTable(['Usuário','Logins','Leads criados','Leads movidos','Última atividade'],EXP_USERS.map((u,i)=>[u.n,String(8-i),String(12-i*2),String(20-i*3),'1'+(4-i)+'/06 1'+i+':30']));
 }
-const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ajuda:'view-ajuda',ph:'view-ph'};
+const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',disco:'view-disco',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ajuda:'view-ajuda',ph:'view-ph'};
 /* ===== AJUDA · Base de Conhecimento do Sistema ===== */
 const HELP_UPDATED='16/06/2026';
 const HELP_KB=[
@@ -8693,6 +8700,71 @@ function sacOnFinPago(p){
  } else { showToast('Parcela paga — '+a.parcelas.filter(function(z){return z.pago;}).length+'/'+a.nParc+' do acordo de '+a.cliente,'ti-cash'); }
 }
 
+/* ===== Disco Virtual — Drive da rede ===== */
+let DISCO_CFG={driveLinked:false,driveUrl:''};
+let DISCO_SEQ=100, DISCO_FSEQ=500, DISCO_CUR=null, DISCO_BUSCA='';
+let DISCO_FOLDERS=[
+ {id:1,nome:'Planilhas da Rede',parent:null,por:'Administração',drive:true,data:'2026-05-12'},
+ {id:2,nome:'Materiais Técnicos (PDF)',parent:null,por:'Administração',drive:false,data:'2026-05-20'},
+ {id:3,nome:'Treinamentos',parent:null,por:'Administração',drive:false,data:'2026-05-22'},
+ {id:4,nome:'Marketing',parent:null,por:'Administração',drive:true,data:'2026-06-01'},
+ {id:5,nome:'Contratos & Modelos',parent:null,por:'Administração',drive:false,data:'2026-06-03'},
+ {id:6,nome:'Manuais Operacionais',parent:null,por:'Administração',drive:false,data:'2026-06-05'},
+ {id:7,nome:'Equipamentos',parent:2,por:'Administração',drive:false,data:'2026-05-21'},
+ {id:8,nome:'Protocolos Clínicos',parent:2,por:'Administração',drive:false,data:'2026-05-23'}
+];
+let DISCO_FILES=[
+ {id:501,folder:1,nome:'Controle de Estoque - Rede.xlsx',tipo:'xlsx',bytes:184320,url:null,por:'Administração',data:'2026-06-10',drive:true},
+ {id:502,folder:1,nome:'Metas por Unidade 2026.xlsx',tipo:'xlsx',bytes:96211,url:null,por:'Administração',data:'2026-06-08',drive:true},
+ {id:503,folder:7,nome:'Manual UltraCel - Operação.pdf',tipo:'pdf',bytes:2411520,url:null,por:'Administração',data:'2026-05-30',drive:false},
+ {id:504,folder:8,nome:'Protocolo Depilação a Laser.pdf',tipo:'pdf',bytes:1342177,url:null,por:'Camila Souza',data:'2026-06-02',drive:false},
+ {id:505,folder:3,nome:'Treinamento Atendimento - Slides.pdf',tipo:'pdf',bytes:5242880,url:null,por:'Administração',data:'2026-06-04',drive:false},
+ {id:506,folder:5,nome:'Modelo de Contrato Laser&Club.docx',tipo:'doc',bytes:73400,url:null,por:'Jurídico',data:'2026-06-06',drive:false},
+ {id:507,folder:6,nome:'Manual de Padronização - Loja.pdf',tipo:'pdf',bytes:3355443,url:null,por:'Administração',data:'2026-06-07',drive:false}
+];
+function _discoFmt(b){if(b>=1048576)return (b/1048576).toFixed(1)+' MB';if(b>=1024)return (b/1024).toFixed(0)+' KB';return b+' B';}
+function _discoIco(t){var m={pdf:['ti-file-type-pdf','#C0392B'],xlsx:['ti-file-spreadsheet','#1E8449'],csv:['ti-file-spreadsheet','#1E8449'],doc:['ti-file-type-doc','#2563EB'],docx:['ti-file-type-doc','#2563EB'],img:['ti-photo','#8A2A41'],png:['ti-photo','#8A2A41'],jpg:['ti-photo','#8A2A41'],zip:['ti-file-zip','#B7791F'],video:['ti-video','#6B21A8'],mp4:['ti-video','#6B21A8']};return m[t]||['ti-file','#6B7280'];}
+function _discoExt(nome){var p=(nome||'').split('.').pop().toLowerCase();if(['jpg','jpeg','png','gif','webp'].indexOf(p)>=0)return 'img';if(['mp4','mov','avi','mkv'].indexOf(p)>=0)return 'video';return p;}
+function _discoUser(){return (typeof USER_ROLE!=='undefined'&&USER_ROLE)?USER_ROLE:'Você';}
+function discoOpen(id){DISCO_CUR=id;DISCO_BUSCA='';buildDisco();}
+function discoPath(id){var p=[];var f=DISCO_FOLDERS.find(function(x){return x.id===id;});while(f){p.unshift(f);f=DISCO_FOLDERS.find(function(x){return x.id===f.parent;});}return p;}
+function discoNovaPasta(){if(!(typeof isAdmin==='function'&&isAdmin())){showToast('Apenas administradores criam pastas','ti-shield-lock');return;}var n=prompt('Nome da nova pasta:');if(!n)return;DISCO_FOLDERS.push({id:++DISCO_SEQ,nome:n,parent:DISCO_CUR,por:'Administração',drive:DISCO_CFG.driveLinked,data:new Date().toISOString().slice(0,10)});if(typeof auditLog==='function')auditLog('Disco Virtual','Nova pasta: '+n);showToast('Pasta criada'+(DISCO_CFG.driveLinked?' (replicada no Google Drive)':''),'ti-folder-plus');buildDisco();}
+function discoUpload(inp){var fs=inp.files;if(!fs||!fs.length)return;var n=0;for(var i=0;i<fs.length;i++){var f=fs[i];var url=null;try{url=URL.createObjectURL(f);}catch(e){}DISCO_FILES.push({id:++DISCO_FSEQ,folder:DISCO_CUR,nome:f.name,tipo:_discoExt(f.name),bytes:f.size,url:url,por:_discoUser(),data:new Date().toISOString().slice(0,10),drive:DISCO_CFG.driveLinked});n++;}if(typeof auditLog==='function')auditLog('Disco Virtual','Upload de '+n+' arquivo(s)');showToast(n+' arquivo(s) enviado(s)'+(DISCO_CFG.driveLinked?' e replicado(s) no Drive':''),'ti-cloud-upload');inp.value='';buildDisco();}
+function discoBaixar(id){var f=DISCO_FILES.find(function(x){return x.id===id;});if(!f)return;if(f.url){var a=document.createElement('a');a.href=f.url;a.download=f.nome;document.body.appendChild(a);a.click();a.remove();showToast('Baixando '+f.nome,'ti-download');}else{showToast('Arquivo de exemplo — disponível na nuvem da rede','ti-cloud-download');}if(typeof auditLog==='function')auditLog('Disco Virtual','Download: '+f.nome);}
+function discoExcluirArq(id){if(!(typeof isAdmin==='function'&&isAdmin())){showToast('Apenas administradores podem excluir','ti-shield-lock');return;}var i=DISCO_FILES.findIndex(function(x){return x.id===id;});if(i>=0&&confirm('Excluir "'+DISCO_FILES[i].nome+'"?')){DISCO_FILES.splice(i,1);showToast('Arquivo excluído','ti-trash');buildDisco();}}
+function discoExcluirPasta(id){if(!(typeof isAdmin==='function'&&isAdmin())){showToast('Apenas administradores podem excluir','ti-shield-lock');return;}var f=DISCO_FOLDERS.find(function(x){return x.id===id;});if(!f)return;if(confirm('Excluir a pasta "'+f.nome+'" e todo o seu conteúdo?')){var rm=[id];for(var k=0;k<rm.length;k++){DISCO_FOLDERS.filter(function(x){return x.parent===rm[k];}).forEach(function(c){rm.push(c.id);});}DISCO_FOLDERS=DISCO_FOLDERS.filter(function(x){return rm.indexOf(x.id)<0;});DISCO_FILES=DISCO_FILES.filter(function(x){return rm.indexOf(x.folder)<0;});showToast('Pasta excluída','ti-trash');buildDisco();}}
+function discoVincularDrive(){if(!(typeof isAdmin==='function'&&isAdmin())){showToast('Apenas administradores vinculam o Google Drive','ti-shield-lock');return;}var u=prompt('Cole o link da pasta compartilhada do Google Drive (a rede usará esta pasta como raiz do Disco Virtual):',DISCO_CFG.driveUrl||'https://drive.google.com/drive/folders/');if(u===null)return;if(!/drive\.google\.com/.test(u)){showToast('Link inválido — use um link do Google Drive','ti-alert-triangle');return;}DISCO_CFG.driveLinked=true;DISCO_CFG.driveUrl=u;if(typeof auditLog==='function')auditLog('Disco Virtual','Vinculado ao Google Drive');showToast('Google Drive vinculado — pastas e uploads serão replicados','ti-brand-google-drive');buildDisco();}
+function discoDesvincular(){if(!(typeof isAdmin==='function'&&isAdmin()))return;if(confirm('Desvincular o Google Drive? As pastas locais permanecem.')){DISCO_CFG.driveLinked=false;showToast('Google Drive desvinculado','ti-unlink');buildDisco();}}
+function discoImportarDrive(){if(!DISCO_CFG.driveLinked)return;['Fotos Institucionais','Vídeos da Rede','Planilhas Financeiras'].forEach(function(n){if(!DISCO_FOLDERS.some(function(x){return x.nome===n&&x.parent===null;}))DISCO_FOLDERS.push({id:++DISCO_SEQ,nome:n,parent:null,por:'Google Drive',drive:true,data:new Date().toISOString().slice(0,10)});});showToast('Pastas do Google Drive importadas e replicadas','ti-cloud-download');buildDisco();}
+function discoBusca(v){DISCO_BUSCA=v;buildDisco();}
+function buildDisco(){
+ var w=document.getElementById('discoWrap');if(!w)return;
+ var adm=(typeof isAdmin==='function'&&isAdmin());
+ var path=DISCO_CUR?discoPath(DISCO_CUR):[];
+ var subs=DISCO_FOLDERS.filter(function(f){return f.parent===DISCO_CUR;});
+ var files=DISCO_FILES.filter(function(f){return f.folder===DISCO_CUR;});
+ if(DISCO_BUSCA){var q=DISCO_BUSCA.toLowerCase();subs=subs.filter(function(f){return f.nome.toLowerCase().indexOf(q)>=0;});files=files.filter(function(f){return f.nome.toLowerCase().indexOf(q)>=0;});}
+ // Drive banner
+ var drive='';
+ if(DISCO_CFG.driveLinked){
+  drive='<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#E9F3EC;border:1px solid #Bfe3CC"><div style="display:flex;align-items:center;gap:10px"><i class="ti ti-brand-google-drive" style="font-size:22px;color:#1E8449"></i><div><div style="font-weight:700;font-size:13px">Conectado ao Google Drive</div><div style="font-size:11px;color:var(--muted);max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+DISCO_CFG.driveUrl+' · pastas e uploads são replicados</div></div></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="window.open(\''+DISCO_CFG.driveUrl+'\',\'_blank\')"><i class="ti ti-external-link"></i> Abrir no Drive</button>'+(adm?'<button class="btn btn-ghost" onclick="discoImportarDrive()"><i class="ti ti-cloud-download"></i> Importar pastas</button><button class="btn btn-ghost" onclick="discoDesvincular()"><i class="ti ti-unlink"></i> Desvincular</button>':'')+'</div></div>';
+ } else if(adm){
+  drive='<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><i class="ti ti-brand-google-drive" style="font-size:22px;color:#6B7280"></i><div style="font-size:13px"><b>Vincular um Google Drive</b> (opcional) — use uma pasta compartilhada do Drive como raiz; as pastas/arquivos de lá são replicados no Disco Virtual. Ou crie pastas e faça upload direto aqui.</div></div><button class="btn btn-primary" onclick="discoVincularDrive()"><i class="ti ti-brand-google-drive"></i> Vincular Google Drive</button></div>';
+ }
+ // toolbar: breadcrumb + actions
+ var bc='<span class="os-link" onclick="discoOpen(null)" style="font-weight:'+(DISCO_CUR?'500':'700')+'"><i class="ti ti-home"></i> Início</span>';
+ path.forEach(function(f){bc+=' <i class="ti ti-chevron-right" style="font-size:11px;color:var(--muted)"></i> <span class="os-link" onclick="discoOpen('+f.id+')" style="font-weight:'+(f.id===DISCO_CUR?'700':'500')+'">'+f.nome+'</span>';});
+ var actions='<div style="display:flex;gap:8px;flex-wrap:wrap"><input value="'+(DISCO_BUSCA||'')+'" placeholder="Buscar nesta pasta..." oninput="discoBusca(this.value)" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;min-width:180px">'+(adm?'<button class="btn btn-ghost" onclick="discoNovaPasta()"><i class="ti ti-folder-plus"></i> Nova pasta</button>':'')+'<label class="btn btn-primary" style="cursor:pointer"><i class="ti ti-cloud-upload"></i> Enviar arquivo<input type="file" multiple style="display:none" onchange="discoUpload(this)"></label></div>';
+ // folders grid
+ var fhtml='';
+ if(subs.length){fhtml='<div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 8px">Pastas</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:18px">'+subs.map(function(f){var cnt=DISCO_FILES.filter(function(x){return x.folder===f.id;}).length+DISCO_FOLDERS.filter(function(x){return x.parent===f.id;}).length;return '<div style="border:1px solid var(--line);border-radius:11px;padding:12px;background:var(--surface);display:flex;gap:10px;align-items:center;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'var(--brand-400)\'" onmouseout="this.style.borderColor=\'var(--line)\'" onclick="discoOpen('+f.id+')"><div style="width:40px;height:40px;border-radius:9px;background:#F7E7EB;color:var(--brand-600);display:flex;align-items:center;justify-content:center;font-size:20px"><i class="ti ti-folder-filled"></i></div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.nome+(f.drive?' <i class="ti ti-brand-google-drive" style="color:#1E8449;font-size:12px" title="Sincronizada com o Google Drive"></i>':'')+'</div><div style="font-size:11px;color:var(--muted)">'+cnt+' item(ns)</div></div>'+(adm?'<i class="ti ti-trash" style="color:var(--muted);font-size:15px" title="Excluir pasta" onclick="event.stopPropagation();discoExcluirPasta('+f.id+')"></i>':'')+'</div>';}).join('')+'</div>';}
+ // files
+ var lhtml='';
+ if(files.length){lhtml='<div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 8px">Arquivos</div><div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th>Tamanho</th><th>Enviado por</th><th>Data</th><th>Ações</th></tr></thead><tbody>'+files.map(function(f){var ic=_discoIco(f.tipo);return '<tr><td><span style="display:inline-flex;align-items:center;gap:9px"><i class="ti '+ic[0]+'" style="color:'+ic[1]+';font-size:19px"></i> '+f.nome+(f.drive?' <i class="ti ti-brand-google-drive" style="color:#1E8449;font-size:12px" title="No Google Drive"></i>':'')+'</span></td><td>'+_discoFmt(f.bytes)+'</td><td>'+f.por+'</td><td>'+f.data.split('-').reverse().join('/')+'</td><td style="white-space:nowrap"><span class="os-link" onclick="discoBaixar('+f.id+')"><i class="ti ti-download"></i> Baixar</span>'+(adm?' · <span class="os-link" style="color:var(--red)" onclick="discoExcluirArq('+f.id+')"><i class="ti ti-trash"></i></span>':'')+'</td></tr>';}).join('')+'</tbody></table></div></div>';}
+ var empty=(!subs.length&&!files.length)?'<div class="rel-card" style="text-align:center;padding:34px"><i class="ti ti-folder-off" style="font-size:30px;color:var(--muted)"></i><p style="font-weight:600;margin:10px 0 2px">'+(DISCO_BUSCA?'Nada encontrado para a busca.':'Pasta vazia')+'</p><p style="font-size:13px;color:var(--muted)">'+(adm?'Crie uma pasta ou envie um arquivo.':'Envie um arquivo para esta pasta.')+'</p></div>':'';
+ w.innerHTML=drive+'<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><div style="font-size:14px">'+bc+'</div>'+actions+'</div>'+fhtml+lhtml+empty;
+}
+
 function showView(view,el){
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[view]).classList.add('active');
@@ -8729,6 +8801,7 @@ function showView(view,el){
   if(view==='chamados')buildChamados();
   if(view==='checklist')buildChecklist();
   if(view==='universidade')buildUni();
+  if(view==='disco')buildDisco();
   if(view==='implantacao')buildImpl();
   if(view==='pdv')buildPdv();
   if(view==='juridico')buildJur();
