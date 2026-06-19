@@ -1507,9 +1507,9 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
         <div class="fil-card" id="osFilCard">
           <div class="fil-head" id="osFilHead"><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle" id="osFilToggle"></i></div>
           <div class="fil-body">
-            <div class="field"><label>Período de criação</label><select><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select></div>
-            <div class="field"><label>Período de fechamento</label><select><option value="">-</option><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select></div>
-            <div class="field"><label>Período de cancelamento</label><select><option value="">-</option><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select></div>
+            <div class="field"><label>Período de criação</label><select onchange="rfPeriodToggle('osPerCri',this.value)"><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select><div id="osPerCri" style="display:none;align-items:center;gap:6px;margin-top:6px"><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"><span style="font-size:12px;color:var(--text-3)">até</span><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"></div></div>
+            <div class="field"><label>Período de fechamento</label><select onchange="rfPeriodToggle('osPerFe',this.value)"><option value="">-</option><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select><div id="osPerFe" style="display:none;align-items:center;gap:6px;margin-top:6px"><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"><span style="font-size:12px;color:var(--text-3)">até</span><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"></div></div>
+            <div class="field"><label>Período de cancelamento</label><select onchange="rfPeriodToggle('osPerCa',this.value)"><option value="">-</option><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select><div id="osPerCa" style="display:none;align-items:center;gap:6px;margin-top:6px"><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"><span style="font-size:12px;color:var(--text-3)">até</span><input type="date" class="rf-date" style="flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:7px;font-size:12.5px;font-family:inherit"></div></div>
             <div class="field"><label>Status</label><select id="osFiltroStatus" onchange="osRender()"><option value="">Selecione...</option><option>Aberta</option><option>Fechada</option><option>Cancelada</option></select></div>
             <div class="field" style="grid-column:span 2"><label>Unidade(s) — por estado</label><div id="osUniWrap"></div></div>
 
@@ -1523,8 +1523,8 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
             <div class="field"><label>Total maior que</label><input placeholder="Total maior"></div>
             <div class="field"><label>Colaborador</label><select><option value="">Selecione...</option><option>Karoline da Silveira</option><option>Rita de Cássia</option><option>Suzanne Andrade</option></select></div>
 
-            <div class="field"><label>Serviço</label><select><option value="">Selecione...</option><option>Depilação a laser</option><option>Ultrassom microfocado</option><option>Limpeza de pele</option></select></div>
-            <div class="field"><label>Produto</label><select><option value="">Selecione...</option><option>Gel pós-laser</option><option>Protetor solar</option><option>Sérum facial</option></select></div>
+            <div class="field"><label>Serviço</label><select id="osFilServ"><option value="">Todos os serviços</option></select></div>
+            <div class="field"><label>Produto</label><select id="osFilProd"><option value="">Todos os produtos</option></select></div>
             <div class="field"><label>Status dos pagamentos</label><select><option value="">Selecione...</option><option>Pago</option><option>Pendente</option><option>Parcial</option></select></div>
             <div class="field"><label>Usuário que finalizou</label><select><option value="">Selecione...</option><option>Rafael Estevez</option><option>Recepção</option></select></div>
 
@@ -2719,6 +2719,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
 </div>
 
 <!-- MODAL NOVO AGENDAMENTO -->
+<div class="modal-ov" id="osVerMod"><div class="modal" style="max-width:640px"><div class="modal-head"><h3 id="osVerTitle"><i class="ti ti-clipboard-text"></i> Ordem de Serviço</h3><button class="modal-close" onclick="document.getElementById('osVerMod').classList.remove('open')">&times;</button></div><div class="modal-body" id="osVerBody" style="display:block"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="document.getElementById('osVerMod').classList.remove('open')">Fechar</button><button class="btn btn-primary" onclick="showToast('Impressão da OS (demo)','ti-printer')"><i class="ti ti-printer"></i> Imprimir</button></div></div></div>
 <div class="modal-ov" id="apptModal">
   <div class="modal" style="width:660px">
     <div class="modal-head">
@@ -3290,10 +3291,13 @@ function osRender(){
     <td>${r.ca?r.ca:'<span class="muted">—</span>'}</td>
     <td class="num-r">${r.d}</td>
     <td class="num-r" style="font-weight:600">${r.t}</td>
-    <td><span class="os-link"><i class="ti ti-eye"></i> Visualizar</span></td>
+    <td><span class="os-link" onclick="osVer(${OS_DATA.indexOf(r)})"><i class="ti ti-eye"></i> Visualizar</span></td>
   </tr>`).join(''):'<tr><td colspan="11" style="text-align:center;color:var(--text-3);padding:22px">Nenhuma OS para os filtros selecionados</td></tr>';
 }
+function osPopulaFiltros(){var sv=document.getElementById('osFilServ');if(sv&&typeof SERVICOS!=='undefined')sv.innerHTML='<option value="">Todos os serviços</option>'+SERVICOS.map(function(x){return '<option>'+x[0]+'</option>';}).join('');var pr=document.getElementById('osFilProd');if(pr&&typeof PRODUTOS!=='undefined')pr.innerHTML='<option value="">Todos os produtos</option>'+PRODUTOS.map(function(x){return '<option>'+x[0]+'</option>';}).join('');}
+function osVer(i){var r=OS_DATA[i];if(!r)return;var row=function(l,v){return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">'+l+'</span><span style="font-weight:600;text-align:right">'+(v||'\u2014')+'</span></div>';};var stPill='<span class="os-st os-'+r.s+'">'+OS_LABEL[r.s]+'</span>';document.getElementById('osVerTitle').innerHTML='<i class="ti ti-clipboard-text"></i> OS '+(r.cmd||'(sem comanda)')+' \u00b7 '+r.c;document.getElementById('osVerBody').innerHTML=row('Cliente',r.c)+row('Unidade',r.u)+row('Comanda',r.cmd)+row('Origem',r.o)+row('Status',stPill)+row('Cria\u00e7\u00e3o',r.cr)+row('Fechamento',r.fe)+row('Cancelamento',r.ca)+row('Desconto (R$)',r.d)+row('Total (R$)','<b>'+r.t+'</b>')+'<div style="margin-top:12px;background:var(--surface-2);border-radius:9px;padding:11px;font-size:12.5px"><b>Itens da OS</b><div style="margin-top:5px;color:var(--text-2)">'+(r.o==='Pacote'?'Pacote contratado':'Servi\u00e7o/atendimento')+' \u00b7 '+r.c+'</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span>Total da OS</span><b>R$ '+r.t+'</b></div></div>';document.getElementById('osVerMod').classList.add('open');}
 function buildOS(){
+  osPopulaFiltros();
   const wrap=document.getElementById('osUniWrap');
   if(wrap&&typeof muDropdownHTML==='function'){wrap.innerHTML=muDropdownHTML('osUniMu',[]);if(typeof _muTargets!=='undefined')_muTargets['osUniMu']=osRender;}
   osRender();
