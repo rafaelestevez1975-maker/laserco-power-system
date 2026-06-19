@@ -1933,8 +1933,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
           <div class="fil-body" style="grid-template-columns:repeat(3,1fr)">
             <div class="field"><label>Período</label><select><option>Hoje</option><option>Ontem</option><option>Última semana</option><option>Este mês</option><option>Mês anterior</option><option>Últimos 30 dias</option><option>Período…</option></select></div>
-            <div class="field"><label>Tipo</label><select><option>Previsto</option><option>Realizado</option></select></div>
-            <div class="field"><label>Status</label><select><option value="">Selecione...</option><option>Em aberto</option><option>Pago</option><option>Vencido</option></select></div>
+            <div class="field"><label>Status</label><select><option value="">Selecione...</option><option>Previsto</option><option>Realizado</option></select></div>
             <div class="field"><label>Categoria</label><select><option value="">Selecione...</option><option>Despesas administrativas</option><option>Custos</option><option>Abatimentos</option></select></div>
             <div class="field"><label>Fornecedor</label><input placeholder="Fornecedor"></div>
             <div class="field"><label>Descrição</label><input placeholder="Descrição"></div>
@@ -2077,42 +2076,87 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
       <!-- ===== COLABORADOR (FORMULÁRIO) ===== -->
       <section class="view" id="view-colaborador-form">
         <span class="doc-back" id="colabBack"><i class="ti ti-arrow-left"></i> Voltar aos colaboradores</span>
-        <div class="doc-card">
-          <h3><i class="ti ti-user"></i> Dados básicos</h3>
-          <div class="ficha-form">
-            <div class="mf sp2"><label>Nome</label><input id="colabNome" placeholder="Nome do colaborador"></div>
-            <div class="mf sp2"><label>E-mail</label><input placeholder="email@exemplo.com"></div>
-            <div class="mf sp2"><label>Perfil de acesso</label><select><option value="">Selecione...</option><option>Profissional</option><option>Gerente</option><option>Subgerente</option><option>Consultora de Vendas</option><option>SAC</option><option>Proprietário</option></select></div>
-            <div class="mf"><label>DDI</label><input value="+55"></div>
-            <div class="mf"><label>Telefone</label><input placeholder="(00) 00000-0000"></div>
-            <div class="mf full"><label>Descrição</label><input placeholder="Cargo, especialidade, observações..."></div>
-            <div class="mf sp2"><label>Foto</label><div style="display:flex;align-items:center;gap:12px"><button class="btn"><i class="ti ti-upload"></i> Escolher arquivo</button><span class="muted" style="font-size:12px">JPG, PNG, GIF · máx. 1 MB</span></div></div>
+        <div class="rel-tabs" id="colabTabs" style="margin-bottom:16px">
+          <div class="rel-tab active ctab-btn" onclick="colabTab('dados',this)"><i class="ti ti-user"></i> Dados básicos</div>
+          <div class="rel-tab ctab-btn" onclick="colabTab('acesso',this)"><i class="ti ti-lock"></i> Acesso ao sistema</div>
+          <div class="rel-tab ctab-btn" onclick="colabTab('agenda',this)"><i class="ti ti-calendar"></i> Agenda &amp; Serviços</div>
+          <div class="rel-tab ctab-btn" onclick="colabTab('rh',this)"><i class="ti ti-id-badge-2"></i> Registros RH</div>
+        </div>
+
+        <div class="ctab-panel" id="colabtab-dados">
+          <div class="doc-card">
+            <h3><i class="ti ti-user"></i> Dados básicos</h3>
+            <div class="ficha-form">
+              <div class="mf sp2"><label>Nome</label><input id="colabNome" placeholder="Nome do colaborador"></div>
+              <div class="mf sp2"><label>E-mail</label><input id="colabEmail" placeholder="email@exemplo.com"></div>
+              <div class="mf sp2"><label>Perfil de acesso</label><select id="colabPerfil"><option value="">Selecione...</option><option>Profissional</option><option>Gerente</option><option>Subgerente</option><option>Consultora de Vendas</option><option>SAC</option><option>Proprietário</option></select></div>
+              <div class="mf"><label>DDI</label><input value="+55"></div>
+              <div class="mf"><label>Telefone</label><input id="colabTel" placeholder="(00) 00000-0000"></div>
+              <div class="mf full"><label>Descrição</label><input placeholder="Cargo, especialidade, observações..."></div>
+              <div class="mf sp2"><label>Foto</label><div style="display:flex;align-items:center;gap:12px"><button class="btn" type="button"><i class="ti ti-upload"></i> Escolher arquivo</button><span class="muted" style="font-size:12px">JPG, PNG, GIF · máx. 1 MB</span></div></div>
+            </div>
           </div>
         </div>
-        <div class="doc-card">
-          <h3><i class="ti ti-lock"></i> Acesso ao sistema</h3>
-          <label class="rule-item" style="margin-bottom:14px"><input type="checkbox"> <span>Forçar troca de senha no próximo acesso</span></label>
-          <div class="ficha-form">
-            <div class="mf sp2"><label>Senha de acesso</label><input type="password" placeholder="••••••••"></div>
-            <div class="mf sp2"><label>Repita a senha de acesso</label><input type="password" placeholder="••••••••"></div>
-            <div class="mf"><label>Localização (país)</label><select><option>Brasil</option></select></div>
+
+        <div class="ctab-panel" id="colabtab-acesso" style="display:none">
+          <div class="doc-card">
+            <h3><i class="ti ti-lock"></i> Acesso ao sistema</h3>
+            <label class="rule-item" style="margin-bottom:14px"><input type="checkbox"> <span>Forçar troca de senha no próximo acesso</span></label>
+            <div class="ficha-form">
+              <div class="mf sp2"><label>Senha de acesso</label><input type="password" placeholder="••••••••"></div>
+              <div class="mf sp2"><label>Repita a senha de acesso</label><input type="password" placeholder="••••••••"></div>
+              <div class="mf"><label>Localização (país)</label><select><option>Brasil</option></select></div>
+            </div>
           </div>
         </div>
-        <div class="doc-card">
-          <h3><i class="ti ti-stethoscope"></i> Profissional</h3>
-          <label class="rule-item" style="margin-bottom:12px"><input type="checkbox" checked> <span><b>Exibe na agenda</b> — o colaborador aparece como coluna na agenda.</span></label>
-          <label class="rule-item" style="margin-bottom:16px"><input type="checkbox" checked> <span><b>Disponível para agendamento online</b> — clientes podem agendar com este profissional pelo site/App.</span></label>
-          <div class="ficha-form">
-            <div class="mf"><label>% Comissão padrão</label><input placeholder="0,00" value="0,00"></div>
-            <div class="mf"><label>Ordem no App</label><input type="number" placeholder="1" value="1"></div>
-          </div>
-          <div class="mf full" style="margin-top:8px">
-            <label>Serviços que o colaborador executa</label>
-            <label class="rule-item" style="margin:6px 0 10px"><input type="checkbox" id="colabServAll" onchange="colabServToggleAll(this.checked)"> <span><b>Marcar todos os serviços</b></span></label>
-            <div id="colabServ" style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:12px"></div>
-            <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">Marque todos, por grupo (Depilação, Estético, Ultrassom) ou serviço a serviço.</div>
+
+        <div class="ctab-panel" id="colabtab-agenda" style="display:none">
+          <div class="doc-card">
+            <h3><i class="ti ti-calendar"></i> Cadastro na agenda</h3>
+            <label class="rule-item" style="margin-bottom:12px"><input type="checkbox" id="colabExibeAgenda" checked> <span><b>Exibe na agenda</b> — o colaborador aparece como coluna na agenda.</span></label>
+            <label class="rule-item" style="margin-bottom:16px"><input type="checkbox" checked> <span><b>Disponível para agendamento online</b> — clientes podem agendar com este profissional pelo site/App.</span></label>
+            <div class="ficha-form">
+              <div class="mf"><label>% Comissão padrão</label><input placeholder="0,00" value="0,00"></div>
+              <div class="mf"><label>Ordem no App</label><input type="number" placeholder="1" value="1"></div>
+            </div>
+            <div class="mf full" style="margin-top:10px">
+              <label>Serviços que o colaborador executa</label>
+              <label class="rule-item" style="margin:6px 0 10px"><input type="checkbox" id="colabServAll" onchange="colabServToggleAll(this.checked)"> <span><b>Marcar todos os serviços</b> (todos os serviços ativos do sistema)</span></label>
+              <div id="colabServ"></div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">Cada grupo (Depilação, Estético, Ultrassom) abre em lista suspensa. Marque o grupo inteiro ou selecione serviço a serviço.</div>
+            </div>
           </div>
         </div>
+
+        <div class="ctab-panel" id="colabtab-rh" style="display:none">
+          <div class="doc-card">
+            <h3><i class="ti ti-id-badge-2"></i> Registros RH</h3>
+            <div class="rel-legend" style="margin-bottom:12px"><i class="ti ti-arrows-exchange"></i> As informações abaixo são <b>espelhadas no módulo Recursos Humanos</b> ao salvar o colaborador.</div>
+            <div class="ficha-form">
+              <div class="mf sp2"><label>Cargo</label><input id="rhCargo" placeholder="Ex.: Esteticista, Gerente, Consultora"></div>
+              <div class="mf"><label>Salário (R$)</label><input id="rhSalario" placeholder="0,00"></div>
+              <div class="mf"><label>Tipo de contrato</label><select id="rhContrato"><option>CLT</option><option>PJ</option></select></div>
+              <div class="mf"><label>Carga horária (h/semana)</label><input id="rhCargaSem" type="number" placeholder="44" value="44"></div>
+              <div class="mf"><label>Data de admissão</label><input id="rhAdmissao" placeholder="dd/mm/aaaa"></div>
+              <div class="mf"><label>Entrada (ponto)</label><input id="rhHorEntrada" placeholder="09:00" value="09:00"></div>
+              <div class="mf"><label>Saída (ponto)</label><input id="rhHorSaida" placeholder="18:00" value="18:00"></div>
+              <div class="mf"><label>Intervalo</label><input id="rhIntervalo" placeholder="12:00–13:00" value="12:00–13:00"></div>
+            </div>
+            <div class="set-sec" style="margin-top:6px">Endereço</div>
+            <div class="ficha-form">
+              <div class="mf"><label>CEP</label><input id="rhCep" placeholder="00000-000"></div>
+              <div class="mf sp2"><label>Rua</label><input id="rhRua" placeholder="Rua / Av."></div>
+              <div class="mf"><label>Número</label><input id="rhNum" placeholder="000"></div>
+              <div class="mf"><label>Complemento</label><input id="rhCompl" placeholder="Apto, bloco..."></div>
+              <div class="mf"><label>Bairro</label><input id="rhBairro" placeholder="Bairro"></div>
+              <div class="mf"><label>Cidade</label><input id="rhCidade" placeholder="Cidade"></div>
+              <div class="mf"><label>Estado</label><input id="rhEstado" placeholder="UF"></div>
+            </div>
+            <div class="set-sec" style="margin-top:6px">Documentos</div>
+            <div class="mf full"><label>Upload de documentos (RG, CPF, contrato, comprovantes...)</label><input id="rhDocs" type="file" multiple><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Vários arquivos · PDF, JPG, PNG.</div></div>
+          </div>
+        </div>
+
         <div class="ficha-foot">
           <button class="btn" id="colabFormBack"><i class="ti ti-arrow-left"></i> Voltar</button>
           <button class="btn btn-primary" id="colabSalvar" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar colaborador</button>
@@ -6702,21 +6746,33 @@ function openColabForm(nome){
   document.getElementById('pageTitle').innerHTML='<i class="ti ti-user-star"></i> Colaborador';
   document.getElementById('colabNome').value=nome||'';
   if(typeof colabServRender==='function')colabServRender();
+  if(typeof colabTab==='function')colabTab('dados',document.querySelector('#view-colaborador-form .ctab-btn'));
   document.querySelector('.content').scrollTop=0;
 }
 const GRP_ORDER=['Depilação','Estético','Ultrassom'];
-function colabServGroups(){const g={};(typeof SERVICOS!=='undefined'?SERVICOS:[]).forEach((s,i)=>{const grp=s[4]||'Outros';(g[grp]=g[grp]||[]).push({i,nome:s[0]});});return g;}
+function colabServGroups(){const g={};(typeof SERVICOS!=='undefined'?SERVICOS:[]).forEach((s,i)=>{if(typeof SERV_OFF!=='undefined'&&SERV_OFF.has(i))return;const grp=s[4]||'Outros';(g[grp]=g[grp]||[]).push({i,nome:s[0]});});return g;}
 function colabServRender(){
   const c=document.getElementById('colabServ');if(!c)return;
   const g=colabServGroups();
   const keys=Object.keys(g).sort((a,b)=>{const ia=GRP_ORDER.indexOf(a),ib=GRP_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
-  c.innerHTML=keys.map(grp=>`<div class="cserv-grp" data-grp="${grp}" style="margin-bottom:14px">
-     <label class="rule-item" style="margin:0 0 6px;background:var(--surface-2);border-radius:7px;padding:6px 10px"><input type="checkbox" class="cserv-grpchk" onchange="colabServToggleGrp('${grp.replace(/'/g,"\\'")}',this.checked)"> <span><b>${grp}</b> <span style="color:var(--text-3);font-weight:500">· marcar todo o grupo (${g[grp].length})</span></span></label>
-     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:3px 14px;padding-left:6px">
+  c.innerHTML=keys.map(grp=>`<div class="cserv-grp" data-grp="${grp}" style="margin-bottom:8px;border:1px solid var(--line);border-radius:9px;overflow:hidden">
+     <div style="display:flex;align-items:center;gap:9px;background:var(--surface-2);padding:8px 11px;cursor:pointer" onclick="colabGrpToggle(this)">
+       <input type="checkbox" class="cserv-grpchk" onclick="event.stopPropagation()" onchange="colabServToggleGrp('${grp.replace(/'/g,"\\'")}',this.checked)">
+       <b>${grp}</b><span style="color:var(--text-3);font-weight:500;font-size:12px">· ${g[grp].length} serviço(s)</span>
+       <i class="ti ti-chevron-down cserv-chev" style="margin-left:auto;transition:transform .2s"></i>
+     </div>
+     <div class="cserv-body" style="display:none;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:3px 14px;padding:10px 12px">
        ${g[grp].map(s=>`<label class="rule-item" style="margin:0;font-size:12px"><input type="checkbox" class="cserv-item" data-grp="${grp}" value="${s.i}" onchange="colabServSync()"> <span>${s.nome}</span></label>`).join('')}
      </div></div>`).join('');
   colabServSync();
 }
+function colabGrpToggle(h){var body=h.parentNode.querySelector('.cserv-body');var ch=h.querySelector('.cserv-chev');if(!body)return;var open=body.style.display==='grid';body.style.display=open?'none':'grid';if(ch)ch.style.transform=open?'':'rotate(180deg)';}
+function colabTab(name,btn){document.querySelectorAll('#view-colaborador-form .ctab-btn').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');document.querySelectorAll('#view-colaborador-form .ctab-panel').forEach(function(pp){pp.style.display='none';});var el=document.getElementById('colabtab-'+name);if(el)el.style.display='block';}
+function rhEmpUpsertFull(nome,perfil,data){var arr=rhEmpRead();var e=null;for(var i=0;i<arr.length;i++){if((arr[i].nome||'').toLowerCase()===(nome||'').toLowerCase()){e=arr[i];break;}}if(!e){e=_empFromColab(nome,perfil,data.tel||'',true);arr.push(e);}
+  e.cargo=data.cargo||perfil||e.cargo;e.salarioBruto=data.salario||e.salarioBruto;e.tipoContrato=data.contrato||e.tipoContrato;if(data.admissao)e.dataAdmissao=data.admissao;
+  if(!e.horario)e.horario={};if(data.cargaSem)e.horario.cargaSemanal=data.cargaSem;if(data.entrada)e.horario.entrada=data.entrada;if(data.saida)e.horario.saida=data.saida;if(data.intervalo)e.horario.intervalo=data.intervalo;
+  e.enderecoResidencial={cep:data.cep||'',rua:data.rua||'',numero:data.num||'',complemento:data.compl||'',bairro:data.bairro||'',cidade:data.cidade||'',estado:data.estado||''};
+  if(data.docs&&data.docs.length)e.documentos=data.docs;e._origem='PowerSystem';rhEmpWrite(arr);}
 function colabServToggleAll(on){document.querySelectorAll('#colabServ .cserv-item').forEach(c=>c.checked=on);colabServSync();}
 function colabServToggleGrp(grp,on){document.querySelectorAll('#colabServ .cserv-grp').forEach(div=>{if(div.getAttribute('data-grp')===grp)div.querySelectorAll('.cserv-item').forEach(c=>c.checked=on);});colabServSync();}
 function colabServSync(){
@@ -6726,9 +6782,15 @@ function colabServSync(){
 function colabSalvar(){
   const nome=((document.getElementById('colabNome')||{}).value||'').trim();
   if(!nome){showToast('Informe o nome do colaborador','ti-alert-triangle');return;}
-  const sel=document.querySelector('#view-colaborador-form .ficha-form select');const perfil=(sel&&sel.value)||'Profissional';
-  if(!COLAB.some(c=>(c.nome||'').toLowerCase()===nome.toLowerCase()))COLAB.unshift({nome,perfil,tel:'',agenda:false,ultimoAcesso:'13/06/2026',ativo:true});
-  rhEmpPush(nome,perfil,'',true);
+  const perfil=((document.getElementById('colabPerfil')||{}).value)||'Profissional';
+  const tel=((document.getElementById('colabTel')||{}).value)||'';
+  const exibeAg=!!((document.getElementById('colabExibeAgenda')||{}).checked);
+  const G=function(id){return ((document.getElementById(id)||{}).value)||'';};
+  const di=document.getElementById('rhDocs');const docNames=(di&&di.files)?[].map.call(di.files,function(f){return f.name;}):[];
+  const salNum=parseFloat(G('rhSalario').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.'))||0;
+  const rhData={tel:tel,cargo:G('rhCargo'),salario:salNum,contrato:G('rhContrato')||'CLT',admissao:G('rhAdmissao'),cargaSem:parseInt(G('rhCargaSem'))||0,entrada:G('rhHorEntrada'),saida:G('rhHorSaida'),intervalo:G('rhIntervalo'),cep:G('rhCep'),rua:G('rhRua'),num:G('rhNum'),compl:G('rhCompl'),bairro:G('rhBairro'),cidade:G('rhCidade'),estado:G('rhEstado'),docs:docNames};
+  if(!COLAB.some(c=>(c.nome||'').toLowerCase()===nome.toLowerCase()))COLAB.unshift({nome,perfil,tel:tel,cargo:rhData.cargo||perfil,contrato:rhData.contrato,salario:salNum,agenda:exibeAg,ultimoAcesso:'13/06/2026',ativo:true});
+  rhEmpUpsertFull(nome,perfil,rhData);
   if(typeof persistState==='function')persistState();
   if(typeof auditLog==='function')auditLog('Colaborador','Cadastrou '+nome+' (sincronizado com o RH)');
   rhFrameReload();
