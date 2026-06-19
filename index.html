@@ -991,12 +991,9 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="sub-item" data-view="docs" data-icon="ti-file-text" data-title="Anamnese / Fichas digitais"><i class="ti ti-file-text"></i> Anamnese / Ficha Técnica</div>
         <div class="sub-item" data-view="catpag" data-icon="ti-category" data-title="Categorias de Contas a pagar"><i class="ti ti-category"></i> Categorias de Contas a pagar</div>
         <div class="sub-item" data-view="catrec" data-icon="ti-category-2" data-title="Categorias de Contas a receber"><i class="ti ti-category-2"></i> Categorias de Contas a receber</div>
-        <div class="sub-item" data-view="descontos" data-icon="ti-discount" data-title="Descontos"><i class="ti ti-discount"></i> Descontos</div>
+        <div class="sub-item" data-view="descontos" data-icon="ti-heart-handshake" data-title="Parcerias"><i class="ti ti-heart-handshake"></i> Parcerias</div>
         <div class="sub-item" data-view="pgto" data-icon="ti-credit-card" data-title="Formas de pagamento"><i class="ti ti-credit-card"></i> Formas de pagamento</div>
-        <div class="sub-item" data-view="fornecedores" data-icon="ti-truck" data-title="Fornecedores"><i class="ti ti-truck"></i> Fornecedores</div>
         <div class="sub-item" data-view="grpserv" data-icon="ti-list-details" data-title="Grupo de serviços"><i class="ti ti-list-details"></i> Grupo de serviços</div>
-        <div class="sub-item" data-view="grpprod" data-icon="ti-stack-2" data-title="Grupo de produtos"><i class="ti ti-stack-2"></i> Grupo de produtos</div>
-        <div class="sub-item" data-view="grpassin" data-icon="ti-stack-3" data-title="Grupo de assinaturas"><i class="ti ti-stack-3"></i> Grupo de assinaturas</div>
         <div class="sub-item" data-view="comissoes" data-icon="ti-table" data-title="Matriz de comissões"><i class="ti ti-table"></i> Matriz de comissões</div>
         <div class="sub-item" data-view="metas" data-icon="ti-target" data-title="Metas"><i class="ti ti-target"></i> Metas</div>
         <div class="sub-item" data-view="contratos" data-icon="ti-file-description" data-title="Modelos de contrato"><i class="ti ti-file-description"></i> Modelos de contrato</div>
@@ -1630,18 +1627,19 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
       <!-- ===== DESCONTOS ===== -->
       <section class="view" id="view-descontos">
-        <div class="mod-actions"><button class="btn btn-primary" id="btnNovoDesc"><i class="ti ti-plus"></i> Novo</button></div>
+        <div class="mod-actions"><button class="btn btn-primary" id="btnNovoDesc"><i class="ti ti-plus"></i> Nova parceria</button></div>
+        <div class="rel-legend" style="margin:0 0 12px"><i class="ti ti-info-circle"></i> Cadastre <b>parcerias</b> da unidade com <b>lojas e influencers</b>. Cada parceria concede <b>desconto (%)</b> ou <b>cashback (R$)</b>, fica <b>vinculada a uma unidade</b> e respeita o <b>teto de desconto do catálogo</b> (serviço/produto/pacote) e a <b>alçada do usuário</b>.</div>
         <div class="fil-card">
           <div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
           <div class="fil-body" style="grid-template-columns:repeat(2,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
+            <div class="field"><label>Tipo</label><select><option>Todos</option><option>Desconto</option><option>Cashback</option></select></div>
+            <div class="field"><label>Parceiro</label><input placeholder="Parceiro"></div>
             <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
           </div>
         </div>
         <div class="cli-card">
-          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th class="num-r">Serviço</th><th class="num-r">Produto</th><th class="num-r">Pacote</th><th>Data Expiração</th><th>Unidades</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="descBody"></tbody></table></div>
-          <div class="cli-foot"><span>Exibindo 1 a 30 de 36 registros encontrados</span><div class="pager" id="descPager"></div></div>
+          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Parceiro</th><th>Tipo</th><th class="num-r">Valor</th><th>Aplica a</th><th>Unidade</th><th>Validade</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="descBody"></tbody></table></div>
+          <div class="cli-foot"><span id="descFoot">—</span><div class="pager" id="descPager"></div></div>
         </div>
       </section>
 
@@ -1854,52 +1852,6 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         </div>
       </section>
 
-      <!-- ===== FORNECEDORES ===== -->
-      <section class="view" id="view-fornecedores">
-        <div class="mod-actions"><button class="btn btn-primary" id="btnNovoForn"><i class="ti ti-plus"></i> Novo</button></div>
-        <div class="fil-card">
-          <div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
-          <div class="fil-body" style="grid-template-columns:repeat(3,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
-            <div class="field"><label>Telefone</label><div class="tel-group"><input placeholder="DDI" value="+55"><input placeholder="DDD"><input placeholder="Número"></div></div>
-            <div class="field"><label>Tipo de documento</label><select><option value="">Selecione...</option><option>CNPJ</option><option>CPF</option></select></div>
-            <div class="field"><label>Número do documento</label><input placeholder="Número do documento"></div>
-            <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
-          </div>
-        </div>
-        <div class="cli-card">
-          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th>Documento</th><th>Telefone</th><th>Estratégia (a pagar)</th><th>Ativo</th></tr></thead>
-            <tbody><tr><td colspan="5" style="text-align:center;padding:38px;color:var(--text-3)"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:8px"></i> Nenhum registro encontrado</td></tr></tbody></table></div>
-        </div>
-      </section>
-
-      <!-- ===== GRUPO DE PRODUTOS ===== -->
-      <section class="view" id="view-grpprod">
-        <div class="mod-actions"><button class="btn btn-primary"><i class="ti ti-plus"></i> Novo</button></div>
-        <div class="fil-card"><div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
-          <div class="fil-body" style="grid-template-columns:repeat(2,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
-            <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
-          </div></div>
-        <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th>Ativo</th></tr></thead>
-          <tbody><tr><td colspan="2" style="text-align:center;padding:38px;color:var(--text-3)"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:8px"></i> Nenhum registro encontrado</td></tr></tbody></table></div></div>
-      </section>
-
-      <!-- ===== GRUPO DE ASSINATURAS ===== -->
-      <section class="view" id="view-grpassin">
-        <div class="mod-actions"><button class="btn btn-primary"><i class="ti ti-plus"></i> Novo</button></div>
-        <div class="fil-card"><div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
-          <div class="fil-body" style="grid-template-columns:repeat(2,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
-            <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
-          </div></div>
-        <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th>Ativo</th></tr></thead>
-          <tbody><tr><td colspan="2" style="text-align:center;padding:38px;color:var(--text-3)"><i class="ti ti-database-off" style="font-size:22px;display:block;margin-bottom:8px"></i> Nenhum registro encontrado</td></tr></tbody></table></div></div>
-      </section>
-
       <!-- ===== PLANOS DE ASSINATURA ===== -->
       <section class="view" id="view-planos">
         <div class="mod-actions"><button class="btn btn-primary" id="btnNovoPlano"><i class="ti ti-plus"></i> Novo</button></div>
@@ -1951,18 +1903,19 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
       <!-- ===== FORMAS DE PAGAMENTO ===== -->
       <section class="view" id="view-pgto">
-        <div class="mod-actions"><button class="btn btn-primary" id="btnNovoPg"><i class="ti ti-plus"></i> Novo</button></div>
+        <div class="mod-actions"><button class="btn btn-primary" id="btnNovoPg"><i class="ti ti-plus"></i> Nova forma</button></div>
+        <div class="rel-legend" style="margin:0 0 12px"><i class="ti ti-info-circle"></i> A <b>Taxa (%)</b> de cada forma é o <b>custo de adquirente (MDR)</b> e lança automaticamente como <b>despesa da unidade</b> em <b>Contas a Pagar</b> (categoria <i>Taxas de Cartão</i>), refletindo nos <b>relatórios financeiros</b>.</div>
         <div class="fil-card">
           <div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
           <div class="fil-body" style="grid-template-columns:repeat(2,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
-            <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
+            <div class="field"><label>Ativo</label><select id="pgFilAtivo" onchange="buildPgto()"><option>Todos</option><option>Sim</option><option>Não</option></select></div>
+            <div class="field"><label>Nome</label><input id="pgFilNome" placeholder="Nome" oninput="buildPgto()"></div>
+            <div class="fil-actions"><button class="btn" onclick="buildPgto()"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
           </div>
         </div>
         <div class="cli-card">
           <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th>Tipo</th><th class="num-r">Taxa (%)</th><th class="num-r">Taxa a descontar na comissão (%)</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="pgBody"></tbody></table></div>
-          <div class="cli-foot"><span>Exibindo 1 a 30 de 125 registros encontrados</span><div class="pager" id="pgPager"></div></div>
+          <div class="cli-foot"><span id="pgFoot">—</span><div class="pager" id="pgPager"></div></div>
         </div>
       </section>
 
@@ -3360,7 +3313,12 @@ document.querySelectorAll('#dashFilter .chip').forEach(c=>{
 const GRUPOS_PAG=['Abatimentos','Custos','Despesas administrativas','Despesas com vendas','Despesas financeiras','Distribuição de Lucros e Investimentos'];
 const CAT_PAG=[['Aluguel','Despesas administrativas'],['Aquisição de produtos','Custos'],['Beneficios','Despesas administrativas'],['Bonificações','Abatimentos'],['Comissões','Abatimentos'],['Descontos','Abatimentos'],['Despesas Administrativas','Despesas administrativas'],['Devoluções e Reembolsos','Despesas administrativas'],['Distribuição de Lucros','Distribuição de Lucros e Investimentos'],['FGTS','Despesas administrativas'],['Frete','Custos'],['Honorário Contabilidade','Despesas administrativas'],['Impostos','Abatimentos'],['INSS','Despesas administrativas'],['Internet','Despesas administrativas'],['IRRF','Despesas administrativas'],['Luz, Água e Telefone','Despesas administrativas'],['Marketing','Despesas administrativas'],['Material Expediente e Manutenções','Despesas administrativas'],['Parcela Empréstimos','Despesas financeiras'],['Parcela Equipamento (Investimento)','Despesas administrativas'],['Rescisão','Despesas administrativas'],['Royalties','Despesas com vendas'],['Salários','Despesas administrativas'],['Sistema/Software','Despesas administrativas'],['Taxa meio de pagamento','Despesas financeiras']];
 const CAT_REC=[['Assinaturas','Receitas'],['Outras receitas','Receitas'],['Pacotes','Receitas'],['Produtos','Receitas'],['Serviços','Receitas'],['Vendas','Receitas']];
-let DESC=[['05%','5,00','0,00','5,00',''],['10%','10,00','0,00','10,00',''],['100% (Benefício ao cliente)','100,00','0,00','100,00',''],['100% (Treinamento)','100,00','0,00','100,00',''],['15%','15,00','0,00','15,00',''],['20%','20,00','0,00','20,00',''],['25%','25,00','0,00','25,00',''],['30%','30,00','0,00','30,00',''],['35%','35,00','0,00','35,00',''],['40%','40,00','0,00','40,00',''],['45%','45,00','0,00','45,00',''],['50%','50,00','0,00','50,00',''],['55%','55,00','0,00','55,00',''],['60%','60,00','0,00','60,00',''],['65%','65,00','0,00','65,00',''],['65,04%','65,04','0,00','65,04',''],['67%','67,00','0,00','67,00',''],['70%','70,00','0,00','70,00',''],['75%','75,00','0,00','75,00',''],['80%','80,00','0,00','80,00',''],['81%','81,00','0,00','81,00',''],['87,62%','87,62','0,00','87,62',''],['CRA - Conselho Regional de Administração','40,00','0,00','40,00',''],['CRIS10','10,00','10,00','10,00','31/12/2025'],['ELLEN25OFF','25,00','25,00','25,00','31/12/2026'],['IZASENA','0,00','0,00','0,00','30/06/2026'],['JESSICA','0,00','0,00','0,01','30/06/2026'],['Mateus20','0,00','0,00','20,00','16/06/2026'],['MELANNIE10','10,00','0,00','10,00','31/08/2025'],['MKT - Influencers','100,00','0,00','100,00','31/12/2025']];
+let PARCERIAS=[
+ {parc:'Studio Bella Pele',tipo:'desc',valor:15,aplica:'Servi\u00e7os',uni:'Florian\u00f3polis - Centro',contato:'@studiobellapele',val:'31/12/2026',ativo:true},
+ {parc:'Ellen Sena (influencer)',tipo:'cash',valor:25,aplica:'Todos',uni:'Florian\u00f3polis - Centro',contato:'@ellensena',val:'31/12/2026',ativo:true},
+ {parc:'Academia MoveFit',tipo:'desc',valor:20,aplica:'Pacotes',uni:'Florian\u00f3polis - Centro',contato:'(48) 99999-0000',val:'',ativo:true}
+];
+let DESC=[];
 function renderCats(data,bodyId,sign){
   const b=document.getElementById(bodyId);if(!b||b.dataset.built)return;
   b.innerHTML=data.map(r=>`<tr><td><span class="cli-name">${r[0]}</span></td><td>(<span style="font-weight:700;color:${sign==='-'?'var(--red)':'var(--green)'}">${sign}</span>) ${r[1]}</td><td><span class="pill-yes">Sim</span></td></tr>`).join('');
@@ -3430,39 +3388,81 @@ function catAddItem(w,gi){_catTree(w)[gi].itens.push({nome:'Nova categoria',ativ
 function catDelGroup(w,gi){if(confirm('Excluir o grupo "'+_catTree(w)[gi].grupo+'" e todas as suas categorias?')){_catTree(w).splice(gi,1);catEditorRender(w);}}
 function catAddGroup(w){_catTree(w).push({grupo:'NOVO GRUPO',itens:[{nome:'Nova categoria',ativo:true}]});catEditorRender(w);}
 function catSave(w){if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Categorias '+(w==='pag'?'a pagar':'a receber'),'Atualizou estrutura de categorias');showToast('Categorias salvas','ti-device-floppy');}
+function parcPct(s){return parseFloat(String(s==null?0:s).replace(',','.'))||0;}
+function parcCeil(aplica){
+  function mx(arr,idx){var m=0;(arr||[]).forEach(function(r){var v=parcPct(r[idx]);if(v>m)m=v;});return m;}
+  var sv=(typeof SERVICOS!=='undefined')?mx(SERVICOS,2):50;
+  var pr=(typeof PRODUTOS!=='undefined')?mx(PRODUTOS,2):50;
+  var pk=(typeof PACOTES!=='undefined')?mx(PACOTES,4):50;
+  if(aplica==='Serviços')return sv||50;
+  if(aplica==='Produtos')return pr||50;
+  if(aplica==='Pacotes')return pk||50;
+  return Math.min(sv||50,pr||50,pk||50);
+}
+function parcCap(aplica){var alc=(typeof descLimit==='function')?descLimit():100;return Math.min(parcCeil(aplica),alc);}
 function buildDesc(){
-  const b=document.getElementById('descBody');if(!b)return;
-  b.innerHTML=DESC.map((r,i)=>{const un=r[5];const unTxt=(!un||!un.length)?'<span style="font-size:11.5px;color:var(--text-3)"><i class="ti ti-building-store" style="vertical-align:-2px"></i> Todas</span>':`<span style="font-size:11.5px;color:var(--text-2)" title="${un.join(', ')}"><i class="ti ti-building-store" style="vertical-align:-2px;color:var(--brand-500)"></i> ${un.length} unidade(s)</span>`;
-    return `<tr><td><span class="cli-name">${r[0]}</span></td><td class="num-r">${r[1]} %</td><td class="num-r">${r[2]} %</td><td class="num-r">${r[3]} %</td><td>${r[4]?r[4]:'<span class="muted">—</span>'}</td><td>${unTxt}</td><td><span class="pill-yes">Sim</span></td><td><span class="os-link" style="color:var(--red)" onclick="descDel(${i})"><i class="ti ti-trash"></i> Excluir</span></td></tr>`;}).join('');
-  const pg=document.getElementById('descPager');if(pg)pg.innerHTML='<button title="Anterior"><i class="ti ti-chevron-left"></i></button><button class="active">1</button><button>2</button><button title="Próximo"><i class="ti ti-chevron-right"></i></button>';
+  var b=document.getElementById('descBody');if(!b)return;
+  var L=(typeof PARCERIAS!=='undefined')?PARCERIAS:[];
+  if(!L.length){b.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:30px"><i class="ti ti-heart-handshake" style="font-size:22px;display:block;margin-bottom:8px"></i> Nenhuma parceria cadastrada. Clique em <b>Nova parceria</b>.</td></tr>';}
+  else b.innerHTML=L.map(function(r,i){
+    var tipo=r.tipo==='cash'?'<span class="orig-tag" style="background:#1f7a4d1a;color:#1f7a4d"><i class="ti ti-cash"></i> Cashback</span>':'<span class="orig-tag" style="background:#f6e8ec;color:var(--brand-600)"><i class="ti ti-discount"></i> Desconto</span>';
+    var val=r.tipo==='cash'?('R$ '+String(r.valor).replace('.',',')):(String(r.valor).replace('.',',')+' %');
+    var at=r.ativo!==false?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>';
+    return '<tr style="'+(r.ativo===false?'opacity:.55':'')+'"><td><span class="cli-name">'+r.parc+'</span>'+(r.contato?'<div style="font-size:11px;color:var(--text-3)">'+r.contato+'</div>':'')+'</td><td>'+tipo+'</td><td class="num-r">'+val+'</td><td>'+(r.aplica||'Todos')+'</td><td><span style="font-size:11.5px"><i class="ti ti-building-store" style="vertical-align:-2px;color:var(--brand-500)"></i> '+(r.uni||'—')+'</span></td><td>'+(r.val?r.val:'<span class="muted">—</span>')+'</td><td onclick="parcToggle('+i+')" style="cursor:pointer" title="Ativar/Inativar">'+at+'</td><td style="white-space:nowrap"><span class="os-link" onclick="descNovo('+i+')"><i class="ti ti-edit"></i> Editar</span><span class="os-link" style="color:var(--red);margin-left:10px" onclick="descDel('+i+')"><i class="ti ti-trash"></i> Excluir</span></td></tr>';
+  }).join('');
+  var pg=document.getElementById('descPager');if(pg)pg.innerHTML='';
+  var ft=document.getElementById('descFoot');if(ft)ft.textContent='Exibindo '+L.length+' parceria(s)';
 }
-function descDel(i){if(confirm('Excluir o desconto "'+DESC[i][0]+'"?')){const n=DESC[i][0];DESC.splice(i,1);buildDesc();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Descontos','Excluiu o desconto '+n);showToast('Desconto excluído','ti-trash');}}
-function descNovo(){
-  let ov=document.getElementById('descOv');
-  if(!ov){ov=document.createElement('div');ov.id='descOv';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('open');});}
-  ov.innerHTML=`<div class="modal" style="width:600px;max-height:none"><div class="modal-head"><h3><i class="ti ti-discount"></i> Novo desconto</h3><button class="modal-close" onclick="document.getElementById('descOv').classList.remove('open')">&times;</button></div>
-  <div class="modal-body" style="grid-template-columns:1fr 1fr 1fr;padding:16px 18px;gap:11px">
-    <div class="mf" style="grid-column:1/4"><label>Nome <span class="req">*</span></label><input id="dnNome" placeholder="Ex.: 10% Fidelidade"></div>
-    <div class="mf"><label>Serviço (%)</label><input id="dnServ" type="number" step="0.01" value="0"></div>
-    <div class="mf"><label>Produto (%)</label><input id="dnProd" type="number" step="0.01" value="0"></div>
-    <div class="mf"><label>Pacote (%)</label><input id="dnPac" type="number" step="0.01" value="0"></div>
-    <div class="mf" style="grid-column:1/4"><label>Data de expiração</label><input id="dnExp" placeholder="dd/mm/aaaa (opcional)"></div>
-    <div class="mf" style="grid-column:1/4"><label>Unidades — uma ou mais (por estado)</label><div id="dnUniWrap"></div><div style="font-size:11px;color:var(--text-3);margin-top:4px">Sem seleção = válido para todas as unidades.</div></div>
-  </div>
-  <div class="modal-foot"><button class="btn" onclick="document.getElementById('descOv').classList.remove('open')">Cancelar</button><button class="btn btn-primary" onclick="descSave()"><i class="ti ti-check"></i> Salvar desconto</button></div></div>`;
-  document.getElementById('dnUniWrap').innerHTML=muDropdownHTML('descMuNew',[]);
-  ov.classList.add('open');
+function parcToggle(i){if(!PARCERIAS[i])return;PARCERIAS[i].ativo=(PARCERIAS[i].ativo===false);buildDesc();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Parcerias',(PARCERIAS[i].ativo?'Ativou':'Inativou')+' parceria '+PARCERIAS[i].parc);showToast(PARCERIAS[i].ativo?'Parceria ativada':'Parceria inativada',PARCERIAS[i].ativo?'ti-check':'ti-ban');}
+function descDel(i){if(!PARCERIAS[i])return;if(confirm('Excluir a parceria "'+PARCERIAS[i].parc+'"?')){var n=PARCERIAS[i].parc;PARCERIAS.splice(i,1);buildDesc();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Parcerias','Excluiu a parceria '+n);showToast('Parceria excluída','ti-trash');}}
+function parcCapInfo(){
+  var row=document.getElementById('pnCapRow');if(!row)return;
+  var tipo=(document.getElementById('pnTipo')||{}).value;
+  var aplica=(document.getElementById('pnAplica')||{}).value||'Todos';
+  if(tipo==='cash'){row.innerHTML='<i class="ti ti-cash"></i> <b>Cashback em R$</b> — valor livre, vinculado à unidade selecionada. Não usa teto percentual.';return;}
+  var ceil=parcCeil(aplica), alc=(typeof descLimit==='function')?descLimit():100, cap=Math.min(ceil,alc);
+  var v=parcPct((document.getElementById('pnValor')||{}).value);
+  var over=v>cap;
+  row.innerHTML='<i class="ti ti-shield-check"></i> Teto de <b>'+aplica+'</b>: <b>'+ceil+'%</b> (catálogo) · sua alçada ('+(typeof USER_ROLE!=='undefined'?USER_ROLE:'')+'): <b>'+alc+'%</b> &rarr; máximo permitido <b>'+cap+'%</b>.'+(over?' <span style="color:var(--red);font-weight:700">— acima do limite!</span>':'');
 }
-function descSave(){
-  const nome=(document.getElementById('dnNome').value||'').trim();if(!nome){showToast('Informe o nome do desconto','ti-alert-triangle');return;}
-  const fix=v=>(''+(v||'0')).replace('.',',');
-  const exp=(document.getElementById('dnExp').value||'').trim();
-  const uni=muSelected('descMuNew');
-  DESC.unshift([nome,fix(document.getElementById('dnServ').value),fix(document.getElementById('dnProd').value),fix(document.getElementById('dnPac').value),exp,uni]);
-  document.getElementById('descOv').classList.remove('open');buildDesc();
+function descNovo(idx){
+  var ed=(typeof idx==='number'&&idx>=0)?PARCERIAS[idx]:null;
+  var ov=document.getElementById('descOv');
+  if(!ov){ov=document.createElement('div');ov.id='descOv';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});}
+  function esc(x){return String(x==null?'':x).replace(/"/g,'&quot;');}
+  var uniOpts=(typeof UNIDADES!=='undefined'?UNIDADES:[]).map(function(u){return '<option'+((ed&&ed.uni===u.nome)?' selected':'')+'>'+u.nome+'</option>';}).join('');
+  var aplicas=['Serviços','Produtos','Pacotes','Todos'];
+  var aplOpts=aplicas.map(function(a){var sel=ed?(ed.aplica===a):(a==='Todos');return '<option'+(sel?' selected':'')+'>'+a+'</option>';}).join('');
+  ov.innerHTML='<div class="modal" style="width:600px;max-height:none"><div class="modal-head"><h3><i class="ti ti-heart-handshake"></i> '+(ed?'Editar parceria':'Nova parceria')+'</h3><button class="modal-close" onclick="document.getElementById(\'descOv\').classList.remove(\'open\')">&times;</button></div>'
+   +'<div class="modal-body" style="grid-template-columns:1fr 1fr;padding:16px 18px;gap:11px">'
+   +'<div class="mf" style="grid-column:1/3"><label>Parceiro — loja ou influencer <span class="req">*</span></label><input id="pnParc" placeholder="Ex.: Studio Bella Pele / @influencer" value="'+esc(ed?ed.parc:'')+'"></div>'
+   +'<div class="mf"><label>Tipo</label><select id="pnTipo" onchange="parcCapInfo()"><option value="desc"'+((!ed||ed.tipo!=='cash')?' selected':'')+'>Desconto (%)</option><option value="cash"'+((ed&&ed.tipo==='cash')?' selected':'')+'>Cashback (R$)</option></select></div>'
+   +'<div class="mf"><label>Valor <span class="req">*</span></label><input id="pnValor" type="number" step="0.01" min="0" value="'+(ed?ed.valor:'')+'" placeholder="0" oninput="parcCapInfo()"></div>'
+   +'<div class="mf"><label>Aplica a</label><select id="pnAplica" onchange="parcCapInfo()">'+aplOpts+'</select></div>'
+   +'<div class="mf"><label>Unidade vinculada <span class="req">*</span></label><select id="pnUni">'+uniOpts+'</select></div>'
+   +'<div class="mf"><label>Contato (opcional)</label><input id="pnContato" placeholder="@perfil / telefone" value="'+esc(ed?ed.contato:'')+'"></div>'
+   +'<div class="mf"><label>Validade (opcional)</label><input id="pnVal" placeholder="dd/mm/aaaa" value="'+esc(ed?ed.val:'')+'"></div>'
+   +'<div class="mf" style="grid-column:1/3"><div id="pnCapRow" class="rel-legend" style="margin:2px 0 0"></div></div>'
+   +'</div>'
+   +'<div class="modal-foot"><button class="btn" onclick="document.getElementById(\'descOv\').classList.remove(\'open\')">Cancelar</button><button class="btn btn-primary" onclick="descSave('+(ed?idx:-1)+')"><i class="ti ti-check"></i> Salvar parceria</button></div></div>';
+  ov.classList.add('open');parcCapInfo();
+}
+function descSave(idx){
+  var g=function(id){return document.getElementById(id);};
+  var parc=(g('pnParc').value||'').trim();if(!parc){showToast('Informe o parceiro','ti-alert-triangle');return;}
+  var tipo=g('pnTipo').value;
+  var valor=parcPct(g('pnValor').value);
+  var aplica=g('pnAplica').value;
+  var uni=g('pnUni').value;
+  if(!uni){showToast('Vincule a uma unidade','ti-alert-triangle');return;}
+  if(valor<=0){showToast('Informe um valor maior que zero','ti-alert-triangle');return;}
+  if(tipo==='desc'){var cap=parcCap(aplica);if(valor>cap){showToast('Desconto '+valor+'% acima do permitido para '+aplica+' (máx '+cap+'%)','ti-alert-triangle');return;}}
+  var obj={parc:parc,tipo:tipo,valor:valor,aplica:aplica,uni:uni,contato:(g('pnContato').value||'').trim(),val:(g('pnVal').value||'').trim(),ativo:true};
+  if(typeof idx==='number'&&idx>=0){obj.ativo=PARCERIAS[idx].ativo!==false;PARCERIAS[idx]=obj;}else{PARCERIAS.unshift(obj);}
+  g('descOv').classList.remove('open');buildDesc();
   if(typeof persistState==='function')persistState();
-  if(typeof auditLog==='function')auditLog('Descontos','Criou o desconto '+nome+(uni.length?' · '+uni.length+' unidade(s)':' · todas as unidades'));
-  showToast('Desconto criado','ti-discount');
+  if(typeof auditLog==='function')auditLog('Parcerias',((typeof idx==='number'&&idx>=0)?'Editou':'Criou')+' parceria '+parc+' · '+uni+' · '+(tipo==='cash'?('cashback R$ '+valor):(valor+'% desc.')));
+  showToast('Parceria salva','ti-heart-handshake');
 }
 /* ---------- Metas ---------- */
 const META_MIN=100000, METAS={divM:1,realM:{vend:68500,agend:210,aval:38}};
@@ -4780,6 +4780,7 @@ function finSeed(){
     else if(i%11===5){recebido=Math.round((esperado-130)*100)/100;status='divergencia';obs='Crédito não localizado no extrato';}
     FIN_CONC.push({data:'0'+(1+i%9)+'/06/2026',unidade:u.nome,adquirente:adq.nome,venda,taxaPct,taxa,esperado,recebido,status,obs});
   });
+  if(typeof pgSyncAdquirente==='function')pgSyncAdquirente();
   _finSeeded=true;
 }
 function finTab(name,el){FIN_TAB=name;document.querySelectorAll('#finTabs .rel-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');finRender();}
@@ -7202,12 +7203,39 @@ let PGTO=[['01 x Cartão de Crédito - American Express - Rede','Crédito','3,65
 let PG_RECORRENTE={nome:'Crédito Recorrente - PagoLivre',modo:'Integrado',parceiro:'PagoLivre',token:'',maxParc:12,minParcela:'50,00',excluiGrupos:['Ultrassom'],recVendas:true,recRecorrencia:true,baseRoyalties:'recorrencia'};
 PGTO.unshift([PG_RECORRENTE.nome,'Crédito Recorrente','0,00','0,00',true]);
 function pgEhRecorrente(nome,tipo){return tipo==='Crédito Recorrente'||/Crédito Recorrente/i.test(nome||'');}
-function buildPgto(){
-  const b=document.getElementById('pgBody');if(!b)return;
-  b.innerHTML=PGTO.map((r,i)=>{const inativo=r[4]===false;return `<tr style="${inativo?'opacity:.55':''}"><td><span class="cli-name">${r[0]}</span></td><td><span class="orig-tag">${r[1]}</span></td><td class="num-r">${r[2]}</td><td class="num-r">${r[3]}</td><td>${inativo?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td style="white-space:nowrap"><span class="os-link" onclick="pgForm(${i})"><i class="ti ti-edit"></i> Editar</span><span class="os-link" style="color:${inativo?'var(--green)':'var(--red)'};margin-left:12px" onclick="pgToggle(${i})"><i class="ti ti-${inativo?'rotate-clockwise':'ban'}"></i> ${inativo?'Ativar':'Inativar'}</span></td></tr>`;}).join('');
-  const pg=document.getElementById('pgPager');if(pg)pg.innerHTML='<button title="Anterior"><i class="ti ti-chevron-left"></i></button><button class="active">1</button><button>2</button><button>3</button><button>4</button><button>5</button><button title="Próximo"><i class="ti ti-chevron-right"></i></button>';
+function pgSyncAdquirente(){
+  if(typeof FIN_PAG==='undefined')return;
+  for(var i=FIN_PAG.length-1;i>=0;i--){if(FIN_PAG[i]&&FIN_PAG[i]._adq)FIN_PAG.splice(i,1);}
+  function pct(s){return parseFloat(String(s==null?0:s).replace(',','.'))||0;}
+  var cards=(typeof PGTO!=='undefined'?PGTO:[]).filter(function(r){return r[4]!==false && /Cr[eé]dito|D[eé]bito|Link de Pagamento/i.test((r[1]||'')+' '+(r[0]||''));});
+  if(!cards.length)return;
+  var taxaMedia=cards.reduce(function(a,r){return a+pct(r[2]);},0)/cards.length;
+  if(!(taxaMedia>0))return;
+  var vol={};
+  (typeof FIN_CONC!=='undefined'?FIN_CONC:[]).forEach(function(c){vol[c.unidade]=(vol[c.unidade]||0)+(c.venda||0);});
+  var venc=(typeof FIN_VENC!=='undefined'&&FIN_VENC)?FIN_VENC:'15/06/2026';
+  var k=0;
+  Object.keys(vol).forEach(function(u){
+    var custo=Math.round(vol[u]*taxaMedia/100*100)/100;
+    if(custo>0)FIN_PAG.push({id:900000+(k++),_adq:true,categoria:'Taxas de Cartão',descricao:'MDR — custo de adquirente sobre vendas no cartão ('+taxaMedia.toFixed(2).replace('.',',')+'% médio)',escopo:u,valor:custo,venc:venc,status:'aberto',prio:(typeof finPrioPadrao==='function'?finPrioPadrao('Taxas de Cartão'):3)});
+  });
 }
-function pgToggle(i){const r=PGTO[i];if(!r)return;r[4]=(r[4]===false);buildPgto();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Formas de pagamento',(r[4]===false?'Inativou':'Ativou')+' '+r[0]);showToast((r[4]===false?'Forma inativada':'Forma ativada')+': '+r[0],r[4]===false?'ti-ban':'ti-check');}
+function buildPgto(){
+  var b=document.getElementById('pgBody');if(!b)return;
+  var fa=(document.getElementById('pgFilAtivo')||{}).value||'Todos';
+  var fn=((document.getElementById('pgFilNome')||{}).value||'').toLowerCase();
+  var rows=PGTO.map(function(r,i){return {r:r,i:i};}).filter(function(o){
+    var inativo=o.r[4]===false;
+    if(fa==='Sim'&&inativo)return false;
+    if(fa==='Não'&&!inativo)return false;
+    if(fn&&String(o.r[0]||'').toLowerCase().indexOf(fn)<0)return false;
+    return true;
+  });
+  b.innerHTML=rows.map(function(o){var r=o.r,i=o.i;var inativo=r[4]===false;return '<tr style="'+(inativo?'opacity:.55':'')+'"><td><span class="cli-name">'+r[0]+'</span></td><td><span class="orig-tag">'+r[1]+'</span></td><td class="num-r">'+r[2]+'</td><td class="num-r">'+r[3]+'</td><td>'+(inativo?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>')+'</td><td style="white-space:nowrap"><span class="os-link" onclick="pgForm('+i+')"><i class="ti ti-edit"></i> Editar</span><span class="os-link" style="color:'+(inativo?'var(--green)':'var(--red)')+';margin-left:12px" onclick="pgToggle('+i+')"><i class="ti ti-'+(inativo?'rotate-clockwise':'ban')+'"></i> '+(inativo?'Ativar':'Inativar')+'</span></td></tr>';}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:26px">Nenhuma forma encontrada.</td></tr>';
+  var pg=document.getElementById('pgPager');if(pg)pg.innerHTML='';
+  var ft=document.getElementById('pgFoot');if(ft)ft.textContent='Exibindo '+rows.length+' de '+PGTO.length+' formas';
+}
+function pgToggle(i){const r=PGTO[i];if(!r)return;r[4]=(r[4]===false);buildPgto();if(typeof pgSyncAdquirente==='function')pgSyncAdquirente();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Formas de pagamento',(r[4]===false?'Inativou':'Ativou')+' '+r[0]);showToast((r[4]===false?'Forma inativada':'Forma ativada')+': '+r[0],r[4]===false?'ti-ban':'ti-check');}
 function pgForm(i){
   const ed=(i!=null&&i>=0), r=ed?PGTO[i]:['','Crédito','0,00','0,00',true];
   let ov=document.getElementById('pgOv');
@@ -7249,7 +7277,7 @@ function pgSaveForm(i){
     PG_RECORRENTE.baseRoyalties=g('pgfBaseRoy').value;PG_RECORRENTE.nome=nome;
     if(typeof auditLog==='function')auditLog('Forma de pagamento · Crédito Recorrente','PagoLivre · '+PG_RECORRENTE.modo+' · até '+PG_RECORRENTE.maxParc+'x · royalties: '+PG_RECORRENTE.baseRoyalties+(PG_RECORRENTE.token?' · token configurado':' · SEM token'));
   }
-  g('pgOv').classList.remove('open');buildPgto();if(typeof persistState==='function')persistState();
+  g('pgOv').classList.remove('open');buildPgto();if(typeof pgSyncAdquirente==='function')pgSyncAdquirente();if(typeof persistState==='function')persistState();
   if(typeof auditLog==='function')auditLog('Formas de pagamento',(i>=0?'Editou':'Criou')+' '+nome);
   showToast('Forma de pagamento salva','ti-check');
 }
@@ -8047,7 +8075,7 @@ function expControle(){
     +relKpis([['Logins (período)','38','ti-login-2'],['Ações registradas','214','ti-activity'],['Usuários ativos',String(EXP_USERS.filter(u=>u.a).length),'ti-user-check'],['Última atividade','hoje 14:22','ti-clock']])
     +relTable(['Usuário','Logins','Leads criados','Leads movidos','Última atividade'],EXP_USERS.map((u,i)=>[u.n,String(8-i),String(12-i*2),String(20-i*3),'1'+(4-i)+'/06 1'+i+':30']));
 }
-const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',disco:'view-disco',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',fornecedores:'view-fornecedores',grpprod:'view-grpprod',grpassin:'view-grpassin',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ajuda:'view-ajuda',ph:'view-ph'};
+const views={dashboard:'view-dashboard',agenda:'view-agenda',clientes:'view-clientes',clienteFicha:'view-cliente-ficha',colaboradores:'view-colaboradores',colaboradorForm:'view-colaborador-form',servicos:'view-servicos',pacotes:'view-pacotes',produtos:'view-produtos',contas:'view-contas',crm:'view-crm',notas:'view-notas',disco:'view-disco',automacoes:'view-automacoes',unidades:'view-unidades',os:'view-os',docs:'view-docs',docEditor:'view-doc-editor',catpag:'view-catpag',catrec:'view-catrec',descontos:'view-descontos',pgto:'view-pgto',grpserv:'view-grpserv',origens:'view-origens',planos:'view-planos',comissoes:'view-comissoes',metas:'view-metas',contratos:'view-contratos',contratoEditor:'view-contrato-editor',motivos:'view-motivos',perfis:'view-perfis',perfilEditor:'view-perfil-editor',relatorio:'view-relatorio',minhaUnidade:'view-minha-unidade',minhaConta:'view-minha-conta',dashb:'view-dashb',appCliente:'view-app-cliente',disparos:'view-disparos',comunicados:'view-comunicados',chamados:'view-chamados',checklist:'view-checklist',universidade:'view-universidade',implantacao:'view-implantacao',pdv:'view-pdv',juridico:'view-juridico',finFranq:'view-finFranq',rh:'view-rh',auditoria:'view-auditoria',expansao:'view-expansao',pontoDigital:'view-ponto-digital',marketing:'view-marketing',indiques:'view-indiques',sac:'view-sac',ajuda:'view-ajuda',ph:'view-ph'};
 /* ===== AJUDA · Base de Conhecimento do Sistema ===== */
 const HELP_UPDATED='16/06/2026';
 const HELP_KB=[
@@ -8101,10 +8129,10 @@ const HELP_KB=[
  oque:'Estrutura hierárquica de categorias para classificar contas a pagar e a receber.',
  serve:'Serve para organizar o DRE e os relatórios financeiros por natureza.',
  uso:'Crie categorias e subcategorias; vincule cada lançamento à categoria correta.'},
-{id:'descontos',cat:'Cadastros',t:'Descontos',ic:'ti-discount',k:'desconto promocao abatimento cupom',
- oque:'Cadastro de descontos/políticas comerciais aplicáveis em vendas.',
- serve:'Serve para padronizar e controlar concessões de desconto.',
- uso:'Defina o desconto e aplique no momento da venda conforme a permissão do perfil.'},
+{id:'descontos',cat:'Cadastros',t:'Parcerias',ic:'ti-heart-handshake',k:'parceria desconto cashback influencer loja unidade alcada',
+ oque:'Cadastro de parcerias da unidade com lojas e influencers, concedendo desconto (%) ou cashback (R$).',
+ serve:'Serve para registrar parcerias comerciais respeitando o teto de desconto do catálogo (serviço/produto/pacote) e a alçada do usuário.',
+ uso:'Cadastre o parceiro, escolha desconto ou cashback, vincule a uma unidade; o sistema valida o limite máximo permitido.'},
 {id:'pgto',cat:'Cadastros',t:'Formas de Pagamento',ic:'ti-credit-card',k:'pagamento forma cartao pix recorrente pago livre parcelamento ultrassom',
  oque:'Formas de pagamento aceitas, incluindo o Crédito Recorrente (parceiro PagoLivre).',
  serve:'Serve para definir como o cliente paga e como a venda é contabilizada (valor integral vs. parcela mês a mês).',
@@ -8117,10 +8145,6 @@ const HELP_KB=[
  oque:'Cadastro das origens/canais por onde o cliente chegou.',
  serve:'Serve para medir de onde vêm os clientes e o ROI de marketing.',
  uso:'Selecione a origem ao cadastrar o cliente; analise os canais nos relatórios.'},
-{id:'fornecedores',cat:'Cadastros',t:'Fornecedores',ic:'ti-truck',k:'fornecedor compra insumo parceiro',
- oque:'Cadastro de fornecedores da unidade.',
- serve:'Serve para vincular contas a pagar e controlar compras.',
- uso:'Cadastre fornecedores e relacione-os aos lançamentos a pagar.'},
 {id:'contratos',cat:'Cadastros',t:'Modelos de Contrato',ic:'ti-file-text',k:'contrato modelo termo assinatura documento',
  oque:'Modelos de contrato/termos com editor próprio.',
  serve:'Serve para padronizar a documentação de venda e consentimento.',
@@ -9245,7 +9269,7 @@ const SB_URL='https://riutcbwillvqjrpaefkb.supabase.co';
 const SB_KEY='sb_publishable_8FW_cnNJaDAkXYLbG-tPdw_nif7aAzp';
 const SB_ROW='laserco_prototype';
 let _sb=null;try{if(window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SB_URL,SB_KEY);}catch(e){}
-function _persistSet(){return {CRM_LEADS:typeof CRM_LEADS!=='undefined'?CRM_LEADS:null,COMUNICADOS:typeof COMUNICADOS!=='undefined'?COMUNICADOS:null,CHAMADOS:typeof CHAMADOS!=='undefined'?CHAMADOS:null,CHK_MODELS:typeof CHK_MODELS!=='undefined'?CHK_MODELS:null,UNI_TRILHAS:typeof UNI_TRILHAS!=='undefined'?UNI_TRILHAS:null,IMPL_FASES:typeof IMPL_FASES!=='undefined'?IMPL_FASES:null,IMPL_PROJ:typeof IMPL_PROJ!=='undefined'?IMPL_PROJ:null,REDE_EVENTOS:typeof REDE_EVENTOS!=='undefined'?REDE_EVENTOS:null,DISP_CAMPS:typeof DISP_CAMPS!=='undefined'?DISP_CAMPS:null,DISP_BASES:typeof DISP_BASES!=='undefined'?DISP_BASES:null,SERVICOS:typeof SERVICOS!=='undefined'?SERVICOS:null,PACOTES:typeof PACOTES!=='undefined'?PACOTES:null,PRODUTOS:typeof PRODUTOS!=='undefined'?PRODUTOS:null,UNIDADES:typeof UNIDADES!=='undefined'?UNIDADES:null,VIP_GROUPS:typeof VIP_GROUPS!=='undefined'?VIP_GROUPS:null,OS_DATA:typeof OS_DATA!=='undefined'?OS_DATA:null,JUR_TEMPLATES:typeof JUR_TEMPLATES!=='undefined'?JUR_TEMPLATES:null,AUDIT:typeof AUDIT!=='undefined'?AUDIT:null,DESC_LIMIT:typeof DESC_LIMIT!=='undefined'?DESC_LIMIT:null,FIN_REC:typeof FIN_REC!=='undefined'?FIN_REC:null,FIN_PAG:typeof FIN_PAG!=='undefined'?FIN_PAG:null,FIN_CONC:typeof FIN_CONC!=='undefined'?FIN_CONC:null,FIN_CATS_REC:typeof FIN_CATS_REC!=='undefined'?FIN_CATS_REC:null,FIN_CFG:typeof FIN_CFG!=='undefined'?FIN_CFG:null,CATP_TREE:typeof CATP_TREE!=='undefined'?CATP_TREE:null,CATR_TREE:typeof CATR_TREE!=='undefined'?CATR_TREE:null,COLAB:typeof COLAB!=='undefined'?COLAB:null,CALC_PARC:typeof CALC_PARC!=='undefined'?CALC_PARC:null,CALC_CFG:typeof CALC_CFG!=='undefined'?CALC_CFG:null,CALC_IDX:typeof CALC_IDX!=='undefined'?CALC_IDX:null,DESC:typeof DESC!=='undefined'?DESC:null,PGTO:typeof PGTO!=='undefined'?PGTO:null,MOTIVOS:typeof MOTIVOS!=='undefined'?MOTIVOS:null,ORIGENS:typeof ORIGENS!=='undefined'?ORIGENS:null,DESC_MAX_UNIDADE:typeof DESC_MAX_UNIDADE!=='undefined'?DESC_MAX_UNIDADE:null};}
+function _persistSet(){return {CRM_LEADS:typeof CRM_LEADS!=='undefined'?CRM_LEADS:null,COMUNICADOS:typeof COMUNICADOS!=='undefined'?COMUNICADOS:null,CHAMADOS:typeof CHAMADOS!=='undefined'?CHAMADOS:null,CHK_MODELS:typeof CHK_MODELS!=='undefined'?CHK_MODELS:null,UNI_TRILHAS:typeof UNI_TRILHAS!=='undefined'?UNI_TRILHAS:null,IMPL_FASES:typeof IMPL_FASES!=='undefined'?IMPL_FASES:null,IMPL_PROJ:typeof IMPL_PROJ!=='undefined'?IMPL_PROJ:null,REDE_EVENTOS:typeof REDE_EVENTOS!=='undefined'?REDE_EVENTOS:null,DISP_CAMPS:typeof DISP_CAMPS!=='undefined'?DISP_CAMPS:null,DISP_BASES:typeof DISP_BASES!=='undefined'?DISP_BASES:null,SERVICOS:typeof SERVICOS!=='undefined'?SERVICOS:null,PACOTES:typeof PACOTES!=='undefined'?PACOTES:null,PRODUTOS:typeof PRODUTOS!=='undefined'?PRODUTOS:null,UNIDADES:typeof UNIDADES!=='undefined'?UNIDADES:null,VIP_GROUPS:typeof VIP_GROUPS!=='undefined'?VIP_GROUPS:null,OS_DATA:typeof OS_DATA!=='undefined'?OS_DATA:null,JUR_TEMPLATES:typeof JUR_TEMPLATES!=='undefined'?JUR_TEMPLATES:null,AUDIT:typeof AUDIT!=='undefined'?AUDIT:null,DESC_LIMIT:typeof DESC_LIMIT!=='undefined'?DESC_LIMIT:null,FIN_REC:typeof FIN_REC!=='undefined'?FIN_REC:null,FIN_PAG:typeof FIN_PAG!=='undefined'?FIN_PAG:null,FIN_CONC:typeof FIN_CONC!=='undefined'?FIN_CONC:null,FIN_CATS_REC:typeof FIN_CATS_REC!=='undefined'?FIN_CATS_REC:null,FIN_CFG:typeof FIN_CFG!=='undefined'?FIN_CFG:null,CATP_TREE:typeof CATP_TREE!=='undefined'?CATP_TREE:null,CATR_TREE:typeof CATR_TREE!=='undefined'?CATR_TREE:null,COLAB:typeof COLAB!=='undefined'?COLAB:null,CALC_PARC:typeof CALC_PARC!=='undefined'?CALC_PARC:null,CALC_CFG:typeof CALC_CFG!=='undefined'?CALC_CFG:null,CALC_IDX:typeof CALC_IDX!=='undefined'?CALC_IDX:null,DESC:typeof DESC!=='undefined'?DESC:null,PARCERIAS:typeof PARCERIAS!=='undefined'?PARCERIAS:null,PGTO:typeof PGTO!=='undefined'?PGTO:null,MOTIVOS:typeof MOTIVOS!=='undefined'?MOTIVOS:null,ORIGENS:typeof ORIGENS!=='undefined'?ORIGENS:null,DESC_MAX_UNIDADE:typeof DESC_MAX_UNIDADE!=='undefined'?DESC_MAX_UNIDADE:null};}
 function _collect(){const s=_persistSet();const out={};for(const k in s){if(s[k]!=null)out[k]=s[k];}return out;}
 function _replace(arr,data){if(!Array.isArray(arr)||!Array.isArray(data))return;arr.length=0;data.forEach(x=>arr.push(x));}
 function _apply(d){const s=_persistSet();for(const k in d){if(k==='IMPL_PROJ'){if(typeof IMPL_PROJ!=='undefined')Object.assign(IMPL_PROJ,d[k]);}else if(k==='DESC_LIMIT'){if(typeof DESC_LIMIT!=='undefined'&&d[k])Object.assign(DESC_LIMIT,d[k]);}else if(k==='FIN_CFG'){if(typeof FIN_CFG!=='undefined'&&d[k])Object.assign(FIN_CFG,d[k]);}else if(k==='CALC_CFG'){if(typeof CALC_CFG!=='undefined'&&d[k])Object.assign(CALC_CFG,d[k]);}else if(k==='CALC_IDX'){if(typeof CALC_IDX!=='undefined'&&d[k])Object.assign(CALC_IDX,d[k]);}else if(k==='DESC_MAX_UNIDADE'){if(typeof DESC_MAX_UNIDADE!=='undefined'&&d[k])Object.assign(DESC_MAX_UNIDADE,d[k]);}else if(s[k]&&Array.isArray(s[k]))_replace(s[k],d[k]);}if(typeof FIN_REC!=='undefined'&&FIN_REC.length)_finSeeded=true;}
