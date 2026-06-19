@@ -1064,7 +1064,6 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="sub-item" data-view="rh" data-rhpage="ferias" data-icon="ti-briefcase" data-title="RH · Férias e Ausências"><i class="ti ti-calendar"></i> Férias e Ausências</div>
         <div class="sub-item" data-view="rh" data-rhpage="desempenho" data-icon="ti-briefcase" data-title="RH · Desempenho"><i class="ti ti-chart-bar"></i> Desempenho</div>
         <div class="sub-item" data-view="rh" data-rhpage="regras" data-icon="ti-briefcase" data-title="RH · Regras da Rede"><i class="ti ti-book"></i> Regras da Rede</div>
-        <div class="sub-item" data-view="rh" data-rhpage="configuracoes" data-icon="ti-briefcase" data-title="RH · Configurações"><i class="ti ti-settings"></i> Configurações</div>
       </div>
       <div class="nav-item" data-view="marketing" data-icon="ti-ad-2" data-title="Marketing"><i class="ti ti-ad-2 lead"></i> Marketing <span id="mktBadge" style="margin-left:auto;font-size:9px;background:var(--red);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px;display:none">0</span></div>
       <div class="nav-item" data-view="comunicados" data-icon="ti-speakerphone" data-title="Comunicados"><i class="ti ti-speakerphone lead"></i> Comunicados <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
@@ -1976,6 +1975,13 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Unidade</th><th>Telefone</th><th>Documento</th><th>Configurações</th><th>Status</th><th>Ações</th></tr></thead><tbody id="unidadesBody"></tbody></table></div>
           <div class="cli-foot"><span id="uniCount"></span></div>
         </div>
+        <div class="cli-card" style="margin-top:18px">
+          <div class="rel-card-h" style="cursor:default;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <span><i class="ti ti-building-skyscraper flt"></i> Escritórios <span style="font-weight:500;color:var(--text-3);font-size:12px">— locais administrativos para quem não atua diretamente em loja</span></span>
+            <button class="btn btn-primary" id="btnNovoEscritorio"><i class="ti ti-plus"></i> Novo escritório</button>
+          </div>
+          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Escritório</th><th>Cidade/UF</th><th>Telefone</th><th>E-mail</th><th>Status</th><th>Ações</th></tr></thead><tbody id="escritoriosBody"></tbody></table></div>
+        </div>
       </section>
 
       <!-- ===== AUTOMAÇÕES ===== -->
@@ -2103,6 +2109,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
               <div class="mf sp2"><label>Nome</label><input id="colabNome" placeholder="Nome do colaborador"></div>
               <div class="mf sp2"><label>E-mail</label><input id="colabEmail" placeholder="email@exemplo.com"></div>
               <div class="mf sp2"><label>Perfil de acesso</label><select id="colabPerfil"><option value="">Selecione...</option><option>Profissional</option><option>Gerente</option><option>Subgerente</option><option>Consultora de Vendas</option><option>SAC</option><option>Proprietário</option></select></div>
+              <div class="mf sp2"><label>Local de lotação</label><select id="colabLocal"></select><div style="font-size:11.5px;color:var(--text-3);margin-top:4px"><i class="ti ti-map-pin" style="vertical-align:-1px"></i> Unidade onde o colaborador atua. Quem não trabalha diretamente em loja é lotado em um <b>Escritório</b>.</div></div>
               <div class="mf"><label>DDI</label><input value="+55"></div>
               <div class="mf"><label>Telefone</label><input id="colabTel" placeholder="(00) 00000-0000"></div>
               <div class="mf full"><label>Descrição</label><input placeholder="Cargo, especialidade, observações..."></div>
@@ -3747,6 +3754,9 @@ let UNIDADES=UNI_RAW.map((r,i)=>({
   status:'Ativa'
 }));
 UNIDADES.push({nome:'Unidade Treinamento',tel:'+55 (48) 99999-0000',cnpj:'00.000.000/0000-00',endereco:'—',email:'treinamento@lasercompany.com',cidade:'Florianópolis',uf:'SC',tipo:'Loja de Rua',est:true,cx:true,nfse:false,resp:'Equipe',status:'Teste'});
+let ESCRITORIOS=[
+  {nome:'Escritório Central (Matriz)', cidade:'Florianópolis', uf:'SC', tel:'+55 (48) 3333-1000', email:'matriz@lasercompany.com', resp:'Rafael Estevez', status:'Ativa'}
+];
 /* ---- Helpers de filtro de unidade por ESTADO ---- */
 function unidadesPorEstado(){const o={};(typeof UNIDADES!=='undefined'?UNIDADES:[]).forEach(u=>{(o[u.uf||'Outros']=o[u.uf||'Outros']||[]).push(u);});return o;}
 function unidadesOptsEstado(sel,incTodas){
@@ -3816,6 +3826,7 @@ function buildUnidades(){
   const b=document.getElementById('unidadesBody');if(!b)return;unidadesRows();
   const nb=document.getElementById('btnNovaUnidade');
   if(USER_ROLE!=='Proprietário'){nb.disabled=true;nb.style.opacity=.5;nb.title='Apenas proprietários podem criar unidades';}
+  if(typeof buildEscritorios==='function')buildEscritorios();
 }
 (function(){
   const m=document.getElementById('uniModal');if(!m)return;
@@ -3833,6 +3844,37 @@ function buildUnidades(){
     showToast(novoStatus==='Teste'?('Unidade de teste criada: '+nome+' — fora dos relatórios'):('Unidade ativa criada: '+nome),novoStatus==='Teste'?'ti-flask':'ti-check');
   };
 })();
+/* ---------- Escritórios (locais administrativos) ---------- */
+function escritoriosRows(){
+  var b=document.getElementById('escritoriosBody');if(!b)return;
+  if(typeof ESCRITORIOS==='undefined'||!ESCRITORIOS.length){b.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:18px">Nenhum escrit\u00f3rio cadastrado.</td></tr>';return;}
+  b.innerHTML=ESCRITORIOS.map(function(e,i){return '<tr style="'+(e.status==='Inativa'?'opacity:.6':'')+'"><td><span class="cli-name"><i class="ti ti-building-skyscraper" style="color:var(--brand-500);margin-right:8px;vertical-align:-2px"></i>'+e.nome+'</span></td><td>'+(e.cidade||'\u2014')+(e.uf?' / '+e.uf:'')+'</td><td>'+(e.tel||'\u2014')+'</td><td style="font-size:12px">'+(e.email||'\u2014')+'</td><td>'+uniBadge(e.status)+'</td><td style="white-space:nowrap"><span class="os-link" onclick="escritorioEditar('+i+')"><i class="ti ti-edit"></i> Editar</span><select class="esc-status" data-i="'+i+'" style="border:1px solid var(--line-strong);border-radius:7px;padding:6px 8px;font-size:12px;font-family:inherit;margin-left:10px"><option'+(e.status==='Ativa'?' selected':'')+'>Ativa</option><option'+(e.status==='Inativa'?' selected':'')+'>Inativa</option></select></td></tr>';}).join('');
+  b.querySelectorAll('.esc-status').forEach(function(sel){sel.onchange=function(){ESCRITORIOS[+sel.dataset.i].status=sel.value;escritoriosRows();if(typeof persistState==='function')persistState();showToast('Status do escrit\u00f3rio atualizado','ti-check');};});
+}
+function buildEscritorios(){
+  escritoriosRows();
+  var nb=document.getElementById('btnNovoEscritorio');if(!nb)return;
+  nb.onclick=function(){if(USER_ROLE!=='Propriet\u00e1rio'){showToast('Apenas propriet\u00e1rios podem criar escrit\u00f3rios','ti-shield-lock');return;}escritorioModal(-1);};
+  if(USER_ROLE!=='Propriet\u00e1rio'){nb.disabled=true;nb.style.opacity=.5;nb.title='Apenas propriet\u00e1rios podem criar escrit\u00f3rios';}
+}
+function escritorioModal(i){
+  var e=(i!=null&&i>=0&&ESCRITORIOS[i])?ESCRITORIOS[i]:{nome:'',cidade:'',uf:'',tel:'',email:'',resp:'',status:'Ativa'};
+  var ed=(i!=null&&i>=0);
+  var ov=document.createElement('div');ov.id='escModalDyn';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px';
+  function v(x){return String(x||'').replace(/"/g,'&quot;');}
+  ov.innerHTML='<div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,.25);max-height:90vh;overflow:auto"><h3 style="margin:0 0 4px"><i class="ti ti-building-skyscraper" style="color:var(--brand-500)"></i> '+(ed?'Editar escrit\u00f3rio':'Novo escrit\u00f3rio')+'</h3><p style="margin:0 0 14px;font-size:12.5px;color:var(--text-3)">Local administrativo da rede \u2014 serve para todos os colaboradores que n\u00e3o trabalham diretamente em loja.</p><div class="ficha-form"><div class="mf sp2"><label>Nome</label><input id="escNome" value="'+v(e.nome)+'" placeholder="Ex.: Escrit\u00f3rio Central (Matriz)"></div><div class="mf"><label>Cidade</label><input id="escCidade" value="'+v(e.cidade)+'"></div><div class="mf"><label>UF</label><input id="escUf" value="'+v(e.uf)+'" maxlength="2"></div><div class="mf"><label>Telefone</label><input id="escTel" value="'+v(e.tel)+'"></div><div class="mf"><label>E-mail</label><input id="escEmail" value="'+v(e.email)+'"></div><div class="mf sp2"><label>Respons\u00e1vel</label><input id="escResp" value="'+v(e.resp)+'"></div></div><div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px"><button class="btn" onclick="document.getElementById(\'escModalDyn\').remove()">Cancelar</button><button class="btn btn-primary" onclick="escritorioSalvar('+(i!=null?i:-1)+')"><i class="ti ti-device-floppy"></i> Salvar</button></div></div>';
+  ov.addEventListener('click',function(ev){if(ev.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+function escritorioEditar(i){escritorioModal(i);}
+function escritorioSalvar(i){
+  var G=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
+  var nome=G('escNome');if(!nome){showToast('Informe o nome do escrit\u00f3rio','ti-alert-triangle');return;}
+  var obj={nome:nome,cidade:G('escCidade'),uf:G('escUf').toUpperCase(),tel:G('escTel'),email:G('escEmail'),resp:G('escResp'),status:(i>=0&&ESCRITORIOS[i])?ESCRITORIOS[i].status:'Ativa'};
+  if(i>=0&&ESCRITORIOS[i])ESCRITORIOS[i]=obj;else ESCRITORIOS.push(obj);
+  var dyn=document.getElementById('escModalDyn');if(dyn)dyn.remove();
+  escritoriosRows();if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Escrit\u00f3rios',(i>=0?'Editou':'Cadastrou')+' escrit\u00f3rio '+nome);showToast('Escrit\u00f3rio salvo','ti-check');
+}
 
 /* ---------- Automações ---------- */
 const AUTOS=[
@@ -7004,11 +7046,20 @@ function buildColab(force){
   const total=COLAB.length+rhRows.length, ativos=COLAB.filter(c=>c.ativo!==false).length+rhRows.filter(r=>r.ativo).length;
   document.getElementById('colabCount').textContent=total+' colaboradores · '+ativos+' ativos · '+(total-ativos)+' inativos'+(rhRows.length?' · '+rhRows.length+' vindo(s) do RH':'');
 }
+function colabLocalOptions(sel){
+  var uni=(typeof UNIDADES!=='undefined'?UNIDADES.filter(function(u){return u.status!=='Inativa';}):[]);
+  var esc=(typeof ESCRITORIOS!=='undefined'?ESCRITORIOS.filter(function(e){return e.status!=='Inativa';}):[]);
+  var html='<option value="">Selecione o local\u2026</option>';
+  if(uni.length)html+='<optgroup label="Unidades">'+uni.map(function(u){return '<option'+(sel===u.nome?' selected':'')+'>'+u.nome+'</option>';}).join('')+'</optgroup>';
+  if(esc.length)html+='<optgroup label="Escrit\u00f3rios">'+esc.map(function(e){return '<option'+(sel===e.nome?' selected':'')+'>'+e.nome+'</option>';}).join('')+'</optgroup>';
+  return html;
+}
 function openColabForm(nome){
   Object.values(views).forEach(v=>document.getElementById(v).classList.remove('active'));
   document.getElementById('view-colaborador-form').classList.add('active');
   document.getElementById('pageTitle').innerHTML='<i class="ti ti-user-star"></i> Colaborador';
   document.getElementById('colabNome').value=nome||'';
+  var _ls=document.getElementById('colabLocal');if(_ls){var _cc=(typeof COLAB!=='undefined')?COLAB.find(function(x){return (x.nome||'').toLowerCase()===((nome||'').toLowerCase());}):null;_ls.innerHTML=colabLocalOptions(_cc&&_cc.local?_cc.local:'');}
   if(typeof colabServRender==='function')colabServRender();
   if(typeof colabTab==='function')colabTab('dados',document.querySelector('#view-colaborador-form .ctab-btn'));
   document.querySelector('.content').scrollTop=0;
@@ -7033,7 +7084,7 @@ function colabServRender(){
 function colabGrpToggle(h){var body=h.parentNode.querySelector('.cserv-body');var ch=h.querySelector('.cserv-chev');if(!body)return;var open=body.style.display==='grid';body.style.display=open?'none':'grid';if(ch)ch.style.transform=open?'':'rotate(180deg)';}
 function colabTab(name,btn){document.querySelectorAll('#view-colaborador-form .ctab-btn').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');document.querySelectorAll('#view-colaborador-form .ctab-panel').forEach(function(pp){pp.style.display='none';});var el=document.getElementById('colabtab-'+name);if(el)el.style.display='block';}
 function rhEmpUpsertFull(nome,perfil,data){var arr=rhEmpRead();var e=null;for(var i=0;i<arr.length;i++){if((arr[i].nome||'').toLowerCase()===(nome||'').toLowerCase()){e=arr[i];break;}}if(!e){e=_empFromColab(nome,perfil,data.tel||'',true);arr.push(e);}
-  e.cargo=data.cargo||perfil||e.cargo;e.salarioBruto=data.salario||e.salarioBruto;e.tipoContrato=data.contrato||e.tipoContrato;if(data.admissao)e.dataAdmissao=data.admissao;
+  if(data.unidade)e.unidade=data.unidade;e.cargo=data.cargo||perfil||e.cargo;e.salarioBruto=data.salario||e.salarioBruto;e.tipoContrato=data.contrato||e.tipoContrato;if(data.admissao)e.dataAdmissao=data.admissao;
   if(!e.horario)e.horario={};if(data.cargaSem)e.horario.cargaSemanal=data.cargaSem;if(data.entrada)e.horario.entrada=data.entrada;if(data.saida)e.horario.saida=data.saida;if(data.intervalo)e.horario.intervalo=data.intervalo;
   e.enderecoResidencial={cep:data.cep||'',rua:data.rua||'',numero:data.num||'',complemento:data.compl||'',bairro:data.bairro||'',cidade:data.cidade||'',estado:data.estado||''};
   if(data.docs&&data.docs.length)e.documentos=data.docs;e._origem='PowerSystem';rhEmpWrite(arr);}
@@ -7048,12 +7099,13 @@ function colabSalvar(){
   if(!nome){showToast('Informe o nome do colaborador','ti-alert-triangle');return;}
   const perfil=((document.getElementById('colabPerfil')||{}).value)||'Profissional';
   const tel=((document.getElementById('colabTel')||{}).value)||'';
+  const local=((document.getElementById('colabLocal')||{}).value)||'';
   const exibeAg=!!((document.getElementById('colabExibeAgenda')||{}).checked);
   const G=function(id){return ((document.getElementById(id)||{}).value)||'';};
   const di=document.getElementById('rhDocs');const docNames=(di&&di.files)?[].map.call(di.files,function(f){return f.name;}):[];
   const salNum=parseFloat(G('rhSalario').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.'))||0;
-  const rhData={tel:tel,cargo:G('rhCargo'),salario:salNum,contrato:G('rhContrato')||'CLT',admissao:G('rhAdmissao'),cargaSem:parseInt(G('rhCargaSem'))||0,entrada:G('rhHorEntrada'),saida:G('rhHorSaida'),intervalo:G('rhIntervalo'),cep:G('rhCep'),rua:G('rhRua'),num:G('rhNum'),compl:G('rhCompl'),bairro:G('rhBairro'),cidade:G('rhCidade'),estado:G('rhEstado'),docs:docNames};
-  if(!COLAB.some(c=>(c.nome||'').toLowerCase()===nome.toLowerCase()))COLAB.unshift({nome,perfil,tel:tel,cargo:rhData.cargo||perfil,contrato:rhData.contrato,salario:salNum,agenda:exibeAg,ultimoAcesso:'13/06/2026',ativo:true});
+  const rhData={tel:tel,cargo:G('rhCargo'),salario:salNum,contrato:G('rhContrato')||'CLT',admissao:G('rhAdmissao'),unidade:local,cargaSem:parseInt(G('rhCargaSem'))||0,entrada:G('rhHorEntrada'),saida:G('rhHorSaida'),intervalo:G('rhIntervalo'),cep:G('rhCep'),rua:G('rhRua'),num:G('rhNum'),compl:G('rhCompl'),bairro:G('rhBairro'),cidade:G('rhCidade'),estado:G('rhEstado'),docs:docNames};
+  if(!COLAB.some(c=>(c.nome||'').toLowerCase()===nome.toLowerCase()))COLAB.unshift({nome,perfil,tel:tel,cargo:rhData.cargo||perfil,contrato:rhData.contrato,salario:salNum,local:local,agenda:exibeAg,ultimoAcesso:'13/06/2026',ativo:true});else{var _ex=COLAB.find(c=>(c.nome||'').toLowerCase()===nome.toLowerCase());if(_ex)_ex.local=local;}
   rhEmpUpsertFull(nome,perfil,rhData);
   if(typeof persistState==='function')persistState();
   if(typeof auditLog==='function')auditLog('Colaborador','Cadastrou '+nome+' (sincronizado com o RH)');
@@ -9785,7 +9837,7 @@ const SB_URL='https://riutcbwillvqjrpaefkb.supabase.co';
 const SB_KEY='sb_publishable_8FW_cnNJaDAkXYLbG-tPdw_nif7aAzp';
 const SB_ROW='laserco_prototype';
 let _sb=null;try{if(window.supabase&&window.supabase.createClient)_sb=window.supabase.createClient(SB_URL,SB_KEY);}catch(e){}
-function _persistSet(){return {CRM_LEADS:typeof CRM_LEADS!=='undefined'?CRM_LEADS:null,COMUNICADOS:typeof COMUNICADOS!=='undefined'?COMUNICADOS:null,CHAMADOS:typeof CHAMADOS!=='undefined'?CHAMADOS:null,CHK_MODELS:typeof CHK_MODELS!=='undefined'?CHK_MODELS:null,UNI_TRILHAS:typeof UNI_TRILHAS!=='undefined'?UNI_TRILHAS:null,IMPL_FASES:typeof IMPL_FASES!=='undefined'?IMPL_FASES:null,IMPL_PROJ:typeof IMPL_PROJ!=='undefined'?IMPL_PROJ:null,REDE_EVENTOS:typeof REDE_EVENTOS!=='undefined'?REDE_EVENTOS:null,DISP_CAMPS:typeof DISP_CAMPS!=='undefined'?DISP_CAMPS:null,DISP_BASES:typeof DISP_BASES!=='undefined'?DISP_BASES:null,SERVICOS:typeof SERVICOS!=='undefined'?SERVICOS:null,PACOTES:typeof PACOTES!=='undefined'?PACOTES:null,PRODUTOS:typeof PRODUTOS!=='undefined'?PRODUTOS:null,UNIDADES:typeof UNIDADES!=='undefined'?UNIDADES:null,VIP_GROUPS:typeof VIP_GROUPS!=='undefined'?VIP_GROUPS:null,OS_DATA:typeof OS_DATA!=='undefined'?OS_DATA:null,JUR_TEMPLATES:typeof JUR_TEMPLATES!=='undefined'?JUR_TEMPLATES:null,AUDIT:typeof AUDIT!=='undefined'?AUDIT:null,DESC_LIMIT:typeof DESC_LIMIT!=='undefined'?DESC_LIMIT:null,FIN_REC:typeof FIN_REC!=='undefined'?FIN_REC:null,FIN_PAG:typeof FIN_PAG!=='undefined'?FIN_PAG:null,FIN_CONC:typeof FIN_CONC!=='undefined'?FIN_CONC:null,FIN_CATS_REC:typeof FIN_CATS_REC!=='undefined'?FIN_CATS_REC:null,FIN_CFG:typeof FIN_CFG!=='undefined'?FIN_CFG:null,CATP_TREE:typeof CATP_TREE!=='undefined'?CATP_TREE:null,CATR_TREE:typeof CATR_TREE!=='undefined'?CATR_TREE:null,COLAB:typeof COLAB!=='undefined'?COLAB:null,CALC_PARC:typeof CALC_PARC!=='undefined'?CALC_PARC:null,CALC_CFG:typeof CALC_CFG!=='undefined'?CALC_CFG:null,CALC_IDX:typeof CALC_IDX!=='undefined'?CALC_IDX:null,DESC:typeof DESC!=='undefined'?DESC:null,PARCERIAS:typeof PARCERIAS!=='undefined'?PARCERIAS:null,PGTO:typeof PGTO!=='undefined'?PGTO:null,MOTIVOS:typeof MOTIVOS!=='undefined'?MOTIVOS:null,ORIGENS:typeof ORIGENS!=='undefined'?ORIGENS:null,DESC_MAX_UNIDADE:typeof DESC_MAX_UNIDADE!=='undefined'?DESC_MAX_UNIDADE:null};}
+function _persistSet(){return {CRM_LEADS:typeof CRM_LEADS!=='undefined'?CRM_LEADS:null,COMUNICADOS:typeof COMUNICADOS!=='undefined'?COMUNICADOS:null,CHAMADOS:typeof CHAMADOS!=='undefined'?CHAMADOS:null,CHK_MODELS:typeof CHK_MODELS!=='undefined'?CHK_MODELS:null,UNI_TRILHAS:typeof UNI_TRILHAS!=='undefined'?UNI_TRILHAS:null,IMPL_FASES:typeof IMPL_FASES!=='undefined'?IMPL_FASES:null,IMPL_PROJ:typeof IMPL_PROJ!=='undefined'?IMPL_PROJ:null,REDE_EVENTOS:typeof REDE_EVENTOS!=='undefined'?REDE_EVENTOS:null,DISP_CAMPS:typeof DISP_CAMPS!=='undefined'?DISP_CAMPS:null,DISP_BASES:typeof DISP_BASES!=='undefined'?DISP_BASES:null,SERVICOS:typeof SERVICOS!=='undefined'?SERVICOS:null,PACOTES:typeof PACOTES!=='undefined'?PACOTES:null,PRODUTOS:typeof PRODUTOS!=='undefined'?PRODUTOS:null,UNIDADES:typeof UNIDADES!=='undefined'?UNIDADES:null,ESCRITORIOS:typeof ESCRITORIOS!=='undefined'?ESCRITORIOS:null,VIP_GROUPS:typeof VIP_GROUPS!=='undefined'?VIP_GROUPS:null,OS_DATA:typeof OS_DATA!=='undefined'?OS_DATA:null,JUR_TEMPLATES:typeof JUR_TEMPLATES!=='undefined'?JUR_TEMPLATES:null,AUDIT:typeof AUDIT!=='undefined'?AUDIT:null,DESC_LIMIT:typeof DESC_LIMIT!=='undefined'?DESC_LIMIT:null,FIN_REC:typeof FIN_REC!=='undefined'?FIN_REC:null,FIN_PAG:typeof FIN_PAG!=='undefined'?FIN_PAG:null,FIN_CONC:typeof FIN_CONC!=='undefined'?FIN_CONC:null,FIN_CATS_REC:typeof FIN_CATS_REC!=='undefined'?FIN_CATS_REC:null,FIN_CFG:typeof FIN_CFG!=='undefined'?FIN_CFG:null,CATP_TREE:typeof CATP_TREE!=='undefined'?CATP_TREE:null,CATR_TREE:typeof CATR_TREE!=='undefined'?CATR_TREE:null,COLAB:typeof COLAB!=='undefined'?COLAB:null,CALC_PARC:typeof CALC_PARC!=='undefined'?CALC_PARC:null,CALC_CFG:typeof CALC_CFG!=='undefined'?CALC_CFG:null,CALC_IDX:typeof CALC_IDX!=='undefined'?CALC_IDX:null,DESC:typeof DESC!=='undefined'?DESC:null,PARCERIAS:typeof PARCERIAS!=='undefined'?PARCERIAS:null,PGTO:typeof PGTO!=='undefined'?PGTO:null,MOTIVOS:typeof MOTIVOS!=='undefined'?MOTIVOS:null,ORIGENS:typeof ORIGENS!=='undefined'?ORIGENS:null,DESC_MAX_UNIDADE:typeof DESC_MAX_UNIDADE!=='undefined'?DESC_MAX_UNIDADE:null};}
 function _collect(){const s=_persistSet();const out={};for(const k in s){if(s[k]!=null)out[k]=s[k];}return out;}
 function _replace(arr,data){if(!Array.isArray(arr)||!Array.isArray(data))return;arr.length=0;data.forEach(x=>arr.push(x));}
 function _apply(d){const s=_persistSet();for(const k in d){if(k==='IMPL_PROJ'){if(typeof IMPL_PROJ!=='undefined')Object.assign(IMPL_PROJ,d[k]);}else if(k==='DESC_LIMIT'){if(typeof DESC_LIMIT!=='undefined'&&d[k])Object.assign(DESC_LIMIT,d[k]);}else if(k==='FIN_CFG'){if(typeof FIN_CFG!=='undefined'&&d[k])Object.assign(FIN_CFG,d[k]);}else if(k==='CALC_CFG'){if(typeof CALC_CFG!=='undefined'&&d[k])Object.assign(CALC_CFG,d[k]);}else if(k==='CALC_IDX'){if(typeof CALC_IDX!=='undefined'&&d[k])Object.assign(CALC_IDX,d[k]);}else if(k==='DESC_MAX_UNIDADE'){if(typeof DESC_MAX_UNIDADE!=='undefined'&&d[k])Object.assign(DESC_MAX_UNIDADE,d[k]);}else if(s[k]&&Array.isArray(s[k]))_replace(s[k],d[k]);}if(typeof FIN_REC!=='undefined'&&FIN_REC.length)_finSeeded=true;}
