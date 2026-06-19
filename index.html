@@ -1171,14 +1171,15 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
         </div>
 
         <div class="dash-filter" id="dashFilter">
-          <span class="flabel">Período</span>
-          <div class="chip active" data-period="hoje"><i class="ti ti-calendar-event"></i> Hoje</div>
-          <div class="chip" data-period="ontem"><i class="ti ti-arrow-back-up"></i> Ontem</div>
-          <div class="chip" data-period="semana"><i class="ti ti-calendar-week"></i> Última semana</div>
-          <div class="chip" data-period="mes"><i class="ti ti-calendar-month"></i> Este mês</div>
-          <div class="chip" data-period="ultimo"><i class="ti ti-calendar-stats"></i> Mês anterior</div>
-          <div class="chip" data-period="d30"><i class="ti ti-calendar-due"></i> Últimos 30 dias</div>
-          <div class="chip" data-period="periodo"><i class="ti ti-calendar-search"></i> Período…</div>
+          <span class="flabel"><i class="ti ti-calendar"></i> Período</span>
+          <select id="dashPerSel" onchange="dashPerChange()" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:13px;font-family:inherit;background:#fff;font-weight:600;color:var(--text)">
+            <option value="hoje">Hoje</option><option value="ontem">Ontem</option><option value="semana">Última semana</option><option value="mes">Este mês</option><option value="ultimo">Mês anterior</option><option value="d30">Últimos 30 dias</option><option value="periodo">Período personalizado…</option>
+          </select>
+          <span id="dashPerDates" style="display:none;align-items:center;gap:6px;margin-left:4px">
+            <input type="date" id="dashPerIni" onchange="dashPerCustom()" style="padding:7px;border:1px solid var(--line);border-radius:8px;font-family:inherit">
+            <span style="color:var(--text-3);font-size:13px">até</span>
+            <input type="date" id="dashPerFim" onchange="dashPerCustom()" style="padding:7px;border:1px solid var(--line);border-radius:8px;font-family:inherit">
+          </span>
         </div>
 
         <div class="kpi-grid kpi-3">
@@ -1227,7 +1228,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
         <!-- Funil de vendas -->
         <div class="funnel-grid">
           <div class="panel">
-            <div class="panel-head"><h3><i class="ti ti-filter-cog"></i> Funil de vendas · unidade</h3><span style="font-size:12.5px;color:var(--text-2);font-weight:600" id="funnelPeriod">Hoje</span></div>
+            <div class="panel-head"><h3><i class="ti ti-filter-cog"></i> Funil de vendas · unidade</h3><span id="funnelPos" style="margin-right:8px"></span><span style="font-size:12.5px;color:var(--text-2);font-weight:600" id="funnelPeriod">Hoje</span></div>
             <div class="panel-body">
               <div class="funnel-step"><div class="fs-ic" style="background:#F7E7EB;color:var(--brand-500)"><i class="ti ti-calendar-check"></i></div><div class="fs-main"><span class="fs-label">Agendamentos</span><span class="fs-val" id="fAg">48</span></div><span class="fs-pct" style="background:#F7E7EB;color:var(--brand-500)">100%</span></div>
               <div class="funnel-step"><div class="fs-ic" style="background:var(--blue-bg);color:var(--blue)"><i class="ti ti-user-check"></i></div><div class="fs-main"><span class="fs-label">Comparecimentos</span><span class="fs-val" id="fComp">39</span></div><span class="fs-pct" style="background:var(--blue-bg);color:var(--blue)" id="fCompPct">81%</span></div>
@@ -1246,6 +1247,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
           </div>
         </div>
 
+        <div id="dashSim" style="margin-bottom:18px"></div>
         <!-- Corridinha de Vendas (ranking diário unificado no dashboard) -->
         <div id="dashCorridinha" style="margin-bottom:18px"></div>
         <!-- Ranking de agendamentos -->
@@ -1253,14 +1255,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
           <div class="panel">
             <div class="panel-head"><h3><i class="ti ti-calendar-stats"></i> Ranking de agendamentos</h3><span style="font-size:12.5px;color:var(--text-2);font-weight:600">acumulado do mês</span></div>
             <div class="rank-note"><i class="ti ti-sum"></i> Total de agendamentos acumulados em junho</div>
-            <div class="panel-body">
-              <div class="rank-row"><span class="rank-pos p1">1</span><span class="rank-name">Florianópolis · Centro</span><span class="rank-bar"><span class="f" style="width:100%"></span></span><span class="rank-val">1.180</span></div>
-              <div class="rank-row"><span class="rank-pos p2">2</span><span class="rank-name">Balneário Camboriú</span><span class="rank-bar"><span class="f" style="width:88%"></span></span><span class="rank-val">1.041</span></div>
-              <div class="rank-row"><span class="rank-pos p3">3</span><span class="rank-name">São José</span><span class="rank-bar"><span class="f" style="width:82%"></span></span><span class="rank-val">968</span></div>
-              <div class="rank-row"><span class="rank-pos">4</span><span class="rank-name">Joinville</span><span class="rank-bar"><span class="f" style="width:76%"></span></span><span class="rank-val">902</span></div>
-              <div class="rank-row"><span class="rank-pos">5</span><span class="rank-name">Itajaí</span><span class="rank-bar"><span class="f" style="width:63%"></span></span><span class="rank-val">745</span></div>
-              <div class="rank-row"><span class="rank-pos">6</span><span class="rank-name">Blumenau</span><span class="rank-bar"><span class="f" style="width:52%"></span></span><span class="rank-val">612</span></div>
-            </div>
+            <div class="panel-body" id="dashAgMes"></div>
           </div>
         </div>
       </section>
@@ -3316,6 +3311,7 @@ function applyPeriod(key){
   document.getElementById('fConv').textContent=d.f.conv.toLocaleString('pt-BR');
   document.getElementById('fConvPct').textContent=d.f.vpct+'%';
   document.getElementById('fTicket').textContent=d.f.tk;
+  if(typeof dashExtras==='function')dashExtras();
 }
 document.querySelectorAll('#dashFilter .chip').forEach(c=>{
   c.addEventListener('click',()=>{
@@ -4232,24 +4228,24 @@ let CORRIDA=[
 ];
 function corridaDailyPts(pos){return pos<=10?(11-pos):0;}
 function corridinhaHTML(){
-  const dia=[...CORRIDA].sort((a,b)=>b.dia-a.dia).map((x,i)=>({...x,pos:i+1,pts:corridaDailyPts(i+1)}));
-  const mes=dia.map(x=>({u:x.u,total:x.mes+x.pts})).sort((a,b)=>b.total-a.total).map((x,i)=>({...x,pos:i+1}));
-  const my=dia.find(x=>x.u===CORRIDA_MINHA),myMes=mes.find(x=>x.u===CORRIDA_MINHA);
-  const medal=p=>p===1?'<span class="cor-pos p1">1º</span>':p===2?'<span class="cor-pos p2">2º</span>':p===3?'<span class="cor-pos p3">3º</span>':`<span class="cor-pos">${p}º</span>`;
-  const row=(x,val,mine)=>`<div class="cor-row${mine?' mine':''}">${medal(x.pos)}<span class="cor-u">${x.u}</span>${val}</div>`;
-  const diaTop=dia.slice(0,10).map(x=>row(x,`<span class="cor-v">${money(x.dia)}</span><span class="cor-pt">+${x.pts}pt</span>`,x.u===CORRIDA_MINHA)).join('');
-  const diaExtra=my&&my.pos>10?row(my,`<span class="cor-v">${money(my.dia)}</span><span class="cor-pt">+${my.pts}pt</span>`,true):'';
-  const mesTop=mes.slice(0,10).map(x=>row(x,`<span class="cor-v">${x.total} pts</span>`,x.u===CORRIDA_MINHA)).join('');
-  const mesExtra=myMes&&myMes.pos>10?`<div class="cor-sep">sua posição</div>`+row(myMes,`<span class="cor-v">${myMes.total} pts</span>`,true):'';
-  return `<div class="rel-head"><div class="ri" style="background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-trophy"></i></div><div><h2>Corridinha de Vendas</h2><p>Corrida diária entre as unidades · 1º lugar 10 pts … 10º lugar 1 pt · ranking do mês ao vivo</p></div></div>
-    <div class="rel-acts" style="justify-content:space-between;margin-bottom:14px"><span style="font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-circle-filled" style="font-size:8px;vertical-align:2px"></i> Atualizando em tempo real · hoje 09/06</span><button class="btn btn-ghost" onclick="corridaTick()"><i class="ti ti-refresh"></i> Atualizar agora</button></div>
-    ${relKpis([['Sua unidade · hoje',(my?my.pos+'º':'—'),'ti-flag'],['Pontos ganhos hoje','+'+(my?my.pts:0),'ti-coin'],['Posição no mês',(myMes?myMes.pos+'º':'—'),'ti-calendar-stats'],['Pontos no mês',(myMes?myMes.total:0)+' pts','ti-trophy']])}
-    <div class="dash-grid" style="grid-template-columns:1fr 1fr">
-      <div class="dash-w"><h4><i class="ti ti-run"></i> Ranking do dia (vendas de hoje)</h4>${diaTop}${diaExtra?'<div class="cor-sep">sua posição</div>'+diaExtra:''}</div>
-      <div class="dash-w"><h4><i class="ti ti-trophy"></i> Ranking geral do mês (acumulado)</h4>${mesTop}${mesExtra}</div>
-    </div>`;
+  var U=_corUnits();
+  var vendas=U.slice().sort(function(a,b){return b.dia-a.dia;}).map(function(x,i){return Object.assign({},x,{pos:i+1});});
+  var agdr=U.slice().sort(function(a,b){return b.agd-a.agd;}).map(function(x,i){return Object.assign({},x,{pos:i+1});});
+  var myV=vendas.find(function(x){return x.u===CORRIDA_MINHA;}), myA=agdr.find(function(x){return x.u===CORRIDA_MINHA;});
+  var rowName=function(x,extra,mine){return '<div class="cor-row'+(mine?' mine':'')+'">'+_corMedal(x.pos)+'<span class="cor-u">'+x.u+'</span>'+(extra||'')+'</div>';};
+  var vTop=vendas.slice(0,10).map(function(x){return rowName(x,'',x.u===CORRIDA_MINHA);}).join('');
+  var vExtra=myV&&myV.pos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+rowName(myV,'',true):'';
+  var aTop=agdr.slice(0,10).map(function(x){return rowName(x,'<span class="cor-v">'+x.agd+' agds</span>',x.u===CORRIDA_MINHA);}).join('');
+  var aExtra=myA&&myA.pos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+rowName(myA,'<span class="cor-v">'+myA.agd+' agds</span>',true):'';
+  return '<div class="rel-head"><div class="ri" style="background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-trophy"></i></div><div><h2>Ranking do dia</h2><p>Posi\u00e7\u00e3o das unidades hoje — vendas (apenas posi\u00e7\u00e3o) e agendamentos \u00b7 09/06</p></div></div>'
+    +'<div class="rel-acts" style="justify-content:space-between;margin-bottom:14px"><span style="font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-circle-filled" style="font-size:8px;vertical-align:2px"></i> Atualizando em tempo real</span><button class="btn btn-ghost" onclick="corridaTick()"><i class="ti ti-refresh"></i> Atualizar agora</button></div>'
+    +relKpis([['Vendas \u00b7 sua posi\u00e7\u00e3o',(myV?myV.pos+'\u00ba':'\u2014'),'ti-flag'],['Agendamentos \u00b7 sua posi\u00e7\u00e3o',(myA?myA.pos+'\u00ba':'\u2014'),'ti-calendar-stats'],['Unidades na rede',U.length,'ti-building'],['Agendamentos hoje',(myA?myA.agd:0),'ti-calendar-check']])
+    +'<div class="dash-grid" style="grid-template-columns:1fr 1fr">'
+    +'<div class="dash-w"><h4><i class="ti ti-trophy"></i> Ranking de vendas \u00b7 hoje</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px"><i class="ti ti-lock"></i> Valores ocultos — apenas a posi\u00e7\u00e3o</div>'+vTop+vExtra+'</div>'
+    +'<div class="dash-w"><h4><i class="ti ti-calendar-check"></i> Ranking de agendamentos \u00b7 hoje</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px">N\u00ba de agendamentos por unidade</div>'+aTop+aExtra+'</div>'
+    +'</div>';
 }
-function dashCorridinhaRender(){const c=document.getElementById('dashCorridinha');if(c)c.innerHTML=corridinhaHTML();}
+function dashCorridinhaRender(){const c=document.getElementById('dashCorridinha');if(c)c.innerHTML=corridinhaHTML();if(typeof dashExtras==='function')dashExtras();}
 function corridaTick(){CORRIDA.forEach(x=>{x.dia=Math.max(0,x.dia+Math.round((Math.random()-0.35)*1200));});const w=document.getElementById('dashWrap');if(w&&document.getElementById('view-dashb').classList.contains('active'))w.innerHTML=corridinhaHTML();dashCorridinhaRender();showToast('Ranking atualizado','ti-refresh');}
 /* Esconde a barra lateral interna do app de vendas embarcado e integra as cores do nosso sistema */
 function vendasFrameStyle(f){
@@ -8766,6 +8762,58 @@ function buildDisco(){
  w.innerHTML=drive+'<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between"><div style="font-size:14px">'+bc+'</div>'+actions+'</div>'+fhtml+lhtml+empty;
 }
 
+/* ===== Dashboard · período (lista + calendário), rankings, posição e simulação ===== */
+function dashPerChange(){var v=(document.getElementById('dashPerSel')||{}).value;var dd=document.getElementById('dashPerDates');if(v==='periodo'){if(dd)dd.style.display='inline-flex';dashPerCustom();}else{if(dd)dd.style.display='none';if(typeof applyPeriod==='function')applyPeriod(v);}}
+function dashPerCustom(){var i=(document.getElementById('dashPerIni')||{}).value,f=(document.getElementById('dashPerFim')||{}).value;if(typeof applyPeriod==='function')applyPeriod('periodo');if(i&&f){var br=function(s){return s.split('-').reverse().join('/');};var pl=document.getElementById('periodLabel');if(pl)pl.textContent=br(i)+' a '+br(f);var fp=document.getElementById('funnelPeriod');if(fp)fp.textContent='Período';if(typeof dashExtras==='function')dashExtras();}}
+function _corUnits(){return (typeof CORRIDA!=='undefined'?CORRIDA:[]).map(function(x){return {u:x.u,dia:x.dia,mes:x.mes,agd:Math.round(x.dia/108),agm:Math.round(x.mes*11)};});}
+function _corMedal(p){return p===1?'<span class="cor-pos p1">1º</span>':p===2?'<span class="cor-pos p2">2º</span>':p===3?'<span class="cor-pos p3">3º</span>':'<span class="cor-pos">'+p+'º</span>';}
+function dashAgMesRender(){
+  var el=document.getElementById('dashAgMes'); if(!el) return;
+  var U=_corUnits().slice().sort(function(a,b){return b.agm-a.agm;}).map(function(x,i){return Object.assign({},x,{pos:i+1});});
+  var max=U[0]?U[0].agm:1; var my=U.find(function(x){return x.u===CORRIDA_MINHA;});
+  var posCls=function(p){return p===1?'rank-pos p1':p===2?'rank-pos p2':p===3?'rank-pos p3':'rank-pos';};
+  var row=function(x,mine){return '<div class="rank-row"'+(mine?' style="background:var(--gold-soft);border-radius:8px"':'')+'><span class="'+posCls(x.pos)+'">'+x.pos+'</span><span class="rank-name">'+x.u+(mine?' <b>(sua unidade)</b>':'')+'</span><span class="rank-bar"><span class="f" style="width:'+Math.round(x.agm/max*100)+'%"></span></span><span class="rank-val">'+x.agm.toLocaleString('pt-BR')+'</span></div>';};
+  var html=U.slice(0,10).map(function(x){return row(x,x.u===CORRIDA_MINHA);}).join('');
+  if(my&&my.pos>10){html+='<div class="cor-sep">sua posição</div>'+row(my,true);}
+  el.innerHTML=html;
+}
+function dashFunnelPos(){
+  var el=document.getElementById('funnelPos'); if(!el) return;
+  var U=_corUnits().slice().sort(function(a,b){return b.dia-a.dia;});
+  var pos=U.findIndex(function(x){return x.u===CORRIDA_MINHA;})+1; var n=U.length;
+  if(pos>0){el.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--gold-soft);color:var(--gold-600);font-weight:700;font-size:11px;padding:2px 9px;border-radius:20px" title="Posição da sua unidade em vendas na rede"><i class="ti ti-medal"></i> '+pos+'º de '+n+' na rede</span>';}
+}
+function _parseR(t){return Math.round(parseFloat(String(t||'0').replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.'))||0);}
+function dashSimRender(){
+  var el=document.getElementById('dashSim'); if(!el) return;
+  var ag=parseInt(((document.getElementById('fAg')||{}).textContent||'0').replace(/\D/g,''))||0;
+  var compP=parseInt((document.getElementById('fCompPct')||{}).textContent)||0;
+  var convP=parseInt((document.getElementById('fConvPct')||{}).textContent)||0;
+  var ticket=_parseR((document.getElementById('fTicket')||{}).textContent);
+  if(!ag||!ticket){el.innerHTML='';return;}
+  var NET={comp:78,conv:49,ticket:392};
+  var curConv=Math.round(ag*compP/100*convP/100); var curRev=curConv*ticket;
+  var tComp=Math.max(compP,NET.comp), tConv=Math.max(convP,NET.conv), tTicket=Math.max(ticket,NET.ticket);
+  var scenario='média da rede';
+  if(tComp===compP&&tConv===convP&&tTicket===ticket){
+    tComp=Math.max(Math.round(NET.comp*1.12),compP); tConv=Math.max(Math.round(NET.conv*1.12),convP); tTicket=Math.max(Math.round(NET.ticket*1.12),ticket);
+    scenario='melhores unidades da rede';
+  }
+  var projConv=Math.round(ag*tComp/100*tConv/100); var projRev=projConv*tTicket;
+  var uplift=curRev>0?Math.round((projRev/curRev-1)*100):0;
+  var rev=function(c,v,t){return Math.round(ag*c/100*v/100)*t;};
+  var gComp=rev(tComp,convP,ticket)-curRev, gConv=rev(compP,tConv,ticket)-curRev, gTicket=rev(compP,convP,tTicket)-curRev;
+  var best=Math.max(gComp,gConv,gTicket); var bestLbl=best<=0?'volume de agendamentos':(best===gComp?'comparecimento':best===gConv?'conversão':'ticket médio');
+  var ind=function(lab,cur,alvo,suf){var up=alvo>cur;return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)"><span>'+lab+'</span><span><b>'+cur+suf+'</b>'+(up?' <i class="ti ti-arrow-right" style="color:var(--text-3)"></i> <b style="color:var(--green)">'+alvo+suf+'</b>':' <span style="color:var(--green);font-size:11px">✓ acima da média</span>')+'</span></div>';};
+  var money=function(v){return 'R$ '+v.toLocaleString('pt-BR');};
+  el.innerHTML='<div class="panel" style="border-left:3px solid var(--gold-500)"><div class="panel-head"><h3><i class="ti ti-rocket"></i> Simulação de crescimento</h3><span style="font-size:12px;color:var(--text-2);font-weight:600">mantendo seus bons indicadores e elevando ao patamar da '+scenario+'</span></div>'
+    +'<div class="panel-body"><div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:center" class="sim-grid">'
+    +'<div>'+ind('Comparecimento',compP,tComp,'%')+ind('Conversão',convP,tConv,'%')+ind('Ticket médio',ticket,tTicket,'')+'<div style="font-size:11.5px;color:var(--text-3);margin-top:8px"><i class="ti ti-bulb" style="color:var(--gold-500)"></i> Maior alavanca de ganho: <b>'+bestLbl+'</b></div></div>'
+    +'<div style="text-align:center;background:var(--gold-soft);border-radius:12px;padding:14px"><div style="font-size:11.5px;color:var(--text-2)">Venda no período</div><div style="font-size:13px;color:var(--text-3);text-decoration:line-through">'+money(curRev)+'</div><div style="font-size:25px;font-weight:800;color:var(--brand-500);margin:2px 0">'+money(projRev)+'</div><div style="display:inline-block;background:var(--green-bg);color:var(--green);font-weight:800;font-size:15px;padding:3px 13px;border-radius:20px">+'+uplift+'% de venda</div></div>'
+    +'</div></div></div>';
+}
+function dashExtras(){try{dashAgMesRender();}catch(e){}try{dashFunnelPos();}catch(e){}try{dashSimRender();}catch(e){}}
+
 function showView(view,el){
   Object.values(views).forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(views[view]).classList.add('active');
@@ -9126,6 +9174,7 @@ function applyRole(){
   document.querySelectorAll('.hidden-role').forEach(e=>e.classList.remove('hidden-role'));
   const cfg=ROLE_ALLOW[USER_ROLE];
   document.getElementById('roleName').textContent=USER_ROLE;
+  var _rp=document.getElementById('rolePill');if(_rp)_rp.style.display=(window._adminAccount?'':'none');
   // itens só-admin (ex.: Jurídico) — Proprietário, ou áreas que tenham aquele item liberado
   if(USER_ROLE!=='Proprietário')document.querySelectorAll('[data-admin="1"]').forEach(e=>{const v=e.dataset.view;if(!(cfg&&cfg.adminOK&&cfg.adminOK.includes(v)))e.classList.add('hidden-role');});
   if(!cfg){renderNotif();return;}
@@ -9223,7 +9272,7 @@ async function onAuthed(session){
   _authed=true;
   let role='Proprietário',nome=session&&session.user?session.user.email:'';
   try{const uid=session.user.id;const{data}=await _sb.from('profiles').select('role,nome').eq('id',uid).single();if(data){if(data.role)role=data.role;if(data.nome)nome=data.nome;}}catch(e){}
-  USER_ROLE=role;
+  USER_ROLE=role;window._adminAccount=(role==='Proprietário');
   if(typeof auditLog==='function')auditLog('Login','Acesso ao sistema · perfil '+role);
   hideAuth();
   const lo=document.getElementById('authLogoutOpt');if(lo)lo.style.display='flex';
@@ -9232,8 +9281,8 @@ async function onAuthed(session){
   await cloudLoad();
   showToast('Bem-vindo(a)'+(nome?', '+nome.split(' ')[0]:'')+' · perfil '+role,'ti-login');
 }
-function authDemo(){_authed=false;USER_ROLE='Proprietário';hideAuth();applyRole();if(typeof mktUpdateBadge==='function')mktUpdateBadge();if(typeof expUpdateBadge==='function')expUpdateBadge();try{if(typeof finSeed==='function')finSeed();if(typeof jurSyncFinanceiro==='function')jurSyncFinanceiro();}catch(e){}const lo=document.getElementById('authLogoutOpt');if(lo)lo.style.display='none';showToast('Modo demonstração — alterações ficam só neste navegador (sem nuvem)','ti-flask');}
-function authTeste(){_authed=false;USER_ROLE='Proprietário';hideAuth();applyRole();if(typeof mktUpdateBadge==='function')mktUpdateBadge();if(typeof expUpdateBadge==='function')expUpdateBadge();try{if(typeof finSeed==='function')finSeed();if(typeof jurSyncFinanceiro==='function')jurSyncFinanceiro();}catch(e){}const lo=document.getElementById('authLogoutOpt');if(lo)lo.style.display='flex';if(typeof auditLog==='function')auditLog('Login','Acesso com a conta de teste');showToast('Conta de teste ativa — explore o sistema. As alterações ficam só neste navegador.','ti-flask');}
+function authDemo(){_authed=false;USER_ROLE='Proprietário';window._adminAccount=true;hideAuth();applyRole();if(typeof mktUpdateBadge==='function')mktUpdateBadge();if(typeof expUpdateBadge==='function')expUpdateBadge();try{if(typeof finSeed==='function')finSeed();if(typeof jurSyncFinanceiro==='function')jurSyncFinanceiro();}catch(e){}const lo=document.getElementById('authLogoutOpt');if(lo)lo.style.display='none';showToast('Modo demonstração — alterações ficam só neste navegador (sem nuvem)','ti-flask');}
+function authTeste(){_authed=false;USER_ROLE='Proprietário';window._adminAccount=true;hideAuth();applyRole();if(typeof mktUpdateBadge==='function')mktUpdateBadge();if(typeof expUpdateBadge==='function')expUpdateBadge();try{if(typeof finSeed==='function')finSeed();if(typeof jurSyncFinanceiro==='function')jurSyncFinanceiro();}catch(e){}const lo=document.getElementById('authLogoutOpt');if(lo)lo.style.display='flex';if(typeof auditLog==='function')auditLog('Login','Acesso com a conta de teste');showToast('Conta de teste ativa — explore o sistema. As alterações ficam só neste navegador.','ti-flask');}
 async function authLogout(){try{if(_sb)await _sb.auth.signOut();}catch(e){}_authed=false;document.getElementById('roleDd').classList.remove('open');showAuth();}
 async function authInit(){
   if(!_sb){showAuth();return;}
