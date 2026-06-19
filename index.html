@@ -1973,7 +1973,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="crm-note"><i class="ti ti-bolt"></i> Centro de mensagens e automações da unidade — fluxos por <b>WhatsApp</b> que rodam sozinhos para captar, lembrar, recuperar e fidelizar clientes. Ative/desative com um clique; cada unidade conecta o seu WhatsApp e ajusta os seus fluxos.</div>
         <div id="autoWa"></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px" id="autoKpis"></div>
-        <div class="mod-actions"><button class="btn btn-primary" id="btnNovaAuto"><i class="ti ti-plus"></i> Nova automação</button></div>
+        <div class="mod-actions" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" id="btnNovaAuto"><i class="ti ti-plus"></i> Nova automação</button><button class="btn" onclick="segModal('Segmentar base de clientes (público-alvo)','Salvar segmento',function(lbl,n){if(typeof DISP_BASES!=='undefined')DISP_BASES.unshift({nome:lbl,tipo:'Sistema',n:n,criada:'gerado agora',ic:'ti-filter-check'});if(typeof persistState==='function')persistState();showToast('Segmento salvo ('+n+' clientes) — disponível em Disparos › Bases','ti-users');})"><i class="ti ti-filter-cog"></i> Segmentar base de clientes</button></div>
         <div class="dash-filter" id="autoCats" style="margin-bottom:18px"></div>
         <div class="autos-grid" id="autosGrid"></div>
       </section>
@@ -3825,7 +3825,7 @@ function buildUnidades(){
 
 /* ---------- Automações ---------- */
 const AUTOS=[
-  {nome:'Recompra de serviço recorrente (8 meses)',cat:'Recompra',ic:'ti-rotate-clockwise-2',gat:'um serviço recorrente completa 8 meses desde a última sessão realizada',ac:'dispara um fluxo de 7 dias oferecendo a nova sessão do mesmo serviço para manter o resultado no tempo, e registra a oportunidade de revenda no CRM',canais:['wa','email'],ativo:true,stat:'recupera 22% em revenda',det:{
+  {nome:'Revenda de serviço recorrente (8 meses)',cat:'Revenda',ic:'ti-rotate-clockwise-2',gat:'um serviço recorrente completa 8 meses desde a última sessão realizada',ac:'dispara um fluxo de 7 dias oferecendo a nova sessão do mesmo serviço para manter o resultado no tempo, e registra a oportunidade de revenda no CRM',canais:['wa','email'],ativo:true,stat:'recupera 22% em revenda',det:{
     servicos:['Ultrassom — todos (UltraCel / microfocado)','Rejuvenescimento Facial 4D','Rejuvenescimento das Mãos','Rejuvenescimento Colo e Pescoço','PDRN e Exossomos','Melasma'],
     janela:'Oferta válida por 7 dias (condição especial para resgatar a revenda)',
     passos:[
@@ -3849,6 +3849,7 @@ const AUTOS=[
   {nome:'Alerta de expiração de pacote',cat:'Pós-venda',ic:'ti-package',gat:'faltam 30 dias para o pacote expirar',ac:'avisa o cliente para agendar as sessões restantes',canais:['wa'],ativo:true},
   {nome:'Nutrição de leads (3 mensagens)',cat:'CRM',ic:'ti-messages',gat:'o lead não responde à abordagem',ac:'envia a 1ª, 2ª e 3ª mensagem padronizada em sequência (Gestão de Geolocalizado)',canais:['wa'],ativo:true},
   {nome:'Recuperação de orçamento',cat:'CRM',ic:'ti-receipt',gat:'o lead está parado em "Proposta" há 2 dias',ac:'envia follow-up de fechamento com condição especial',canais:['wa'],ativo:true},
+  {nome:'REVENDA · Oferta do dia (30 min antes da sessão)',cat:'Revenda',ic:'ti-discount-2',gat:'faltam 30 minutos para a sessão do cliente',ac:'envia por WhatsApp a "Oferta do Dia" com condições imperdíveis (relação de serviços e ofertas configurável) para o cliente aproveitar e adquirir na hora, antes da sessão',canais:['wa'],ativo:true,stat:'oferta-relâmpago pré-sessão'},
   {nome:'META · Alerta geral de meta para a equipe',cat:'META',ic:'ti-target',gat:'faltam menos de 20% para a meta da unidade',ac:'notifica pelo sistema o gestor e a equipe (colaboradores cadastrados) do quanto falta vender no período. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true},
   {nome:'META · Gerente e Sub-gerente da unidade',cat:'META',ic:'ti-user-shield',gat:'a cada 3 dias (exceto domingo), ao medir os indicadores da unidade',ac:'notifica pelo sistema a Gerente e a Sub-gerente cadastradas quando: agendamentos da unidade abaixo da meta projetada do mês; clientes novos abaixo de 25% do total agendado; menos de 10 indicações por dia; ticket médio 20% abaixo da média da rede; conversão 20% abaixo da média da rede; ou meta individual 20% abaixo do projetado. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true,stat:'medição a cada 3 dias · exceto domingo'},
   {nome:'META · Consultora de Vendas (meta individual)',cat:'META',ic:'ti-user-dollar',gat:'a cada 3 dias (exceto domingo), ao medir os indicadores individuais da consultora',ac:'notifica pelo sistema a consultora cadastrada quando, na sua meta individual: agendamentos abaixo do projetado; clientes novos abaixo de 25% do agendado; menos de 10 indicações por dia; ticket médio 20% abaixo da média da rede; conversão 20% abaixo da média da rede; ou meta individual 20% abaixo do projetado. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true,stat:'por meta individual · a cada 3 dias'},
@@ -3884,7 +3885,7 @@ function mensListaUnidade(){
 }
 function renderAutos(){
   const adm=(typeof isAdmin==='function')&&isAdmin();
-  const cats=['Todas','Recompra','Agendamentos','Pós-venda','CRM','Fidelização','META','Cadastro','Personalizada'];
+  const cats=['Todas','Revenda','Agendamentos','Pós-venda','CRM','Fidelização','META','Cadastro','Personalizada'];
   document.getElementById('autoCats').innerHTML='<span class="flabel">Categorias</span>'+cats.map(c=>`<div class="chip ${c===autoFiltro?'active':''}" data-cat="${c}">${c}</div>`).join('');
   document.querySelectorAll('#autoCats .chip').forEach(ch=>ch.onclick=()=>{autoFiltro=ch.dataset.cat;renderAutos();});
   const g=document.getElementById('autosGrid');
@@ -6517,12 +6518,12 @@ function dispCampanhas(){
 function dispCampReport(i){
   const c=DISP_CAMPS[i];const b=document.getElementById('dispBody');
   const conv=Math.round(c.resp*0.6);
-  const funnelRows=[['Enviadas',c.env||100,String(c.env)],['Entregues',c.entr,String(c.entr)],['Lidas',c.lidas,String(c.lidas)],['Respostas',c.resp,String(c.resp)],['Conversões',conv,String(conv)]];
+  const _env=c.env||100;const funnelRows=[['Enviadas',_env,String(_env)+' (100%)'],['Entregues',c.entr,c.entr+' ('+pct(c.entr,_env)+')'],['Lidas',c.lidas,c.lidas+' ('+pct(c.lidas,_env)+')'],['Respostas',c.resp,c.resp+' ('+pct(c.resp,_env)+')'],['Conversões',conv,conv+' ('+pct(conv,_env)+')']];
   b.innerHTML=`<div style="margin-bottom:12px"><span class="os-link" onclick="renderDisp('campanhas')"><i class="ti ti-arrow-left"></i> Voltar às campanhas</span></div>
     <div class="rel-head" style="margin-bottom:14px"><div class="ri" style="background:#E7F9EE;color:#1a8a4f"><i class="ti ti-report"></i></div><div><h2 style="font-size:17px">${c.nome}</h2><p>${c.uni} · base "${c.base}" · ${c.quando}</p></div></div>
     ${relKpis([['Enviadas',String(c.env),'ti-send'],['Entregues',c.entr+' ('+pct(c.entr,c.env||1)+')','ti-checks'],['Lidas',c.lidas+' ('+pct(c.lidas,c.entr||1)+')','ti-eye-check'],['Respostas',String(c.resp),'ti-message-2'],['Conversões',String(conv),'ti-businessplan'],['Custo estimado','R$ '+(c.env*0.08).toFixed(2).replace('.',','),'ti-coin']])}
     <div class="app-banner" style="background:#E7F9EE;color:#0f6b3a;display:flex;align-items:center;gap:12px"><i class="ti ti-affiliate" style="font-size:24px"></i><div style="flex:1"><h4 style="font-family:inherit;font-size:14px;color:#0f6b3a;justify-content:flex-start"><i class="ti ti-arrow-right"></i> ${c.resp} respondentes viram leads no CRM</h4><p style="color:#177a45">Cada um entra flegado como <b>Disparo WhatsApp</b> para a equipe seguir o fluxo de fechamento. A conversa segue na aba Conversas.</p></div><button class="btn btn-primary btn-wa" onclick="dispRespToCRM(${i})"><i class="ti ti-user-plus"></i> Enviar ao CRM</button></div>
-    <div class="dash-grid">${dashWidget('Funil da campanha','ti-filter',barChart(funnelRows,false))}${dashWidget('Status de entrega','ti-chart-pie',barChart([['Entregues',c.entr,String(c.entr)],['Não entregues',(c.env-c.entr)||0,String((c.env-c.entr)||0)]],true))}</div>
+    <div class="dash-grid">${dashWidget('Funil da campanha','ti-filter',barChart(funnelRows,false))}${dashWidget('Status de entrega','ti-chart-pie',barChart([['Entregues',c.entr,c.entr+' ('+pct(c.entr,_env)+')'],['Não entregues',(_env-c.entr)||0,((_env-c.entr)||0)+' ('+pct((_env-c.entr)||0,_env)+')']],true))}</div>
     ${relTable(['Cliente','Telefone','Status','Lida','Respondeu'],[['Mariana Costa','(48) 99812-3344','<span class="wa-pill ok">Entregue</span>','Sim','Sim'],['João Pereira','(48) 99745-1180','<span class="wa-pill ok">Entregue</span>','Sim','Não'],['Carla Souza','(48) 99622-7788','<span class="wa-pill pend">Pendente</span>','—','—']])}`;
 }
 function dispBases(){
@@ -6535,7 +6536,51 @@ function dispBases(){
     <div id="dispBaseBuilder"></div>
     <div class="disp-grid">${cards}</div>`;
 }
+var SEG_CAMPOS={
+ verificado:{l:'Verificado',type:'sel',ops:['é'],vals:['Sim','Não']},
+ jaCliente:{l:'Já contratou algo',type:'sel',ops:['é'],vals:['Sim (algum pacote/serviço)','Não (nunca contratou)']},
+ contratou:{l:'Contratou o serviço',type:'serv',ops:['=']},
+ naoContratou:{l:'NÃO contratou o serviço',type:'serv',ops:['=']},
+ gasto:{l:'Gasto total (R$)',type:'num',ops:['maior que','menor que']},
+ unidade:{l:'Unidade',type:'uni',ops:['=']},
+ cidade:{l:'Cidade',type:'txt',ops:['=']},
+ estado:{l:'Estado (UF)',type:'txt',ops:['=']}
+};
+let _segCrit=[];
+function _segSty(){return 'padding:7px 8px;border:1px solid var(--line-strong);border-radius:8px;font-family:inherit;font-size:12.5px';}
+function segServOpts(sel){var arr=(typeof SERVICOS!=='undefined'?SERVICOS:[]).filter(function(s,i){return !(typeof SERV_OFF!=='undefined'&&SERV_OFF.has(i));}).map(function(s){return s[0];});return arr.map(function(n){return '<option'+(n===sel?' selected':'')+'>'+n+'</option>';}).join('');}
+function segUniOpts(sel){var arr=(typeof UNIDADES!=='undefined'?UNIDADES:[]).map(function(u){return u.nome;});return arr.map(function(n){return '<option'+(n===sel?' selected':'')+'>'+n+'</option>';}).join('');}
+function segRowHTML(c,i){
+  var def=SEG_CAMPOS[c.campo]||SEG_CAMPOS.verificado;var st=_segSty();
+  var campoSel='<select onchange="segSetCampo('+i+',this.value)" style="'+st+';min-width:170px">'+Object.keys(SEG_CAMPOS).map(function(k){return '<option value="'+k+'"'+(k===c.campo?' selected':'')+'>'+SEG_CAMPOS[k].l+'</option>';}).join('')+'</select>';
+  var opSel='<select onchange="_segCrit['+i+'].op=this.value" style="'+st+'">'+def.ops.map(function(o){return '<option'+(o===c.op?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+  var valEl;
+  if(def.type==='sel')valEl='<select onchange="_segCrit['+i+'].valor=this.value;segCountRender()" style="'+st+';flex:1">'+def.vals.map(function(v){return '<option'+(v===c.valor?' selected':'')+'>'+v+'</option>';}).join('')+'</select>';
+  else if(def.type==='serv')valEl='<select onchange="_segCrit['+i+'].valor=this.value;segCountRender()" style="'+st+';flex:1">'+segServOpts(c.valor)+'</select>';
+  else if(def.type==='uni')valEl='<select onchange="_segCrit['+i+'].valor=this.value;segCountRender()" style="'+st+';flex:1">'+segUniOpts(c.valor)+'</select>';
+  else if(def.type==='num')valEl='<input type="number" placeholder="0" value="'+(c.valor||'')+'" oninput="_segCrit['+i+'].valor=this.value;segCountRender()" style="'+st+';flex:1">';
+  else valEl='<input placeholder="digite…" value="'+String(c.valor||'').replace(/"/g,'&quot;')+'" oninput="_segCrit['+i+'].valor=this.value" style="'+st+';flex:1">';
+  return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'+campoSel+opSel+valEl+'<button class="ico-btn" onclick="segDelCrit('+i+')" title="Remover critério"><i class="ti ti-trash" style="color:var(--red)"></i></button></div>';
+}
+function segSetCampo(i,k){_segCrit[i].campo=k;var def=SEG_CAMPOS[k];_segCrit[i].op=def.ops[0];_segCrit[i].valor=def.vals?def.vals[0]:'';segRenderRows();segCountRender();}
+function segDelCrit(i){_segCrit.splice(i,1);if(!_segCrit.length)_segCrit.push({campo:'verificado',op:'é',valor:'Sim'});segRenderRows();segCountRender();}
+function segAddCrit(){_segCrit.push({campo:'contratou',op:'=',valor:''});segRenderRows();segCountRender();}
+function segRenderRows(){var el=document.getElementById('segRows');if(el)el.innerHTML=_segCrit.map(segRowHTML).join('');}
+function segCount(){var n=1248;var f={verificado:0.45,jaCliente:0.55,contratou:0.22,naoContratou:0.8,gasto:0.35,unidade:0.09,cidade:0.13,estado:0.28};_segCrit.forEach(function(c){if(f[c.campo]!=null)n*=f[c.campo];});return Math.max(0,Math.round(n));}
+function segCountRender(){var el=document.getElementById('segCount');if(el)el.textContent='≈ '+segCount().toLocaleString('pt-BR')+' clientes no segmento';}
+function segLabel(){return _segCrit.map(function(c){return SEG_CAMPOS[c.campo].l+' '+(c.op||'')+' '+(c.valor||'—');}).join(' · ')||'Segmento personalizado';}
+function segModal(title,applyLabel,onApply){
+  _segCrit=[{campo:'verificado',op:'é',valor:'Sim'}];window._segApply=onApply;
+  var ov=document.getElementById('segMod');
+  if(!ov){ov=document.createElement('div');ov.id='segMod';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});}
+  ov.innerHTML='<div class="modal" style="width:720px;max-height:90vh;overflow-y:auto"><div class="modal-head"><h3><i class="ti ti-filter-cog"></i> '+title+'</h3><button class="modal-close" onclick="document.getElementById(\'segMod\').classList.remove(\'open\')">&times;</button></div><div class="modal-body" style="display:block;padding:16px 18px"><div class="rel-legend" style="margin-bottom:12px"><i class="ti ti-info-circle"></i> Combine <b>vários critérios</b> (vá adicionando) para filtrar a base — ex.: <i>Verificado = Sim</i> + <i>Contratou = Depilação Virilha</i> + <i>NÃO contratou = Clareamento Virilha</i> + <i>Gasto maior que 500</i>.</div><div id="segRows"></div><button class="btn btn-ghost" onclick="segAddCrit()" style="margin-top:2px"><i class="ti ti-plus"></i> Adicionar critério</button><div style="margin-top:14px;font-weight:800;font-size:15px;color:var(--brand-600)" id="segCount"></div></div><div class="modal-foot"><button class="btn" onclick="document.getElementById(\'segMod\').classList.remove(\'open\')">Cancelar</button><button class="btn btn-primary" onclick="segApply()"><i class="ti ti-check"></i> '+applyLabel+'</button></div></div>';
+  ov.classList.add('open');segRenderRows();segCountRender();
+}
+function segApply(){var lbl=segLabel();var n=segCount();var ov=document.getElementById('segMod');if(ov)ov.classList.remove('open');if(typeof window._segApply==='function')window._segApply(lbl,n);}
 function dispCriarBase(){
+  return segModal('Criar segmento de base','Gerar base',function(lbl,n){if(typeof DISP_BASES!=='undefined')DISP_BASES.unshift({nome:lbl,tipo:'Sistema',n:n,criada:'gerado agora',ic:'ti-filter-check'});renderDisp('bases');if(typeof persistState==='function')persistState();showToast('Segmento criado · '+n+' contatos','ti-database-plus');});
+}
+function _dispCriarBaseOld(){
   const c=document.getElementById('dispBaseBuilder');if(!c)return;
   if(c.dataset.open){c.innerHTML='';c.dataset.open='';return;}
   c.dataset.open='1';
