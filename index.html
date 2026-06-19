@@ -1779,7 +1779,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
       <!-- ===== MATRIZ DE COMISSÕES ===== -->
       <section class="view" id="view-comissoes">
-        <p style="color:var(--text-2);font-size:13.5px;margin-bottom:16px">Defina as categorias da equipe e a premiação de cada uma sobre venda individual, meta da loja e/ou sessão executada, com adicional por faixa de atingimento da meta da unidade. Use o simulador para ver o ganho em tempo real.</p>
+        <p style="color:var(--text-2);font-size:13.5px;margin-bottom:16px">A premiação tem <b>duas partes</b>: <b>Parte 1</b> — adicional por faixa de meta (mín. &gt;80%, meta 100%, super 120%, hiper 130%) apurado <b>por dezena</b>; e <b>Parte 2</b> — adicional no <b>fechamento do mês</b> sobre o valor final, conforme a unidade bate meta/super/hiper. Use o simulador (com filtro por categoria, unidade ou colaborador) para ver o ganho em tempo real.</p>
         <div class="doc-card">
           <h3><i class="ti ti-calendar-stats"></i> Apuração da meta para premiação</h3>
           <div class="seg" id="periodoSeg">
@@ -1795,11 +1795,16 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <h3><i class="ti ti-bolt"></i> Simulador de premiação em tempo real</h3>
           <div class="sim-grid">
             <div>
-              <div class="mf" style="margin-bottom:16px"><label>Categoria da colaboradora</label><select id="simCat"></select></div>
-              <div class="mf" style="margin-bottom:16px"><label>Meta da unidade (período de apuração)</label><input id="simMetaVal" value="R$ 100.000" disabled></div>
-              <div class="sim-slider"><label>Vendido pela unidade até agora: <b id="simVendidoLbl" style="color:var(--brand-500)"></b></label><input type="range" id="simVendido" min="0" max="130000" step="1000" value="68500"></div>
-              <div class="sim-slider"><label>Minha venda individual: <b id="simIndivLbl" style="color:var(--brand-500)"></b></label><input type="range" id="simIndiv" min="0" max="50000" step="500" value="22000"></div>
-              <div class="mf"><label>Sessões executadas por mim (mês)</label><input type="number" id="simSessoes" value="180" min="0"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div class="mf"><label>Filtrar por colaborador</label><input id="simColab" list="simColabList" placeholder="Digite um nome…" oninput="simPickColab()"><datalist id="simColabList"></datalist></div>
+                <div class="mf"><label>Unidade</label><select id="simUni" onchange="simUniChange()"></select></div>
+              </div>
+              <div class="mf" style="margin-bottom:14px"><label>Categoria da colaboradora</label><select id="simCat"></select></div>
+              <div class="mf" style="margin-bottom:14px"><label>Meta da unidade (por dezena)</label><input id="simMetaVal" value="R$ 33.333" disabled></div>
+              <div class="sim-slider"><label>Vendido pela unidade na dezena: <b id="simVendidoLbl" style="color:var(--brand-500)"></b></label><input type="range" id="simVendido" min="0" max="45000" step="500" value="22000"></div>
+              <div class="sim-slider"><label>Minha venda individual (dezena): <b id="simIndivLbl" style="color:var(--brand-500)"></b></label><input type="range" id="simIndiv" min="0" max="20000" step="250" value="8000"></div>
+              <div class="mf" style="margin-bottom:14px"><label>Sessões executadas por mim (dezena)</label><input type="number" id="simSessoes" value="60" min="0"></div>
+              <div class="sim-slider"><label>Faturamento final do mês — fechamento (unidade): <b id="simMesLbl" style="color:var(--brand-500)"></b></label><input type="range" id="simMes" min="0" max="140000" step="1000" value="100000"></div>
             </div>
             <div class="sim-result" id="simResult"></div>
           </div>
@@ -6444,7 +6449,7 @@ function premCalc(cat,vendaUnid,indiv,sess,META){
   const tk=(typeof SESSAO_TICKET!=='undefined'?SESSAO_TICKET:250);
   const base=(cat.base.individual.on?cat.base.individual.pct/100*indiv:0)+(cat.base.loja.on?cat.base.loja.pct/100*vendaUnid:0)+(cat.base.sessao.on?cat.base.sessao.pct/100*(sess*tk):0);
   const att=META?vendaUnid/META*100:0;
-  const tier=att>=120?cat.tiers.t120:att>=100?cat.tiers.t100:att>=80?cat.tiers.t80:0;
+  const tier=att>=130?(cat.tiers.t130!=null?cat.tiers.t130:cat.tiers.t120):att>=120?cat.tiers.t120:att>=100?cat.tiers.t100:att>=80?cat.tiers.t80:0;
   const total=att<80?0:base*(1+tier/100);
   return{base,att,tier,total};
 }
@@ -6854,12 +6859,13 @@ function motDel(i){const m=MOTIVOS[i];if(!m)return;if(m.sistema){showToast('Moti
 
 /* ---------- Matriz de comissões ---------- */
 const COM_CATS=[
-  {nome:'Gerente',base:{individual:{on:true,pct:2},loja:{on:true,pct:1.5},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}},
-  {nome:'Sub Gerente',base:{individual:{on:true,pct:1.5},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:8,t100:20,t120:40}},
-  {nome:'Profissional da Saúde',base:{individual:{on:false,pct:0},loja:{on:false,pct:0},sessao:{on:true,pct:5}},tiers:{t80:5,t100:15,t120:30}},
-  {nome:'Consultoras de Vendas',base:{individual:{on:true,pct:3},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}},
-  {nome:'Atendente (SAC)',base:{individual:{on:true,pct:2},loja:{on:false,pct:0},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50}}
+  {nome:'Gerente',base:{individual:{on:true,pct:2},loja:{on:true,pct:1.5},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50,t130:65},fech:{f100:1,f120:2,f130:3}},
+  {nome:'Sub Gerente',base:{individual:{on:true,pct:1.5},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:8,t100:20,t120:40,t130:55},fech:{f100:0.8,f120:1.5,f130:2.5}},
+  {nome:'Profissional da Saúde',base:{individual:{on:false,pct:0},loja:{on:false,pct:0},sessao:{on:true,pct:5}},tiers:{t80:5,t100:15,t120:30,t130:40},fech:{f100:0.5,f120:1,f130:1.5}},
+  {nome:'Consultoras de Vendas',base:{individual:{on:true,pct:3},loja:{on:true,pct:1},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50,t130:65},fech:{f100:1,f120:2,f130:3}},
+  {nome:'Atendente (SAC)',base:{individual:{on:true,pct:2},loja:{on:false,pct:0},sessao:{on:false,pct:0}},tiers:{t80:10,t100:25,t120:50,t130:65},fech:{f100:0.5,f120:1,f130:1.5}}
 ];
+COM_CATS.forEach(function(c){if(c.tiers.t130==null)c.tiers.t130=Math.round(c.tiers.t120*1.3);if(!c.fech)c.fech={f100:1,f120:2,f130:3};});
 const SESSAO_TICKET=250, META_UNIDADE=100000; let DIVISOR=1;
 const money=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
 function renderComCards(){
@@ -6874,10 +6880,15 @@ function renderComCards(){
           <div class="com-line"><label class="com-opt"><input type="checkbox" ${c.base.sessao.on?'checked':''}> Sessão executada</label><input class="com-pct" value="${c.base.sessao.pct}"><span class="pctsign">%</span></div>
         </div>
         <div>
-          <div class="com-sub">Adicional sobre a premiação por meta da unidade</div>
-          <div class="tier-row"><span class="tier-badge t80">80% da meta</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t80}"><span class="pctsign">%</span></div>
-          <div class="tier-row"><span class="tier-badge t100">100% da meta</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t100}"><span class="pctsign">%</span></div>
-          <div class="tier-row"><span class="tier-badge t120">120% da meta</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t120}"><span class="pctsign">%</span></div>
+          <div class="com-sub">Parte 1 · Adicional por <b>dezena</b> (sobre a premiação base)</div>
+          <div class="tier-row"><span class="tier-badge t80">Mín. &gt;80%</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t80}"><span class="pctsign">%</span></div>
+          <div class="tier-row"><span class="tier-badge t100">Meta 100%</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t100}"><span class="pctsign">%</span></div>
+          <div class="tier-row"><span class="tier-badge t120">Super 120%</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t120}"><span class="pctsign">%</span></div>
+          <div class="tier-row"><span class="tier-badge t120" style="background:#7a1f3d">Hiper 130%</span><span class="pctsign">+</span><input class="com-pct" value="${c.tiers.t130}"><span class="pctsign">%</span></div>
+          <div class="com-sub" style="margin-top:13px">Parte 2 · Adicional no <b>fechamento do mês</b> (sobre o valor final da unidade)</div>
+          <div class="tier-row"><span class="tier-badge t100">Meta 100%</span><span class="pctsign">+</span><input class="com-pct" value="${c.fech.f100}"><span class="pctsign">%</span></div>
+          <div class="tier-row"><span class="tier-badge t120">Super 120%</span><span class="pctsign">+</span><input class="com-pct" value="${c.fech.f120}"><span class="pctsign">%</span></div>
+          <div class="tier-row"><span class="tier-badge t120" style="background:#7a1f3d">Hiper 130%</span><span class="pctsign">+</span><input class="com-pct" value="${c.fech.f130}"><span class="pctsign">%</span></div>
           <div class="com-warn"><i class="ti ti-alert-triangle"></i> Abaixo de 80% da meta da unidade: <b>sem premiação</b>.</div>
         </div>
       </div>
@@ -6894,40 +6905,81 @@ function readComCards(){
     c.base.individual.on=chk[0].checked;c.base.individual.pct=parseFloat(pct[0].value)||0;
     c.base.loja.on=chk[1].checked;c.base.loja.pct=parseFloat(pct[1].value)||0;
     c.base.sessao.on=chk[2].checked;c.base.sessao.pct=parseFloat(pct[2].value)||0;
-    c.tiers.t80=parseFloat(pct[3].value)||0;c.tiers.t100=parseFloat(pct[4].value)||0;c.tiers.t120=parseFloat(pct[5].value)||0;
+    c.tiers.t80=parseFloat(pct[3].value)||0;c.tiers.t100=parseFloat(pct[4].value)||0;c.tiers.t120=parseFloat(pct[5].value)||0;c.tiers.t130=parseFloat(pct[6].value)||0;
+    if(!c.fech)c.fech={f100:0,f120:0,f130:0};
+    c.fech.f100=parseFloat(pct[7].value)||0;c.fech.f120=parseFloat(pct[8].value)||0;c.fech.f130=parseFloat(pct[9].value)||0;
   });
   const sel=document.getElementById('simCat');COM_CATS.forEach((c,i)=>{if(sel.options[i])sel.options[i].textContent=c.nome;});
 }
 const PERIODO_LBL={1:'mês',2:'quinzena',3:'dezena'};
+var _simRoster=null;
+function simRoster(){if(_simRoster)return _simRoster;try{_simRoster=(typeof premRoster==='function')?premRoster():[];}catch(e){_simRoster=[];}return _simRoster;}
+function simPopulateFilters(){
+  var us=(typeof UNIDADES!=='undefined'?UNIDADES:[]).filter(function(u){return u.status!=='Inativa';});
+  var su=document.getElementById('simUni');
+  if(su){var cur=su.value;su.innerHTML=us.map(function(u){return '<option>'+u.nome+'</option>';}).join('');if(cur&&us.some(function(u){return u.nome===cur;}))su.value=cur;}
+  var dl=document.getElementById('simColabList');
+  if(dl){var r=simRoster(),seen={};dl.innerHTML=r.filter(function(x){if(seen[x.nome])return false;seen[x.nome]=1;return true;}).slice(0,300).map(function(x){return '<option value="'+String(x.nome).replace(/"/g,'&quot;')+'">'+x.catNome+' · '+x.unidade+'</option>';}).join('');}
+}
+function simUniChange(){simulate();}
+function simPickColab(){
+  var el=document.getElementById('simColab');if(!el)return;var v=(el.value||'').trim();if(!v)return;
+  var r=simRoster();var hit=null;for(var k=0;k<r.length;k++){if(r[k].nome===v){hit=r[k];break;}}
+  if(!hit)return;
+  var ci=COM_CATS.findIndex(function(c){return c.nome===hit.catNome;});
+  if(ci>=0){var sc=document.getElementById('simCat');if(sc)sc.value=ci;}
+  var su=document.getElementById('simUni');if(su&&hit.unidade&&[].some.call(su.options,function(o){return o.value===hit.unidade;}))su.value=hit.unidade;
+  simulate();
+}
 function simulate(){
   const c=COM_CATS[+document.getElementById('simCat').value];if(!c)return;
   const META=META_UNIDADE/DIVISOR, plbl=PERIODO_LBL[DIVISOR];
   const vend=+document.getElementById('simVendido').value, indiv=+document.getElementById('simIndiv').value, sess=+document.getElementById('simSessoes').value;
+  const mesEl=document.getElementById('simMes'); const mes=mesEl?+mesEl.value:META_UNIDADE;
+  const uniEl=document.getElementById('simUni'); const uniNome=uniEl?uniEl.value:'';
   document.getElementById('simVendidoLbl').textContent=money(vend);
   document.getElementById('simIndivLbl').textContent=money(indiv);
+  const mlbl=document.getElementById('simMesLbl');if(mlbl)mlbl.textContent=money(mes);
   const base=v=>(c.base.individual.on?c.base.individual.pct/100*indiv:0)+(c.base.loja.on?c.base.loja.pct/100*v:0)+(c.base.sessao.on?c.base.sessao.pct/100*(sess*SESSAO_TICKET):0);
-  const tier=a=>a>=120?c.tiers.t120:a>=100?c.tiers.t100:a>=80?c.tiers.t80:0;
+  const tier=a=>a>=130?c.tiers.t130:a>=120?c.tiers.t120:a>=100?c.tiers.t100:a>=80?c.tiers.t80:0;
   const total=v=>{const a=v/META*100;return a<80?0:base(v)*(1+tier(a)/100);};
   const att=vend/META*100, cur=total(vend);
+  // Parte 2 — fechamento do mês
+  const fech=c.fech||{f100:0,f120:0,f130:0};
+  const attMes=mes/META_UNIDADE*100;
+  const fpct=attMes>=130?fech.f130:attMes>=120?fech.f120:attMes>=100?fech.f100:0;
+  const part2=fpct/100*mes;
+  const totalMes=cur*3+part2; // 3 dezenas + bônus de fechamento
   let msgs='';
-  const lvls=[80,100,120], next=lvls.find(p=>att<p);
+  const lvls=[80,100,120,130], next=lvls.find(p=>att<p);
   if(att<80){
-    msgs=`<div class="sim-msg warn-msg"><i class="ti ti-alert-triangle"></i> <b>Abaixo de 80% da meta da unidade não há premiação.</b> Sua premiação atual é <b>R$ 0</b>.</div><div class="sim-msg next"><i class="ti ti-target"></i> Faltam <b>${money(META*0.8-vend)}</b> em vendas da unidade (apuração por <b>${plbl}</b>) para atingir a <b>meta mínima (80%)</b> e desbloquear a premiação (adicional de <b>+${c.tiers.t80}%</b>). Ao atingir, você receberá <b>${money(total(META*0.8))}</b>.</div>`;
+    msgs=`<div class="sim-msg warn-msg"><i class="ti ti-alert-triangle"></i> <b>Abaixo de 80% da meta da unidade não há premiação.</b> Parte 1 atual: <b>R$ 0</b>.</div><div class="sim-msg next"><i class="ti ti-target"></i> Faltam <b>${money(META*0.8-vend)}</b> em vendas da unidade (dezena) para a <b>meta mínima (80%)</b> e desbloquear a premiação (+<b>${c.tiers.t80}%</b>). Ao atingir: <b>${money(total(META*0.8))}</b>.</div>`;
   } else {
-    msgs=`<div class="sim-msg ok"><i class="ti ti-check"></i> Meta mínima da ${plbl} atingida! Adicional atual de <b>+${tier(att)}%</b> já aplicado à sua premiação.</div>`;
-    if(next)msgs+=`<div class="sim-msg next"><i class="ti ti-arrow-up-right"></i> Faltam <b>${money(META*next/100-vend)}</b> para o nível <b>${next}%</b>. Nesse nível você ganhará <b>${money(total(META*next/100))}</b> (+${money(total(META*next/100)-cur)}).</div>`;
-    else msgs+=`<div class="sim-msg ok"><i class="ti ti-trophy"></i> Nível máximo (120%) atingido! Adicional de <b>+${c.tiers.t120}%</b> aplicado. 🎉</div>`;
+    msgs=`<div class="sim-msg ok"><i class="ti ti-check"></i> Faixa da dezena atingida! Adicional de <b>+${tier(att)}%</b> aplicado na Parte 1.</div>`;
+    if(next)msgs+=`<div class="sim-msg next"><i class="ti ti-arrow-up-right"></i> Faltam <b>${money(META*next/100-vend)}</b> para o nível <b>${next}%</b> → Parte 1 de <b>${money(total(META*next/100))}</b> (+${money(total(META*next/100)-cur)}).</div>`;
+    else msgs+=`<div class="sim-msg ok"><i class="ti ti-trophy"></i> Hipermeta (130%) atingida! Adicional de <b>+${c.tiers.t130}%</b> aplicado. 🎉</div>`;
   }
+  const fechMsg=fpct>0
+    ?`<div class="sim-msg ok"><i class="ti ti-cash"></i> Fechamento do mês: unidade em <b>${Math.round(attMes)}%</b> da meta → bônus de <b>+${fpct}%</b> sobre ${money(mes)} = <b>${money(part2)}</b>.</div>`
+    :`<div class="sim-msg next"><i class="ti ti-cash-off"></i> Fechamento: unidade em <b>${Math.round(attMes)}%</b> — abaixo de 100%, sem bônus de fechamento. Faltam <b>${money(Math.max(0,META_UNIDADE-mes))}</b> para a meta do mês (+${fech.f100}%).</div>`;
   const maxS=1.3*META, w=Math.min(100,vend/maxS*100);
   document.getElementById('simResult').innerHTML=`
-    <div class="sim-earn">Você está ganhando agora (${plbl})<b>${money(cur)}</b></div>
+    <div style="font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Parte 1 · por dezena${uniNome?' — '+uniNome:''}</div>
+    <div class="sim-earn">Premiação da dezena<b>${money(cur)}</b></div>
     <div class="sim-prog"><div class="fill" style="width:${w}%"></div>
       <div class="sim-mark" style="left:${META*0.8/maxS*100}%"><span>80%</span></div>
       <div class="sim-mark" style="left:${META/maxS*100}%"><span>100%</span></div>
-      <div class="sim-mark" style="left:${META*1.2/maxS*100}%"><span>120%</span></div>
+      <div class="sim-mark" style="left:${Math.min(100,META*1.2/maxS*100)}%"><span>120%</span></div>
+      <div class="sim-mark" style="left:99%"><span>130%</span></div>
     </div>
-    <div style="font-size:12px;color:var(--text-3);display:flex;justify-content:space-between;margin-top:4px"><span>Unidade: ${money(vend)} de ${money(META)} (${plbl})</span><span><b>${Math.round(att)}%</b> da meta</span></div>
-    ${msgs}`;
+    <div style="font-size:12px;color:var(--text-3);display:flex;justify-content:space-between;margin-top:4px"><span>Unidade na dezena: ${money(vend)} de ${money(META)}</span><span><b>${Math.round(att)}%</b> da meta</span></div>
+    ${msgs}
+    <div style="border-top:1px dashed var(--line);margin:14px 0 10px"></div>
+    <div style="font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Parte 2 · fechamento do mês</div>
+    <div class="sim-earn" style="background:linear-gradient(135deg,#7a1f3d,#a83a5b)">Bônus de fechamento<b>${money(part2)}</b></div>
+    ${fechMsg}
+    <div style="border-top:1px dashed var(--line);margin:14px 0 10px"></div>
+    <div class="sim-earn" style="background:linear-gradient(135deg,#23303a,#3a5060)">Estimativa total no mês (3 dezenas + fechamento)<b>${money(totalMes)}</b></div>`;
 }
 function setPeriodo(div){
   DIVISOR=div;
@@ -6937,11 +6989,12 @@ function setPeriodo(div){
   const si=document.getElementById('simIndiv');if(si){si.max=Math.round(50000/div);si.value=Math.round(22000/div);}
   const ss=document.getElementById('simSessoes');if(ss)ss.value=Math.round(180/div);
   const mv=document.getElementById('simMetaVal');if(mv)mv.value='R$ '+Math.round(meta).toLocaleString('pt-BR');
+  const sm=document.getElementById('simMes');if(sm){sm.max=Math.round(1.4*META_UNIDADE);if(!sm.value||+sm.value===0)sm.value=META_UNIDADE;}
   const notes={1:'A meta cheia do mês (R$ 100.000) é usada para apurar a premiação.',2:'A meta do mês é dividida em 2 quinzenas — cada período apura sobre R$ 50.000.',3:'A meta do mês é dividida em 3 dezenas (10 dias) — cada período apura sobre ~R$ 33.333.'};
   const ph=document.getElementById('periodoHint');if(ph)ph.textContent=notes[div];
   simulate();
 }
-function buildComissoes(){renderComCards();setPeriodo(DIVISOR);}
+function buildComissoes(){_simRoster=null;renderComCards();simPopulateFilters();setPeriodo(3);}
 (function(){
   document.querySelectorAll('#periodoSeg .seg-btn').forEach(b=>b.onclick=()=>setPeriodo(+b.dataset.div));
   const cc=document.getElementById('comCards');
@@ -8154,7 +8207,7 @@ const HELP_KB=[
  serve:'Serve para padronizar e analisar por que vendas/sessões são canceladas.',
  uso:'Selecione o motivo ao cancelar; analise os motivos nos relatórios.'},
 {id:'comissoes',cat:'Cadastros',t:'Matriz de Comissões',ic:'ti-percentage',k:'comissao premiacao meta matriz tier simulador 80 100 120',
- oque:'Matriz de metas e comissões por faixa de atingimento (base e tiers 80/100/120%), com simulador.',
+ oque:'Matriz de comissões em 2 partes: Parte 1 por dezena (faixas 80/100/120/130%) e Parte 2 no fechamento do mês (% sobre o valor final conforme meta/super/hiper), com simulador filtrável por categoria/unidade/colaborador.',
  serve:'Serve para definir e simular quanto a equipe ganha conforme as metas.',
  uso:'Configure as faixas; o simulador mostra a comissão para diferentes níveis de venda. Alimenta o Relatório de Pagamentos/Premiações.'},
 {id:'metas',cat:'Cadastros',t:'Metas',ic:'ti-target',k:'meta objetivo mensal unidade colaborador',
