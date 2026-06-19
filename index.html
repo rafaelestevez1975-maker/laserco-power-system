@@ -1359,7 +1359,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <div class="ficha-avatar" id="fichaIni">RE</div>
           <div><h2 id="fichaNome">Cliente</h2><span class="fid">#838827 · cliente desde 18/04/2026</span><span class="fid" id="fichaApp"></span></div>
         </div>
-        <div class="dup-badge"><i class="ti ti-alert-triangle"></i> Cliente pode estar duplicado</div>
+        <div class="dup-badge" id="fichaDup" style="display:none"><i class="ti ti-alert-triangle"></i> Cliente pode estar duplicado</div>
 
         <div class="tabs">
           <button class="tab-btn active" data-tab="dados"><i class="ti ti-user"></i> Dados básicos</button>
@@ -1495,7 +1495,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
         <div class="ficha-foot">
           <button class="btn" id="fichaVoltar"><i class="ti ti-arrow-left"></i> Voltar</button>
-          <button class="btn"><i class="ti ti-users"></i> Unificar Cliente</button>
+          <button class="btn" onclick="cliUnificar(window._fichaNome||(document.getElementById('fichaNome')||{}).textContent)"><i class="ti ti-users"></i> Unificar Cliente</button>
           <button class="btn"><i class="ti ti-lock"></i> Bloqueios</button>
           <button class="btn"><i class="ti ti-device-mobile"></i> App</button>
           <button class="btn" style="margin-left:auto;color:var(--red);border-color:#E7B7BC"><i class="ti ti-ban"></i> Inativar</button>
@@ -2700,9 +2700,9 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
     </div>
     <div class="modal-body">
       <div class="modal-note"><i class="ti ti-info-circle"></i><span>Cadastros feitos pelo <b>site da rede</b>, <b>landing pages</b> ou <b>manualmente na loja</b> caem automaticamente nesta mesma lista. Campos com <span style="color:var(--red)">*</span> são obrigatórios.</span></div>
-      <div class="mf full"><label>Nome completo <span class="req">*</span></label><input placeholder="Nome do cliente"></div>
-      <div class="mf"><label>Telefone <span class="req">*</span></label><input placeholder="+55 (00) 00000-0000"></div>
-      <div class="mf"><label>E-mail <span class="req">*</span></label><input placeholder="email@exemplo.com"></div>
+      <div class="mf full"><label>Nome completo <span class="req">*</span></label><input id="cliNNome" placeholder="Nome do cliente"></div>
+      <div class="mf"><label>Telefone <span class="req">*</span></label><input id="cliNTel" placeholder="+55 (00) 00000-0000"></div>
+      <div class="mf"><label>E-mail <span class="req">*</span></label><input id="cliNEmail" placeholder="email@exemplo.com"></div>
       <div class="mf full"><label>Onde nos conheceu? <span class="req">*</span></label>
         <select>
           <option value="">Selecione...</option>
@@ -2717,14 +2717,14 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <option>Outro</option>
         </select>
       </div>
-      <div class="mf"><label>CPF / Documento</label><input placeholder="000.000.000-00"></div>
+      <div class="mf"><label>CPF / Documento</label><input id="cliNDoc" placeholder="000.000.000-00"></div>
       <div class="mf"><label>Gênero</label><select><option value="">Selecione...</option><option>Feminino</option><option>Masculino</option><option>Outro</option></select></div>
       <div class="mf"><label>Cidade</label><input placeholder="Cidade"></div>
       <div class="mf"><label>Unidade</label><select><option>Florianópolis · Centro</option><option>São José</option><option>Balneário Camboriú</option><option>Blumenau</option></select></div>
     </div>
     <div class="modal-foot">
       <button class="btn" id="cliModalCancel">Cancelar</button>
-      <button class="btn btn-primary"><i class="ti ti-check"></i> Salvar cadastro</button>
+      <button class="btn btn-primary" onclick="cliSalvarNovo()"><i class="ti ti-check"></i> Salvar cadastro</button>
     </div>
   </div>
 </div>
@@ -3009,6 +3009,49 @@ function buildAgenda(){
 const CLI_FIRST=["Maria","Ana","Juliana","Camila","Fernanda","Patrícia","Larissa","Bruna","Carla","Beatriz","Gabriela","Mariana","Aline","Tatiane","Vanessa","Daniela","Rafaela","Letícia","Amanda","Priscila","Sabrina","Renata","Débora","Eduarda","Isabela","Natália","Bianca","Carolina","Jéssica","Michele"];
 const CLI_LAST=["Silva","Souza","Oliveira","Santos","Pereira","Lima","Costa","Ferreira","Rodrigues","Almeida","Nascimento","Gomes","Martins","Araújo","Ribeiro","Carvalho","Barbosa","Rocha","Dias","Moraes","Cardoso","Teixeira","Correia","Fernandes","Pinto","Moreira","Cavalcanti","Monteiro","Freitas","Vieira"];
 const DDDS=["11","21","31","41","47","48","51","61"];
+let CLI_REG=[
+ {nome:'Mariana Costa',cpf:'',tel:'(48) 99812-3344',pacotes:true,contratos:true,imagens:true,legado:true,desde:'12/03/2021'},
+ {nome:'Mariana Costa',cpf:'',tel:'(48) 99812-3344',pacotes:false,contratos:false,imagens:false,legado:false,desde:'02/06/2026'},
+ {nome:'João Pereira',cpf:'123.456.789-00',tel:'(48) 99622-7788',pacotes:true,contratos:false,imagens:true,legado:true,desde:'08/2022'}
+];
+function _cliNorm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function cliScore(c){return (c.pacotes?2:0)+(c.contratos?2:0)+(c.imagens?2:0)+(c.legado?1:0);}
+function cliDupesNome(nome){var nn=_cliNorm(nome);return CLI_REG.filter(function(c){return _cliNorm(c.nome)===nn;});}
+function cliUnificar(nome){
+  var dupes=cliDupesNome(nome).slice();
+  if(dupes.length<2){showToast('Não há cadastros duplicados para unificar','ti-info-circle');return;}
+  dupes.sort(function(a,b){return cliScore(b)-cliScore(a);});
+  var ov=document.getElementById('cliUniMod');
+  if(!ov){ov=document.createElement('div');ov.id='cliUniMod';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});}
+  var rows=dupes.map(function(c,i){var pref=(i===0);return '<div style="border:1px solid '+(pref?'var(--brand-500)':'var(--line)')+';border-radius:9px;padding:10px;margin-bottom:8px;background:'+(pref?'#f6e8ec':'#fff')+'"><div style="font-weight:700">'+c.nome+(pref?' <span class="orig-tag" style="background:var(--brand-500);color:#fff">Cadastro preferido</span>':'')+'</div><div style="font-size:12px;color:var(--text-2);margin-top:3px">Tel: '+(c.tel||'—')+' · CPF: '+(c.cpf||'—')+' · desde '+(c.desde||'—')+'</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">'+(c.pacotes?'<span class="orig-tag">Pacotes</span> ':'')+(c.contratos?'<span class="orig-tag">Contratos</span> ':'')+(c.imagens?'<span class="orig-tag">Imagens</span> ':'')+(c.legado?'<span class="orig-tag" style="background:#E7F0EC;color:#0F6B3A">Base legada</span>':'')+'</div></div>';}).join('');
+  ov.innerHTML='<div class="modal" style="width:560px"><div class="modal-head"><h3><i class="ti ti-users-group"></i> Unificar cliente</h3><button class="modal-close" onclick="document.getElementById(\'cliUniMod\').classList.remove(\'open\')">&times;</button></div><div class="modal-body" style="display:block"><div class="rel-legend" style="margin-bottom:10px"><i class="ti ti-alert-triangle"></i> Encontramos <b>'+dupes.length+' cadastros</b> do mesmo cliente (mesmo nome / CPF / telefone). A unificação <b>mantém os dados dos dois cadastros</b>, dando preferência ao que possui <b>pacotes, contratos e imagens</b> (base legada). É necessário o seu OK.</div>'+rows+'</div><div class="modal-foot"><button class="btn" onclick="document.getElementById(\'cliUniMod\').classList.remove(\'open\')">Agora não</button><button class="btn btn-primary" onclick="cliUnificarConfirm(\''+nome.replace(/'/g,"\\'")+'\')"><i class="ti ti-check"></i> Unificar cadastros</button></div></div>';
+  ov.classList.add('open');
+}
+function cliUnificarConfirm(nome){
+  var recs=cliDupesNome(nome).slice();if(recs.length<2){return;}
+  recs.sort(function(a,b){return cliScore(b)-cliScore(a);});var keep=recs[0];
+  recs.slice(1).forEach(function(r){if(!keep.cpf&&r.cpf)keep.cpf=r.cpf;if(!keep.tel&&r.tel)keep.tel=r.tel;keep.pacotes=keep.pacotes||r.pacotes;keep.contratos=keep.contratos||r.contratos;keep.imagens=keep.imagens||r.imagens;keep.legado=keep.legado||r.legado;});
+  CLI_REG=CLI_REG.filter(function(c){return c===keep||_cliNorm(c.nome)!==_cliNorm(nome);});
+  if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Clientes','Unificou '+recs.length+' cadastros de '+nome+' — mantidos os dados, priorizando pacotes/contratos/imagens');
+  var ov=document.getElementById('cliUniMod');if(ov)ov.classList.remove('open');
+  var db=document.getElementById('fichaDup');if(db)db.style.display='none';
+  showToast('Cadastros unificados ✓ — mantidos os dados dos '+recs.length+' cadastros','ti-users-group');
+}
+function cliSalvarNovo(){
+  var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
+  var nome=g('cliNNome'),tel=g('cliNTel'),cpf=g('cliNDoc');
+  if(!nome){showToast('Informe o nome do cliente','ti-alert-triangle');return;}
+  var dupCpf=cpf&&CLI_REG.some(function(c){return _cliNorm(c.cpf)&&_cliNorm(c.cpf)===_cliNorm(cpf);});
+  var dupTel=tel&&_cliNorm(tel).length>=8&&CLI_REG.some(function(c){return _cliNorm(c.tel)===_cliNorm(tel);});
+  if(dupCpf||dupTel){showToast('Cliente já cadastrado (mesmo '+(dupCpf?'CPF':'telefone')+') — cadastro repetido não é permitido','ti-alert-triangle');return;}
+  var dupNome=CLI_REG.some(function(c){return _cliNorm(c.nome)===_cliNorm(nome);});
+  if(dupNome&&!cpf){showToast('Já existe cliente com este nome. Informe um documento (CPF) para distinguir — ou trata-se de duplicidade','ti-alert-triangle');return;}
+  CLI_REG.push({nome:nome,cpf:cpf,tel:tel,pacotes:false,contratos:false,imagens:false,legado:false,desde:'hoje'});
+  if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Clientes','Cadastrou novo cliente '+nome);
+  if(typeof closeCliModal==='function')closeCliModal();showToast('Cliente cadastrado','ti-user-check');
+}
 let CLI_APP={};
 function clienteTemApp(nome){if(CLI_APP[nome]!==undefined)return !!CLI_APP[nome];return (typeof _sacHash==='function'?(_sacHash(String(nome||''))%4===0):false);}
 function marcarAppCadastro(nome,val){if(!nome)return;CLI_APP[nome]=(val!==false);var cb=document.getElementById('cliBody');if(cb)cb.dataset.built='';if(typeof persistState==='function')persistState();}
@@ -3103,6 +3146,9 @@ function openClienteFicha(nome){
   var _ap=document.getElementById('fichaApp');if(_ap)_ap.innerHTML=' · App da rede: '+(clienteTemApp(nome)?'<b style="color:var(--green)">Sim</b>':'<b style="color:var(--text-3)">Não</b>');
   if(typeof cashbackRender==='function')cashbackRender();
   if(typeof fichaContratosRender==='function')fichaContratosRender(nome);
+  window._fichaNome=nome;
+  var _dup=(typeof cliDupesNome==='function')?cliDupesNome(nome):[];var _db=document.getElementById('fichaDup');
+  if(_db){if(_dup.length>=2){_db.style.display='inline-flex';_db.innerHTML='<i class="ti ti-alert-triangle"></i> Possível cliente duplicado · '+_dup.length+' cadastros <span style="margin-left:8px;text-decoration:underline;cursor:pointer" onclick="cliUnificar(\''+nome.replace(/'/g,"\\'")+'\')">Sugerir unificação</span>';setTimeout(function(){cliUnificar(nome);},400);}else{_db.style.display='none';}}
   document.getElementById('fichaNomeInput').value=nome;
   document.getElementById('fichaIni').textContent=nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   document.querySelectorAll('#view-cliente-ficha .tab-btn').forEach((x,i)=>x.classList.toggle('active',i===0));
