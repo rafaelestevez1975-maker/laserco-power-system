@@ -4186,7 +4186,7 @@ Object.assign(REL_DEFS,{
     tabs:['Aniversariantes','Ranking de Clientes','Retornos','Novos','Abandonos','Atendidos','Origens','Duplicados'],
     panes:{
       'Aniversariantes':{filtros:[rfSel('Mês',['Janeiro','Junho','Julho'],'Selecione…'),rfUni()],kpis:[['Aniversariantes do mês','42','ti-cake'],['Com pacote ativo','18','ti-package']],cols:['Cliente','Aniversário','Telefone','Último atendimento'],rows:[['Mariana Costa','12/06','(48) 99812-3344','30/05/2026'],['Bianca Reis','24/06','(48) 99622-7788','28/05/2026']]},
-      'Ranking de Clientes':{filtros:[rfUni()],kpis:[['Clientes ativos','1.204','ti-users'],['Top 10 = receita','28%','ti-trophy']],cols:['Posição','Cliente','Atendimentos','Total gasto'],rows:[['1','João Pereira','24','R$ 9.480'],['2','Mariana Costa','19','R$ 7.220'],['3','Bianca Reis','16','R$ 6.010']]},
+      'Ranking de Clientes':{rank:'cli',filtros:[rfUni()],kpis:[['Clientes ativos','1.204','ti-users'],['Top 10 = receita','28%','ti-trophy']],cols:['Posição','Cliente','Atendimentos','Total gasto'],rows:[['1','João Pereira','24','R$ 9.480'],['2','Mariana Costa','19','R$ 7.220'],['3','Bianca Reis','16','R$ 6.010']]},
       'Retornos':{filtros:[rfUni()],kpis:[['Taxa de retorno','62%','ti-rotate'],['Retornaram','398','ti-user-check']],cols:['Cliente','Último atend.','Retorno em','Serviço'],rows:[['Carla Souza','03/05','21 dias','Melasma'],['Diego Lima','10/05','18 dias','Hollywood Peel']]},
       'Novos':{filtros:[rfUni()],kpis:[['Novos no período','281','ti-user-plus'],['Convertidos em venda','64%','ti-businessplan']],cols:['Cliente','Cadastro','Origem','1ª compra'],rows:[['Letícia Alves','01/06','Site','Avaliação'],['Rafael Nunes','03/06','WhatsApp','PDRN']]},
       'Abandonos':{filtros:[rfUni()],kpis:[['Em abandono (90d+)','146','ti-user-x'],['Recuperáveis','92','ti-refresh']],cols:['Cliente','Último atend.','Dias inativo','Telefone'],rows:[['Paula Dias','02/03','99','(48) 99100-2233'],['Sérgio Melo','18/02','112','(48) 99110-4455']]},
@@ -4249,6 +4249,7 @@ Object.assign(REL_DEFS,{
     }
   },
   'ranking-vendas':{
+    rank:'vendas',
     filtros:[rfPeriod('Período'),rfSel('Colaborador',['Karoline','Rita de Cássia','Suzanne'],'Selecione…'),rfUni(),rfSel('Modo de visualização',['Visão de Vendas'],'')],
     kpis:[['Total vendido','R$ 38.828','ti-currency-dollar'],['Vendedores','5','ti-users'],['Líder','Karoline','ti-trophy'],['Ticket médio','R$ 414','ti-receipt']],
     cols:['Posição','Colaborador','Vendas','Valor','Ticket médio'],
@@ -6688,6 +6689,23 @@ function relPremiacoesHTML(head){
     +`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-user-star flt"></i> Visão do colaborador — o que ele vê ao acessar o sistema</span></div><div style="padding:4px 0 12px">${sel}</div><div id="premColabBox"></div></div>`
     +tabela;
 }
+var RANKS={
+ cli:{cols:['Posição','Cliente','Atendimentos','Total gasto'],all:null,gen:function(){
+   var nomes=_PREM_NOMES,sobr=_PREM_SOBR,arr=[];
+   for(var i=0;i<500;i++){var nm=nomes[i%nomes.length]+' '+sobr[(i*7)%sobr.length]+(i>=nomes.length?(' '+(Math.floor(i/nomes.length)+1)):'');var h=_sacHash(nm+i);arr.push({nm:nm,atend:4+(h%40),total:600+(h%9000)});}
+   arr.sort(function(a,b){return b.total-a.total;});
+   return arr.map(function(x,i){return [String(i+1),x.nm,String(x.atend),'R$ '+x.total.toLocaleString('pt-BR')];});
+ }},
+ vendas:{cols:['Posição','Colaborador','Vendas','Valor','Ticket médio'],all:null,gen:function(){
+   var nomes=_PREM_NOMES,sobr=_PREM_SOBR,arr=[];
+   for(var i=0;i<500;i++){var nm=nomes[(i*3)%nomes.length]+' '+sobr[(i*5)%sobr.length]+(i>=nomes.length?(' '+(Math.floor(i/nomes.length)+1)):'');var h=_sacHash('v'+nm+i);var vend=8+(h%60),valor=4000+(h%18000);arr.push({nm:nm,vend:vend,valor:valor,ticket:Math.round(valor/vend)});}
+   arr.sort(function(a,b){return b.valor-a.valor;});
+   return arr.map(function(x,i){return [String(i+1),x.nm,String(x.vend),'R$ '+x.valor.toLocaleString('pt-BR'),'R$ '+x.ticket.toLocaleString('pt-BR')];});
+ }}
+};
+function rankAll(kind){var r=RANKS[kind];if(!r.all)r.all=r.gen();return r.all;}
+function rankLimitSel(kind){return '<div class="rf"><label>Exibir (limite do ranking)</label><select id="rankLimit_'+kind+'" onchange="rankRender(\''+kind+'\')"><option value="10">Top 10</option><option value="50">Top 50</option><option value="100">Top 100</option><option value="250">Top 250</option><option value="500">Top 500</option></select></div>';}
+function rankRender(kind){var sel=document.getElementById('rankLimit_'+kind);var lim=sel?(+sel.value||10):10;var r=RANKS[kind];var rows=rankAll(kind).slice(0,lim);var c=document.getElementById('rankTbl_'+kind);if(c)c.innerHTML=relTable(r.cols,rows)+'<div style="font-size:12px;color:var(--text-3);margin-top:6px;text-align:right">Exibindo Top '+lim+' de '+rankAll(kind).length+'</div>';}
 function buildRelatorio(el){
   const rep=el?.dataset.rep||'generic';
   const title=(el?.dataset.title||'Relatório').replace(/^Relatório (de |)/,'');
@@ -6716,6 +6734,12 @@ function buildRelatorio(el){
     const cur=_relTab[rep]||def.tabs[0];
     const tabsH=`<div class="rel-tabs">${def.tabs.map(t=>`<div class="rel-tab ${t===cur?'active':''}" onclick="relSetTab('${rep}','${t}')">${t}</div>`).join('')}</div>`;
     const p=def.panes[cur];
+    if(p.rank){
+      w.innerHTML=head+tabsH
+        +`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid">${rfPeriod('Período')+p.filtros.join('')+rankLimitSel(p.rank)}</div><div class="rel-acts"><button class="btn btn-primary"><i class="ti ti-search"></i> Pesquisar</button><button class="btn btn-ghost"><i class="ti ti-download"></i> Exportar</button></div></div>`
+        +relKpis(p.kpis)+`<div id="rankTbl_${p.rank}"></div>`;
+      rankRender(p.rank);return;
+    }
     w.innerHTML=head+tabsH
       +`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid">${rfPeriod('Período')+p.filtros.join('')}</div><div class="rel-acts"><button class="btn btn-primary"><i class="ti ti-search"></i> Pesquisar</button><button class="btn btn-ghost"><i class="ti ti-download"></i> Exportar</button></div></div>`
       +relKpis(p.kpis)+relCharts(p)+relTable(p.cols,p.rows);
@@ -6723,6 +6747,12 @@ function buildRelatorio(el){
   }
   // ---- Relatório simples (com def) ----
   if(def){
+    if(def.rank){
+      w.innerHTML=head
+        +`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid">${def.filtros.join('')+rankLimitSel(def.rank)}</div><div class="rel-acts"><button class="btn btn-primary"><i class="ti ti-search"></i> Pesquisar</button><button class="btn btn-ghost"><i class="ti ti-download"></i> Exportar</button></div></div>`
+        +relKpis(def.kpis)+`<div id="rankTbl_${def.rank}"></div>`;
+      rankRender(def.rank);return;
+    }
     w.innerHTML=head
       +`<div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid">${def.filtros.join('')}</div><div class="rel-acts"><button class="btn btn-primary"><i class="ti ti-search"></i> Pesquisar</button><button class="btn btn-ghost"><i class="ti ti-download"></i> Exportar</button></div></div>`
       +relKpis(def.kpis)+relCharts(def)+relTable(def.cols,def.rows);
