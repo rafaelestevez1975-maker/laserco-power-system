@@ -2012,7 +2012,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           </div>
         </div>
         <div class="cli-card">
-          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome ▲</th><th>Tipo de preço</th><th class="num-r">Preço</th><th class="num-r">Desc. Máx (%)</th><th>Duração</th><th>Comissionável</th><th>Grupo</th><th>Encaixe</th><th>Ativo</th><th>Online</th><th class="num-r">Ordem</th><th>Ações</th></tr></thead><tbody id="servicosBody"></tbody></table></div>
+          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome ▲</th><th>Tipo de preço</th><th class="num-r">Preço</th><th class="num-r">Desc. Máx (%)</th><th>Duração</th><th>Comissionável</th><th>Pagar comissão</th><th>Grupo</th><th>Encaixe</th><th>Ativo</th><th>Online</th><th class="num-r">Ordem</th><th>Ações</th></tr></thead><tbody id="servicosBody"></tbody></table></div>
           <div class="cli-foot"><span>Exibindo 1 a 30 de 112 registros encontrados</span><div class="pager" id="servicosPager"></div></div>
         </div>
       </section>
@@ -3965,7 +3965,7 @@ const SERVICOS=[
 ];
 function buildServicos(){
   const b=document.getElementById('servicosBody');if(!b||b.dataset.built)return;
-  b.innerHTML=SERVICOS.map((s,i)=>{const off=SERV_OFF.has(i);return `<tr${off?' style="opacity:.5"':''}><td><span class="cli-name">${s[0]}</span></td><td><span class="orig-tag">Fixo</span></td><td class="num-r">${s[1]}</td><td class="num-r">${s[2]}</td><td>${s[3]}</td><td>${s[5]==='Sim'?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${s[4]}</td><td><span class="muted">Não</span></td><td>${off?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td>${s[5]==='Sim'?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td class="num-r">${s[6]||'<span class="muted">—</span>'}</td><td>${itemActs('serv',i,off)}</td></tr>`;}).join('');
+  b.innerHTML=SERVICOS.map((s,i)=>{const off=SERV_OFF.has(i);return `<tr${off?' style="opacity:.5"':''}><td><span class="cli-name">${s[0]}</span></td><td><span class="orig-tag">Fixo</span></td><td class="num-r">${s[1]}</td><td class="num-r">${s[2]}</td><td>${s[3]}</td><td>${s[5]==='Sim'?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${comTag(s[7])}</td><td>${s[4]}</td><td><span class="muted">Não</span></td><td>${off?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td>${s[5]==='Sim'?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td class="num-r">${s[6]||'<span class="muted">—</span>'}</td><td>${itemActs('serv',i,off)}</td></tr>`;}).join('');
   b.dataset.built='1';
   document.getElementById('servicosPager').innerHTML='<button><i class="ti ti-chevron-left"></i></button><button class="active">1</button><button>2</button><button>3</button><button>4</button><button><i class="ti ti-chevron-right"></i></button>';
 }
@@ -3974,7 +3974,7 @@ const PACOTES=[
 ];
 function buildPacotes(){
   const b=document.getElementById('pacotesBody');if(!b||b.dataset.built)return;
-  b.innerHTML=PACOTES.map((p,i)=>{const off=PAC_OFF.has(i);return `<tr${off?' style="opacity:.5"':''}><td><span class="cli-name">${p[0]}</span></td><td style="color:var(--text-2)">${p[1]}</td><td style="color:var(--text-2)">Respeitar config. da unidade</td><td class="num-r">${p[2]}</td><td class="num-r" style="font-weight:600">${p[3]}</td><td class="num-r">${p[4]||'<span class="muted">—</span>'}</td><td>${off?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td><span class="orig-tag">Execução</span></td><td>${itemActs('pac',i,off)}</td></tr>`;}).join('');
+  b.innerHTML=PACOTES.map((p,i)=>{const off=PAC_OFF.has(i);return `<tr${off?' style="opacity:.5"':''}><td><span class="cli-name">${p[0]}</span>${(Array.isArray(p[6])&&p[6].length)?`<div style="font-size:11px;color:var(--text-3)"><i class="ti ti-list-check" style="vertical-align:-1px"></i> ${p[6].length} serviço(s) · ${p[6].reduce((a,c)=>a+(+c.sessoes||0),0)} sessão(ões)</div>`:''}</td><td style="color:var(--text-2)">${p[1]}</td><td style="color:var(--text-2)">Respeitar config. da unidade</td><td class="num-r">${p[2]}</td><td class="num-r" style="font-weight:600">${p[3]}</td><td class="num-r">${p[4]||'<span class="muted">—</span>'}</td><td>${off?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td>${comTag(p[5])}</td><td>${itemActs('pac',i,off)}</td></tr>`;}).join('');
   b.dataset.built='1';
   document.getElementById('pacotesPager').innerHTML='<button><i class="ti ti-chevron-left"></i></button><button class="active">1</button><button>2</button><button>3</button><button>…</button><button>7</button><button><i class="ti ti-chevron-right"></i></button>';
 }
@@ -3984,12 +3984,57 @@ function buildProdutos(){
   b.innerHTML=PRODUTOS.map((p,i)=>{const off=PROD_OFF.has(i);return `<tr${off?' style="opacity:.5"':''}><td><span class="cli-name">${p[0]}</span></td><td><span class="orig-tag">Padrão</span></td><td class="num-r">${p[1]}</td><td class="num-r">${p[2]}</td><td>${off?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td><span class="pill-yes">Sim</span></td><td>${itemActs('prod',i,off)}</td></tr>`;}).join('');
   b.dataset.built='1';
 }
+/* ===== Comissão (timing) + composição de pacotes ===== */
+(function(){if(typeof SERVICOS!=='undefined')SERVICOS.forEach(function(s){if(s[7]==null||s[7]==='')s[7]='Execução';});
+ if(typeof PACOTES!=='undefined')PACOTES.forEach(function(pp){if(pp[5]==null||pp[5]==='')pp[5]='Execução';if(!Array.isArray(pp[6]))pp[6]=[];});})();
+function comTag(v){v=v||'Execução';var bg=v==='Não pagar'?'#eeeeee':(v==='Venda'?'#E7EEFB':'#E7F0EC');var c=v==='Não pagar'?'#777':(v==='Venda'?'#1E3A8A':'#0F6B3A');return '<span class="orig-tag" style="background:'+bg+';color:'+c+'">'+v+'</span>';}
+function pacServOptions(selName){
+  var groups={};(typeof SERVICOS!=='undefined'?SERVICOS:[]).forEach(function(s,i){if(typeof SERV_OFF!=='undefined'&&SERV_OFF.has(i))return;var g=s[4]||'Outros';(groups[g]=groups[g]||[]).push(s[0]);});
+  var ord=['Depilação','Estético','Ultrassom'];var keys=Object.keys(groups).sort(function(a,b){var ia=ord.indexOf(a),ib=ord.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+  return keys.map(function(g){return '<optgroup label="'+g+'">'+groups[g].map(function(n){return '<option'+(n===selName?' selected':'')+'>'+n.replace(/"/g,'&quot;')+'</option>';}).join('')+'</optgroup>';}).join('');
+}
+function pacServRowHTML(serv,sess){return '<div class="pac-srow" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><select class="pac-srv" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:inherit">'+pacServOptions(serv)+'</select><input class="pac-sess" type="number" min="1" value="'+(sess||1)+'" style="width:84px;padding:8px;border:1px solid var(--line);border-radius:8px" title="Número de sessões"><span style="font-size:12px;color:var(--text-3)">sessão(ões)</span><button class="ico-btn" type="button" onclick="this.closest(\'.pac-srow\').remove()" title="Remover serviço"><i class="ti ti-trash" style="color:var(--red)"></i></button></div>';}
+function pacAddServ(serv,sess){var l=document.getElementById('pacServList');if(l)l.insertAdjacentHTML('beforeend',pacServRowHTML(serv,sess));}
+function openPacForm(i){
+  var ed=(i!=null&&i>=0), row=ed?PACOTES[i]:['','Qualquer unidade','365','0,00','0,00','Execução',[]];
+  var comp=Array.isArray(row[6])?row[6]:[];
+  var ov=document.getElementById('pacMod');
+  if(!ov){ov=document.createElement('div');ov.id='pacMod';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');});}
+  function esc(x){return String(x==null?'':x).replace(/"/g,'&quot;');}
+  function comOpt(v){return ['Venda','Execução','Não pagar'].map(function(o){return '<option'+(o===(v||'Execução')?' selected':'')+'>'+o+'</option>';}).join('');}
+  ov.innerHTML='<div class="modal" style="width:680px;max-height:90vh;overflow-y:auto"><div class="modal-head"><h3><i class="ti ti-package"></i> '+(ed?'Editar pacote':'Novo pacote')+'</h3><button class="modal-close" onclick="document.getElementById(\'pacMod\').classList.remove(\'open\')">&times;</button></div>'
+   +'<div class="modal-body" style="grid-template-columns:1fr 1fr;padding:16px 18px;gap:11px">'
+   +'<div class="mf" style="grid-column:1/3"><label>Nome <span class="req">*</span></label><input id="pf_nome" value="'+esc(row[0])+'" placeholder="Ex.: Pacote Depilação Corpo Todo"></div>'
+   +'<div class="mf"><label>Cobertura de créditos</label><select id="pf_cob"><option'+(row[1]==='Qualquer unidade'?' selected':'')+'>Qualquer unidade</option><option'+(row[1]==='Unidade que realiza a venda'?' selected':'')+'>Unidade que realiza a venda</option></select></div>'
+   +'<div class="mf"><label>Validade em dias</label><input id="pf_val" value="'+esc(row[2])+'" placeholder="365"></div>'
+   +'<div class="mf"><label>Preço (R$)</label><input id="pf_preco" value="'+esc(row[3])+'" placeholder="0,00"></div>'
+   +'<div class="mf"><label>Desconto máximo (%)</label><input id="pf_desc" value="'+esc(row[4])+'" placeholder="0,00"></div>'
+   +'<div class="mf" style="grid-column:1/3"><label>Pagar comissão</label><select id="pf_com">'+comOpt(row[5])+'</select><div style="font-size:11px;color:var(--text-3);margin-top:3px">Quando a comissão deste pacote é paga: na <b>venda</b>, na <b>execução</b> das sessões, ou <b>não pagar</b>.</div></div>'
+   +'<div class="mf" style="grid-column:1/3"><label>Serviços do pacote — combine um ou mais serviços, cada um com uma ou mais sessões</label><div id="pacServList" style="margin-top:6px"></div><button class="btn btn-ghost" type="button" onclick="pacAddServ()" style="margin-top:4px"><i class="ti ti-plus"></i> Adicionar serviço</button></div>'
+   +'</div>'
+   +'<div class="modal-foot"><button class="btn" onclick="document.getElementById(\'pacMod\').classList.remove(\'open\')">Cancelar</button><button class="btn btn-primary" onclick="savePacForm('+(ed?i:-1)+')"><i class="ti ti-check"></i> Salvar pacote</button></div></div>';
+  ov.classList.add('open');
+  var l=document.getElementById('pacServList');l.innerHTML='';
+  if(comp.length)comp.forEach(function(c){pacAddServ(c.serv,c.sessoes);});else pacAddServ();
+}
+function savePacForm(i){
+  var g=function(id){return ((document.getElementById(id)||{}).value)||'';};
+  var nome=g('pf_nome').trim();if(!nome){showToast('Informe o nome do pacote','ti-alert-triangle');return;}
+  var comp=[].map.call(document.querySelectorAll('#pacServList .pac-srow'),function(r){return {serv:(r.querySelector('.pac-srv')||{}).value||'',sessoes:parseInt((r.querySelector('.pac-sess')||{}).value)||1};}).filter(function(c){return c.serv;});
+  var row=[nome,g('pf_cob')||'Qualquer unidade',g('pf_val')||'365',g('pf_preco')||'0,00',g('pf_desc')||'0,00',g('pf_com')||'Execução',comp];
+  if(i!=null&&i>=0)PACOTES[i]=row;else PACOTES.push(row);
+  var b=document.getElementById('pacotesBody');if(b)b.dataset.built='';buildPacotes();
+  document.getElementById('pacMod').classList.remove('open');
+  if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Pacote',((i>=0)?'Editou':'Criou')+' '+nome+' · '+comp.length+' serviço(s)');
+  showToast('Pacote salvo','ti-package');
+}
 /* ===== Ações de catálogo: novo / editar / inativar ===== */
 const SERV_OFF=new Set(), PAC_OFF=new Set(), PROD_OFF=new Set();
 const CAT_DEFS={
   serv:{title:'Serviço', arr:SERVICOS, off:SERV_OFF, build:buildServicos, body:'servicosBody',
-    fields:[['Nome',0,'text'],['Preço (R$)',1,'text'],['Desc. Máx (%)',2,'text'],['Duração (hh:mm)',3,'text'],['Grupo',4,'sel:Estético,Ultrassom,Depilação'],['Comissionável',5,'sel:Sim,Não']],
-    blank:['','0,00','0,00','00:20','Estético','Sim','']},
+    fields:[['Nome',0,'text'],['Preço (R$)',1,'text'],['Desc. Máx (%)',2,'text'],['Duração (hh:mm)',3,'text'],['Grupo',4,'sel:Estético,Ultrassom,Depilação'],['Comissionável',5,'sel:Sim,Não'],['Pagar comissão',7,'sel:Venda,Execução,Não pagar']],
+    blank:['','0,00','0,00','00:20','Estético','Sim','','Execução']},
   pac:{title:'Pacote', arr:PACOTES, off:PAC_OFF, build:buildPacotes, body:'pacotesBody',
     fields:[['Nome',0,'text'],['Cobertura de créditos',1,'sel:Qualquer unidade,Unidade que realiza a venda'],['Preço (R$)',3,'text'],['Desconto máximo (%)',4,'text'],['Validade em dias',2,'text']],
     blank:['','Qualquer unidade','365','0,00','0,00']},
@@ -3997,7 +4042,7 @@ const CAT_DEFS={
     fields:[['Nome',0,'text'],['Preço (R$)',1,'text'],['Desc. Máx (%)',2,'text']],
     blank:['','0,00','0,00']}
 };
-function itemActs(t,i,off){return `<div style="display:flex;gap:6px;white-space:nowrap"><button class="ico-btn" title="Editar" onclick="openItemMod('${t}',${i})"><i class="ti ti-pencil"></i></button><button class="ico-btn" title="${off?'Reativar':'Inativar'}" onclick="toggleItem('${t}',${i})"><i class="ti ti-${off?'circle-check':'ban'}" style="color:${off?'var(--green)':'var(--red)'}"></i></button></div>`;}
+function itemActs(t,i,off){return `<div style="display:flex;gap:6px;white-space:nowrap"><button class="ico-btn" title="Editar" onclick="${t==='pac'?`openPacForm(${i})`:`openItemMod('${t}',${i})`}"><i class="ti ti-pencil"></i></button><button class="ico-btn" title="${off?'Reativar':'Inativar'}" onclick="toggleItem('${t}',${i})"><i class="ti ti-${off?'circle-check':'ban'}" style="color:${off?'var(--green)':'var(--red)'}"></i></button></div>`;}
 function toggleItem(t,i){const d=CAT_DEFS[t];if(d.off.has(i)){d.off.delete(i);showToast(d.title+' reativado','ti-circle-check');}else{d.off.add(i);showToast(d.title+' inativado','ti-ban');}const b=document.getElementById(d.body);if(b)b.dataset.built='';d.build();}
 let _itemCtx=null;
 function openItemMod(t,i){
@@ -4023,7 +4068,7 @@ function saveItem(){
   const b=document.getElementById(d.body);if(b)b.dataset.built='';d.build();closeItemMod();
 }
 document.getElementById('btnNovoServico').onclick=()=>openItemMod('serv',null);
-document.getElementById('btnNovoPacote').onclick=()=>openItemMod('pac',null);
+document.getElementById('btnNovoPacote').onclick=()=>openPacForm(null);
 document.getElementById('btnNovoProduto').onclick=()=>openItemMod('prod',null);
 
 /* ========== RELATÓRIOS (dashboard com filtro de período) ========== */
