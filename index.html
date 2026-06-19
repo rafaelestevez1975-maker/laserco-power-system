@@ -1048,7 +1048,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="sub-item" data-view="dashb" data-dash="vendasComp" data-admin="1" data-icon="ti-arrows-diff" data-title="Vendas · Comparativo"><i class="ti ti-arrows-diff"></i> Vendas · Comparativo <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
         <div class="sub-item" data-view="dashb" data-dash="vendasHist" data-admin="1" data-icon="ti-history" data-title="Vendas · Histórico"><i class="ti ti-history"></i> Vendas · Histórico <span style="margin-left:auto;font-size:9px;background:var(--brand-500);color:#fff;font-weight:700;padding:1px 6px;border-radius:10px">ADMIN</span></div>
       </div>
-      <div class="nav-item" data-view="automacoes" data-icon="ti-mail" data-title="Mensagens e Automações"><i class="ti ti-mail lead"></i> Mensagens e Notificações</div>
+      <div class="nav-item" data-view="automacoes" data-icon="ti-mail" data-title="Mensagens e Automações"><i class="ti ti-brand-whatsapp lead"></i> Mensagens e Automações</div>
       <div class="nav-item" data-view="disparos" data-icon="ti-brand-whatsapp" data-title="Disparos WhatsApp API"><i class="ti ti-brand-whatsapp lead"></i> Disparos WhatsApp API <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
       <div class="nav-item" data-view="crm" data-icon="ti-affiliate" data-title="CRM"><i class="ti ti-affiliate lead"></i> CRM</div>
       <div class="nav-item" data-view="indiques" data-icon="ti-gift" data-title="Gestão de Indiques"><i class="ti ti-gift lead"></i> Gestão de Indiques <span style="margin-left:auto;font-size:9px;background:var(--gold-500);color:#3A2A06;font-weight:700;padding:1px 6px;border-radius:10px">NOVO</span></div>
@@ -1970,7 +1970,8 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
       <!-- ===== AUTOMAÇÕES ===== -->
       <section class="view" id="view-automacoes">
-        <div class="crm-note"><i class="ti ti-bolt"></i> Centro de automações da unidade — fluxos que rodam sozinhos para captar, lembrar, recuperar e fidelizar clientes. Ative/desative com um clique; cada unidade ajusta os seus.</div>
+        <div class="crm-note"><i class="ti ti-bolt"></i> Centro de mensagens e automações da unidade — fluxos por <b>WhatsApp</b> que rodam sozinhos para captar, lembrar, recuperar e fidelizar clientes. Ative/desative com um clique; cada unidade conecta o seu WhatsApp e ajusta os seus fluxos.</div>
+        <div id="autoWa"></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px" id="autoKpis"></div>
         <div class="mod-actions"><button class="btn btn-primary" id="btnNovaAuto"><i class="ti ti-plus"></i> Nova automação</button></div>
         <div class="dash-filter" id="autoCats" style="margin-bottom:18px"></div>
@@ -2629,7 +2630,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
       <div class="mf full"><label>Título <span class="req">*</span></label><input id="comTit" placeholder="Ex.: Atualização do protocolo de biossegurança"></div>
       <div class="mf full"><label>Mensagem <span class="req">*</span></label><textarea id="comMsg" rows="5" style="width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:10px 11px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical" placeholder="Escreva o comunicado…"></textarea></div>
       <div class="mf full" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><label>Prioridade</label><select id="comPrio"><option>Normal</option><option>Importante</option><option>Urgente</option></select></div><div><label>Categoria</label><select id="comCat"><option>Sem categoria</option><option>Área Técnica</option><option>Diretoria</option><option>Marketing</option><option>Operação</option><option>RH</option></select></div></div>
-      <label class="rel-pickrow" style="border:none;padding:2px 0"><input type="checkbox" id="comEmail" checked> Enviar também por e-mail</label>
+      <label class="rel-pickrow" style="border:none;padding:2px 0"><input type="checkbox" id="comEmail" checked> Enviar também por WhatsApp</label>
       <div class="mf full"><label>Direcionado a <span class="req">*</span> <span style="font-weight:400;color:var(--text-3)">(marque uma ou mais)</span></label>
         <div class="evt-audi" id="comAudi">
           <label><input type="checkbox" value="Todos" checked> Todos</label>
@@ -3856,7 +3857,17 @@ AUTOS.forEach(a=>{a.padrao=true;});
 /* mensagens PERSONALIZADAS criadas pelas unidades — visíveis apenas para a unidade que criou */
 let MENS_CUSTOM=[];
 const AUTO_COL={Recompra:['var(--gold-soft)','var(--gold-600)'],Agendamentos:['var(--blue-bg)','var(--blue)'],'Pós-venda':['var(--green-bg)','var(--green)'],CRM:['#F7E7EB','var(--brand-500)'],'Fidelização':['var(--gold-soft)','var(--gold-600)'],Financeiro:['var(--amber-bg)','var(--amber)'],Cadastro:['#F7E7EB','var(--brand-500)'],Personalizada:['#E7F0EC','#0f6b3a']};
-const CANAL_LBL={wa:'WhatsApp',email:'E-mail',sms:'SMS',push:'Notificação'};
+(function(){if(typeof AUTOS!=='undefined')AUTOS.forEach(function(a){a.canais=(a.canais||[]).filter(function(c){return c!=='email'&&c!=='sms';});if(a.canais.indexOf('wa')<0)a.canais.unshift('wa');});})();
+let UNI_WA={};
+function waUni(){return (typeof uniAtual==='function')?uniAtual():'Florianópolis - Centro';}
+function waIntegracaoRender(){
+  var el=document.getElementById('autoWa');if(!el)return;
+  var uni=waUni();var st=UNI_WA[uni]||{numero:'',conectado:false};
+  el.innerHTML='<div class="rel-card" style="margin-bottom:16px;border:1px solid '+(st.conectado?'#1FA85544':'var(--line)')+'"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="background:#1FA85518;color:#1FA855;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center"><i class="ti ti-brand-whatsapp" style="font-size:23px"></i></div><div style="flex:1;min-width:240px"><div style="font-weight:700">WhatsApp da unidade — '+uni+'</div><div style="font-size:12.5px;color:var(--text-2)">Cada unidade integra o <b>seu próprio WhatsApp</b> para disparar e gerir as automações. '+(st.conectado?'<span style="color:#0F6B3A;font-weight:700">● Conectado</span> ('+st.numero+')':'<span style="color:#B26A00;font-weight:700">● Não conectado</span>')+'</div></div><input id="waNum" placeholder="+55 (00) 00000-0000" value="'+String(st.numero||'').replace(/"/g,'&quot;')+'" style="padding:8px 10px;border:1px solid var(--line-strong);border-radius:9px;font-family:inherit;min-width:200px">'+(st.conectado?'<button class="btn" onclick="waDesconectar()"><i class="ti ti-plug-off"></i> Desconectar</button>':'<button class="btn btn-primary" onclick="waConectar()"><i class="ti ti-plug"></i> Conectar WhatsApp</button>')+'</div><div style="font-size:11.5px;color:var(--text-3);margin-top:9px"><i class="ti ti-info-circle"></i> Todas as automações são enviadas por <b>WhatsApp</b> — o <b>envio por e-mail está suspenso</b>. A unidade dispara automações apenas com o WhatsApp conectado.</div></div>';
+}
+function waConectar(){var uni=waUni();var n=((document.getElementById('waNum')||{}).value||'').trim();if(n.replace(/\D/g,'').length<10){showToast('Informe um número de WhatsApp válido','ti-alert-triangle');return;}UNI_WA[uni]={numero:n,conectado:true};if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Automações','Conectou WhatsApp da unidade '+uni+' ('+n+')');showToast('WhatsApp conectado — automações da unidade ativas','ti-brand-whatsapp');waIntegracaoRender();}
+function waDesconectar(){var uni=waUni();UNI_WA[uni]={numero:(UNI_WA[uni]||{}).numero||'',conectado:false};if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Automações','Desconectou WhatsApp da unidade '+uni);showToast('WhatsApp desconectado','ti-plug-off');waIntegracaoRender();}
+const CANAL_LBL={wa:'WhatsApp',push:'Notificação'};
 let autoFiltro='Todas';
 function autosKpi(){
   const a=AUTOS.filter(x=>x.ativo).length;
@@ -3894,7 +3905,7 @@ function renderAutos(){
     else if(adm){acts=`<span class="auto-edit" data-padedit="${o.i}">Editar (padrão)</span>`;}
     else {acts=`<span style="font-size:11px;color:var(--text-3)"><i class="ti ti-lock"></i> Somente leitura</span>`;}
     const togTip=isCustom?'Ativar / inativar':'Usar nesta unidade';
-    return `<div class="auto-card ${a.ativo?'':'off'}"><div class="auto-head"><div class="auto-ic" style="background:${col[0]};color:${col[1]}"><i class="ti ${a.ic}"></i></div><div style="flex:1"><div class="auto-cat">${a.cat} · ${badge}</div><div class="auto-title">${a.nome}</div></div><label class="switch" title="${togTip}"><input type="checkbox" data-pos="${pos}" ${a.ativo?'checked':''}><span class="sl"></span></label></div><div class="auto-flow"><b>Quando</b> ${a.gat} <b>→</b> ${a.ac}.</div>${det}<div class="auto-foot">${a.canais.map(c=>`<span class="chan ${c}">${CANAL_LBL[c]}</span>`).join('')}${a.stat?`<span style="font-size:11px;color:var(--text-3)">· ${a.stat}</span>`:''}${acts}</div></div>`;
+    return `<div class="auto-card ${a.ativo?'':'off'}"><div class="auto-head"><div class="auto-ic" style="background:${col[0]};color:${col[1]}"><i class="ti ${a.ic}"></i></div><div style="flex:1"><div class="auto-cat">${a.cat} · ${badge}</div><div class="auto-title">${a.nome}</div></div><label class="switch" title="${togTip}"><input type="checkbox" data-pos="${pos}" ${a.ativo?'checked':''}><span class="sl"></span></label></div><div class="auto-flow"><b>Quando</b> ${a.gat} <b>→</b> ${a.ac}.</div>${det}<div class="auto-foot">${(a.canais||['wa']).filter(c=>c!=='email'&&c!=='sms').map(c=>`<span class="chan ${c}">${CANAL_LBL[c]||'WhatsApp'}</span>`).join('')}${a.stat?`<span style="font-size:11px;color:var(--text-3)">· ${a.stat}</span>`:''}${acts}</div></div>`;
   }).join('');
   const lista=mensListaUnidade().filter(o=>autoFiltro==='Todas'||o.a.cat===autoFiltro);
   g.querySelectorAll('.switch input').forEach(c=>c.onchange=()=>{const o=lista[+c.dataset.pos];if(!o)return;o.a.ativo=c.checked;autosKpi();c.closest('.auto-card').classList.toggle('off',!c.checked);if(typeof auditLog==='function')auditLog('Mensagens',(o.a.padrao?'Padrão "':'Personalizada "')+o.a.nome+'" '+(c.checked?'ativada':'desativada')+' na unidade '+uniAtual());showToast(c.checked?(o.a.padrao?'Mensagem padrão ativada nesta unidade':'Mensagem ativada'):(o.a.padrao?'Mensagem padrão desativada nesta unidade':'Mensagem desativada'),c.checked?'ti-check':'ti-ban');});
@@ -3940,7 +3951,7 @@ function mensEditarPadrao(i){
   if(typeof auditLog==='function')auditLog('Mensagens','Editou mensagem PADRÃO da rede: '+a.nome);
   if(typeof persistState==='function')persistState();renderAutos();showToast('Mensagem padrão atualizada (todas as unidades)','ti-check');
 }
-function buildAutos(){autosKpi();renderAutos();}
+function buildAutos(){if(typeof waIntegracaoRender==='function')waIntegracaoRender();autosKpi();renderAutos();}
 (function(){const n=document.getElementById('btnNovaAuto');if(n)n.onclick=mensNova;})();
 
 /* ---------- Contas / CRM / Notas ---------- */
