@@ -967,6 +967,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 .modal-body input:not([type=checkbox]):not([type=radio]),.modal-body select,.modal-body textarea{max-width:100%}
 .modal{max-width:calc(100vw - 24px)}
 </style>
+<style>@media(max-width:760px){#view-ponto-digital .dash-grid{grid-template-columns:1fr!important}#view-ponto-digital .rel-card .btn,#view-ponto-digital .seg-btn{flex:1 1 100%!important;min-width:0!important}#view-ponto-digital iframe{height:240px!important}}</style>
 </head>
 <body>
 <div class="app">
@@ -8311,6 +8312,9 @@ PONTO_CFG.raio=PONTO_CFG.raio||150;
 PONTO_CFG.uniLat=(PONTO_CFG.uniLat!=null)?PONTO_CFG.uniLat:-27.5954;  // Florianópolis - Centro (padrão)
 PONTO_CFG.uniLng=(PONTO_CFG.uniLng!=null)?PONTO_CFG.uniLng:-48.5480;
 PONTO_CFG.mapsKey=PONTO_CFG.mapsKey||'';
+PONTO_CFG.modo=PONTO_CFG.modo||'unidade';
+PONTO_CFG.casaLat=(PONTO_CFG.casaLat!=null)?PONTO_CFG.casaLat:null;
+PONTO_CFG.casaLng=(PONTO_CFG.casaLng!=null)?PONTO_CFG.casaLng:null;
 let PONTO_REG=[];
 const PONTO_TIPOS=[['entrada','Entrada','ti-login-2'],['saida_almoco','Saída p/ almoço','ti-coffee'],['volta_almoco','Retorno do almoço','ti-arrow-back-up'],['saida','Saída','ti-logout-2']];
 function pontoSaveCfg(){try{localStorage.setItem('lcps_ponto_cfg',JSON.stringify(PONTO_CFG));}catch(e){}}
@@ -8319,16 +8323,22 @@ function pontoMapSrc(lat,lng){
   if(PONTO_CFG.mapsKey)return 'https://www.google.com/maps/embed/v1/place?key='+encodeURIComponent(PONTO_CFG.mapsKey)+'&q='+lat+'%2C'+lng+'&zoom=17';
   const d=0.004;return 'https://www.openstreetmap.org/export/embed.html?bbox='+(lng-d)+'%2C'+(lat-d)+'%2C'+(lng+d)+'%2C'+(lat+d)+'&layer=mapnik&marker='+lat+'%2C'+lng;
 }
+function pontoSetModo(m){PONTO_CFG.modo=m;pontoSaveCfg();buildPontoDigital();}
+function pontoDefinirCasa(){if(!navigator.geolocation){showToast('GPS indisponível','ti-map-pin-off');return;}showToast('Capturando a localização da sua casa…','ti-current-location');navigator.geolocation.getCurrentPosition(function(pos){PONTO_CFG.casaLat=pos.coords.latitude;PONTO_CFG.casaLng=pos.coords.longitude;pontoSaveCfg();if(typeof auditLog==='function')auditLog('Ponto Digital','Definiu endereço de casa (home office)');showToast('Endereço de casa definido para home office ✓','ti-home-check');buildPontoDigital(pos.coords.latitude,pos.coords.longitude);},function(){showToast('Não foi possível obter o GPS','ti-map-pin-off');},{enableHighAccuracy:true,timeout:10000});}
 function pontoMarcar(tipo){
+  if(PONTO_CFG.modo==='casa'&&PONTO_CFG.casaLat==null){showToast('Defina o endereço de casa (home office) antes de bater o ponto','ti-home');return;}
   if(!navigator.geolocation){showToast('GPS não disponível neste dispositivo','ti-map-pin-off');return;}
   showToast('Capturando sua localização (GPS)…','ti-current-location');
   navigator.geolocation.getCurrentPosition(function(pos){
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
-    const dist=_haversine(lat,lng,+PONTO_CFG.uniLat,+PONTO_CFG.uniLng), dentro=dist<=(+PONTO_CFG.raio);
+    var homeoffice=PONTO_CFG.modo==='casa';
+    var cLat=homeoffice?(+PONTO_CFG.casaLat):(+PONTO_CFG.uniLat), cLng=homeoffice?(+PONTO_CFG.casaLng):(+PONTO_CFG.uniLng);
+    const dist=_haversine(lat,lng,cLat,cLng), dentro=dist<=(+PONTO_CFG.raio);
     const d=new Date(),hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
-    PONTO_REG.unshift({tipo,hora:hh,lat,lng,dist:Math.round(dist),dentro,unidade:(typeof uniAtual==='function'?uniAtual():'')});
-    if(typeof auditLog==='function')auditLog('Ponto Digital',((PONTO_TIPOS.find(t=>t[0]===tipo)||[])[1])+' · '+hh+' · '+(dentro?'no local':'FORA do local ('+Math.round(dist)+'m)'));
-    showToast(dentro?'Ponto registrado no local ✓':'Ponto registrado — FORA do local da unidade','ti-map-pin-check');
+    var local=homeoffice?'Casa (home office)':(typeof uniAtual==='function'?uniAtual():'');
+    PONTO_REG.unshift({tipo,hora:hh,lat,lng,dist:Math.round(dist),dentro,unidade:local});
+    if(typeof auditLog==='function')auditLog('Ponto Digital',((PONTO_TIPOS.find(t=>t[0]===tipo)||[])[1])+' · '+hh+' · '+local+' · '+(dentro?'no local':'FORA ('+Math.round(dist)+'m)'));
+    showToast(dentro?('Ponto registrado no local ✓ ('+local+')'):'Ponto registrado — FORA do raio permitido','ti-map-pin-check');
     buildPontoDigital(lat,lng);
   },function(err){showToast('Não foi possível obter o GPS: '+(err&&err.message||''),'ti-map-pin-off');},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
 }
@@ -8343,13 +8353,17 @@ function pontoCfgSalvar(){
 function buildPontoDigital(lat,lng){
   const w=document.getElementById('pontoWrap');if(!w)return;
   const adm=(typeof isAdmin==='function')&&isAdmin(), ultima=PONTO_REG[0];
-  const mLat=(lat!=null)?lat:(ultima?ultima.lat:PONTO_CFG.uniLat), mLng=(lng!=null)?lng:(ultima?ultima.lng:PONTO_CFG.uniLng);
+  const _ho=PONTO_CFG.modo==='casa', _casaDef=(PONTO_CFG.casaLat!=null);
+  const _baseLat=(_ho&&_casaDef)?PONTO_CFG.casaLat:PONTO_CFG.uniLat, _baseLng=(_ho&&_casaDef)?PONTO_CFG.casaLng:PONTO_CFG.uniLng;
+  const mLat=(lat!=null)?lat:(ultima?ultima.lat:_baseLat), mLng=(lng!=null)?lng:(ultima?ultima.lng:_baseLng);
   const botoes=PONTO_TIPOS.map(t=>`<button class="btn btn-primary" style="flex:1;min-width:150px;justify-content:center" onclick="pontoMarcar('${t[0]}')"><i class="ti ${t[2]}"></i> ${t[1]}</button>`).join('');
   const reg=PONTO_REG.length?PONTO_REG.map(r=>{const t=PONTO_TIPOS.find(x=>x[0]===r.tipo)||['','',''];return `<tr><td>${t[1]}</td><td>${r.hora}</td><td>${r.unidade}</td><td>${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</td><td class="num-r">${r.dist} m</td><td>${r.dentro?'<span class="os-st os-fechada">No local</span>':'<span class="os-st os-cancelada">Fora do local</span>'}</td></tr>`;}).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:24px">Nenhuma marcação hoje — registre seu ponto acima.</td></tr>';
   const mapKeyStatus=PONTO_CFG.mapsKey?'<span class="os-st os-fechada">Google Maps conectado</span>':'<span class="os-st os-aberta">Sem chave — usando OpenStreetMap</span>';
   w.innerHTML=`
-    <div class="rel-legend">Clique no tipo de marcação para registrar o ponto com a sua <b>localização atual (GPS)</b>. O sistema valida se você está dentro da <b>cerca virtual</b> (raio de ${PONTO_CFG.raio} m) da unidade. Informe a chave da <b>Google Maps API</b> para o mapa oficial; sem chave, usamos o OpenStreetMap.</div>
-    <div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-clock-hour-4 flt"></i> Registrar ponto · ${(typeof uniAtual==='function'?uniAtual():'')}</span>${mapKeyStatus}</div>
+    <div class="rel-legend">Registre o ponto com a sua <b>localização atual (GPS)</b>. O sistema valida se você está dentro da <b>cerca virtual</b> (raio de ${PONTO_CFG.raio} m) da <b>unidade</b> — ou, em <b>home office</b>, do seu <b>endereço de casa</b>. Cada colaborador vê o <b>seu próprio</b> ponto.</div>
+    <div class="rel-card"><div class="rel-card-h"><span><i class="ti ti-clock-hour-4 flt"></i> Meu ponto · ${_ho?'Casa (home office)':(typeof uniAtual==='function'?uniAtual():'')}</span>${mapKeyStatus}</div>
+      <div class="seg" style="margin:4px 0 10px"><button class="seg-btn ${!_ho?'active':''}" onclick="pontoSetModo('unidade')"><i class="ti ti-building-store"></i> Presencial (unidade)</button><button class="seg-btn ${_ho?'active':''}" onclick="pontoSetModo('casa')"><i class="ti ti-home"></i> Home office (casa)</button></div>
+      ${_ho?`<div style="font-size:12px;color:var(--text-2);margin:2px 0 9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><i class="ti ti-home" style="vertical-align:-1px"></i> ${_casaDef?('Endereço de casa definido — valida no raio de '+PONTO_CFG.raio+' m da sua casa.'):'<b style="color:#B26A00">Defina seu endereço de casa</b> para validar o ponto home office.'} <button class="btn btn-ghost" style="padding:5px 9px" onclick="pontoDefinirCasa()"><i class="ti ti-current-location"></i> ${_casaDef?'Atualizar minha casa (GPS)':'Definir minha casa (GPS)'}</button></div>`:''}
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px">${botoes}</div></div>
     <div class="dash-grid" style="grid-template-columns:1.25fr 1fr;margin-bottom:16px">
       <div class="dash-w"><h4><i class="ti ti-map-2"></i> Mapa da marcação</h4><div style="border-radius:10px;overflow:hidden;border:1px solid var(--line)"><iframe title="Mapa do ponto" style="width:100%;height:300px;border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${pontoMapSrc(mLat,mLng)}"></iframe></div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">${ultima?('Última marcação: '+ultima.lat.toFixed(5)+', '+ultima.lng.toFixed(5)+' · '+ultima.dist+' m da unidade'):'Aguardando a primeira marcação do dia.'}</div></div>
