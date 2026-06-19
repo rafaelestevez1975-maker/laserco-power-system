@@ -1700,6 +1700,15 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <div id="mNovosAlert"></div>
         </div>
 
+        <div class="doc-card">
+          <h3><i class="ti ti-user-heart"></i> Meta de indicações (Indiques)</h3>
+          <div class="metas-grid">
+            <div class="mf"><label>Meta mensal de indicações</label><input id="mIndiques" type="number" min="0" step="5" value="60" oninput="indMetaSync()"></div>
+            <div class="metric-box"><span>Meta diária (auto)</span><b id="mIndDia">—</b></div>
+            <div class="metric-box purple"><span>Projeção do mês (auto)</span><b id="mIndProj">—</b></div>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:8px"><i class="ti ti-info-circle"></i> A <b>meta diária</b> e a <b>projeção do mês</b> são calculadas automaticamente a partir da meta mensal. Acompanhe no <b>dashboard de Gestão de Indiques</b>.</div>
+        </div>
         <div style="display:flex;gap:10px;margin:6px 0 28px"><button class="btn btn-primary" id="mSalvar" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar metas</button></div>
       </section>
 
@@ -3654,6 +3663,7 @@ function buildMetas(){
   const ant=parseInt((document.getElementById('mAgAnterior')||{}).textContent)||305;
   const ag=document.getElementById('mAgend');if(ag)ag.value=Math.max(media,ant);
   setMetasPeriodo(METAS.divM);
+  if(typeof indMetaSync==='function')indMetaSync();
 }
 (function(){
   document.querySelectorAll('#metasPeriodoSeg .seg-btn').forEach(b=>b.onclick=()=>setMetasPeriodo(+b.dataset.div));
@@ -7980,6 +7990,26 @@ function buildIndiques(){
   else if(_indTab==='sorteio')w.innerHTML=indSorteioHTML();
 }
 function _indUniOptions(sel){const us=(typeof UNIDADES!=='undefined'?UNIDADES.filter(u=>u.status!=='Teste'):[]);return us.map(u=>`<option ${u.nome===sel?'selected':''}>${u.nome}</option>`).join('');}
+let IND_META_MES=60;
+function indMetaSync(){var el=document.getElementById('mIndiques');var v=el?(parseInt(el.value)||0):IND_META_MES;IND_META_MES=v;
+  var d=document.getElementById('mIndDia');if(d)d.textContent=Math.ceil(v/30)+' /dia';
+  var diaAtual=(new Date()).getDate()||1;
+  var realizado=(typeof INDIQUES!=='undefined')?INDIQUES.filter(function(r){return r.mes===IND_MES_KEY;}).reduce(function(a,r){return a+((r.indicados||[]).length);},0):0;
+  var proj=Math.round(realizado/diaAtual*30);
+  var pj=document.getElementById('mIndProj');if(pj)pj.textContent=proj+' (no ritmo atual)';
+  if(typeof persistState==='function')persistState();}
+function indDashHTML(realizadoMes,indicadoresMes){
+  var metaMes=(typeof IND_META_MES!=='undefined')?IND_META_MES:60;
+  var metaDia=Math.ceil(metaMes/30);
+  var diaAtual=(new Date()).getDate()||1;
+  var mediaDia=realizadoMes/diaAtual;
+  var projecao=Math.round(mediaDia*30);
+  var pctMeta=metaMes?Math.round(realizadoMes/metaMes*100):0;
+  var perSel='<div class="rf"><label>Período</label><select onchange="buildIndiques()">'+REL_PERIODS.map(function(pp){return '<option'+(pp==='Mês atual'?' selected':'')+'>'+pp+'</option>';}).join('')+'</select></div>';
+  return '<div class="rel-card" style="margin-bottom:14px"><div class="rel-card-h" style="cursor:default"><span><i class="ti ti-chart-bar flt"></i> Dashboard de Gestão de Indiques</span></div><div class="rel-filgrid" style="margin-top:12px">'+perSel+'</div></div>'
+   +relKpis([['Indiques no mês',String(realizadoMes),'ti-user-heart'],['Meta mensal',String(metaMes),'ti-target'],['Meta diária',String(metaDia)+'/dia','ti-calendar-stats'],['Média/dia atual',String(Math.round(mediaDia)),'ti-calendar-check'],['Projeção do mês',String(projecao),'ti-trending-up'],['% da meta',pctMeta+'%','ti-percentage']])
+   +'<div class="dash-grid" style="margin-bottom:16px">'+dashWidget('Meta mensal × realizado × projeção','ti-target',barChart([['Meta mensal',metaMes,String(metaMes)],['Realizado',realizadoMes,String(realizadoMes)],['Projeção',projecao,String(projecao)]],false))+dashWidget('Meta diária × média/dia','ti-calendar-stats',barChart([['Meta diária',metaDia,String(metaDia)],['Média/dia atual',Math.round(mediaDia),String(Math.round(mediaDia))]],true))+'</div>';
+}
 function indOrigemTag(o){o=o||'Balcão (loja)';var ic='ti-point',c='#777';if(/site/i.test(o)){ic='ti-world';c='#1E3A8A';}else if(/link/i.test(o)){ic='ti-link';c='#7a1f3d';}else if(/balc|manual|unidade|loja/i.test(o)){ic='ti-building-store';c='#0F6B3A';}return '<span class="orig-tag" style="background:'+c+'1a;color:'+c+'"><i class="ti '+ic+'"></i> '+o+'</span>';}
 function indCopiarLink(){var link=indLink((_indFiltroUni==='__todas__')?((typeof uniAtual==='function')?uniAtual():''):_indFiltroUni);try{if(navigator.clipboard)navigator.clipboard.writeText(link);}catch(e){}showToast('Link de indicação copiado — compartilhe em grupos e redes sociais','ti-link');}
 function indKanbanLeads(){var lista=indListaFiltrada();var leads=[];lista.forEach(function(r){(r.indicados||[]).forEach(function(x,k){leads.push({nome:x.nome,whats:x.whats,status:x.status,ult:x.ult,por:r.nome,porWhats:r.whats,origem:r.origem,unidade:r.unidade,rid:r.id,k:k});});});return leads;}
@@ -8001,7 +8031,7 @@ function indListaHTML(){
     return '<div style="min-width:235px;flex:0 0 235px;background:var(--surface-2);border-radius:11px;padding:10px"><div style="font-weight:700;font-size:12.5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>'+st+'</span><span style="color:var(--text-3)">'+items.length+'</span></div>'+cards+'</div>';
   }).join('');
   var kanban='<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">'+cols+'</div>';
-  return filtro
+  return indDashHTML(totalIndicados,lista.length)+filtro
     +relKpis([['Leads indicados',String(totalIndicados),'ti-users'],['Sendo trabalhados',trabalhados+'/'+totalIndicados,'ti-progress-check'],['Fechados',String(fechados),'ti-circle-check'],['Indicadores no mês',String(lista.length),'ti-user-heart']])
     +'<div class="rel-acts" style="margin:0 0 12px;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" onclick="indModalNovo()"><i class="ti ti-user-plus"></i> NOVO INDIQUE</button><button class="btn btn-ghost" onclick="indCopiarLink()"><i class="ti ti-link"></i> Copiar link de indicação</button><button class="btn btn-ghost" onclick="indEnviarCRM()"><i class="ti ti-affiliate"></i> Enviar novos ao CRM</button></div>'
     +'<div class="rel-legend" style="margin-bottom:12px"><i class="ti ti-link"></i> Link compartilhável (grupos e redes sociais): <b>'+link+'</b> — cada indicado que entrar vira um <b>lead novo</b> no quadro, registrando <b>quem indicou</b> para as <b>automações</b>.</div>'
