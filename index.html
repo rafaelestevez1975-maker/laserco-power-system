@@ -1713,7 +1713,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           </div>
         </div>
         <div class="cli-card">
-          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th class="num-r">Usuários</th><th>Última atualização</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="perfisBody"></tbody></table></div>
+          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome</th><th class="num-r">Usuários</th><th>Última atualização</th><th>Ativo</th><th>Bate ponto</th><th>Ações</th></tr></thead><tbody id="perfisBody"></tbody></table></div>
           <div class="cli-foot"><span id="perfisCount"></span></div>
         </div>
       </section>
@@ -1878,9 +1878,9 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="fil-card">
           <div class="fil-head" data-gen><h3><i class="ti ti-filter"></i> Filtros</h3><i class="ti ti-minus toggle"></i></div>
           <div class="fil-body" style="grid-template-columns:repeat(2,1fr)">
-            <div class="field"><label>Ativo</label><select><option>Sim</option><option>Não</option><option>Todos</option></select></div>
-            <div class="field"><label>Nome</label><input placeholder="Nome"></div>
-            <div class="fil-actions"><button class="btn"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
+            <div class="field"><label>Ativo</label><select id="origFilAtivo" onchange="buildOrigens(true)"><option>Todos</option><option>Sim</option><option>Não</option></select></div>
+            <div class="field"><label>Nome</label><input id="origFilNome" placeholder="Nome" oninput="buildOrigens(true)"></div>
+            <div class="fil-actions"><button class="btn" onclick="buildOrigens(true)"><i class="ti ti-search"></i> Pesquisar</button><button class="btn"><i class="ti ti-download"></i> Exportar <i class="ti ti-chevron-down"></i></button></div>
           </div>
         </div>
         <div class="cli-card">
@@ -6725,9 +6725,9 @@ let PERFIS=[
   {nome:'Marketing',desc:'Acesso por área — disparos, comunicados, automações e catálogo',users:'3',atu:'10/06/2026 09:20',status:'Ativo'},
   {nome:'Financeiro',desc:'Acesso por área — Financeiro da Franqueadora, contas e relatórios financeiros',users:'2',atu:'10/06/2026 09:21',status:'Ativo'},
   {nome:'Expansão',desc:'Acesso por área — unidades, implantação, CRM de expansão e RH',users:'2',atu:'10/06/2026 09:22',status:'Ativo'},
-  {nome:'Implantação',desc:'Acesso por área — implantação de unidades, checklist e universidade',users:'2',atu:'10/06/2026 09:23',status:'Ativo'},
-  {nome:'Ponto (colaboradores)',desc:'Acesso restrito ao Ponto Digital — colaboradores de escritório e loja registram apenas o ponto (GPS)',users:'86',atu:'15/06/2026 08:00',status:'Ativo'}
+  {nome:'Implantação',desc:'Acesso por área — implantação de unidades, checklist e universidade',users:'2',atu:'10/06/2026 09:23',status:'Ativo'}
 ];
+PERFIS.forEach(function(p){if(p.batePonto===undefined)p.batePonto=!/Administrador|Gestor|Franqueado/i.test(p.nome);});
 function perfisRows(){
   const b=document.getElementById('perfisBody');if(!b)return;
   b.innerHTML=PERFIS.map((p,i)=>{
@@ -6737,6 +6737,7 @@ function perfisRows(){
       <td class="num-r">${p.users}</td>
       <td>${p.atu}</td>
       <td><span class="os-st ${inativo?'os-inativo':'os-fechada'}">${p.status}</span></td>
+      <td onclick="perfTogglePonto(${i})" style="cursor:pointer" title="Define se este perfil bate ponto">${p.batePonto?'<span class="pill-yes"><i class="ti ti-map-pin-check" style="vertical-align:-1px"></i> Sim</span>':'<span class="pill-no"><i class="ti ti-map-pin-off" style="vertical-align:-1px"></i> Não</span>'}</td>
       <td style="white-space:nowrap"><span class="os-link perfil-edit" data-i="${i}"><i class="ti ti-edit"></i> Editar</span><span class="os-link perfil-toggle" data-i="${i}" style="color:${inativo?'var(--green)':'var(--amber)'};margin-left:12px"><i class="ti ti-${inativo?'rotate-clockwise':'ban'}"></i> ${inativo?'Ativar':'Inativar'}</span><span class="os-link" style="color:var(--red);margin-left:12px" onclick="perfDel(${i})"><i class="ti ti-trash"></i> Excluir</span></td>
     </tr>`;
   }).join('');
@@ -6748,6 +6749,7 @@ function perfisRows(){
   const ativos=PERFIS.filter(p=>p.status==='Ativo').length;
   document.getElementById('perfisCount').textContent=PERFIS.length+' registros · '+ativos+' ativos';
 }
+function perfTogglePonto(i){var p=PERFIS[i];if(!p)return;p.batePonto=!p.batePonto;perfisRows();if(typeof auditLog==='function')auditLog('Perfis de acesso',(p.batePonto?'Ativou':'Desativou')+' bate-ponto · '+p.nome);showToast(p.nome+': '+(p.batePonto?'bate ponto':'não bate ponto'),p.batePonto?'ti-map-pin-check':'ti-map-pin-off');}
 function perfDel(i){const p=PERFIS[i];if(!p)return;if(confirm('Excluir o perfil de acesso "'+p.nome+'"?')){PERFIS.splice(i,1);perfisRows();if(typeof auditLog==='function')auditLog('Perfis de acesso','Excluiu o perfil '+p.nome);showToast('Perfil excluído','ti-trash');}}
 function buildPerfis(){const b=document.getElementById('perfisBody');if(!b)return;perfisRows();}
 const PERMS=[
@@ -7234,7 +7236,8 @@ function buildPlanos(){
 let ORIGENS=[{nome:'Geolocalizado',ativo:true,auto:true},{nome:'Passante',ativo:true},{nome:'Indicação',ativo:true},{nome:'Parcerias',ativo:true},{nome:'Outros',ativo:true,campo:true}];
 function buildOrigens(force){
   const b=document.getElementById('origensBody');if(!b)return;if(b.dataset.built&&!force)return;
-  b.innerHTML=ORIGENS.map((o,i)=>{const inativo=o.ativo===false;const nota=o.auto?'<div style="font-size:11px;color:var(--text-3)"><i class="ti ti-map-pin" style="vertical-align:-1px;color:var(--brand-400)"></i> Preenchido automaticamente quando o lead entra no CRM via geolocalização</div>':(o.campo?'<div style="font-size:11px;color:var(--text-3)"><i class="ti ti-forms" style="vertical-align:-1px;color:var(--brand-400)"></i> Ao selecionar, abre campo para especificar</div>':'');return `<tr style="${inativo?'opacity:.55':''}"><td><span class="cli-name">${o.nome}</span>${nota}</td><td>${inativo?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td style="white-space:nowrap"><span class="os-link" onclick="origEdit(${i})"><i class="ti ti-edit"></i> Editar</span><span class="os-link" style="color:${inativo?'var(--green)':'var(--amber)'};margin-left:12px" onclick="origToggle(${i})"><i class="ti ti-${inativo?'rotate-clockwise':'ban'}"></i> ${inativo?'Ativar':'Inativar'}</span><span class="os-link" style="color:var(--red);margin-left:12px" onclick="origDel(${i})"><i class="ti ti-trash"></i> Excluir</span></td></tr>`;}).join('');
+  const _fa=(document.getElementById('origFilAtivo')||{}).value||'Todos';const _fn=((document.getElementById('origFilNome')||{}).value||'').toLowerCase();
+  b.innerHTML=ORIGENS.map((o,i)=>({o:o,i:i})).filter(x=>{const inativo=x.o.ativo===false;if(_fa==='Sim'&&inativo)return false;if(_fa==='Não'&&!inativo)return false;if(_fn&&String(x.o.nome||'').toLowerCase().indexOf(_fn)<0)return false;return true;}).map(({o,i})=>{const inativo=o.ativo===false;const nota=o.auto?'<div style="font-size:11px;color:var(--text-3)"><i class="ti ti-map-pin" style="vertical-align:-1px;color:var(--brand-400)"></i> Preenchido automaticamente quando o lead entra no CRM via geolocalização</div>':(o.campo?'<div style="font-size:11px;color:var(--text-3)"><i class="ti ti-forms" style="vertical-align:-1px;color:var(--brand-400)"></i> Ao selecionar, abre campo para especificar</div>':'');return `<tr style="${inativo?'opacity:.55':''}"><td><span class="cli-name">${o.nome}</span>${nota}</td><td>${inativo?'<span class="pill-no">Não</span>':'<span class="pill-yes">Sim</span>'}</td><td style="white-space:nowrap"><span class="os-link" onclick="origEdit(${i})"><i class="ti ti-edit"></i> Editar</span><span class="os-link" style="color:${inativo?'var(--green)':'var(--amber)'};margin-left:12px" onclick="origToggle(${i})"><i class="ti ti-${inativo?'rotate-clockwise':'ban'}"></i> ${inativo?'Ativar':'Inativar'}</span><span class="os-link" style="color:var(--red);margin-left:12px" onclick="origDel(${i})"><i class="ti ti-trash"></i> Excluir</span></td></tr>`;}).join('');
   b.dataset.built='1';
   const c=document.getElementById('origensCount');if(c)c.textContent=ORIGENS.length+' registros encontrados · '+ORIGENS.filter(o=>o.ativo!==false).length+' ativos';
 }
@@ -8326,7 +8329,7 @@ const HELP_KB=[
 {id:'perfis',cat:'Rede & Conta',t:'Perfis de Acesso',ic:'ti-shield-lock',k:'perfil acesso permissao editor visualizar alterar restricao ponto',
  oque:'Perfis de acesso e editor de permissões: define, por menu, quem visualiza, altera, etc. — inclusive perfis restritos (ex.: acesso só ao Ponto).',
  serve:'Serve para controlar a segurança e o que cada usuário pode fazer.',
- uso:'No editor, marque/desmarque as permissões de cada novo menu do sistema. Use perfis como "Ponto" para liberar somente o Ponto Digital.'},
+ uso:'No editor, marque/desmarque as permissões de cada novo menu do sistema. Defina por perfil, na coluna "Bate ponto", se aquele perfil registra ponto (GPS) ou não.'},
 {id:'ajuda',cat:'Rede & Conta',t:'Ajuda (esta tela)',ic:'ti-help-circle',k:'ajuda base conhecimento duvida como funciona suporte busca',
  oque:'Base de conhecimento do próprio sistema: explica o que cada item é, para que serve e como usar.',
  serve:'Serve para tirar dúvidas sem sair do sistema.',
@@ -8364,6 +8367,7 @@ const SAC_ATEND=[
  {nome:'Diego Martins',email:'diego.sac@lasercompany.com',perfil:'Atendente',ativo:true},
  {nome:'Larissa Antunes',email:'larissa.sac@lasercompany.com',perfil:'Atendente',ativo:false}
 ];
+let SAC_PREM={porAtendimento:2,porFinalizado:8,porReversao:35,porSLA:5,pctVendas:3,bonusPacote:15,bonusZeroAtraso:40,bonusCSAT:50,metaCSAT:4.5};
 const SAC_CFG={slaHoras:48,integr:[{n:'BLIP (chatbot WhatsApp)',ic:'ti-brand-whatsapp',on:true},{n:'Sults (franqueadora)',ic:'ti-building',on:true},{n:'Reclame Aqui',ic:'ti-message-report',on:true},{n:'Procon',ic:'ti-gavel',on:false},{n:'Instagram Direct',ic:'ti-brand-instagram',on:true}]};
 function _sacUnis(){return (typeof UNIDADES!=='undefined'?UNIDADES.map(u=>u.nome):['Florianópolis - Centro','Balneário Camboriú','Joinville']);}
 function _sd(daysAgo){const d=new Date();d.setDate(d.getDate()-daysAgo);return d.toISOString().slice(0,10);}
@@ -8561,13 +8565,34 @@ function sacAtendentes(w){
   '<div class="rel-card" style="margin-top:12px;display:flex;gap:10px;align-items:center;background:var(--surface-2)"><i class="ti ti-percentage" style="color:var(--gold-500);font-size:20px"></i><div style="font-size:13px"><b>Premiação por desempenho:</b> o perfil <b>Atendente</b> participa da <a href="javascript:void(0)" onclick="sacIrComissoes()" style="color:var(--brand-500);font-weight:700">Matriz de Comissões</a> com critérios de SAC (casos resolvidos, rapidez e SLA). Configure metas e prêmios por lá.</div></div>';
 }
 
+function _sacRev(c){return (c.motivo==='Cancelamento'||c.motivo==='Reembolso')&&c.status==='Concluído'&&!c.pagto;}
+function sacPremMetrics(a){
+ var nome=a.nome;
+ var ch=SAC_CHAMADOS.filter(function(c){return c.resp===nome;});
+ var tot=ch.length, con=ch.filter(function(c){return c.status==='Concluído';}).length;
+ var atr=ch.filter(function(c){return c.status==='Em atraso';}).length;
+ var rev=ch.filter(_sacRev).length, slaOk=Math.max(0,tot-atr);
+ var h=_sacHash(nome);
+ var vendas=6000+((h>>>3)%10)*1450, pacotes=2+((h>>>7)%6), csat=(40+((h>>>5)%11))/10;
+ return {tot:tot,con:con,atr:atr,rev:rev,slaOk:slaOk,vendas:vendas,pacotes:pacotes,csat:csat};
+}
+function sacPremValor(m){var P=SAC_PREM;return m.tot*P.porAtendimento+m.con*P.porFinalizado+m.rev*P.porReversao+m.slaOk*P.porSLA+(P.pctVendas/100)*m.vendas+(m.atr===0?P.bonusZeroAtraso:0)+(m.csat>=P.metaCSAT?P.bonusCSAT:0)+m.pacotes*P.bonusPacote;}
+function _sacM(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR');}
 function sacPremiacao(w){
- const rank=SAC_ATEND.filter(a=>a.ativo).map(a=>{const tot=sacCount(c=>c.resp===a.nome);const con=sacCount(c=>c.resp===a.nome&&c.status==='Concluído');const atr=sacCount(c=>c.resp===a.nome&&c.status==='Em atraso');const sla=tot?Math.round((tot-atr)/tot*100):100;const pts=con*10+(atr===0?20:0)+Math.round(sla/10);return{a,tot,con,atr,sla,pts};}).sort((x,y)=>y.pts-x.pts);
- const medal=['🥇','🥈','🥉'];
- const rows=rank.map((r,i)=>[(medal[i]||(i+1)+'º'),r.a.nome,r.tot,r.con,(r.atr===0?'<span style="color:#0F6B3A;font-weight:700">Zero ✓</span>':r.atr),r.sla+'%','<b>'+r.pts+'</b>']);
- w.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><b><i class="ti ti-trophy" style="color:var(--gold-500)"></i> Ranking dos atendentes</b><span style="font-size:12px;color:var(--muted)">Pontuação = resolvidos×10 + bônus Zero Atrasos (20) + SLA</span></div>'+
-  '<div class="rel-card" style="background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;margin-bottom:12px"><div style="font-size:12px;opacity:.85">Destaque do mês</div><div style="font-size:22px;font-weight:800">'+(rank[0]?rank[0].a.nome:'—')+'</div><div style="font-size:13px;opacity:.9">'+(rank[0]?rank[0].pts+' pontos · '+rank[0].con+' chamados resolvidos':'')+'</div></div>'+
-  relTable(['#','Atendente','Total','Resolvidos','Atrasos','SLA','Pontos'],rows);
+ var P=SAC_PREM;
+ function fld(k,lbl,step){return '<div><label style="font-size:11px;color:var(--muted)">'+lbl+'</label><input type="number" step="'+(step||'1')+'" value="'+P[k]+'" onchange="SAC_PREM.'+k+'=+this.value;buildSac(\'premiacao\')" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;margin-top:3px"></div>';}
+ var cfg='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-adjustments" style="color:var(--brand-500)"></i> Regras de premiação do SAC</b>'
+  +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">'
+  +fld('porAtendimento','R$ por atendimento')+fld('porFinalizado','R$ por caso finalizado')+fld('porReversao','R$ por reversão (retenção)')+fld('porSLA','R$ por caso no prazo')
+  +fld('pctVendas','% sobre vendas no sistema','0.1')+fld('bonusPacote','R$ por pacote vendido')+fld('bonusZeroAtraso','Bônus zero atrasos (R$)')+fld('bonusCSAT','Bônus satisfação CSAT (R$)')
+  +'</div><div style="font-size:11.5px;color:var(--muted);margin-top:8px"><i class="ti ti-bulb"></i> A <b>reversão</b> (reter um cancelamento/reembolso) paga mais, para incentivar a retenção. Somam-se ainda o <b>% sobre vendas</b> feitas pelo SAC no sistema, o bônus por <b>respeitar o tempo de resposta (SLA)</b>, por <b>zero atrasos</b> e por <b>satisfação (CSAT &ge; '+P.metaCSAT+')</b>. Sugestões adicionais já incluídas: bônus por <b>pacote vendido</b> (upsell) e por <b>zero atrasos</b> no mês.</div></div>';
+ var rank=SAC_ATEND.filter(function(a){return a.ativo;}).map(function(a){var m=sacPremMetrics(a);return {a:a,m:m,premio:sacPremValor(m)};}).sort(function(x,y){return y.premio-x.premio;});
+ var medal=['🥇','🥈','🥉'];
+ var rows=rank.map(function(r,i){var m=r.m;return [(medal[i]||(i+1)+'º'),r.a.nome,m.tot,m.con,(m.rev>0?'<b style="color:var(--brand-600)">'+m.rev+'</b>':'0'),m.slaOk,(m.atr===0?'<span style="color:#0F6B3A;font-weight:700">Zero ✓</span>':m.atr),_sacM(m.vendas),'<b>'+_sacM(r.premio)+'</b>'];});
+ var top=rank[0];
+ w.innerHTML=cfg
+  +'<div class="rel-card" style="background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;margin-bottom:12px"><div style="font-size:12px;opacity:.85">Destaque do mês · maior premiação</div><div style="font-size:22px;font-weight:800">'+(top?top.a.nome:'—')+'</div><div style="font-size:13px;opacity:.9">'+(top?_sacM(top.premio)+' · '+top.m.con+' resolvidos · '+top.m.rev+' reversões':'')+'</div></div>'
+  +relTable(['#','Atendente','Atend.','Finaliz.','Reversões','No prazo','Atrasos','Vendas','Prêmio'],rows);
 }
 function sacImportar(w){
  w.innerHTML='<div class="rel-card" style="margin-bottom:12px"><b><i class="ti ti-file-import" style="color:var(--brand-500)"></i> Importar leads / reclamações</b><p style="font-size:13px;color:var(--muted);margin:6px 0 0">Importe uma planilha (.xlsx) com reclamações vindas de Sults, Reclame Aqui, Procon ou planilhas internas. Colunas: Cliente, CPF, WhatsApp, Canal, Unidade, Motivo, Data, Valor Pago, Reembolso.</p></div>'+
