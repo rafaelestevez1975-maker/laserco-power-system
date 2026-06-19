@@ -1376,10 +1376,10 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
             <label class="rule-item" style="margin-bottom:16px"><input type="checkbox" checked> <span><b>Verificado</b> — cliente com dados confirmados.</span></label>
             <div class="ficha-form">
               <div class="mf sp2"><label>Nome</label><input id="fichaNomeInput" value="Cliente"></div>
-              <div class="mf sp2"><label>E-mail</label><input value="cliente@email.com"></div>
+              <div class="mf sp2"><label>E-mail</label><div style="display:flex;gap:6px;align-items:center"><input id="fichaEmailInput" value="cliente@email.com" style="flex:1"><button class="btn btn-ghost" title="Enviar e-mail ao cliente" onclick="fichaEmail()" style="padding:8px 11px"><i class="ti ti-mail"></i></button></div></div>
               <div class="mf"><label>DDI</label><input value="+55"></div>
-              <div class="mf"><label>DDD</label><input value="51"></div>
-              <div class="mf sp2"><label>Telefone</label><input value="99595-1975"></div>
+              <div class="mf"><label>DDD</label><input id="fichaDDDInput" value="51"></div>
+              <div class="mf sp2"><label>Telefone</label><div style="display:flex;gap:6px;align-items:center"><input id="fichaTelInput" value="99595-1975" style="flex:1"><button class="btn btn-ghost" title="Abrir WhatsApp do cliente" onclick="fichaWhats()" style="padding:8px 11px;color:#1FA855"><i class="ti ti-brand-whatsapp"></i></button></div></div>
               <div class="mf"><label>Data de nascimento</label><input value="25/07/1975"></div>
               <div class="mf"><label>Gênero</label><select><option>Feminino</option><option selected>Masculino</option><option>Outro</option></select></div>
               <div class="mf"><label>Como nos conheceu?</label><select><option>Instagram</option><option>Facebook</option><option>Google</option><option>Indicação</option><option>Loja física</option></select></div>
@@ -1457,7 +1457,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <div class="tab-panel" id="tab-carteira">
           <div class="carteira-cards">
             <div class="fid-card"><div class="fc-lbl"><i class="ti ti-award"></i> Clube de fidelidade</div><div class="fc-pts">2.480 <span style="font-size:15px">pts</span></div><div class="fc-sub">R$ 1 gasto = 1 ponto · ≈ R$ 248 em resgates · expira em 12 meses</div></div>
-            <div class="cart-card"><div class="cc-lbl">Cashback</div><div class="cc-val">R$ 150,00</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">Disponível para uso na rede</div></div>
+            <div class="cart-card"><div class="cc-lbl">Cashback</div><div class="cc-val" id="fichaCashSaldo">R$ 150,00</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">Use em até <b>30 dias</b> · após, o crédito expira</div></div>
             <div class="cart-card"><div class="cc-lbl">Plano de assinatura</div><div class="cc-val">Plano Prata</div><div style="font-size:11.5px;color:var(--green);margin-top:6px;font-weight:600">● Ativo</div></div>
           </div>
           <div class="doc-card">
@@ -1477,12 +1477,13 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
                 <ul class="regra-list">
                   <li>Parte do valor das compras volta como <b>crédito em dinheiro</b> para usar em <b>outras compras</b> na rede.</li>
                   <li>Percentual por nível do clube: <b>Bronze 3%</b> · <b>Prata 5%</b> · <b>Ouro 8%</b>.</li>
-                  <li>O crédito acumula na carteira e vale para <b>qualquer serviço ou produto</b>, com validade de <b>6 meses</b>.</li>
+                  <li>O crédito acumula na carteira e vale para <b>qualquer serviço ou produto</b>, com validade de <b>30 dias</b> a partir de cada acúmulo — <b>após esse prazo o crédito é automaticamente excluído</b>.</li>
                   <li>Não cumulativo com outros descontos na mesma compra; uso a partir de R$ 10,00 de saldo.</li>
                 </ul>
               </div>
             </div>
           </div>
+          <div id="fichaCashback"></div>
           <div class="doc-card">
             <h3><i class="ti ti-box"></i> Pacotes e serviços contratados</h3>
             <div class="pkg-item" data-pkg="axila"><div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:600"><span>Depilação a laser · axila</span><span>6 de 10 sessões restantes</span></div><div class="cart-bar"><div class="f" style="width:60%"></div></div><div class="pkg-hint"><i class="ti ti-history"></i> Clique para ver o histórico de sessões</div></div>
@@ -3025,12 +3026,36 @@ document.getElementById('filHead').addEventListener('click',()=>{
 
 /* ---------- Ficha do cliente ---------- */
 function fecharCamera(){if(window._camStream){window._camStream.getTracks().forEach(t=>t.stop());window._camStream=null;}const w=document.getElementById('camWrap');if(w)w.style.display='none';}
+function fichaWhats(){var ddd=((document.getElementById('fichaDDDInput')||{}).value||'').replace(/\D/g,'');var num=((document.getElementById('fichaTelInput')||{}).value||'').replace(/\D/g,'');var full=(num.length>11?num:('55'+ddd+num));if(full.length<12){showToast('Telefone incompleto para WhatsApp','ti-alert-triangle');return;}var nome=((document.getElementById('fichaNomeInput')||{}).value||'').split(' ')[0];window.open('https://wa.me/'+full+'?text='+encodeURIComponent('Olá '+nome+', aqui é da Laser&Co 💜'),'_blank');if(typeof showToast==='function')showToast('Abrindo WhatsApp do cliente','ti-brand-whatsapp');}
+function fichaEmail(){var e=((document.getElementById('fichaEmailInput')||{}).value||'').trim();if(!/@/.test(e)){showToast('E-mail inválido','ti-alert-triangle');return;}var nome=((document.getElementById('fichaNomeInput')||{}).value||'').split(' ')[0];var body='Olá '+nome+',%0D%0A%0D%0AAqui é da Laser&Co. ';window.location.href='mailto:'+encodeURIComponent(e)+'?subject='+encodeURIComponent('Laser&Co — Contato')+'&body='+body;if(typeof showToast==='function')showToast('Abrindo e-mail ao cliente','ti-mail');}
+function cashbackRender(){
+ var hoje=new Date();
+ function d(off){var x=new Date(hoje);x.setDate(x.getDate()+off);return x;}
+ function fmt(x){return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+ var lotes=[{ac:-3,v:40},{ac:-16,v:60},{ac:-25,v:50},{ac:-33,v:35}];
+ var totalValido=0;
+ var rows=lotes.map(function(l){
+   var acData=d(l.ac), exp=d(l.ac+30);
+   var diff=Math.ceil((exp-hoje)/86400000);
+   var status,cor,val=l.v;
+   if(diff<0){status='Expirado — excluído';cor='var(--red)';val=0;}
+   else if(diff<=7){status='Expira em '+diff+' dia(s)';cor='var(--amber,#B26A00)';totalValido+=l.v;}
+   else{status='Válido ('+diff+' dias)';cor='var(--green)';totalValido+=l.v;}
+   return '<tr><td>'+fmt(acData)+'</td><td class="num-r">R$ '+l.v.toFixed(2).replace('.',',')+'</td><td>'+fmt(exp)+'</td><td style="color:'+cor+';font-weight:600">'+status+'</td><td class="num-r">'+(val?'R$ '+val.toFixed(2).replace('.',','):'<span class="muted">—</span>')+'</td></tr>';
+ }).join('');
+ var card=document.getElementById('fichaCashSaldo');if(card)card.textContent='R$ '+totalValido.toFixed(2).replace('.',',');
+ var ex=document.getElementById('fichaCashback');if(ex)ex.innerHTML='<div class="doc-card"><h3><i class="ti ti-cash"></i> Extrato de cashback · validade de 30 dias</h3>'
+   +'<div class="rel-legend" style="margin-bottom:10px"><i class="ti ti-clock-exclamation"></i> Cada crédito de cashback deve ser usado em até <b>30 dias</b> a partir do acúmulo. Após esse prazo o crédito é <b>automaticamente excluído</b>.</div>'
+   +'<div class="cli-scroll"><table class="cli-table"><thead><tr><th>Acúmulo</th><th class="num-r">Valor</th><th>Expira em</th><th>Status</th><th class="num-r">Saldo válido</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+   +'<div style="text-align:right;margin-top:8px;font-weight:700">Saldo de cashback válido: R$ '+totalValido.toFixed(2).replace('.',',')+'</div></div>';
+}
 function openClienteFicha(nome){
   Object.values(views).forEach(v=>document.getElementById(v).classList.remove('active'));
   document.getElementById('view-cliente-ficha').classList.add('active');
   document.getElementById('pageTitle').innerHTML='<i class="ti ti-user"></i> Ficha do cliente';
   document.getElementById('fichaNome').textContent=nome;
   var _ap=document.getElementById('fichaApp');if(_ap)_ap.innerHTML=' · App da rede: '+(clienteTemApp(nome)?'<b style="color:var(--green)">Sim</b>':'<b style="color:var(--text-3)">Não</b>');
+  if(typeof cashbackRender==='function')cashbackRender();
   document.getElementById('fichaNomeInput').value=nome;
   document.getElementById('fichaIni').textContent=nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   document.querySelectorAll('#view-cliente-ficha .tab-btn').forEach((x,i)=>x.classList.toggle('active',i===0));
