@@ -4461,19 +4461,25 @@ function corridinhaHTML(){
   var vExtra=myV&&myV.pos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+rowName(myV,'',true):'';
   var aTop=agdr.slice(0,10).map(function(x){return rowName(x,'<span class="cor-v">'+x.agd+' agds</span>',x.u===CORRIDA_MINHA);}).join('');
   var aExtra=myA&&myA.pos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+rowName(myA,'<span class="cor-v">'+myA.agd+' agds</span>',true):'';
-  var game=U.slice().map(function(x){var vp=vendas.find(function(v){return v.u===x.u;});return Object.assign({},x,{dpts:corridaDailyPts(vp?vp.pos:99)});}).sort(function(a,b){return b.mes-a.mes;}).map(function(x,i){return Object.assign({},x,{gpos:i+1});});
-  var myG=game.find(function(x){return x.u===CORRIDA_MINHA;});
-  var gRow=function(x,mine){return '<div class="cor-row'+(mine?' mine':'')+'">'+_corMedal(x.gpos)+'<span class="cor-u">'+x.u+'</span><span class="cor-v" style="display:inline-flex;gap:12px;align-items:center"><span style="color:var(--gold-600);font-weight:700" title="Pontos ganhos hoje">+'+x.dpts+' hoje</span><span style="font-weight:800" title="Pontos acumulados no m\u00eas">'+x.mes+' pts</span></span></div>';};
-  var gTop=game.slice(0,10).map(function(x){return gRow(x,x.u===CORRIDA_MINHA);}).join('');
-  var gExtra=myG&&myG.gpos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+gRow(myG,true):'';
+  var dgame=vendas.map(function(x){return Object.assign({},x,{dpts:corridaDailyPts(x.pos)});});
+  var myDG=dgame.find(function(x){return x.u===CORRIDA_MINHA;});
+  var dgRow=function(x,mine){return '<div class="cor-row'+(mine?' mine':'')+'">'+_corMedal(x.pos)+'<span class="cor-u">'+x.u+'</span><span class="cor-v" style="color:var(--gold-600);font-weight:800" title="Pontos do dia">'+x.dpts+' pts</span></div>';};
+  var dgTop=dgame.slice(0,10).map(function(x){return dgRow(x,x.u===CORRIDA_MINHA);}).join('');
+  var dgExtra=myDG&&myDG.pos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+dgRow(myDG,true):'';
+  var mgame=U.slice().sort(function(a,b){return b.mes-a.mes;}).map(function(x,i){return Object.assign({},x,{gpos:i+1});});
+  var myMG=mgame.find(function(x){return x.u===CORRIDA_MINHA;});
+  var mgRow=function(x,mine){return '<div class="cor-row'+(mine?' mine':'')+'">'+_corMedal(x.gpos)+'<span class="cor-u">'+x.u+'</span><span class="cor-v" style="font-weight:800" title="Pontos acumulados no m\u00eas">'+x.mes+' pts</span></div>';};
+  var mgTop=mgame.slice(0,10).map(function(x){return mgRow(x,x.u===CORRIDA_MINHA);}).join('');
+  var mgExtra=myMG&&myMG.gpos>10?'<div class="cor-sep">sua posi\u00e7\u00e3o</div>'+mgRow(myMG,true):'';
   return '<div class="rel-head"><div class="ri" style="background:var(--gold-soft);color:var(--gold-600)"><i class="ti ti-trophy"></i></div><div><h2>Ranking do dia</h2><p>Posi\u00e7\u00e3o das unidades hoje — vendas (apenas posi\u00e7\u00e3o), agendamentos e o game de pontua\u00e7\u00e3o \u00b7 09/06</p></div></div>'
     +'<div class="rel-acts" style="justify-content:space-between;margin-bottom:14px"><span style="font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-circle-filled" style="font-size:8px;vertical-align:2px"></i> Atualizando em tempo real</span><button class="btn btn-ghost" onclick="corridaTick()"><i class="ti ti-refresh"></i> Atualizar agora</button></div>'
-    +relKpis([['Vendas \u00b7 sua posi\u00e7\u00e3o',(myV?myV.pos+'\u00ba':'\u2014'),'ti-flag'],['Agendamentos \u00b7 sua posi\u00e7\u00e3o',(myA?myA.pos+'\u00ba':'\u2014'),'ti-calendar-stats'],['Unidades na rede',U.length,'ti-building'],['Agendamentos hoje',(myA?myA.agd:0),'ti-calendar-check'],['Meus pontos no m\u00eas (game)',(myG?myG.mes+' pts ('+myG.gpos+'\u00ba)':'0'),'ti-device-gamepad-2']])
-    +'<div class="dash-grid" style="grid-template-columns:1fr 1fr">'
+    +relKpis([['Vendas \u00b7 sua posi\u00e7\u00e3o',(myV?myV.pos+'\u00ba':'\u2014'),'ti-flag'],['Agendamentos \u00b7 sua posi\u00e7\u00e3o',(myA?myA.pos+'\u00ba':'\u2014'),'ti-calendar-stats'],['Unidades na rede',U.length,'ti-building'],['Meus pontos hoje (game)',(myDG?myDG.dpts+' pts \u00b7 '+myDG.pos+'\u00ba':'0'),'ti-bolt'],['Meus pontos no m\u00eas (game)',(myMG?myMG.mes+' pts \u00b7 '+myMG.gpos+'\u00ba':'0'),'ti-device-gamepad-2']])
+    +'<div class="dash-grid" style="grid-template-columns:1fr 1fr 1fr">'
     +'<div class="dash-w"><h4><i class="ti ti-trophy"></i> Ranking de vendas \u00b7 hoje</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px"><i class="ti ti-lock"></i> Valores ocultos — apenas a posi\u00e7\u00e3o</div>'+vTop+vExtra+'</div>'
+    +'<div class="dash-w"><h4><i class="ti ti-bolt" style="color:var(--gold-600)"></i> Game \u00b7 pontos do dia</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px">Pontos pela posi\u00e7\u00e3o de <b>vendas de hoje</b> (tempo real)</div>'+dgTop+dgExtra+'</div>'
     +'<div class="dash-w"><h4><i class="ti ti-calendar-check"></i> Ranking de agendamentos \u00b7 hoje</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px">N\u00ba de agendamentos por unidade</div>'+aTop+aExtra+'</div>'
     +'</div>'
-    +'<div class="dash-w" style="margin-top:14px"><h4><i class="ti ti-device-gamepad-2" style="color:var(--gold-600)"></i> Game de vendas \u00b7 pontua\u00e7\u00e3o das unidades</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px"><i class="ti ti-bolt"></i> Pontos do dia pela posi\u00e7\u00e3o de vendas (tempo real) + acumulado no m\u00eas \u2014 sem exibir valores em R$</div>'+gTop+gExtra+'</div>';
+    +'<div class="dash-w" style="margin-top:14px"><h4><i class="ti ti-device-gamepad-2" style="color:var(--gold-600)"></i> Game \u00b7 pontua\u00e7\u00e3o acumulada no m\u00eas</h4><div style="font-size:11px;color:var(--text-3);margin:-4px 0 8px">Ranking <b>mensal</b> por pontos acumulados \u2014 sem exibir valores em R$</div>'+mgTop+mgExtra+'</div>';
 }
 function dashCorridinhaRender(){const c=document.getElementById('dashCorridinha');if(c)c.innerHTML=corridinhaHTML();if(typeof dashExtras==='function')dashExtras();}
 function corridaTick(){CORRIDA.forEach(x=>{x.dia=Math.max(0,x.dia+Math.round((Math.random()-0.35)*1200));});const w=document.getElementById('dashWrap');if(w&&document.getElementById('view-dashb').classList.contains('active'))w.innerHTML=corridinhaHTML();dashCorridinhaRender();showToast('Ranking atualizado','ti-refresh');}
