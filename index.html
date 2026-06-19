@@ -2617,7 +2617,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
       <div class="mf"><label>De (solicitante)</label><select id="chamDe"></select></div>
       <div class="mf"><label>Para (responsável)</label><select id="chamPara"></select></div>
       <div class="mf"><label>Prioridade</label><select id="chamPrio"><option>Normal</option><option>Importante</option><option>Urgente</option></select></div>
-      <div class="mf"><label>Etiqueta</label><select id="chamTag"><option>Suporte</option><option>Financeiro</option><option>Implantação</option><option>Projeto</option><option>Expansão</option><option>Solicitação</option></select></div>
+      <div class="mf"><label>Assunto</label><select id="chamTag"><option>Suporte</option><option>Financeiro</option><option>Implantação</option><option>Projeto</option><option>Expansão</option><option>Solicitação</option></select></div>
       <div class="mf full"><label>Descrição da solicitação <span class="req">*</span></label><textarea id="chamMsg" rows="4" style="width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:10px 11px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical" placeholder="Detalhe o que precisa…"></textarea></div>
     </div>
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeCham()">Cancelar</button><button class="btn btn-primary" onclick="saveCham()"><i class="ti ti-send"></i> Abrir chamado</button></div>
@@ -2646,7 +2646,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
       <div class="modal-note"><i class="ti ti-shield-lock"></i><span>Apenas <b>administradores</b> enviam comunicados. Quem receber será obrigado a <b>ler e clicar "ciente"</b> no primeiro acesso ao sistema para poder entrar.</span></div>
       <div class="mf full"><label>Título <span class="req">*</span></label><input id="comTit" placeholder="Ex.: Atualização do protocolo de biossegurança"></div>
       <div class="mf full"><label>Mensagem <span class="req">*</span></label><textarea id="comMsg" rows="5" style="width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:10px 11px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical" placeholder="Escreva o comunicado…"></textarea></div>
-      <div class="mf full" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><label>Prioridade</label><select id="comPrio"><option>Normal</option><option>Importante</option><option>Urgente</option></select></div><div><label>Categoria</label><select id="comCat"><option>Sem categoria</option><option>Área Técnica</option><option>Diretoria</option><option>Marketing</option><option>Operação</option><option>RH</option></select></div></div>
+      <div class="mf full" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><label>Prioridade</label><select id="comPrio"><option>Normal</option><option>Importante</option><option>Urgente</option></select></div><div><label>Assunto</label><select id="comCat"><option>Marketing</option><option>Operações</option><option>Comercial</option><option>Área Técnica</option><option>Diretoria</option><option>Treinamentos</option><option>Recursos Humanos</option></select></div></div>
       <label class="rel-pickrow" style="border:none;padding:2px 0"><input type="checkbox" id="comEmail" checked> Enviar também por WhatsApp</label>
       <div class="mf full"><label>Direcionado a <span class="req">*</span> <span style="font-weight:400;color:var(--text-3)">(marque uma ou mais)</span></label>
         <div class="evt-audi" id="comAudi">
@@ -6321,29 +6321,49 @@ let CHAMADOS=[
   ]}
 ];
 let _chamTab='recebidos',_chamStatus='Todos',_chamCur=null;
+CHAMADOS.forEach(function(c){c.fin=(c.status==='Resolvido'||c.status==='Concluído');});
+let _chamFil={periodo:'Este ano',situacao:'Todos',assunto:'Todos',para:'Todos'};
+function _ehDiaUtil(d){var w=d.getDay();return w!==0&&w!==6;}
+function _addDiasUteis(d,n){var r=new Date(d.getFullYear(),d.getMonth(),d.getDate());var a=0;while(a<n){r.setDate(r.getDate()+1);if(_ehDiaUtil(r))a++;}return r;}
+function _fmtBR(d){return d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():'—';}
+function _chamLimite(c){var ds=(c.aberto||'').split(' ')[0];var d=_parseBR(ds);if(!d)return null;return _addDiasUteis(d,2);}
+function _chamAtrasado(c){var lim=_chamLimite(c);if(!lim)return false;var t=_hoje();t.setHours(0,0,0,0);var l=new Date(lim);l.setHours(23,59,59,999);return t>l;}
+function chamSitPill(c){return c.fin?'<span class="wa-pill done"><i class="ti ti-flag-check" style="font-size:11px"></i> Finalizado</span>':'<span class="wa-pill run"><i class="ti ti-progress" style="font-size:11px"></i> Ativo</span>';}
+function chamPrazoCell(c){var lim=_chamLimite(c);if(c.fin)return '<span class="wa-pill ok"><i class="ti ti-check" style="font-size:11px"></i> Concluído</span>'+(lim?'<div style="font-size:10.5px;color:var(--text-3)">limite '+_fmtBR(lim)+'</div>':'');var at=_chamAtrasado(c);return (at?'<span class="wa-pill" style="background:var(--red-bg);color:var(--red)"><i class="ti ti-clock-exclamation" style="font-size:11px"></i> Atrasado</span>':'<span class="wa-pill ok"><i class="ti ti-clock" style="font-size:11px"></i> Em dia</span>')+'<div style="font-size:10.5px;color:var(--text-3)">resolver até <b>'+_fmtBR(lim)+'</b></div>';}
+function chamFinalizar(id,fin){var c=CHAMADOS.find(x=>x.id===id);if(c){c.fin=fin;if(typeof persistState==='function')persistState();showToast(fin?'Chamado finalizado':'Chamado reaberto',fin?'ti-flag-check':'ti-rotate');chamDetail(id);}}
 function chamStPill(s){return `<span class="wa-pill ${CHAM_STPILL[s]||'draft'}">${s}</span>`;}
 function chamPrazo(p){return p==='Atrasado'?'<span class="wa-pill" style="background:var(--red-bg);color:var(--red)"><i class="ti ti-clock-exclamation" style="font-size:11px"></i> Atrasado</span>':'<span class="wa-pill ok">Em dia</span>';}
 function buildChamados(){
   const w=document.getElementById('chamWrap');if(!w)return;_chamCur=null;
   const all=CHAMADOS;
-  const kpis=relKpis([['Chamados abertos',String(all.filter(c=>c.status!=='Concluído').length),'ti-ticket'],['Aguardando responsável',String(all.filter(c=>c.status==='Novo'||c.status==='Ag. Responsável').length),'ti-clock'],['Atrasados',String(all.filter(c=>c.prazo==='Atrasado').length),'ti-alert-triangle'],['Resolvidos/Concluídos',String(all.filter(c=>c.status==='Resolvido'||c.status==='Concluído').length),'ti-checks']]);
-  const boxTabs=`<div class="rel-tabs">${[['recebidos','Recebidos'],['enviados','Enviados']].map(t=>`<div class="rel-tab ${t[0]===_chamTab?'active':''}" onclick="_chamTab='${t[0]}';_chamStatus='Todos';buildChamados()">${t[1]} (${all.filter(c=>c.box===t[0]).length})</div>`).join('')}</div>`;
-  const stChips=`<div class="dash-filter" style="margin-bottom:14px"><span class="flabel">Status</span>${['Todos',...CHAM_STATUS].map(s=>`<div class="chip ${s===_chamStatus?'active':''}" onclick="_chamStatus='${s}';buildChamados()">${s}</div>`).join('')}</div>`;
-  const list=all.filter(c=>c.box===_chamTab&&(_chamStatus==='Todos'||c.status===_chamStatus));
-  const rows=list.map(c=>`<tr><td style="color:var(--text-3)">#${c.id}</td><td><span class="cli-name">${c.tit}</span><div style="font-size:11px;color:var(--text-3)">${c.tag} · aberto ${c.aberto}</div></td><td style="font-size:12px">${c.de} <i class="ti ti-arrow-right" style="color:var(--brand-400)"></i> ${c.para}</td><td>${c.resp==='—'?'<span class="muted">a atribuir</span>':c.resp}</td><td>${chamPrazo(c.prazo)}</td><td>${chamStPill(c.status)}</td><td><span class="os-link" onclick="chamDetail(${c.id})"><i class="ti ti-eye"></i> Abrir</span></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:24px">Nenhum chamado neste filtro</td></tr>';
-  w.innerHTML=`<div class="rel-legend">Documente solicitações <b>entre departamentos da franqueadora</b> (Comercial, Marketing, Financeiro, Operações, SAC…) e <b>entre franqueados e os departamentos</b> — nos dois sentidos. Cada chamado guarda a solicitação, os retornos e o histórico, com status e prazo (SLA).</div>
+  const _box=all.filter(c=>c.box===_chamTab);
+  const base=_box.filter(c=>_comPeriodoMatch((c.aberto||'').split(' ')[0],_chamFil.periodo)&&(_chamFil.assunto==='Todos'||c.tag===_chamFil.assunto)&&(_chamFil.para==='Todos'||c.para===_chamFil.para));
+  const _ativos=base.filter(c=>!c.fin).length,_finz=base.filter(c=>c.fin).length,_atr=base.filter(c=>!c.fin&&_chamAtrasado(c)).length;
+  const kpis=relKpis([['Chamados ativos',String(_ativos),'ti-ticket'],['Finalizados',String(_finz),'ti-checks'],['Atrasados (ativos)',String(_atr),'ti-alert-triangle'],['Prazo SLA','2 dias úteis','ti-clock']]);
+  const boxTabs=`<div class="rel-tabs">${[['recebidos','Recebidos'],['enviados','Enviados']].map(t=>`<div class="rel-tab ${t[0]===_chamTab?'active':''}" onclick="_chamTab='${t[0]}';buildChamados()">${t[1]} (${all.filter(c=>c.box===t[0]).length})</div>`).join('')}</div>`;
+  const _tagOpts=['Todos','Suporte','Financeiro','Implantação','Projeto','Expansão','Solicitação'];
+  const _depOpts=['Todos','Comercial','Marketing','Financeiro','Operações','SAC','Expansão','RH','Área Técnica'];
+  const filtroCard='<div class="rel-card" style="margin:0 0 14px"><div class="rel-card-h" style="cursor:default"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid" style="margin-top:12px">'
+    +'<div class="rf"><label>Período (abertura)</label><select onchange="_chamFil.periodo=this.value;buildChamados()">'+REL_PERIODS.map(function(p){return '<option'+(p===_chamFil.periodo?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'<div class="rf"><label>Situação</label><select onchange="_chamFil.situacao=this.value;buildChamados()">'+['Todos','Ativos','Finalizados'].map(function(p){return '<option'+(p===_chamFil.situacao?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'<div class="rf"><label>Assunto</label><select onchange="_chamFil.assunto=this.value;buildChamados()">'+_tagOpts.map(function(p){return '<option'+(p===_chamFil.assunto?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'<div class="rf"><label>Departamento (para)</label><select onchange="_chamFil.para=this.value;buildChamados()">'+_depOpts.map(function(p){return '<option'+(p===_chamFil.para?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'</div></div>';
+  const list=base.filter(c=>_chamFil.situacao==='Todos'||(_chamFil.situacao==='Ativos'?!c.fin:c.fin));
+  const rows=list.map(c=>`<tr><td style="color:var(--text-3)">#${c.id}</td><td><span class="cli-name">${c.tit}</span><div style="font-size:11px;color:var(--text-3)">${c.tag} · aberto ${c.aberto}</div></td><td style="font-size:12px">${c.de} <i class="ti ti-arrow-right" style="color:var(--brand-400)"></i> ${c.para}</td><td>${c.resp==='—'?'<span class="muted">a atribuir</span>':c.resp}</td><td>${chamSitPill(c)}</td><td>${chamPrazoCell(c)}</td><td><span class="os-link" onclick="chamDetail(${c.id})"><i class="ti ti-eye"></i> Abrir</span></td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:24px">Nenhum chamado neste filtro</td></tr>';
+  w.innerHTML=`<div class="rel-legend">Solicitações <b>entre departamentos da franqueadora</b> e <b>entre franqueados e os departamentos</b>, nos dois sentidos. Filtre por <b>período</b>, <b>situação</b> (ativos/finalizados), <b>assunto</b> e <b>departamento</b>. Cada chamado deve ser resolvido em <b>2 dias úteis</b>, contados a partir do primeiro dia útil seguinte à abertura — a data-limite aparece no chamado.</div>
     ${kpis}
     <div class="rel-acts" style="justify-content:flex-end;margin:-4px 0 14px"><button class="btn btn-primary" onclick="openCham()"><i class="ti ti-plus"></i> Abrir chamado</button></div>
-    ${boxTabs}${stChips}
-    <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>#</th><th>Assunto</th><th>De → Para</th><th>Responsável</th><th>Prazo</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    ${boxTabs}${filtroCard}
+    <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>#</th><th>Assunto</th><th>De → Para</th><th>Responsável</th><th>Situação</th><th>Prazo (SLA)</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function chamDetail(id){
   const c=CHAMADOS.find(x=>x.id===id);if(!c)return;_chamCur=id;const w=document.getElementById('chamWrap');
   const thread=c.thread.map(m=>`<div class="msg ${m.role==='sol'?'in':'out'}"><div style="font-size:10.5px;font-weight:700;margin-bottom:2px;opacity:.8">${m.quem}</div>${m.x}<span class="mt">${m.h}</span></div>`).join('');
   w.innerHTML=`<div style="margin-bottom:12px"><span class="os-link" onclick="buildChamados()"><i class="ti ti-arrow-left"></i> Voltar aos chamados</span></div>
-    <div class="rel-card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span style="color:var(--text-3);font-weight:700">#${c.id}</span>${comPrioTag(c.prio)}<span class="orig-tag">${c.tag}</span>${chamPrazo(c.prazo)}<span style="margin-left:auto">${chamStPill(c.status)}</span></div>
+    <div class="rel-card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span style="color:var(--text-3);font-weight:700">#${c.id}</span>${comPrioTag(c.prio)}<span class="orig-tag">${c.tag}</span><span style="margin-left:auto">${chamSitPill(c)}</span></div>
       <h3 style="font-size:17px;font-weight:700">${c.tit}</h3><div style="font-size:12.5px;color:var(--text-2);margin-top:4px">${c.de} <i class="ti ti-arrow-right"></i> ${c.para} · responsável: ${c.resp} · aberto ${c.aberto}</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap"><label style="font-size:12px;font-weight:700;color:var(--text-2)">Alterar status:</label><select onchange="chamSetStatus(${c.id},this.value)" style="border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit">${CHAM_STATUS.map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap"><span style="font-size:12.5px;color:var(--text-2)"><i class="ti ti-clock"></i> Prazo de resolução (SLA 2 dias úteis): <b>${_fmtBR(_chamLimite(c))}</b>${!c.fin&&_chamAtrasado(c)?' <span class="wa-pill" style="background:var(--red-bg);color:var(--red)">atrasado</span>':''}</span>${c.fin?`<button class="btn" onclick="chamFinalizar(${c.id},false)"><i class="ti ti-rotate"></i> Reabrir chamado</button>`:`<button class="btn btn-primary" onclick="chamFinalizar(${c.id},true)"><i class="ti ti-flag-check"></i> Finalizar chamado</button>`}</div>
     </div>
     <div class="rel-card" style="padding:0;overflow:hidden"><div class="chat-msgs" style="height:340px;border-radius:0">${thread}</div>
       <div class="chat-reply"><input id="chamInput" placeholder="Escreva um retorno / atualização…" onkeydown="if(event.key==='Enter')chamReply(${c.id})"><button class="chat-send" style="background:var(--brand-500)" onclick="chamReply(${c.id})"><i class="ti ti-send"></i></button></div>
@@ -6354,7 +6374,6 @@ function chamReply(id){
   const inp=document.getElementById('chamInput');if(!inp||!inp.value.trim())return;
   const c=CHAMADOS.find(x=>x.id===id);const h=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   c.thread.push({role:'resp',quem:'Você ('+(isAdmin()?'Admin':'Responsável')+')',x:inp.value.trim(),h});
-  if(c.status==='Novo')c.status='Andamento';
   chamDetail(id);showToast('Retorno registrado no chamado','ti-message-check');
 }
 function chamSetStatus(id,s){const c=CHAMADOS.find(x=>x.id===id);if(c){c.status=s;showToast('Status: '+s,'ti-refresh');chamDetail(id);}}
@@ -6370,7 +6389,7 @@ function saveCham(){
   if(!tit||!msg){showToast('Preencha assunto e descrição','ti-alert-triangle');return;}
   const de=document.getElementById('chamDe').value,para=document.getElementById('chamPara').value;
   const box=/Franqueado/.test(de)?'recebidos':'enviados';
-  CHAMADOS.unshift({id:4013+Math.floor(Math.random()*90),tit,de,para,resp:'—',prio:document.getElementById('chamPrio').value,tag:document.getElementById('chamTag').value,status:'Novo',prazo:'Em dia',aberto:'09/06/2026 '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),box,thread:[{role:'sol',quem:de,x:msg,h:'agora'}]});
+  CHAMADOS.unshift({id:4013+Math.floor(Math.random()*90),tit,de,para,resp:'—',prio:document.getElementById('chamPrio').value,tag:document.getElementById('chamTag').value,status:'Novo',fin:false,prazo:'Em dia',aberto:_fmtBR(_hoje())+' '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),box,thread:[{role:'sol',quem:de,x:msg,h:'agora'}]});
   _chamTab=box;_chamStatus='Todos';closeCham();buildChamados();showToast('Chamado aberto e enviado a '+para,'ti-ticket');
 }
 (function(){const m=document.getElementById('chamMod');if(m)m.addEventListener('click',e=>{if(e.target===m)closeCham();});})();
@@ -6382,24 +6401,58 @@ let COMUNICADOS=[
   {id:607,tit:'Nova tabela de preços — vigência Julho',msg:'Segue a nova tabela de preços com vigência a partir de 01/07. Atualizem o sistema e comuniquem a equipe de vendas.',prio:'Importante',cat:'Diretoria',data:'06/06/2026',autor:'Rafael Estevez',audi:['Franqueados','Office'],obrig:true,email:true,status:'Publicado',dest:52,lidos:48},
   {id:606,tit:'Campanha Dia dos Namorados — materiais',prio:'Normal',cat:'Marketing',msg:'Os materiais da campanha de Dia dos Namorados já estão disponíveis na pasta de marketing. Programem os disparos e posts conforme o calendário sugerido.',data:'02/06/2026',autor:'Marketing Rede',audi:['Rede própria','Franquias'],obrig:false,email:true,status:'Publicado',dest:240,lidos:201},
   {id:605,tit:'Reunião de Franqueados — convocação',prio:'Normal',cat:'Diretoria',msg:'Convocamos todos os franqueados para a reunião trimestral. Pauta e link serão enviados em breve.',data:'12/06/2026',autor:'Rafael Estevez',audi:['Franqueados'],obrig:true,email:true,status:'Agendado',dest:52,lidos:0},
-  {id:604,tit:'Palestra sobre Burnout — encerrada',prio:'Normal',cat:'RH',msg:'Agradecemos a participação de todos na palestra sobre saúde mental. A gravação está disponível na central de treinamentos.',data:'20/05/2026',autor:'RH Rede',audi:['Rede própria'],obrig:false,email:false,status:'Encerrado',dest:180,lidos:171}
+  {id:604,tit:'Palestra sobre Burnout — encerrada',prio:'Normal',cat:'Recursos Humanos',msg:'Agradecemos a participação de todos na palestra sobre saúde mental. A gravação está disponível na central de treinamentos.',data:'20/05/2026',autor:'RH Rede',audi:['Rede própria'],obrig:false,email:false,status:'Encerrado',dest:180,lidos:171}
 ];
 let _comOpen=null, _comFirstShown=false;
 function isAdmin(){return USER_ROLE==='Proprietário';}
 function comPrioTag(p){const c=COM_PRIO[p]||COM_PRIO.Normal;return `<span class="evt-type" style="background:${c[1]}22;color:${c[1]}"><i class="ti ${c[2]}" style="vertical-align:-1px"></i> ${p}</span>`;}
+const ASSUNTOS=['Marketing','Operações','Comercial','Área Técnica','Diretoria','Treinamentos','Recursos Humanos'];
+let _comFil={periodo:'Este ano',dest:'Todos',assunto:'Todos'};
+function _comPeriodoMatch(dataStr,per){
+  if(!per||/^Per[ií]odo/.test(per))return true;
+  var d=_parseBR(dataStr);if(!d)return true;
+  var hoje=_hoje(),y=hoje.getFullYear(),m=hoje.getMonth(),dd=hoje.getDate(),a,b;
+  if(per==='Hoje'){a=new Date(y,m,dd);b=new Date(y,m,dd);}
+  else if(per==='Ontem'){a=new Date(y,m,dd-1);b=new Date(y,m,dd-1);}
+  else if(per==='Semana passada'){var dow=hoje.getDay();b=new Date(y,m,dd-dow-1);a=new Date(y,m,dd-dow-7);}
+  else if(per==='Últimos 30 dias'){a=new Date(y,m,dd-29);b=new Date(y,m,dd);}
+  else if(per==='Mês atual'){a=new Date(y,m,1);b=new Date(y,m+1,0);}
+  else if(per==='Mês passado'){a=new Date(y,m-1,1);b=new Date(y,m,0);}
+  else if(per==='Este ano'){a=new Date(y,0,1);b=new Date(y,11,31);}
+  else return true;
+  d.setHours(12,0,0,0);a.setHours(0,0,0,0);b.setHours(23,59,59,999);
+  return d>=a&&d<=b;
+}
+function _comDestMatch(c,dest){if(dest==='Todos')return true;var a=c.audi||[];return a.indexOf(dest)>=0||a.indexOf('Todos')>=0;}
+function _comAssuntoMatch(c,as){return as==='Todos'||c.cat===as;}
+function _comGroupCat(list){var o={};list.forEach(function(c){var k=c.cat||'—';o[k]=(o[k]||0)+1;});return o;}
+function _comGroupDest(list){var o={};list.forEach(function(c){(c.audi||['—']).forEach(function(x){o[x]=(o[x]||0)+1;});});return o;}
 let _comFilter='Todos';
 function buildComunicados(){
   const w=document.getElementById('comWrap');if(!w)return;
-  const dest=COMUNICADOS.reduce((a,c)=>a+c.dest,0),lidos=COMUNICADOS.reduce((a,c)=>a+c.lidos,0);
-  const kpis=relKpis([['Comunicados enviados',String(COMUNICADOS.length),'ti-speakerphone'],['Destinatários',dest.toLocaleString('pt-BR'),'ti-users'],['Cientes (leram)',lidos.toLocaleString('pt-BR'),'ti-checks'],['Taxa de leitura',Math.round(lidos/Math.max(dest,1)*100)+'%','ti-percentage']]);
-  const counts={Todos:COMUNICADOS.length,Publicados:COMUNICADOS.filter(c=>c.status==='Publicado').length,Agendados:COMUNICADOS.filter(c=>c.status==='Agendado').length,Encerrados:COMUNICADOS.filter(c=>c.status==='Encerrado').length};
+  const base=COMUNICADOS.filter(c=>_comPeriodoMatch(c.data,_comFil.periodo)&&_comDestMatch(c,_comFil.dest)&&_comAssuntoMatch(c,_comFil.assunto));
+  const dest=base.reduce((a,c)=>a+c.dest,0),lidos=base.reduce((a,c)=>a+c.lidos,0);
+  const kpis=relKpis([['Comunicados',String(base.length),'ti-speakerphone'],['Destinatários',dest.toLocaleString('pt-BR'),'ti-users'],['Cientes (leram)',lidos.toLocaleString('pt-BR'),'ti-checks'],['Taxa de leitura',Math.round(lidos/Math.max(dest,1)*100)+'%','ti-percentage']]);
+  const counts={Todos:base.length,Publicados:base.filter(c=>c.status==='Publicado').length,Agendados:base.filter(c=>c.status==='Agendado').length,Encerrados:base.filter(c=>c.status==='Encerrado').length};
   const tabs=`<div class="rel-tabs" style="margin-bottom:14px">${['Todos','Publicados','Agendados','Encerrados'].map(t=>`<div class="rel-tab ${t===_comFilter?'active':''}" onclick="_comFilter='${t}';buildComunicados()">${t} (${counts[t]})</div>`).join('')}</div>`;
-  const list=COMUNICADOS.filter(c=>_comFilter==='Todos'||c.status===_comFilter.replace(/s$/,'').replace('Publicado','Publicado'));
+  const list=base.filter(c=>_comFilter==='Todos'||c.status===_comFilter.replace(/s$/,''));
   const stPill={Publicado:'ok',Agendado:'pend',Encerrado:'done'};
+  const _destOpts=[['Todos','Geral (todos)'],['Rede própria','Unidades próprias'],['Franquias','Franquias'],['Franqueados','Franqueados'],['Office','Office']];
+  const filtroCard='<div class="rel-card" style="margin-bottom:14px"><div class="rel-card-h" style="cursor:default"><span><i class="ti ti-filter flt"></i> Filtros</span></div><div class="rel-filgrid" style="margin-top:12px">'
+    +'<div class="rf"><label>Período</label><select onchange="_comFil.periodo=this.value;buildComunicados()">'+REL_PERIODS.map(function(p){return '<option'+(p===_comFil.periodo?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'<div class="rf"><label>Destinatário</label><select onchange="_comFil.dest=this.value;buildComunicados()">'+_destOpts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===_comFil.dest?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'
+    +'<div class="rf"><label>Assunto</label><select onchange="_comFil.assunto=this.value;buildComunicados()"><option'+(_comFil.assunto==='Todos'?' selected':'')+'>Todos</option>'+ASSUNTOS.map(function(p){return '<option'+(p===_comFil.assunto?' selected':'')+'>'+p+'</option>';}).join('')+'</select></div>'
+    +'</div></div>';
+  const _byAss=_comGroupCat(base),_byDest=_comGroupDest(base);
+  const _assRows=Object.keys(_byAss).map(function(k){return [k,_byAss[k],String(_byAss[k])];}).sort(function(a,b){return b[1]-a[1];});
+  const _destRows=Object.keys(_byDest).map(function(k){return [k,_byDest[k],String(_byDest[k])];}).sort(function(a,b){return b[1]-a[1];});
+  const dashCharts='<div class="dash-grid" style="margin-bottom:16px">'+dashWidget('Comunicados por assunto','ti-tag',_assRows.length?barChartPct(_assRows,false):'<div class="muted" style="padding:8px">Sem dados no período.</div>')+dashWidget('Comunicados por destinatário','ti-users',_destRows.length?barChartPct(_destRows,true):'<div class="muted" style="padding:8px">Sem dados no período.</div>')+'</div>';
   const rows=list.map(c=>{const pc=Math.round(c.lidos/Math.max(c.dest,1)*100);return `<tr><td style="color:var(--text-3)">#${c.id}</td><td><span class="cli-name">${c.tit}</span></td><td><div style="font-weight:700;color:${pc>=50?'var(--green)':'var(--amber)'}">${pc}%</div><div style="font-size:11px;color:var(--text-3)">${c.lidos} de ${c.dest}</div></td><td>${c.autor}</td><td>${c.data}</td><td>${c.audi.map(a=>`<span class="evt-audi-tag">${a}</span>`).join(' ')}</td><td>${c.obrig?'<span class="wa-pill pend">Sim</span>':'<span class="muted">Não</span>'}</td><td>${c.email?'<i class="ti ti-mail" style="color:var(--green)"></i>':'<span class="muted">—</span>'}</td><td><span class="orig-tag">${c.cat}</span></td><td><span class="wa-pill ${stPill[c.status]||'draft'}">${c.status}</span></td><td style="white-space:nowrap"><span class="os-link" onclick="comReport(${c.id})">Visualizar</span> · <span class="os-link" onclick="showToast('Gerenciar destinatários e reenvio','ti-settings')">Gerenciar</span> · <span class="os-link" onclick="showToast('Link público do comunicado copiado','ti-link')">Link</span></td></tr>`;}).join('');
-  w.innerHTML=`<div class="rel-legend">Somente <b>administradores</b> enviam comunicados, direcionando ao grupo de colaboradores (Todos, Rede própria, Franquias, Franqueados, Office). Comunicados <b>obrigatórios</b> abrem automaticamente no primeiro acesso e exigem o <b>"ciente"</b> para liberar o sistema.</div>
+  w.innerHTML=`<div class="rel-legend">Somente <b>administradores</b> enviam comunicados. Filtre por <b>período</b>, <b>destinatário</b> (geral, unidades próprias, franquias, franqueados, office) e <b>assunto</b> (Marketing, Operações, Comercial, Área Técnica, Diretoria, Treinamentos, Recursos Humanos). Comunicados <b>obrigatórios</b> abrem no primeiro acesso e exigem o <b>"ciente"</b> para liberar o sistema.</div>
     ${kpis}
+    ${filtroCard}
     <div class="rel-acts" style="justify-content:space-between;margin:-4px 0 14px"><button class="btn btn-ghost" onclick="comSimular()"><i class="ti ti-eye"></i> Pré-visualizar como o colaborador vê (1º acesso)</button><button class="btn btn-primary" id="btnNovoCom" onclick="openCom()"><i class="ti ti-plus"></i> Novo comunicado</button></div>
+    ${dashCharts}
     ${tabs}
     <div class="cli-card"><div class="cli-scroll"><table class="cli-table"><thead><tr><th>ID</th><th>Título</th><th>Visto por</th><th>Criado por</th><th>Dt criação</th><th>Para</th><th>Obrigatório</th><th>E-mail</th><th>Categoria</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
