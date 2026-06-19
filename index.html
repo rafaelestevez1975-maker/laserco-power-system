@@ -1323,7 +1323,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
 
             <div class="field"><label>App</label><select><option value="">Selecione...</option><option>Sim</option><option>Não</option></select></div>
             <div class="field"><label>Bloqueado</label><select><option value="">Selecione...</option><option>Sim</option><option>Não</option></select></div>
-            <div class="field"><label>Status de pagamentos</label><select><option value="">Selecione...</option><option>Em dia</option><option>Pendente</option><option>Inadimplente</option></select></div>
+            <div class="field"><label>Status de pagamentos</label><select><option value="">Selecione...</option><option>Sem pendências</option><option>Com pendências</option></select></div>
             <div class="field"><label>Cidade</label><input placeholder="Cidade"></div>
 
             <div class="field"><label>Unidades</label><select id="cliFiltroUni"><option value="">Todas as unidades</option></select></div>
@@ -1357,7 +1357,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
         <span class="doc-back" id="fichaBack"><i class="ti ti-arrow-left"></i> Voltar aos clientes</span>
         <div class="ficha-head">
           <div class="ficha-avatar" id="fichaIni">RE</div>
-          <div><h2 id="fichaNome">Cliente</h2><span class="fid">#838827 · cliente desde 18/04/2026</span></div>
+          <div><h2 id="fichaNome">Cliente</h2><span class="fid">#838827 · cliente desde 18/04/2026</span><span class="fid" id="fichaApp"></span></div>
         </div>
         <div class="dup-badge"><i class="ti ti-alert-triangle"></i> Cliente pode estar duplicado</div>
 
@@ -2962,6 +2962,9 @@ function buildAgenda(){
 const CLI_FIRST=["Maria","Ana","Juliana","Camila","Fernanda","Patrícia","Larissa","Bruna","Carla","Beatriz","Gabriela","Mariana","Aline","Tatiane","Vanessa","Daniela","Rafaela","Letícia","Amanda","Priscila","Sabrina","Renata","Débora","Eduarda","Isabela","Natália","Bianca","Carolina","Jéssica","Michele"];
 const CLI_LAST=["Silva","Souza","Oliveira","Santos","Pereira","Lima","Costa","Ferreira","Rodrigues","Almeida","Nascimento","Gomes","Martins","Araújo","Ribeiro","Carvalho","Barbosa","Rocha","Dias","Moraes","Cardoso","Teixeira","Correia","Fernandes","Pinto","Moreira","Cavalcanti","Monteiro","Freitas","Vieira"];
 const DDDS=["11","21","31","41","47","48","51","61"];
+let CLI_APP={};
+function clienteTemApp(nome){if(CLI_APP[nome]!==undefined)return !!CLI_APP[nome];return (typeof _sacHash==='function'?(_sacHash(String(nome||''))%4===0):false);}
+function marcarAppCadastro(nome,val){if(!nome)return;CLI_APP[nome]=(val!==false);var cb=document.getElementById('cliBody');if(cb)cb.dataset.built='';if(typeof persistState==='function')persistState();}
 function buildClientes(){
   const body=document.getElementById('cliBody');
   const fu=document.getElementById('cliFiltroUni');
@@ -2971,7 +2974,7 @@ function buildClientes(){
   if(typeof IMPORTED!=='undefined'&&IMPORTED.length){
     IMPORTED.slice(0,200).forEach(c=>{
       const tel=(c.telefone||'').replace(/\D/g,'');
-      rows+=`<tr><td><span class="cli-name">${c.nome}</span> <span class="orig-tag" style="font-size:9px;background:#E7F9EE;color:#1a8a4f" title="Importado do BEMP">BEMP</span>${c.unidade?` <span class="orig-tag" style="font-size:9px">${c.unidade}</span>`:''}</td><td>${c.telefone||'<span class="muted">—</span>'}${tel?` <a href="https://wa.me/55${tel}" target="_blank" rel="noopener" class="wa-link"><i class="ti ti-brand-whatsapp wa"></i></a>`:''}</td><td>${c.email||'<span class="muted">—</span>'}</td><td>${c.documento||'<span class="muted">—</span>'}</td><td>${c.genero||'<span class="muted">—</span>'}</td><td>${c.ativo?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${c.verificado?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td><i class="ti ti-device-mobile app-off"></i></td></tr>`;
+      rows+=`<tr><td><span class="cli-name">${c.nome}</span> <span class="orig-tag" style="font-size:9px;background:#E7F9EE;color:#1a8a4f" title="Importado do BEMP">BEMP</span>${c.unidade?` <span class="orig-tag" style="font-size:9px">${c.unidade}</span>`:''}</td><td>${c.telefone||'<span class="muted">—</span>'}${tel?` <a href="https://wa.me/55${tel}" target="_blank" rel="noopener" class="wa-link"><i class="ti ti-brand-whatsapp wa"></i></a>`:''}</td><td>${c.email||'<span class="muted">—</span>'}</td><td>${c.documento||'<span class="muted">—</span>'}</td><td>${c.genero||'<span class="muted">—</span>'}</td><td>${c.ativo?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${c.verificado?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${clienteTemApp(c.nome)?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td></tr>`;
     });
     if(IMPORTED.length>200)rows+=`<tr><td colspan="8" style="text-align:center;color:var(--text-3);font-size:12px;background:var(--surface-2)">+ ${(IMPORTED.length-200).toLocaleString('pt-BR')} clientes importados (exibindo os 200 primeiros · base completa no banco de dados)</td></tr>`;
   }
@@ -2994,7 +2997,7 @@ function buildClientes(){
       <td>${gender?gender:'<span class="muted">—</span>'}</td>
       <td><span class="pill-yes">Sim</span></td>
       <td>${verif?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td>
-      <td><i class="ti ti-device-mobile ${app?'app-on':'app-off'}"></i></td>
+      <td>${clienteTemApp(nome)?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td>
     </tr>`;
   }
   body.innerHTML=rows;
@@ -3027,6 +3030,7 @@ function openClienteFicha(nome){
   document.getElementById('view-cliente-ficha').classList.add('active');
   document.getElementById('pageTitle').innerHTML='<i class="ti ti-user"></i> Ficha do cliente';
   document.getElementById('fichaNome').textContent=nome;
+  var _ap=document.getElementById('fichaApp');if(_ap)_ap.innerHTML=' · App da rede: '+(clienteTemApp(nome)?'<b style="color:var(--green)">Sim</b>':'<b style="color:var(--text-3)">Não</b>');
   document.getElementById('fichaNomeInput').value=nome;
   document.getElementById('fichaIni').textContent=nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   document.querySelectorAll('#view-cliente-ficha .tab-btn').forEach((x,i)=>x.classList.toggle('active',i===0));
@@ -3198,7 +3202,7 @@ async function cloudCustomers(page){
     const{data,count,error}=await query.range(from,to);
     if(error)throw error;
     if(!data||!data.length){body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-3)">Nenhum cliente na nuvem'+(q?' para "'+q+'"':'')+'. Use <b>Importar clientes</b> para carregar a base do BEMP.</td></tr>';document.getElementById('cliCount').textContent='0 clientes na nuvem';document.getElementById('cliPager').innerHTML='';return;}
-    body.innerHTML=data.map(c=>{const tel=(c.telefone||'').replace(/\D/g,'');return `<tr><td><span class="cli-name">${c.nome||'(sem nome)'}</span> <span class="orig-tag" style="font-size:9px;background:#E7F9EE;color:#1a8a4f">nuvem</span>${c.unidade?` <span class="orig-tag" style="font-size:9px">${c.unidade}</span>`:''}</td><td>${c.telefone||'—'}${tel?` <a href="https://wa.me/55${tel}" target="_blank" rel="noopener" class="wa-link"><i class="ti ti-brand-whatsapp wa"></i></a>`:''}</td><td>${c.email||'—'}</td><td>${c.documento||'—'}</td><td>${c.genero||'—'}</td><td>${c.ativo?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${c.verificado?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td><i class="ti ti-device-mobile app-off"></i></td></tr>`;}).join('');
+    body.innerHTML=data.map(c=>{const tel=(c.telefone||'').replace(/\D/g,'');return `<tr><td><span class="cli-name">${c.nome||'(sem nome)'}</span> <span class="orig-tag" style="font-size:9px;background:#E7F9EE;color:#1a8a4f">nuvem</span>${c.unidade?` <span class="orig-tag" style="font-size:9px">${c.unidade}</span>`:''}</td><td>${c.telefone||'—'}${tel?` <a href="https://wa.me/55${tel}" target="_blank" rel="noopener" class="wa-link"><i class="ti ti-brand-whatsapp wa"></i></a>`:''}</td><td>${c.email||'—'}</td><td>${c.documento||'—'}</td><td>${c.genero||'—'}</td><td>${c.ativo?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${c.verificado?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td><td>${clienteTemApp(c.nome)?'<span class="pill-yes">Sim</span>':'<span class="pill-no">Não</span>'}</td></tr>`;}).join('');
     const total=count||0,pages=Math.ceil(total/CLOUD_PAGE);
     document.getElementById('cliCount').textContent='☁ Nuvem · '+(from+1).toLocaleString('pt-BR')+'–'+Math.min(to+1,total).toLocaleString('pt-BR')+' de '+total.toLocaleString('pt-BR')+' clientes';
     let pg='';if(page>0)pg+='<button onclick="cloudCustomers('+(page-1)+')"><i class="ti ti-chevron-left"></i></button>';pg+='<button class="active">'+(page+1)+'</button>';if(page+1<pages)pg+='<button onclick="cloudCustomers('+(page+1)+')"><i class="ti ti-chevron-right"></i></button>';
@@ -4403,6 +4407,7 @@ let APP_FRIENDS=[];
 const APP_TABS=[['home','Início','ti-home'],['agendar','Agendar','ti-calendar-plus'],['sessoes','Sessões','ti-checkup-list'],['fidelidade','Fidelidade','ti-gift'],['unidades','Unidades','ti-map-pin']];
 let _appScr='home';
 function buildAppCliente(){
+  if(typeof marcarAppCadastro==='function'&&typeof APP!=='undefined')marcarAppCadastro(APP.nomeCompleto);
   document.getElementById('appFeats').innerHTML=['Agendamento de sessões em segundos','Catálogo de serviços com preços','Sessões contratadas x realizadas','Endereços e contato das unidades','Clube de fidelidade e resgate por pontos','Indique &amp; Ganhe: 50 pts + sorteio mensal'].map(f=>`<div class="app-feat"><i class="ti ti-circle-check"></i><span>${f}</span></div>`).join('');
   const tb=document.getElementById('appTabbar');
   tb.innerHTML=APP_TABS.map(t=>`<div class="app-tab ${t[0]===_appScr?'on':''}" data-scr="${t[0]}" onclick="appGo('${t[0]}')"><i class="ti ${t[2]}"></i>${t[1]}</div>`).join('');
