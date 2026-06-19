@@ -4496,6 +4496,19 @@ function vendasFrameStyle(f){
     (doc.head||doc.documentElement).appendChild(s);
   }catch(e){}
 }
+function _uniObjByName(nome){return (typeof UNIDADES!=='undefined'?UNIDADES:[]).find(function(u){return u.nome===nome;})||null;}
+function royaltiesUnidade(nome){
+  var u=_uniObjByName(nome);
+  var franq=u?!uniEhPropria(u):true;
+  var h=(typeof hashStr==='function')?hashStr(nome||''):0;
+  var fat=52000+((h>>>0)%48)*1000;
+  var pct=(typeof FIN_CFG!=='undefined'&&FIN_CFG.royaltyPct!=null)?FIN_CFG.royaltyPct:10;
+  var valor=Math.round(fat*pct/100*100)/100;
+  var d=new Date();var venc=new Date(d.getFullYear(),d.getMonth()+1,10);
+  function z(n){return String(n).padStart(2,'0');}
+  return {franq:franq,fat:fat,pct:pct,valor:valor,venc:z(venc.getDate())+'/'+z(venc.getMonth()+1)+'/'+venc.getFullYear()};
+}
+function _royBRL(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR');}
 function buildDashb(el){
   const dash=el?.dataset.dash||'gerencial';
   const title=el?.dataset.title||'Dashboard';
@@ -4516,18 +4529,26 @@ function buildDashb(el){
   </div><div class="rel-acts"><button class="btn btn-primary"><i class="ti ti-search"></i> Pesquisar</button><button class="btn btn-ghost"><i class="ti ti-download"></i> Exportar</button></div></div>`;
   const head=`<div class="rel-head"><div class="ri"><i class="ti ${icon}"></i></div><div><h2>${title}</h2><p>Painel analítico · ${defPer} · dados ilustrativos</p></div></div>`;
   if(dash==='financeiro'){
+    const _uniNome=((document.getElementById('unitName')||{}).textContent||'Florianópolis - Centro').trim();
+    const R=royaltiesUnidade(_uniNome);
+    const royBanner=R.franq
+      ? `<div class="rel-card" style="background:#FDF3E7;border:1px solid #f0d8b0;margin-bottom:14px;display:flex;align-items:center;gap:12px"><i class="ti ti-receipt-2" style="font-size:24px;color:#B26A00"></i><div><b style="color:#B26A00">Royalties a pagar (automático) — ${_royBRL(R.valor)}</b><div style="font-size:12.5px;color:var(--text-2)">${R.pct}% sobre o faturamento do <b>mês anterior</b> (${_royBRL(R.fat)}) · vencimento <b>dia 10</b> (${R.venc}). Lançado automaticamente no fluxo de caixa desta <b>unidade franqueada</b>.</div></div></div>`
+      : `<div class="rel-card" style="background:var(--green-bg);margin-bottom:14px"><b style="color:#0f6b3a"><i class="ti ti-circle-check"></i> Loja própria</b> — não há royalties a pagar (apenas unidades <b>franqueadas</b> pagam royalties).</div>`;
+    const apPrev=R.franq?21400+R.valor:21400;
     const kpis=relKpis([
-      ['Contas a pagar previstas','R$ 21.400','ti-arrow-down-circle'],
+      ['Contas a pagar previstas',_royBRL(apPrev),'ti-arrow-down-circle'],
       ['Contas a pagar realizadas','R$ 18.260','ti-circle-check'],
-      ['Total de contas a pagar','R$ 21.400','ti-receipt-2'],
+      ['Royalties a pagar (auto)',R.franq?_royBRL(R.valor):'—','ti-receipt-2'],
       ['Contas a receber previstas','R$ 38.828,73','ti-arrow-up-circle'],
       ['Contas a receber realizadas','R$ 33.910','ti-cash'],
       ['Total de contas a receber','R$ 38.828,73','ti-pig-money']
     ]);
-    const mov=dashWidget('Movimentação no período','ti-chart-area-line',barChart([['Receitas',38828,'R$ 38.828'],['Despesas',21400,'R$ 21.400'],['Saldo',17428,'R$ 17.428']],false));
-    const cp=dashWidget('Categorias de Contas a pagar','ti-arrow-down-circle',barChart([['Salários',7800,'R$ 7.800'],['Aluguel',4200,'R$ 4.200'],['Aquisição de produtos',3100,'R$ 3.100'],['Marketing',2400,'R$ 2.400'],['Impostos',1900,'R$ 1.900'],['Royalties',2000,'R$ 2.000']],false));
+    const mov=dashWidget('Movimentação no período','ti-chart-area-line',barChart([['Receitas',38828,'R$ 38.828'],['Despesas',R.franq?21400+R.valor:21400,_royBRL(R.franq?21400+R.valor:21400)],['Saldo',R.franq?17428-R.valor:17428,_royBRL(R.franq?17428-R.valor:17428)]],false));
+    var cpData=[['Salários',7800,'R$ 7.800'],['Aluguel',4200,'R$ 4.200'],['Aquisição de produtos',3100,'R$ 3.100'],['Marketing',2400,'R$ 2.400'],['Impostos',1900,'R$ 1.900']];
+    if(R.franq)cpData.push(['Royalties (10% mês ant.)',R.valor,_royBRL(R.valor)]);
+    const cp=dashWidget('Categorias de Contas a pagar','ti-arrow-down-circle',barChart(cpData,false));
     const cr=dashWidget('Categorias de Contas a receber','ti-arrow-up-circle',barChart([['Serviços',19800,'R$ 19.800'],['Pacotes',9600,'R$ 9.600'],['Assinaturas',6800,'R$ 6.800'],['Produtos',1628,'R$ 1.628'],['Outras receitas',1000,'R$ 1.000']],true));
-    w.innerHTML=head+filtros+kpis+`<div class="dash-grid">${mov}${cp}${cr}</div>`;
+    w.innerHTML=head+filtros+royBanner+kpis+`<div class="dash-grid">${mov}${cp}${cr}</div>`;
     return;
   }
   if(dash==='funil'){
