@@ -3991,8 +3991,8 @@ const CAT_DEFS={
     fields:[['Nome',0,'text'],['Preço (R$)',1,'text'],['Desc. Máx (%)',2,'text'],['Duração (hh:mm)',3,'text'],['Grupo',4,'sel:Estético,Ultrassom,Depilação'],['Comissionável',5,'sel:Sim,Não']],
     blank:['','0,00','0,00','00:20','Estético','Sim','']},
   pac:{title:'Pacote', arr:PACOTES, off:PAC_OFF, build:buildPacotes, body:'pacotesBody',
-    fields:[['Nome',0,'text'],['Cobertura de créditos',1,'sel:Qualquer unidade,Unidade que realiza a venda'],['Validade (dias)',3,'text'],['Valor total (R$)',4,'text'],['Desc. Máx (%)',5,'text']],
-    blank:['','Qualquer unidade','Respeitar config. da unidade','365','0,00','']},
+    fields:[['Nome',0,'text'],['Cobertura de créditos',1,'sel:Qualquer unidade,Unidade que realiza a venda'],['Preço (R$)',3,'text'],['Desconto máximo (%)',4,'text'],['Validade em dias',2,'text']],
+    blank:['','Qualquer unidade','365','0,00','0,00']},
   prod:{title:'Produto', arr:PRODUTOS, off:PROD_OFF, build:buildProdutos, body:'produtosBody',
     fields:[['Nome',0,'text'],['Preço (R$)',1,'text'],['Desc. Máx (%)',2,'text']],
     blank:['','0,00','0,00']}
