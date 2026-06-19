@@ -961,6 +961,12 @@ window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();win
 window.addEventListener('appinstalled',function(){window.__pwaPrompt=null;var b=document.getElementById('pwaInstallBtn');if(b)b.style.display='none';});
 function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userChoice.finally(function(){window.__pwaPrompt=null;var b=document.getElementById('pwaInstallBtn');if(b)b.style.display='none';});}
 </script>
+<style>
+input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:border-box}
+.mf input,.mf select,.mf textarea,.field input,.field select,.fil-body input,.fil-body select{width:100%;max-width:100%}
+.modal-body input:not([type=checkbox]):not([type=radio]),.modal-body select,.modal-body textarea{max-width:100%}
+.modal{max-width:calc(100vw - 24px)}
+</style>
 </head>
 <body>
 <div class="app">
@@ -3380,12 +3386,11 @@ CATP_SEED=[
 ];
 /* Contas a receber: apenas vendas das unidades + variedade de recebimento */
 const CATR_SEED=[
-  {grupo:'Vendas das Unidades', itens:['Venda de serviços','Venda de produtos','Venda de pacotes','Venda de assinaturas']},
-  {grupo:'Formas de Recebimento', itens:['Dinheiro','PIX','Cartão de Crédito','Cartão de Débito','Boleto','Link de Pagamento','Transferência / TED','Crédito recorrente','Cashback / Crédito do cliente']}
+  {grupo:'Vendas das Unidades', itens:['Venda de serviços','Venda de produtos','Venda de pacotes','Venda de assinaturas']}
 ];
 let CATP_TREE=[], CATR_TREE=[];
 function catNorm(seed){return seed.map(g=>({grupo:g.grupo,itens:g.itens.map(n=>({nome:n,ativo:!/(N[ÃA]O USAR)|(\(inativo\))/i.test(n)}))}));}
-function catSeed(){if(!CATP_TREE.length||!CATP_TREE.some(g=>g.grupo==='Custos Fixos'))CATP_TREE=catNorm(CATP_SEED);if(!CATR_TREE.length||!CATR_TREE.some(g=>g.grupo==='Vendas das Unidades'))CATR_TREE=catNorm(CATR_SEED);}
+function catSeed(){if(!CATP_TREE.length||!CATP_TREE.some(g=>g.grupo==='Custos Fixos'))CATP_TREE=catNorm(CATP_SEED);if(!CATR_TREE.length||!CATR_TREE.some(g=>g.grupo==='Vendas das Unidades'))CATR_TREE=catNorm(CATR_SEED);CATR_TREE=CATR_TREE.filter(function(g){return g.grupo!=='Formas de Recebimento';});}
 function _catTree(w){return w==='pag'?CATP_TREE:CATR_TREE;}
 function catCatsAtivas(w){catSeed();const o=[];_catTree(w).forEach(g=>g.itens.forEach(it=>{if(it.ativo)o.push(it.nome);}));return o.sort((a,b)=>a.localeCompare(b,'pt-BR'));}
 function catEditorRender(w){
@@ -3435,8 +3440,8 @@ function descDel(i){if(confirm('Excluir o desconto "'+DESC[i][0]+'"?')){const n=
 function descNovo(){
   let ov=document.getElementById('descOv');
   if(!ov){ov=document.createElement('div');ov.id='descOv';ov.className='modal-ov';document.body.appendChild(ov);ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('open');});}
-  ov.innerHTML=`<div class="modal" style="width:540px"><div class="modal-head"><h3><i class="ti ti-discount"></i> Novo desconto</h3><button class="modal-close" onclick="document.getElementById('descOv').classList.remove('open')">&times;</button></div>
-  <div class="modal-body" style="grid-template-columns:1fr 1fr 1fr">
+  ov.innerHTML=`<div class="modal" style="width:600px;max-height:none"><div class="modal-head"><h3><i class="ti ti-discount"></i> Novo desconto</h3><button class="modal-close" onclick="document.getElementById('descOv').classList.remove('open')">&times;</button></div>
+  <div class="modal-body" style="grid-template-columns:1fr 1fr 1fr;padding:16px 18px;gap:11px">
     <div class="mf" style="grid-column:1/4"><label>Nome <span class="req">*</span></label><input id="dnNome" placeholder="Ex.: 10% Fidelidade"></div>
     <div class="mf"><label>Serviço (%)</label><input id="dnServ" type="number" step="0.01" value="0"></div>
     <div class="mf"><label>Produto (%)</label><input id="dnProd" type="number" step="0.01" value="0"></div>
