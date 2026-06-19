@@ -4377,6 +4377,9 @@ function barChart(rows,gold){
 function dashWidget(title,icon,inner){return `<div class="dash-w"><h4><i class="ti ${icon}"></i> ${title}</h4>${inner}</div>`;}
 /* ----- Funil de Vendas (visual) ----- */
 let _funilTipo='todos';
+let _funilDim='unidade',_funilUni='';
+function funilSetDim(d){_funilDim=d;renderFunil(_funilTipo);}
+function funilSetUni(u){_funilUni=u;renderFunil(_funilTipo);}
 const FUNIL_DATA={
   novos:{lab:'Clientes novos',desc:'Nunca compraram — agendam uma avaliação e é feita a 1ª venda.',ag:520,comp:430,conv:268,ticket:'R$ 1.480',ticketN:1480},
   revenda:{lab:'Já clientes (revenda)',desc:'Já compraram — retornam e fazem nova compra (revenda).',ag:720,comp:610,conv:402,ticket:'R$ 690',ticketN:690},
@@ -4435,7 +4438,18 @@ function renderFunil(tipo){
     </div>
     ${relTable(['Categoria','Clientes','Ticket médio','Prazo médio','Receita'],[['PDRN e Exossomos','142','R$ 820','39 dias','R$ 6.800'],['Hollywood Peel','98','R$ 480','52 dias','R$ 3.900'],['Produtos (skincare)','164','R$ 190','45 dias','R$ 2.600'],['Melasma','61','R$ 720','58 dias','R$ 2.400']])}
   </div>`;
-  body.innerHTML=seg+kpis+funnel+support+revenda;
+  var _units=(typeof UNIDADES!=='undefined'?UNIDADES:[]).filter(function(u){return u.status!=='Inativa';});
+  if(!_funilUni&&_units.length)_funilUni=_units[0].nome;
+  var _uniSel='<select onchange="funilSetUni(this.value)" style="padding:7px;border:1px solid var(--line-strong);border-radius:8px;font-family:inherit">'+_units.map(function(u){return '<option'+(u.nome===_funilUni?' selected':'')+'>'+u.nome+'</option>';}).join('')+'</select>';
+  var _dimCtrl='<div class="rel-card" style="margin-bottom:14px"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><b style="font-size:13px"><i class="ti ti-adjustments-horizontal"></i> Apresentar por:</b><div class="seg"><button class="'+(_funilDim==='unidade'?'on':'')+'" onclick="funilSetDim(\'unidade\')"><i class="ti ti-building-store"></i> Unidade</button><button class="'+(_funilDim==='colaborador'?'on':'')+'" onclick="funilSetDim(\'colaborador\')"><i class="ti ti-user"></i> Colaborador</button></div><span style="color:var(--text-2);font-size:12.5px">Unidade:</span>'+_uniSel+'<span style="color:var(--text-3);font-size:11.5px">'+(_funilDim==='colaborador'?'mostrando os colaboradores desta unidade':'mostrando todas as unidades')+'</span></div></div>';
+  function _fh(x){var h=0;x=String(x);for(var i=0;i<x.length;i++)h=(h*31+x.charCodeAt(i))>>>0;return h;}
+  var _bdRows,_bdTitle,_bdLabel;
+  if(_funilDim==='unidade'){_bdTitle='Conversão do funil por unidade';_bdLabel='Unidade';_bdRows=_units.map(function(u){var h=_fh(u.nome);return {nome:u.nome,ag:200+(h%320),conv:28+(h%26)};}).sort(function(a,b){return b.conv-a.conv;});}
+  else{_bdTitle='Conversão do funil por colaborador · '+_funilUni;_bdLabel='Colaborador';var _ros=(typeof premRoster==='function')?premRoster().filter(function(r){return r.unidade===_funilUni;}):[];if(!_ros.length)_ros=['Karoline','Juliana','Recepção SAC','Profissional da Saúde'].map(function(n){return {nome:n,unidade:_funilUni};});_bdRows=_ros.map(function(r){var h=_fh(r.nome+_funilUni);return {nome:r.nome,ag:40+(h%90),conv:24+(h%32)};}).sort(function(a,b){return b.conv-a.conv;});}
+  var _bdChart=barChart(_bdRows.slice(0,12).map(function(x){return [x.nome,x.conv,x.conv+'% · '+x.ag+' agds'];}),true);
+  var _bdTable=relTable(['#',_bdLabel,'Agendamentos','Conversão'],_bdRows.map(function(x,i){return [String(i+1),x.nome,x.ag.toLocaleString('pt-BR'),x.conv+'%'];}));
+  var _breakdown='<div class="dash-w" style="margin:16px 0"><h4><i class="ti ti-filter-cog"></i> '+_bdTitle+'</h4>'+_bdChart+'</div>'+_bdTable;
+  body.innerHTML=seg+_dimCtrl+kpis+funnel+_breakdown+support+revenda;
 }
 function pct2(a,b){return b?Math.round(a/b*100):0;}
 /* ----- Corridinha de Vendas (corrida entre unidades) ----- */
@@ -4509,6 +4523,8 @@ function royaltiesUnidade(nome){
   return {franq:franq,fat:fat,pct:pct,valor:valor,venc:z(venc.getDate())+'/'+z(venc.getMonth()+1)+'/'+venc.getFullYear()};
 }
 function _royBRL(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR');}
+function barChartPct(rows,gold){var total=rows.reduce(function(a,r){return a+(+r[1]||0);},0)||1;var max=Math.max.apply(null,rows.map(function(r){return +r[1]||0;}).concat([1]));return rows.map(function(r){var pct=Math.round((+r[1]||0)/total*1000)/10;var disp=(r[2]!=null?r[2]:r[1]);return '<div class="bar-row"><span class="bar-lbl" title="'+r[0]+'">'+r[0]+'</span><div class="bar-track"><div class="bar-fill '+(gold?'g':'')+'" style="width:'+Math.round((+r[1]||0)/max*100)+'%"></div></div><span class="bar-val">'+disp+' <b style="color:var(--brand-500)">('+pct+'%)</b></span></div>';}).join('');}
+function gerServBusca(){var q=((document.getElementById('gerServQ')||{}).value||'').trim().toLowerCase();var res=document.getElementById('gerServRes');if(!res)return;var all=window._gerServ||[];if(!q){res.innerHTML='';return;}var total=all.reduce(function(a,s){return a+s[1];},0)||1;var ranked=all.slice().sort(function(a,b){return b[1]-a[1];});var m=ranked.filter(function(s){return s[0].toLowerCase().indexOf(q)>=0;});if(!m.length){res.innerHTML='<div style="color:var(--text-3);font-size:13px;padding:6px">Nenhum serviço encontrado para "'+q+'".</div>';return;}res.innerHTML=m.slice(0,10).map(function(s){var pos=ranked.indexOf(s)+1;var pct=Math.round(s[1]/total*1000)/10;return '<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:7px"><div><b>'+s[0]+'</b><div style="font-size:12px;color:var(--text-2)">'+pos+'º no ranking de faturamento · '+s[2]+' sessões</div></div><div style="text-align:right"><div style="font-weight:800">R$ '+s[1].toLocaleString('pt-BR')+'</div><div style="font-size:12px;color:var(--brand-500);font-weight:700">'+pct+'% do total</div></div></div>';}).join('');}
 function buildDashb(el){
   const dash=el?.dataset.dash||'gerencial';
   const title=el?.dataset.title||'Dashboard';
@@ -4568,28 +4584,33 @@ function buildDashb(el){
     ['Sessões realizadas','1.240','ti-checkbox'],
     ['Taxa de retorno','62%','ti-rotate']
   ]);
-  // Top 10 serviços (faturamento + sessões realizadas)
-  const topServ=[['PDRN e Exossomos',9600,235],['UltraCel - Abdômen',6200,142],['Hollywood Peel',4800,168],['Melasma',3900,131],['Rejuvenescimento Facial 4D',3200,96],['Renew com PDRN',2900,74],['BB Glow',2100,88],['Manchas Faciais',1900,77],['Cicatriz de Acne',1500,59],['Lip Glow',1200,70]];
-  const topServSess=[...topServ].sort((a,b)=>b[2]-a[2]);
+  // Serviços (lista completa p/ ranking + busca)
+  const SERV_FULL=[['PDRN e Exossomos',9600,235],['UltraCel - Abdômen',6200,142],['Hollywood Peel',4800,168],['Melasma',3900,131],['Rejuvenescimento Facial 4D',3200,96],['Renew com PDRN',2900,74],['BB Glow',2100,88],['Manchas Faciais',1900,77],['Cicatriz de Acne',1500,59],['Lip Glow',1200,70],['Limpeza de Pele Profunda',1100,64],['Microagulhamento',980,41],['Peeling de Diamante',870,38],['Drenagem Linfática',760,52],['Carboxiterapia',680,29],['Depilação a Laser - Axila',640,77],['Depilação a Laser - Virilha',590,61],['Massagem Modeladora',520,44],['Radiofrequência Facial',480,26],['Detox Facial',430,33],['Skinbooster',390,18],['Bioestimulador',360,12]];
+  window._gerServ=SERV_FULL;
+  const topServ=SERV_FULL.slice().sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const topServSess=SERV_FULL.slice().sort((a,b)=>b[2]-a[2]).slice(0,10);
   const topProd=[['PDRN + Exossomos',1430,191],['Gloss Laser&Co',198,33]];
+  const pgList=[['Crédito 1x',9200],['Crédito 2-6x',6100],['Crédito 7-12x',3600],['PIX',9800],['Débito',6100],['Dinheiro',4028],['Link de pagamento',2400],['Crédito Recorrente (PagoLivre)',3100],['Boleto',1500],['Transferência',900]];
+  const grpServ=[['Estético - Facial',12300],['Estético - Corporal',6000],['PDRN/Exossomos',2900],['Ultrassom - Facial',3800],['Ultrassom - Corporal',2400],['Depilação - Corpo',2100],['Peelings',1700],['Microagulhamento',1300],['Depilação - Facial',900],['Outros',800]];
+  const cancMot=[['Cliente não compareceu',42],['Cliente reagendou',31],['Cliente cancelou',27],['Problema de saúde',14],['Insatisfação',9],['Motivo financeiro',7],['Clima/transporte',5],['Duplicidade',4],['Sem contato',6],['Outros',5]];
+  const origens=[['Site',310],['WhatsApp',280],['Loja',240],['Telefone',150],['Indicação',120],['Instagram',98],['Google',76],['Facebook',44],['Landing page',38],['Outros',22]];
   const ws=[
-    dashWidget('Top 10 serviços — faturamento (e sessões)','ti-sparkles',barChart(topServ.map(s=>[s[0],s[1],'R$ '+(s[1]/1000).toFixed(1).replace('.',',')+'k · '+s[2]+' sess.']),false)),
-    dashWidget('Top 10 serviços — sessões realizadas','ti-checkbox',barChart(topServSess.map(s=>[s[0],s[2],s[2]+' sess.']),true)),
-    dashWidget('Faturamento por produto (e sessões)','ti-package',barChart(topProd.map(p=>[p[0],p[1],'R$ '+p[1]+' · '+p[2]+' un.']),true)),
-    dashWidget('Faturamento por grupo de produto','ti-stack-2',barChart([['Cosméticos',1430,'R$ 1.430'],['Acessórios',198,'R$ 198']],true)),
-    dashWidget('Faturamento por grupo de serviços','ti-category',barChart([['Estético',18300,'R$ 18.300'],['Ultrassom',6200,'R$ 6.200']],false)),
-    dashWidget('Faturamento de serviços (pacotes)','ti-box',barChart([['Pacotes Aesthetic',7600,'R$ 7.600'],['Pacotes Ultrassom',2000,'R$ 2.000']],false)),
-    dashWidget('Faturamento de serviços (total c/ pacotes)','ti-sum',barChart([['Avulsos',24500,'R$ 24.500'],['Pacotes',9600,'R$ 9.600']],false)),
-    dashWidget('Faturamento por forma de pagamento','ti-credit-card',barChart([['Crédito',18900,'R$ 18.900'],['PIX',9800,'R$ 9.800'],['Débito',6100,'R$ 6.100'],['Dinheiro',4028,'R$ 4.028']],true)),
-    dashWidget('Cancelamentos por motivo','ti-calendar-x',barChart([['Cliente não compareceu',42],['Cliente reagendou',31],['Cliente cancelou',27]],false)),
+    dashWidget('Top 10 serviços — faturamento','ti-sparkles',barChartPct(topServ.map(s=>[s[0],s[1],'R$ '+(s[1]/1000).toFixed(1).replace('.',',')+'k · '+s[2]+' sess.']),false)),
+    dashWidget('Top 10 serviços — sessões realizadas','ti-checkbox',barChartPct(topServSess.map(s=>[s[0],s[2],s[2]+' sess.']),true)),
+    dashWidget('Faturamento por forma de pagamento','ti-credit-card',barChartPct(pgList.map(x=>[x[0],x[1],'R$ '+x[1].toLocaleString('pt-BR')]),true)),
+    dashWidget('Faturamento por grupo de serviços','ti-category',barChartPct(grpServ.map(x=>[x[0],x[1],'R$ '+x[1].toLocaleString('pt-BR')]),false)),
+    dashWidget('Faturamento por produto','ti-package',barChartPct(topProd.map(p=>[p[0],p[1],'R$ '+p[1]+' · '+p[2]+' un.']),true)),
+    dashWidget('Cancelamentos por motivo','ti-calendar-x',barChartPct(cancMot,false)),
+    dashWidget('Agendamentos por origem','ti-route',barChartPct(origens,false)),
+    dashWidget('Agendamentos por dia','ti-calendar-stats',barChartPct([['Seg',180],['Ter',210],['Qua',240],['Qui',230],['Sex',300],['Sáb',190]],false)),
     dashWidget('Taxa de retorno de clientes','ti-rotate-2',barChart([['Retornaram',62,'62%'],['Não retornaram',38,'38%']],true)),
-    dashWidget('Agendamentos por origem','ti-route',barChart([['Site',310],['WhatsApp',280],['Loja',240],['Telefone',150],['Indicação',60]],false)),
-    dashWidget('Aderência ao fidelidade','ti-thumb-up',barChart([['Aderiram',54,'54%'],['Não aderiram',46,'46%']],true)),
-    dashWidget('Agendamentos por dia','ti-calendar-stats',barChart([['Seg',180],['Ter',210],['Qua',240],['Qui',230],['Sex',300],['Sáb',190]],false))
+    dashWidget('Aderência ao fidelidade','ti-thumb-up',barChart([['Aderiram',54,'54%'],['Não aderiram',46,'46%']],true))
   ].join('');
-  // tabela top 10 serviços com sessões
-  const servTable=relTable(['#','Serviço','Faturamento','Sessões realizadas','Ticket médio'],topServ.map((s,i)=>[String(i+1),s[0],'R$ '+s[1].toLocaleString('pt-BR'),String(s[2]),'R$ '+Math.round(s[1]/s[2])]));
-  w.innerHTML=head+filtros+kpis+`<div class="dash-grid">${ws}</div>`+`<div style="margin-top:16px"><div class="set-sec">Top 10 serviços — detalhamento</div>${servTable}</div>`;
+  const totServ=SERV_FULL.reduce((a,s)=>a+s[1],0)||1;
+  const servRanked=SERV_FULL.slice().sort((a,b)=>b[1]-a[1]);
+  const servTable=relTable(['#','Serviço','Faturamento','% do total','Sessões','Ticket médio'],topServ.map((s)=>{var pos=servRanked.indexOf(s)+1;var pct=Math.round(s[1]/totServ*1000)/10;return [String(pos),s[0],'R$ '+s[1].toLocaleString('pt-BR'),pct+'%',String(s[2]),'R$ '+Math.round(s[1]/s[2])];}));
+  const buscaUI=`<div class="rel-card" style="margin-bottom:14px"><div class="rel-card-h" style="cursor:default"><span><i class="ti ti-search flt"></i> Buscar serviço (mesmo fora do Top 10)</span></div><div style="margin-top:10px"><input id="gerServQ" placeholder="Digite o nome do serviço…" oninput="gerServBusca()" style="width:100%;max-width:440px;padding:9px;border:1px solid var(--line-strong);border-radius:9px;font-family:inherit"><div id="gerServRes" style="margin-top:10px"></div></div></div>`;
+  w.innerHTML=head+filtros+kpis+buscaUI+`<div class="dash-grid">${ws}</div>`+`<div style="margin-top:16px"><div class="set-sec">Top 10 serviços — detalhamento (com % do total)</div>${servTable}</div>`;
 }
 /* ===== App do Cliente (mockup interativo) ===== */
 const APP={nome:'Mariana',nomeCompleto:'Mariana Costa',pts:2480,nivel:'Ouro',cash:85,cashPct:8};
