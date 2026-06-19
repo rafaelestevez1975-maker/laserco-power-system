@@ -1,5 +1,21 @@
 # Changelog — Laser&Co Power System
 
+## 2026-06-19 — RH, Comunicados e Chamados
+### Recursos Humanos
+- **Ponto Digital** agora aceita marcação no raio da **unidade** OU no raio do **endereço de casa** (home office, capturado por GPS); cada colaborador vê **só o seu ponto**; layout adaptado para **celular**.
+- Removido o item **Configurações** do RH. O **vínculo de unidade/local** do colaborador passa a ser definido no **cadastro inicial do colaborador** (campo "Local de lotação").
+- Novo **cadastro de Escritório** (ao lado de Unidades) para quem não atua diretamente em loja — selecionável como local de lotação.
+
+### Comunicados
+- **Filtros + dashboard**: período (padrão do sistema), destinatário (geral, unidades próprias, franquias, franqueados, office) e **assunto**.
+- **Assuntos** padronizados no envio e nos filtros: Marketing, Operações, Comercial, Área Técnica, Diretoria, Treinamentos e Recursos Humanos.
+- Gráficos de comunicados por assunto e por destinatário (com percentuais).
+
+### Chamados
+- Removidos os **status**; filtros iguais aos de Comunicados (período, assunto, departamento) + filtro **Ativos / Finalizados**.
+- **SLA de 2 dias úteis**: contado a partir do **primeiro dia útil seguinte** à abertura; a **data-limite** aparece no chamado e na lista (Em dia / Atrasado / Concluído).
+
+
 ## 2026-06-16 — PWA + link compartilhável
 - **PWA instalável**: `manifest.webmanifest` real (tema bordô #230A10), ícones próprios (192/512/maskable/apple-touch), `sw.js` (service worker network-first com fallback offline) e botão **“Instalar app”**.
 - **SAC nativo** com filtros (dashboard/chamados), Triagem WhatsApp com fluxo, Ranking, integração com Colaboradores e Matriz de Comissões.
