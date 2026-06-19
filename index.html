@@ -3849,15 +3849,17 @@ const AUTOS=[
   {nome:'Alerta de expiração de pacote',cat:'Pós-venda',ic:'ti-package',gat:'faltam 30 dias para o pacote expirar',ac:'avisa o cliente para agendar as sessões restantes',canais:['wa'],ativo:true},
   {nome:'Nutrição de leads (3 mensagens)',cat:'CRM',ic:'ti-messages',gat:'o lead não responde à abordagem',ac:'envia a 1ª, 2ª e 3ª mensagem padronizada em sequência (Gestão de Geolocalizado)',canais:['wa'],ativo:true},
   {nome:'Recuperação de orçamento',cat:'CRM',ic:'ti-receipt',gat:'o lead está parado em "Proposta" há 2 dias',ac:'envia follow-up de fechamento com condição especial',canais:['wa'],ativo:true},
-  {nome:'Lembrete de mensalidade (assinatura)',cat:'Financeiro',ic:'ti-cash',gat:'a mensalidade do clube está a vencer',ac:'lembra o pagamento via crédito recorrente e evita inadimplência',canais:['wa','email'],ativo:true},
-  {nome:'Alerta de meta para a equipe',cat:'Financeiro',ic:'ti-target',gat:'faltam menos de 20% para a meta da unidade',ac:'notifica gestor e equipe do quanto falta vender no período',canais:['push'],ativo:true}
+  {nome:'META · Alerta geral de meta para a equipe',cat:'META',ic:'ti-target',gat:'faltam menos de 20% para a meta da unidade',ac:'notifica pelo sistema o gestor e a equipe (colaboradores cadastrados) do quanto falta vender no período. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true},
+  {nome:'META · Gerente e Sub-gerente da unidade',cat:'META',ic:'ti-user-shield',gat:'a cada 3 dias (exceto domingo), ao medir os indicadores da unidade',ac:'notifica pelo sistema a Gerente e a Sub-gerente cadastradas quando: agendamentos da unidade abaixo da meta projetada do mês; clientes novos abaixo de 25% do total agendado; menos de 10 indicações por dia; ticket médio 20% abaixo da média da rede; conversão 20% abaixo da média da rede; ou meta individual 20% abaixo do projetado. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true,stat:'medição a cada 3 dias · exceto domingo'},
+  {nome:'META · Consultora de Vendas (meta individual)',cat:'META',ic:'ti-user-dollar',gat:'a cada 3 dias (exceto domingo), ao medir os indicadores individuais da consultora',ac:'notifica pelo sistema a consultora cadastrada quando, na sua meta individual: agendamentos abaixo do projetado; clientes novos abaixo de 25% do agendado; menos de 10 indicações por dia; ticket médio 20% abaixo da média da rede; conversão 20% abaixo da média da rede; ou meta individual 20% abaixo do projetado. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true,stat:'por meta individual · a cada 3 dias'},
+  {nome:'META · Fisioterapeuta (revenda e meta)',cat:'META',ic:'ti-stethoscope',gat:'a cada 3 dias (exceto domingo), ao medir revenda e meta individual',ac:'notifica pelo sistema o(a) fisioterapeuta cadastrado(a) quando está abaixo da média na revenda de serviços ou 20% abaixo da projeção da sua meta individual. Lembrete: o sistema faz análise trimestral de desempenho de cada colaborador',canais:['push'],ativo:true,stat:'revenda + meta individual'}
 ];
 /* mensagens PADRÃO da rede (criadas pelos administradores) — não editáveis pelas unidades; a unidade só escolhe usar/não usar */
 AUTOS.forEach(a=>{a.padrao=true;});
 /* mensagens PERSONALIZADAS criadas pelas unidades — visíveis apenas para a unidade que criou */
 let MENS_CUSTOM=[];
 const AUTO_COL={Recompra:['var(--gold-soft)','var(--gold-600)'],Agendamentos:['var(--blue-bg)','var(--blue)'],'Pós-venda':['var(--green-bg)','var(--green)'],CRM:['#F7E7EB','var(--brand-500)'],'Fidelização':['var(--gold-soft)','var(--gold-600)'],Financeiro:['var(--amber-bg)','var(--amber)'],Cadastro:['#F7E7EB','var(--brand-500)'],Personalizada:['#E7F0EC','#0f6b3a']};
-(function(){if(typeof AUTOS!=='undefined')AUTOS.forEach(function(a){a.canais=(a.canais||[]).filter(function(c){return c!=='email'&&c!=='sms';});if(a.canais.indexOf('wa')<0)a.canais.unshift('wa');});})();
+(function(){if(typeof AUTOS!=='undefined')AUTOS.forEach(function(a){if(a.cat==='META'){a.canais=['push'];return;}a.canais=(a.canais||[]).filter(function(c){return c!=='email'&&c!=='sms';});if(a.canais.indexOf('wa')<0)a.canais.unshift('wa');});})();
 let UNI_WA={};
 function waUni(){return (typeof uniAtual==='function')?uniAtual():'Florianópolis - Centro';}
 function waIntegracaoRender(){
@@ -3867,7 +3869,7 @@ function waIntegracaoRender(){
 }
 function waConectar(){var uni=waUni();var n=((document.getElementById('waNum')||{}).value||'').trim();if(n.replace(/\D/g,'').length<10){showToast('Informe um número de WhatsApp válido','ti-alert-triangle');return;}UNI_WA[uni]={numero:n,conectado:true};if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Automações','Conectou WhatsApp da unidade '+uni+' ('+n+')');showToast('WhatsApp conectado — automações da unidade ativas','ti-brand-whatsapp');waIntegracaoRender();}
 function waDesconectar(){var uni=waUni();UNI_WA[uni]={numero:(UNI_WA[uni]||{}).numero||'',conectado:false};if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Automações','Desconectou WhatsApp da unidade '+uni);showToast('WhatsApp desconectado','ti-plug-off');waIntegracaoRender();}
-const CANAL_LBL={wa:'WhatsApp',push:'Notificação'};
+const CANAL_LBL={wa:'WhatsApp',push:'Sistema'};
 let autoFiltro='Todas';
 function autosKpi(){
   const a=AUTOS.filter(x=>x.ativo).length;
@@ -3882,7 +3884,7 @@ function mensListaUnidade(){
 }
 function renderAutos(){
   const adm=(typeof isAdmin==='function')&&isAdmin();
-  const cats=['Todas','Recompra','Agendamentos','Pós-venda','CRM','Fidelização','Financeiro','Cadastro','Personalizada'];
+  const cats=['Todas','Recompra','Agendamentos','Pós-venda','CRM','Fidelização','META','Cadastro','Personalizada'];
   document.getElementById('autoCats').innerHTML='<span class="flabel">Categorias</span>'+cats.map(c=>`<div class="chip ${c===autoFiltro?'active':''}" data-cat="${c}">${c}</div>`).join('');
   document.querySelectorAll('#autoCats .chip').forEach(ch=>ch.onclick=()=>{autoFiltro=ch.dataset.cat;renderAutos();});
   const g=document.getElementById('autosGrid');
