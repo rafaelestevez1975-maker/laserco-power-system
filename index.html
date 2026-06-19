@@ -1451,6 +1451,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
             <div class="doc-list-item"><div class="di-ic"><i class="ti ti-file-description"></i></div><div class="di-main"><div class="t">Contrato de Prestação de Serviços Laser & Co</div><div class="s">Assinado digitalmente em 18/04/2026</div></div><span class="os-st os-fechada">Assinado</span><span class="os-link" style="margin-left:12px"><i class="ti ti-eye"></i> Ver</span></div>
             <div class="doc-list-item"><div class="di-ic"><i class="ti ti-id-badge-2"></i></div><div class="di-main"><div class="t">Contrato Laser&Club — Plano Prata (Rejuvenescimento Facial)</div><div class="s">Assinatura ativa desde 01/05/2026 · R$ 149,90/mês</div></div><span class="os-st os-fechada">Ativo</span><span class="os-link" style="margin-left:12px"><i class="ti ti-eye"></i> Ver</span></div>
           </div>
+          <div class="doc-card"><h3><i class="ti ti-file-signature"></i> Contratos emitidos via OS</h3><div id="fichaContratos"></div></div>
         </div>
 
         <!-- Carteira -->
@@ -1824,7 +1825,7 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           </div>
         </div>
         <div class="cli-card">
-          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome do modelo</th><th>Quando o contrato é emitido</th><th>Enviar por e-mail para assinatura</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="contratosBody"></tbody></table></div>
+          <div class="cli-scroll"><table class="cli-table"><thead><tr><th>Nome do modelo</th><th>Quando o contrato é emitido</th><th>Enviar por e-mail para assinatura</th><th>Arquivo</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="contratosBody"></tbody></table></div>
           <div class="cli-foot"><span>7 registros encontrados</span></div>
         </div>
       </section>
@@ -1847,8 +1848,9 @@ input:not([type=checkbox]):not([type=radio]),select,textarea,button{box-sizing:b
           <div class="mf full"><label>Termos do contrato (obrigatório)</label><textarea id="contTermos" style="min-height:440px;width:100%;line-height:1.65;font-size:13px"></textarea></div>
         </div>
         <div class="doc-card">
-          <h3><i class="ti ti-signature"></i> Assinatura do contratado</h3>
-          <div style="display:flex;align-items:center;gap:12px"><button class="btn"><i class="ti ti-upload"></i> Escolher arquivo</button><span class="muted" style="font-size:12.5px">Nenhum arquivo selecionado · JPEG/PNG até 5MB</span></div>
+          <h3><i class="ti ti-paperclip"></i> Arquivo do modelo (anexar)</h3>
+          <div class="rel-legend" style="margin-bottom:10px"><i class="ti ti-info-circle"></i> Anexe o arquivo do contrato (PDF/DOC/DOCX) para ficar <b>guardado no sistema</b> e disponível para as <b>unidades</b> usarem.</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><input id="contArquivo" type="file" accept=".pdf,.doc,.docx"><span id="contArqAtual" class="muted" style="font-size:12.5px"></span></div>
         </div>
         <div style="display:flex;gap:10px;margin:6px 0 28px;flex-wrap:wrap">
           <button class="btn" id="contBack2"><i class="ti ti-arrow-left"></i> Voltar</button>
@@ -3100,6 +3102,7 @@ function openClienteFicha(nome){
   document.getElementById('fichaNome').textContent=nome;
   var _ap=document.getElementById('fichaApp');if(_ap)_ap.innerHTML=' · App da rede: '+(clienteTemApp(nome)?'<b style="color:var(--green)">Sim</b>':'<b style="color:var(--text-3)">Não</b>');
   if(typeof cashbackRender==='function')cashbackRender();
+  if(typeof fichaContratosRender==='function')fichaContratosRender(nome);
   document.getElementById('fichaNomeInput').value=nome;
   document.getElementById('fichaIni').textContent=nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
   document.querySelectorAll('#view-cliente-ficha .tab-btn').forEach((x,i)=>x.classList.toggle('active',i===0));
@@ -3332,7 +3335,24 @@ function osRender(){
   </tr>`).join(''):'<tr><td colspan="11" style="text-align:center;color:var(--text-3);padding:22px">Nenhuma OS para os filtros selecionados</td></tr>';
 }
 function osPopulaFiltros(){var sv=document.getElementById('osFilServ');if(sv&&typeof SERVICOS!=='undefined')sv.innerHTML='<option value="">Todos os serviços</option>'+SERVICOS.map(function(x){return '<option>'+x[0]+'</option>';}).join('');var pr=document.getElementById('osFilProd');if(pr&&typeof PRODUTOS!=='undefined')pr.innerHTML='<option value="">Todos os produtos</option>'+PRODUTOS.map(function(x){return '<option>'+x[0]+'</option>';}).join('');}
-function osVer(i){var r=OS_DATA[i];if(!r)return;var row=function(l,v){return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">'+l+'</span><span style="font-weight:600;text-align:right">'+(v||'\u2014')+'</span></div>';};var stPill='<span class="os-st os-'+r.s+'">'+OS_LABEL[r.s]+'</span>';document.getElementById('osVerTitle').innerHTML='<i class="ti ti-clipboard-text"></i> OS '+(r.cmd||'(sem comanda)')+' \u00b7 '+r.c;document.getElementById('osVerBody').innerHTML=row('Cliente',r.c)+row('Unidade',r.u)+row('Comanda',r.cmd)+row('Origem',r.o)+row('Status',stPill)+row('Cria\u00e7\u00e3o',r.cr)+row('Fechamento',r.fe)+row('Cancelamento',r.ca)+row('Desconto (R$)',r.d)+row('Total (R$)','<b>'+r.t+'</b>')+'<div style="margin-top:12px;background:var(--surface-2);border-radius:9px;padding:11px;font-size:12.5px"><b>Itens da OS</b><div style="margin-top:5px;color:var(--text-2)">'+(r.o==='Pacote'?'Pacote contratado':'Servi\u00e7o/atendimento')+' \u00b7 '+r.c+'</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span>Total da OS</span><b>R$ '+r.t+'</b></div></div>';document.getElementById('osVerMod').classList.add('open');}
+function osVer(i){var r=OS_DATA[i];if(!r)return;
+ var row=function(l,v){return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">'+l+'</span><span style="font-weight:600;text-align:right">'+(v||'—')+'</span></div>';};
+ var stPill='<span class="os-st os-'+r.s+'">'+OS_LABEL[r.s]+'</span>';
+ document.getElementById('osVerTitle').innerHTML='<i class="ti ti-clipboard-text"></i> OS '+(r.cmd||'(sem comanda)')+' · '+r.c;
+ var base=row('Cliente',r.c)+row('Unidade',r.u)+row('Comanda',r.cmd)+row('Origem',r.o)+row('Status',stPill)+row('Criação',r.cr)+row('Fechamento',r.fe)+row('Cancelamento',r.ca)+row('Desconto (R$)',r.d)+row('Total (R$)','<b>'+r.t+'</b>')+'<div style="margin-top:12px;background:var(--surface-2);border-radius:9px;padding:11px;font-size:12.5px"><b>Itens da OS</b><div style="margin-top:5px;color:var(--text-2)">'+(r.o==='Pacote'?'Pacote contratado':'Serviço/atendimento')+' · '+r.c+'</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span>Total da OS</span><b>R$ '+r.t+'</b></div></div>';
+ var cont='';
+ if(osEhVenda(r)){
+   cont='<div style="margin-top:12px;border:1px solid var(--line);border-radius:9px;padding:11px"><b><i class="ti ti-file-signature" style="color:var(--brand-500)"></i> Contrato de prestação de serviços</b>';
+   if(!r.contrato){cont+='<div style="font-size:12px;color:var(--text-2);margin:6px 0 9px">Obrigatório para finalizar a OS — gerado com os dados do cliente cadastrado + os serviços da OS e enviado para assinatura digital (mesmo em sessões gratuitas).</div><button class="btn btn-primary" onclick="osEmitirContrato('+i+')"><i class="ti ti-send"></i> Emitir e enviar (e-mail + WhatsApp)</button>';}
+   else if(r.contrato.status==='pendente'){cont+='<div style="font-size:12px;margin:6px 0 9px"><span class="os-st os-aberta">Aguardando assinatura</span> · enviado '+r.contrato.enviadoEm+' por '+r.contrato.canais.join(' e ')+'</div><button class="btn" onclick="osEmitirContrato('+i+')"><i class="ti ti-refresh"></i> Reenviar</button> <button class="btn btn-primary" onclick="osContratoAssinar('+i+')"><i class="ti ti-writing-sign"></i> Registrar assinatura do cliente</button>';}
+   else{cont+='<div style="font-size:12px;margin:6px 0 0"><span class="os-st os-fechada">Assinado</span> digitalmente em '+r.contrato.assinadoEm+' — arquivado na ficha do cliente.</div>';}
+   cont+='</div>';
+ }
+ var fin='';
+ if(r.s==='aberta'){var blocked=osEhVenda(r)&&(!r.contrato||r.contrato.status!=='assinado');
+   fin='<div style="margin-top:12px;text-align:right"><button class="btn btn-primary" '+(blocked?'style="opacity:.5"':'')+' onclick="osFinalizar('+i+')"><i class="ti ti-checks"></i> Finalizar OS</button>'+(blocked?'<div style="font-size:11px;color:var(--red);margin-top:5px"><i class="ti ti-lock"></i> Finalização bloqueada até o contrato ser assinado.</div>':'')+'</div>';}
+ document.getElementById('osVerBody').innerHTML=base+cont+fin;
+ document.getElementById('osVerMod').classList.add('open');}
 function buildOS(){
   osPopulaFiltros();
   const wrap=document.getElementById('osUniWrap');
@@ -7155,6 +7175,33 @@ const CONTRATOS=[
   {cid:'ouro-pdrn-sa',nome:'Contrato Laser&Club - Plano Ouro - PDRN - Sem adesão',emitido:'Assinaturas'},
   {cid:'prestacao',nome:'Contrato de Prestação de Serviços Laser & Co',emitido:'Créditos em Dinheiro, Pacotes, Serviços'}
 ];
+let CONTRATO_ARQ={};
+let _contratoSeq=5200;
+function osNow(){var d=new Date();function z(n){return String(n).padStart(2,'0');}return z(d.getDate())+'/'+z(d.getMonth()+1)+'/'+d.getFullYear()+' '+z(d.getHours())+':'+z(d.getMinutes());}
+function osEhVenda(r){return ['Pacote','Balcão','PDV','Serviço','Crédito'].indexOf(r.o)>=0;}
+function clienteCadastrado(nome){return !!nome && nome.toLowerCase().indexOf('não informado')<0;}
+function contratoServicosOS(r){return r.o==='Pacote'?('Pacote contratado · '+r.c):('Serviço/atendimento · '+r.c);}
+function osEmitirContrato(i){var r=OS_DATA[i];if(!r)return;
+  if(!clienteCadastrado(r.c)){showToast('Cadastre o cliente antes de emitir o contrato','ti-alert-triangle');return;}
+  var now=osNow();var novo=!r.contrato;
+  r.contrato={id:r.contrato?r.contrato.id:('CT-'+(_contratoSeq++)),status:'pendente',canais:['E-mail','WhatsApp'],enviadoEm:now,assinadoEm:'',modelo:'Contrato de Prestação de Serviços – Laser&Co',servicos:contratoServicosOS(r),valor:r.t};
+  if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Contrato',(novo?'Emitiu':'Reenviou')+' contrato '+r.contrato.id+' para '+r.c+' · e-mail + WhatsApp');
+  showToast('Contrato enviado por e-mail e WhatsApp a '+r.c+' — aguardando assinatura','ti-file-signature');osVer(i);}
+function osContratoAssinar(i){var r=OS_DATA[i];if(!r||!r.contrato)return;var now=osNow();r.contrato.status='assinado';r.contrato.assinadoEm=now;
+  if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Contrato','Cliente '+r.c+' assinou digitalmente o contrato '+r.contrato.id);
+  showToast('Assinatura reconhecida ✓ — a OS já pode ser finalizada','ti-circle-check');osVer(i);}
+function osFinalizar(i){var r=OS_DATA[i];if(!r)return;if(r.s==='fechada'){showToast('OS já finalizada','ti-info-circle');return;}
+  if(osEhVenda(r)){if(!r.contrato){showToast('Emita o contrato e obtenha a assinatura do cliente antes de finalizar (mesmo em sessões gratuitas)','ti-alert-triangle');return;}
+   if(r.contrato.status!=='assinado'){showToast('Contrato ainda não assinado — não é possível finalizar a OS','ti-lock');return;}}
+  r.s='fechada';r.fe=osNow();if(typeof osRender==='function')osRender();if(typeof persistState==='function')persistState();
+  if(typeof auditLog==='function')auditLog('Ordem de serviço','Finalizou OS de '+r.c);showToast('OS finalizada','ti-check');osVer(i);}
+function fichaContratosRender(nome){var el=document.getElementById('fichaContratos');if(!el)return;
+  var emitidos=(typeof OS_DATA!=='undefined'?OS_DATA:[]).filter(function(r){return r.c===nome&&r.contrato;});
+  var html=emitidos.map(function(r){var c=r.contrato;var a=c.status==='assinado';
+    return '<div class="doc-list-item"><div class="di-ic"><i class="ti ti-file-description"></i></div><div class="di-main"><div class="t">'+c.modelo+' · '+c.id+'</div><div class="s">'+(a?('Assinado digitalmente em '+c.assinadoEm):('Aguardando assinatura · enviado '+c.enviadoEm+' por '+(c.canais||[]).join(' e ')))+' · '+c.servicos+'</div></div><span class="os-st '+(a?'os-fechada':'os-aberta')+'">'+(a?'Assinado':'Pendente')+'</span><span class="os-link" style="margin-left:12px" onclick="showToast(\'Abrindo contrato '+c.id+'\',\'ti-file\')"><i class="ti ti-eye"></i> Ver</span></div>';}).join('');
+  el.innerHTML=html||'<div style="color:var(--text-3);font-size:13px;padding:8px">Nenhum contrato emitido para este cliente ainda. Eles aparecem aqui automaticamente quando uma OS de venda gera o contrato.</div>';}
 function termosClube(plano,semAdesao){return `CLÁUSULA 1ª – OBJETO DE CONTRATAÇÃO: Por meio do presente contrato, fica ajustada a adesão da CONTRATANTE ao denominado "LASER&CLUB", que vem a ser um clube de Assinatura de Serviços de Laser e Ultrassom, com vantagens exclusivas para clientes da rede LASER COMPANY.
 
 Parágrafo Primeiro: a CONTRATANTE irá aderir ao seguinte plano de assinatura:
@@ -7331,7 +7378,7 @@ CLÁUSULA DÉCIMA PRIMEIRA – CONDIÇÕES FINAIS
 };
 function buildContratos(){
   const b=document.getElementById('contratosBody');if(!b||b.dataset.built)return;
-  b.innerHTML=CONTRATOS.map(c=>`<tr><td><span class="cli-name"><i class="ti ti-file-text" style="color:var(--brand-500);margin-right:7px;vertical-align:-2px"></i>${c.nome}</span></td><td><span class="orig-tag">${c.emitido}</span></td><td><span class="pill-yes">Sim</span></td><td><span class="pill-yes">Sim</span></td><td><span class="os-link cont-edit" data-cid="${c.cid}"><i class="ti ti-edit"></i> Editar</span></td></tr>`).join('');
+  b.innerHTML=CONTRATOS.map(c=>`<tr><td><span class="cli-name"><i class="ti ti-file-text" style="color:var(--brand-500);margin-right:7px;vertical-align:-2px"></i>${c.nome}</span></td><td><span class="orig-tag">${c.emitido}</span></td><td><span class="pill-yes">Sim</span></td><td>${CONTRATO_ARQ[c.cid]?(`<span class="orig-tag" style="background:#E7F0EC;color:#0F6B3A"><i class="ti ti-paperclip"></i> ${CONTRATO_ARQ[c.cid]}`+`</span>`):`<span class="muted">—</span>`}</td><td><span class="pill-yes">Sim</span></td><td><span class="os-link cont-edit" data-cid="${c.cid}"><i class="ti ti-edit"></i> Editar</span></td></tr>`).join('');
   b.dataset.built='1';
   b.querySelectorAll('.cont-edit').forEach(el=>el.onclick=()=>{const c=CONTRATOS.find(x=>x.cid===el.dataset.cid);openContratoEditor(c.cid,c.nome);});
 }
@@ -7346,13 +7393,15 @@ function openContratoEditor(cid,nome){
   document.getElementById('contTermos').value=t?t.termos:'Conteúdo deste modelo ainda não importado do BEMP. Informe o link da página de edição para copiarmos o texto completo.';
   if(t&&t.emitido)document.getElementById('contEmitido').value=t.emitido;
   window._curContrato=cid;
+  var _aq=document.getElementById('contArqAtual');if(_aq)_aq.textContent=CONTRATO_ARQ[cid]?('Arquivo atual: '+CONTRATO_ARQ[cid]):'Nenhum arquivo anexado';
+  var _fi=document.getElementById('contArquivo');if(_fi)_fi.value='';
   document.querySelector('.content').scrollTop=0;
 }
 (function(){
   const n=document.getElementById('btnNovoContrato');if(n)n.onclick=()=>showToast('Novo modelo de contrato','ti-file-description');
   const b1=document.getElementById('contBack'),b2=document.getElementById('contBack2');
   if(b1)b1.onclick=openContratos;if(b2)b2.onclick=openContratos;
-  const sv=document.getElementById('contSalvar');if(sv)sv.onclick=()=>showToast('Modelo de contrato salvo','ti-check');
+  const sv=document.getElementById('contSalvar');if(sv)sv.onclick=function(){var cid=window._curContrato;var fi=document.getElementById('contArquivo');var fn=(fi&&fi.files&&fi.files[0])?fi.files[0].name:null;if(fn&&cid)CONTRATO_ARQ[cid]=fn;var nome=(document.getElementById('contNome')||{}).value;var c=(typeof CONTRATOS!=='undefined')?CONTRATOS.find(function(x){return x.cid===cid;}):null;if(c&&nome)c.nome=nome;var b=document.getElementById('contratosBody');if(b)b.dataset.built='';if(typeof buildContratos==='function')buildContratos();if(typeof persistState==='function')persistState();showToast('Modelo de contrato salvo'+(fn?' · arquivo anexado':''),'ti-check');};
   const pv=document.getElementById('contPreview');if(pv)pv.onclick=()=>showToast('Abrindo pré-visualização do contrato','ti-eye');
   const int=document.getElementById('contInativar');if(int)int.onclick=()=>{showToast('Modelo de contrato inativado','ti-ban');openContratos();};
 })();
