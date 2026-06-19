@@ -1262,6 +1262,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
 
       <!-- ===== AGENDA ===== -->
       <section class="view" id="view-agenda">
+        <div id="agOcup"></div>
         <div class="agenda-toolbar">
           <div class="day-nav">
             <button title="Dia anterior" id="agPrev"><i class="ti ti-chevron-left"></i></button>
@@ -2726,6 +2727,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
     </div>
     <div class="modal-body" style="grid-template-columns:1fr">
       <div class="appt-overlap" id="apptOverlap"><i class="ti ti-alert-triangle" style="font-size:18px"></i><div>Já existe um agendamento neste horário. Você pode agendar em <b>sobreposição</b>.<label><input type="checkbox" id="apptCiente"> Estou ciente da sobreposição</label></div></div>
+      <div id="apptConfInfo"></div>
       <div class="mf full">
         <label>Cliente</label>
         <input list="clienteList" id="apptCliente" placeholder="Digite para buscar um cliente cadastrado...">
@@ -2755,6 +2757,7 @@ function pwaInstall(){var e=window.__pwaPrompt;if(!e)return;e.prompt();e.userCho
     <div class="modal-foot" style="justify-content:space-between">
       <button class="btn" id="apptBack"><i class="ti ti-arrow-left"></i> Voltar</button>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="apptConfCliente" style="display:none;border-color:#0f6b3a;color:#0f6b3a"><i class="ti ti-brand-whatsapp"></i> Cliente confirmou</button><button class="btn" id="apptConfirmar" style="display:none;background:var(--brand-500);color:#fff;border-color:var(--brand-500)"><i class="ti ti-circle-check"></i> Confirmar agendamento</button>
         <button class="btn"><i class="ti ti-calendar-off"></i> Criar bloqueio</button>
         <button class="btn btn-primary" id="apptSalvar"><i class="ti ti-device-floppy"></i> Salvar</button>
       </div>
@@ -2940,11 +2943,33 @@ const EVENTS=[
 ];
 const START=8*60, END=20*60, SLOT=36; /* px por slot */
 let AGENDA_GAP=10; /* GAP de horários da agenda (min) — padrão da rede: 10 */
+let AGENDA_NOSHOW=45; /* % falta média da unidade */
+let AGENDA_DUR=30; /* min médio por agendamento */
 const toMin=s=>{const[a,b]=s.split(":").map(Number);return a*60+b;};
+function _agNow(){var d=new Date();var p=function(n){return ('0'+n).slice(-2);};return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function agOcupRender(){
+  var el=document.getElementById('agOcup'); if(!el||typeof PROFS==='undefined') return;
+  var nProf=PROFS.length, horas=(END-START)/60;
+  var baseCap=Math.round(nProf*horas*60/AGENDA_DUR);
+  var alvo=Math.round(baseCap*(1+AGENDA_NOSHOW/100));
+  var agendados=0; EVENTS.forEach(function(col){col.forEach(function(ev){if(ev.k!=='block')agendados++;});});
+  var pct=alvo?Math.round(agendados/alvo*100):0; var faltam=Math.max(0,alvo-agendados);
+  var cor=pct>=85?'#0f6b3a':pct>=60?'#B26A00':'#B91C1C';
+  el.innerHTML='<div class="rel-card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;border-left:4px solid '+cor+'">'
+   +'<div style="display:flex;align-items:center;gap:16px"><div style="text-align:center;min-width:64px"><div style="font-size:27px;font-weight:800;color:'+cor+';line-height:1">'+pct+'%</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">preenchida</div></div>'
+   +'<div style="font-size:13px;color:var(--text-2);line-height:1.5"><b>'+agendados+'</b> agendamentos hoje · meta com sobreposição: <b>'+alvo+'</b> <span style="color:var(--muted)">('+nProf+' profissionais × '+Math.round(horas)+'h ÷ '+AGENDA_DUR+'min, +'+AGENDA_NOSHOW+'% de faltas)</span>.<br><span style="color:var(--muted)">Como ~'+AGENDA_NOSHOW+'% dos agendamentos faltam, faça <b>sobreposição</b> para ocupar o tempo ocioso — faltam <b>'+faltam+'</b> para a meta.</span></div></div>'
+   +'<div style="flex:1;min-width:160px;max-width:340px"><div style="height:10px;background:var(--surface-2);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+cor+';transition:.4s"></div></div></div>'
+   +'</div>';
+}
+function uniSetNoShow(v){AGENDA_NOSHOW=Math.max(0,Math.min(90,v||0));if(typeof persistState==='function')persistState();if(typeof agOcupRender==='function')agOcupRender();if(typeof showToast==='function')showToast('Taxa média de faltas: '+AGENDA_NOSHOW+'%','ti-percentage');}
+function agConfirmar(byClient){var r=window._apptRef;if(!r)return;var ev=EVENTS[r.ci]&&EVENTS[r.ci][r.idx];if(!ev)return;ev.k='confirmado';ev.confAt=_agNow();ev.confBy=byClient?'Sistema · cliente confirmou via WhatsApp':((window._adminAccount?'Equipe':(typeof USER_ROLE!=='undefined'?USER_ROLE:'Equipe'))||'Equipe');var g=document.getElementById('agendaGrid');if(g)g.dataset.built='';if(typeof buildAgenda==='function')buildAgenda();document.getElementById('apptModal').classList.remove('open');if(typeof auditLog==='function')auditLog('Agenda · confirmação',(byClient?'Cliente confirmou ':'Confirmou ')+ev.t+' em '+ev.confAt);showToast(byClient?'Cliente confirmou pelo WhatsApp — agendamento confirmado':'Agendamento confirmado','ti-circle-check');}
+
 function buildAgenda(){
   const head=document.getElementById('agendaHead');
   const grid=document.getElementById('agendaGrid');
   renderRede();
+  if(typeof agOcupRender==='function')agOcupRender();
+  var _be=document.getElementById('btnEvtRede');if(_be)_be.style.display=(typeof isAdmin==='function'&&isAdmin())?'':'none';
   if(grid.dataset.built)return;
   head.innerHTML='<div class="corner"></div>'+PROFS.map(p=>`<div class="col-h"><span class="ch-ava">${p.ini}</span>${p.n}</div>`).join('');
   const rows=(END-START)/AGENDA_GAP;
@@ -5468,6 +5493,7 @@ function uniDescRender(){
    <div class="set-sec">Agenda</div>
    <div class="rel-legend" style="margin-bottom:10px"><i class="ti ti-clock-hour-4"></i> <b>GAP de horários da agenda</b> — intervalo entre os encaixes na grade. Padrão da rede: <b>10 minutos</b>.</div>
    <div class="mf" style="max-width:320px"><label>GAP de horários (minutos)</label><select onchange="uniSetGap(+this.value)">${gapOpts}</select></div>
+   <div class="mf" style="max-width:320px;margin-top:12px"><label><i class="ti ti-user-x" style="vertical-align:-1px"></i> Taxa média de faltas da unidade (%)</label><input type="number" min="0" max="90" value="${typeof AGENDA_NOSHOW!=='undefined'?AGENDA_NOSHOW:45}" onchange="uniSetNoShow(+this.value)"></div>
    <div class="rel-acts" style="justify-content:flex-end;margin-top:14px"><button class="btn btn-primary" onclick="uniDescSalvar()"><i class="ti ti-device-floppy"></i> Salvar configurações</button></div>`;
 }
 function uniSetGap(v){AGENDA_GAP=v||10;const grid=document.getElementById('agendaGrid');if(grid)grid.dataset.built='';if(typeof persistState==='function')persistState();if(typeof auditLog==='function')auditLog('Agenda · GAP','GAP de horários: '+AGENDA_GAP+' min');showToast('GAP da agenda: '+AGENDA_GAP+' minutos','ti-clock-hour-4');}
@@ -8944,7 +8970,7 @@ function saveEvt(){
   REDE_EVENTOS.push({id:Date.now(),tit,tipo:document.getElementById('evtTipo').value,data:document.getElementById('evtData').value,ini:document.getElementById('evtIni').value,fim:document.getElementById('evtFim').value,link:document.getElementById('evtLink').value.trim(),audi});
   closeEvt();renderRede();showToast('Evento publicado na agenda da rede','ti-calendar-star');
 }
-(function(){const b=document.getElementById('btnEvtRede');if(b)b.onclick=()=>{if(!isGestor()){showToast('Somente gestores podem adicionar eventos','ti-shield-lock');return;}document.getElementById('evtData').value=evtDateStr(curDate);document.getElementById('evtMod').classList.add('open');};
+(function(){const b=document.getElementById('btnEvtRede');if(b)b.onclick=()=>{if(!(typeof isAdmin==='function'&&isAdmin())){showToast('Somente administradores podem adicionar eventos','ti-shield-lock');return;}document.getElementById('evtData').value=evtDateStr(curDate);document.getElementById('evtMod').classList.add('open');};
   const m=document.getElementById('evtMod');if(m)m.addEventListener('click',e=>{if(e.target===m)closeEvt();});})();
 function showToast(msg,icon){const t=document.getElementById('toast');t.innerHTML=`<i class="ti ${icon||'ti-info-circle'}"></i> ${msg}`;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800);}
 /* mini calendário */
@@ -9018,6 +9044,13 @@ function openAppt(profIdx,timeStr,opts){
   const ov=(EVENTS[profIdx]||[]).some(ev=>ev.k!=='block'&&sm>=toMin(ev.s)&&sm<toMin(ev.e));
   document.getElementById('apptOverlap').classList.toggle('show',ov);
   document.getElementById('apptCiente').checked=false;
+  window._apptRef=opts.ev||null;
+  var _rev=window._apptRef?(EVENTS[window._apptRef.ci]&&EVENTS[window._apptRef.ci][window._apptRef.idx]):null;
+  var _cb=document.getElementById('apptConfirmar'),_cc=document.getElementById('apptConfCliente'),_cinfo=document.getElementById('apptConfInfo');
+  var _canConf=_rev&&_rev.k==='agendado';
+  if(_cb)_cb.style.display=_canConf?'inline-flex':'none';
+  if(_cc)_cc.style.display=_canConf?'inline-flex':'none';
+  if(_cinfo)_cinfo.innerHTML=(_rev&&_rev.confAt)?('<div class="appt-overlap show" style="background:var(--green-bg);color:#0f6b3a"><i class="ti ti-circle-check" style="font-size:18px"></i><div>Confirmado — '+(_rev.confBy||'')+' em <b>'+_rev.confAt+'</b></div></div>'):'';
   apptRecalc();
   apptModal.classList.add('open');
 }
@@ -9029,6 +9062,8 @@ document.getElementById('recChk').onchange=function(){document.getElementById('r
 document.getElementById('apptServicos').addEventListener('change',()=>{if(apptRecalc())showToast('Soma dos serviços acima de 1h — agenda limitada a 60 min','ti-clock');});
 document.getElementById('addServico').onclick=()=>{document.getElementById('apptServicos').insertAdjacentHTML('beforeend',`<div style="margin-bottom:8px"><select class="serv-sel" style="${SERV_SEL_STYLE}">${servOptionsHTML()}</select></div>`);if(apptRecalc())showToast('Soma dos serviços acima de 1h — agenda limitada a 60 min','ti-clock');};
 document.getElementById('apptSalvar').onclick=()=>{const ov=document.getElementById('apptOverlap').classList.contains('show');if(ov&&!document.getElementById('apptCiente').checked){showToast('Confirme "Estou ciente da sobreposição" para agendar','ti-alert-triangle');return;}apptModal.classList.remove('open');showToast(ov?'Agendamento em sobreposição salvo':'Agendamento salvo','ti-check');};
+var _ac=document.getElementById('apptConfirmar');if(_ac)_ac.onclick=function(){agConfirmar(false);};
+var _acc=document.getElementById('apptConfCliente');if(_acc)_acc.onclick=function(){agConfirmar(true);};
 /* datalist de clientes cadastrados */
 (function(){const dl=document.getElementById('clienteList');if(!dl)return;let o='';for(let i=0;i<30;i++)o+=`<option value="${CLI_FIRST[i]+' '+CLI_LAST[(i*7)%30]}">`;dl.innerHTML=o;})();
 /* clique na grade: criar (slot vazio) ou abrir (evento) */
@@ -9039,7 +9074,7 @@ document.getElementById('apptSalvar').onclick=()=>{const ov=document.getElementB
     if(ev){
       if(ev.classList.contains('block')){showToast('Bloqueio de horário · clique em Configurações para editar','ti-lock');return;}
       if(ev.dataset.status==='finalizado'){showToast('Atendimento finalizado — edição restrita aos administradores','ti-lock');return;}
-      openAppt(+ev.dataset.prof,ev.dataset.start,{});return;
+      var _pi=+ev.dataset.prof;var _ix=(EVENTS[_pi]||[]).findIndex(function(x){return x.s===ev.dataset.start&&x.t===ev.dataset.name;});openAppt(_pi,ev.dataset.start,{ev:_ix>=0?{ci:_pi,idx:_ix}:null});return;
     }
     const col=e.target.closest('.prof-col');if(!col)return;
     let slot=Math.floor((e.clientY-col.getBoundingClientRect().top)/SLOT);if(slot<0)slot=0;
