@@ -1,0 +1,25 @@
+/*
+ * Ajustes pós-legacy (importados por último). Corrigem só o que o protótipo
+ * fazia de forma quebrada/estranha quando portado para o app real.
+ */
+
+/* RESET do body — garante que NENHUM resíduo de CSS de documento embutido
+   (ex.: um body{padding:34px} de template de impressão) crie moldura no app. */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* O legacy escondia a sidebar por completo em telas ≤760px (.sidebar{display:none}),
+   deixando o celular sem navegação. Reativamos o off-canvas (vem translado para
+   fora pela regra de ≤900px; abre com .mob-open). */
+@media (max-width: 760px) {
+  .sidebar { display: flex !important; }
+}

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<title>Questionário de Descoberta (Discovery) — Cliente — Laser&amp;Co Power System</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm 14mm 16mm 14mm;
+    @bottom-center { content: "Questionário de Descoberta (Discovery) — Cliente — Laser&Co Power System"; font-size: 7pt; color:#8a6f78; }
+    @bottom-right  { content: "Página " counter(page) " / " counter(pages); font-size: 7pt; color:#8a6f78; }
+  }
+  @page :first { @bottom-center{content:""} @bottom-right{content:""} }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; color:#241016; font-size:10pt; line-height:1.4; margin:0; }
+  h1 { font-size:24pt; margin:0 0 4pt; color:#5b1726; }
+  h2 { font-size:12.5pt; color:#fff; background:#6B2233; padding:5pt 9pt; border-radius:4px; margin:16pt 0 8pt; page-break-after:avoid; }
+  .secid { display:inline-block; background:#C9A227; color:#3A2A06; font-weight:700; border-radius:3px; padding:0 7pt; margin-right:5pt; }
+  .seccount { font-weight:400; font-size:9pt; opacity:.85; }
+  /* Cover */
+  .cover { height: 245mm; display:flex; flex-direction:column; justify-content:center; }
+  .cover .brand { color:#C9A227; font-weight:700; letter-spacing:2px; font-size:11pt; text-transform:uppercase; }
+  .cover h1 { font-size:30pt; margin:6pt 0 4pt; line-height:1.1; }
+  .cover .sub { font-size:13pt; color:#6B2233; font-weight:600; max-width:150mm; }
+  .cover .meta { margin-top:22pt; border-top:2px solid #C9A227; padding-top:12pt; }
+  .cover .meta div { margin:3pt 0; font-size:10.5pt; }
+  .cover .meta b { display:inline-block; width:150px; color:#6B2233; }
+  .pill { display:inline-block; background:#6B2233; color:#fff; padding:3pt 10pt; border-radius:20px; font-size:9.5pt; margin-top:16pt; }
+  /* Intro */
+  .intro { page-break-before: always; }
+  .intro h1 { font-size:17pt; border-bottom:2px solid #C9A227; padding-bottom:4pt; }
+  .intro p, .intro li { font-size:10pt; }
+  .intro h3 { color:#6B2233; margin:14pt 0 4pt; font-size:11.5pt; }
+  table.ix { border-collapse:collapse; width:100%; font-size:9.5pt; margin-top:4pt; }
+  table.ix th, table.ix td { border:1px solid #d8c4cb; padding:4pt 8pt; }
+  table.ix th { background:#6B2233; color:#fff; text-align:left; }
+  table.ix .ix-id { font-weight:700; color:#6B2233; text-align:center; width:34px; }
+  table.ix .num { text-align:center; width:74px; }
+  .kpis { display:flex; gap:10pt; margin:10pt 0; }
+  .kpi { flex:1; border:1px solid #d8c4cb; border-radius:6px; padding:9pt; text-align:center; background:#faf5f6; }
+  .kpi .v { font-size:21pt; font-weight:700; color:#6B2233; }
+  .kpi .l { font-size:8.5pt; color:#5c4a4f; }
+  .kpi.c .v { color:#a8500b; }
+  /* Questions */
+  .sec { page-break-before: always; }
+  .q { margin:0 0 9pt; padding:0 0 2pt; page-break-inside: avoid; }
+  .q.isc { border-left:3px solid #C9A227; padding-left:8pt; background:#fffdf6; }
+  .qhead { display:flex; align-items:baseline; gap:6pt; }
+  .qid { font-weight:700; color:#6B2233; white-space:nowrap; font-size:9.5pt; }
+  .qtxt { flex:1; font-weight:600; font-size:10pt; }
+  .crit { background:#a8500b; color:#fff; font-size:7pt; font-weight:700; padding:1pt 6pt; border-radius:10px; white-space:nowrap; letter-spacing:.5px; }
+  .hint { font-size:8.6pt; color:#7a5c63; font-style:italic; margin:1pt 0 0 2pt; }
+  .ans { margin-top:7pt; }
+  .ans .line { border-bottom:1px dotted #b79aa2; height:15pt; }
+  /* Notes page */
+  .notes { page-break-before: always; }
+  .notes h1 { font-size:16pt; border-bottom:2px solid #C9A227; padding-bottom:4pt; }
+  .nline { border-bottom:1px dotted #b79aa2; height:20pt; }
+</style></head>
+<body>
+
+<!-- CAPA -->
+<div class="cover">
+  <div class="brand">Laser&amp;Co — Levantamento de Requisitos</div>
+  <h1>Perguntas para o Cliente</h1>
+  <div class="sub">Questionário de descoberta para viabilizar o projeto do Laser&amp;Co Power System de ponta a ponta — sem retrabalho e sem surpresas.</div>
+  <div class="meta">
+    <div><b>Documento:</b> Questionário de Descoberta (Discovery) — Cliente</div>
+    <div><b>Sistema:</b> Laser&amp;Co Power System</div>
+    <div><b>Total de perguntas:</b> 96 (31 críticas)</div>
+    <div><b>Seções:</b> 16</div>
+    <div><b>Gerado em:</b> 18/06/2026</div>
+  </div>
+  <div><span class="pill">Use em reunião de kickoff &middot; Preencha as respostas em cada linha</span></div>
+</div>
+
+<!-- INTRO -->
+<div class="intro">
+  <h1>Como usar este questionário</h1>
+  <p>Este roteiro foi montado a partir da <b>análise do protótipo atual</b>. Hoje o sistema é uma demonstração navegável:
+  muitos fluxos funcionam apenas na tela (botões sem ação, dados de exemplo) e várias integrações externas (fiscal, pagamentos,
+  WhatsApp, Google Drive) ainda são simuladas. Para levar o projeto a <b>produção 100% funcional</b>, é preciso fechar com o
+  cliente as decisões abaixo — cada resposta destrava uma parte do desenvolvimento.</p>
+  <p>As perguntas marcadas como <span class="crit">CRÍTICA</span> são bloqueadoras: sem elas, não é seguro estimar prazo,
+  custo nem começar a construir. Recomenda-se respondê-las primeiro, ainda no kickoff.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">96</div><div class="l">Perguntas</div></div>
+    <div class="kpi c"><div class="v">31</div><div class="l">Críticas (bloqueadoras)</div></div>
+    <div class="kpi"><div class="v">16</div><div class="l">Áreas / seções</div></div>
+  </div>
+
+  <h3>Índice de seções</h3>
+  <table class="ix"><thead><tr><th>#</th><th>Seção</th><th>Perguntas</th><th>Críticas</th></tr></thead>
+  <tbody><tr><td class="ix-id">1</td><td>Visão geral, objetivo e modelo de negócio</td><td class="num">7</td><td class="num">4</td></tr><tr><td class="ix-id">2</td><td>Escopo, prioridades e MVP</td><td class="num">6</td><td class="num">2</td></tr><tr><td class="ix-id">3</td><td>Migração de dados e cadastros</td><td class="num">6</td><td class="num">3</td></tr><tr><td class="ix-id">4</td><td>Backend, infraestrutura e ambientes</td><td class="num">7</td><td class="num">3</td></tr><tr><td class="ix-id">5</td><td>Autenticação, perfis de acesso e multi-unidade</td><td class="num">7</td><td class="num">2</td></tr><tr><td class="ix-id">6</td><td>Fiscal — emissão de Notas Fiscais (NFS-e)</td><td class="num">7</td><td class="num">3</td></tr><tr><td class="ix-id">7</td><td>Pagamentos, recorrência e financeiro bancário</td><td class="num">7</td><td class="num">2</td></tr><tr><td class="ix-id">8</td><td>Comunicação — WhatsApp, e-mail e SMS</td><td class="num">7</td><td class="num">2</td></tr><tr><td class="ix-id">9</td><td>Ponto Digital, Google Maps e RH</td><td class="num">6</td><td class="num">2</td></tr><tr><td class="ix-id">10</td><td>Documentos, arquivos e Disco Virtual</td><td class="num">5</td><td class="num">2</td></tr><tr><td class="ix-id">11</td><td>CRM, Marketing, Expansão e SAC</td><td class="num">6</td><td class="num"></td></tr><tr><td class="ix-id">12</td><td>LGPD, segurança e compliance</td><td class="num">6</td><td class="num">2</td></tr><tr><td class="ix-id">13</td><td>Experiência, responsividade e dispositivos</td><td class="num">5</td><td class="num"></td></tr><tr><td class="ix-id">14</td><td>Performance, escala e disponibilidade</td><td class="num">3</td><td class="num"></td></tr><tr><td class="ix-id">15</td><td>Homologação, treinamento e suporte</td><td class="num">5</td><td class="num">1</td></tr><tr><td class="ix-id">16</td><td>Projeto, prazo, orçamento e governança</td><td class="num">6</td><td class="num">3</td></tr></tbody></table>
+
+  <h3>Dica de condução</h3>
+  <p>Sugestão de ordem na reunião: (1) Visão geral e escopo/MVP — para alinhar expectativa; (2) Dados e infraestrutura —
+  para destravar o ambiente; (3) Integrações fiscais, de pagamento e de comunicação — normalmente os maiores riscos de prazo;
+  (4) LGPD e compliance; (5) Projeto, prazo e governança. Registre as respostas direto neste documento ou em ata.</p>
+</div>
+
+<!-- SEÇÕES -->
+<section class="sec">
+    <h2><span class="secid">1</span> Visão geral, objetivo e modelo de negócio <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">1.1</span><span class="qtxt">Qual é o objetivo principal do sistema e o problema que ele precisa resolver hoje que o BEMP e o SULTS não resolvem?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Define a prioridade real de tudo o que vem depois.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">1.2</span><span class="qtxt">O sistema vai substituir totalmente o BEMP e o SULTS, conviver com eles ou substituir por etapas? Por quanto tempo haverá convivência?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">1.3</span><span class="qtxt">Quem são os usuários finais e quantos por perfil? (franqueados, gerentes, recepção, profissionais de saúde, SAC, franqueadora, marketing, financeiro)</span></div>
+      <div class="hint">A base atual estima 86 usuários só de Ponto e 52 franqueados.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">1.4</span><span class="qtxt">Quantas unidades existem hoje e qual a projeção de crescimento para 12–24 meses?</span></div>
+      <div class="hint">O protótipo traz 59 unidades ativas + 1 de treinamento.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">1.5</span><span class="qtxt">O produto é exclusivo da rede Laser&amp;Co ou será comercializado como SaaS para outras redes/franquias?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Muda decisões de multi-tenant e marca branca.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">1.6</span><span class="qtxt">Existe uma data desejada de go-live e marcos intermediários (fases)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">1.7</span><span class="qtxt">Na visão do cliente, qual é a definição de "projeto 100% pronto" / critério de aceite final?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">2</span> Escopo, prioridades e MVP <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">2.1</span><span class="qtxt">O protótipo tem cerca de 100 pontos que hoje são apenas simulação (botões sem ação, dados de exemplo, integrações não implementadas). Quais módulos devem ser reais já na 1ª entrega?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">2.2</span><span class="qtxt">Quais módulos podem ficar para uma fase 2? (ex.: Universidade Corporativa, Disco Virtual, App do Cliente, Expansão)</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">2.3</span><span class="qtxt">Existe uma lista priorizada de "obrigatório" x "desejável"?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">2.4</span><span class="qtxt">Dos 26 relatórios listados, quais são realmente usados na rotina e precisam de dados reais e exportação?</span></div>
+      <div class="hint">Hoje todos os botões "Exportar" são apenas visuais.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">2.5</span><span class="qtxt">O App do Cliente será um aplicativo nativo (App Store/Play), um PWA, ou não entra agora?</span></div>
+      <div class="hint">Hoje é só um protótipo navegável (toasts).</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">2.6</span><span class="qtxt">O agendamento feito pelo próprio cliente (online) faz parte do escopo?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">3</span> Migração de dados e cadastros <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">3.1</span><span class="qtxt">Existe base de dados atual (BEMP/SULTS) para migrar? Qual o volume? (clientes, contratos, histórico de sessões, financeiro, fidelidade)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">3.2</span><span class="qtxt">Em que formato a exportação dos sistemas atuais está disponível? (Excel/CSV, API, acesso ao banco)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">3.3</span><span class="qtxt">Quanto de histórico precisa ser migrado (todo o período ou apenas recente)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">3.4</span><span class="qtxt">Os cadastros das 59 unidades estão completos e atualizados? (CNPJ, endereço, inscrição municipal, e-mail, telefone, franqueado responsável)</span></div>
+      <div class="hint">São essenciais para NFS-e, cobrança e jurídico.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">3.5</span><span class="qtxt">A migração inclui dados sensíveis (fotos clínicas, CPF, contratos assinados)? Como devem ser tratados?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">3.6</span><span class="qtxt">Quem, do lado do cliente, valida a qualidade e a integridade dos dados migrados?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">4</span> Backend, infraestrutura e ambientes <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">4.1</span><span class="qtxt">Mantemos o Supabase como backend ou há preferência por outra plataforma? (AWS, GCP, Azure, on-premise)</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Hoje usa Supabase (Postgres) com chave pública e RLS.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">4.2</span><span class="qtxt">Quem é o titular/dono da conta de nuvem e das credenciais de produção?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">4.3</span><span class="qtxt">Precisamos de ambientes separados de desenvolvimento, homologação e produção?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">4.4</span><span class="qtxt">Qual a política de backup, retenção e recuperação de desastre esperada?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">4.5</span><span class="qtxt">Haverá domínio próprio? Quem administra o DNS e o certificado SSL?</span></div>
+      <div class="hint">Hoje a produção está em laserco-power-system.vercel.app.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">4.6</span><span class="qtxt">Qual o nível de disponibilidade (SLA) esperado do sistema?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">4.7</span><span class="qtxt">O repositório de código hoje é público. Isso deve continuar assim ou passar a privado?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">5</span> Autenticação, perfis de acesso e multi-unidade <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q ">
+      <div class="qhead"><span class="qid">5.1</span><span class="qtxt">O conjunto de 13 perfis de acesso está correto e completo? Falta algum perfil?</span></div>
+      <div class="hint">Hoje: Administrador, Gestor, Franqueado, Gerente de Campo, Consultor, Gerente/Sub, Profissional de Saúde, Colaborador, Marketing, Financeiro, Expansão, Implantação, Ponto.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">5.2</span><span class="qtxt">Cada unidade precisa de isolamento total dos dados (cada franqueado só vê o seu)?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Hoje o estado é um único registro compartilhado em nuvem — não há isolamento por unidade.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">5.3</span><span class="qtxt">Um mesmo usuário pode pertencer/operar em mais de uma unidade?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">5.4</span><span class="qtxt">Quais são as regras exatas de quem pode ler e escrever o quê, por perfil e por unidade?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">5.5</span><span class="qtxt">É necessário login com Google/Microsoft (SSO) e/ou autenticação em duas etapas (2FA)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">5.6</span><span class="qtxt">A recuperação de senha por e-mail é obrigatória?</span></div>
+      <div class="hint">Hoje não existe "Esqueci minha senha" no sistema principal.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">5.7</span><span class="qtxt">Há política de senha forte, troca periódica e bloqueio por inatividade?</span></div>
+      <div class="hint">Hoje há inativação automática de colaborador após 15 dias sem acesso — confirmar a regra.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">6</span> Fiscal — emissão de Notas Fiscais (NFS-e) <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">6.1</span><span class="qtxt">Quais municípios/prefeituras precisam de emissão de NFS-e? (cada unidade emite na sua cidade)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">6.2</span><span class="qtxt">Cada unidade já possui certificado digital (A1/A3) e inscrição municipal? Quem fornece e mantém?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">6.3</span><span class="qtxt">Vamos usar um intermediador/provedor de NFS-e (ex.: PlugNotas, NFE.io, Focus NFe, eNotas) ou integração direta com cada prefeitura?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Define custo, prazo e complexidade. Hoje é tudo simulado.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">6.4</span><span class="qtxt">A política de emissão (não emitir / na venda / na execução) é definida por tipo de serviço? Qual a regra oficial?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">6.5</span><span class="qtxt">Quais as regras de alíquota de ISS por município e por serviço?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">6.6</span><span class="qtxt">São necessários cancelamento, substituição e carta de correção da NFS-e?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">6.7</span><span class="qtxt">Há tratamento fiscal específico para Ultrassom? (citado como exceção em recorrência e royalties)</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">7</span> Pagamentos, recorrência e financeiro bancário <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">7.1</span><span class="qtxt">O gateway de crédito recorrente definitivo é o PagoLivre? Já há contrato e credenciais de API?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">O código cita PagoLivre e, em outro ponto, Asaas — precisa unificar.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">7.2</span><span class="qtxt">Quais formas de pagamento e parcelamento reais, com taxas por adquirente e limites? (PIX, débito, crédito, link, recorrência)</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">7.3</span><span class="qtxt">A conciliação bancária será via Open Finance, API do banco ou arquivo CNAB? Quais bancos/adquirentes?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">7.4</span><span class="qtxt">A emissão de boletos será por qual banco/convênio? A régua de cobrança automática é requisito?</span></div>
+      <div class="hint">Hoje boletos, baixa e envio são simulados.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">7.5</span><span class="qtxt">Qual a regra exata de royalties? (% sobre faturamento bruto, % do fundo de marketing, dia de vencimento)</span></div>
+      <div class="hint">Protótipo usa 10% de royalties e 2% de fundo — confirmar.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">7.6</span><span class="qtxt">Há integração necessária com ERP/sistema contábil externo?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">7.7</span><span class="qtxt">As regras de juros (1% a.m.), multa (10%) e correção monetária para inadimplência estão corretas?</span></div>
+      <div class="hint">Hoje os índices vêm da API do Banco Central.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">8</span> Comunicação — WhatsApp, e-mail e SMS <span class="seccount">(7 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">8.1</span><span class="qtxt">O WhatsApp será via API Oficial (Meta Cloud) ou via solução não-oficial (Z-API, BLIP)?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Muda custo, aprovação e estabilidade. Hoje todos os disparos são simulados.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">8.2</span><span class="qtxt">Já existe conta Meta Business verificada e números aprovados? Cada unidade terá o seu número?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">8.3</span><span class="qtxt">Quem arca com o custo por mensagem/conversa e qual o volume mensal estimado?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">8.4</span><span class="qtxt">O motor de automações (17 fluxos: recompra, lembretes, no-show, NPS, aniversário, etc.) precisa ser real e configurável pelo usuário?</span></div>
+      <div class="hint">Hoje é apenas um catálogo visual.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">8.5</span><span class="qtxt">Qual provedor de e-mail transacional será usado (SendGrid, Amazon SES, etc.) e qual o domínio/remetente oficial?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">8.6</span><span class="qtxt">Envio de SMS entra no escopo?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">8.7</span><span class="qtxt">As notificações ao cliente (confirmação, ganhador de sorteio, cobrança) devem sair por WhatsApp, e-mail ou ambos?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">9</span> Ponto Digital, Google Maps e RH <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">9.1</span><span class="qtxt">A folha de ponto precisa ter validade legal (Portaria 671/MTP, REP-P), espelho de ponto e banco de horas?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">9.2</span><span class="qtxt">Já existe chave do Google Maps com billing ativo, ou podemos usar OpenStreetMap?</span></div>
+      <div class="hint">Hoje o GPS do navegador é real; o mapa depende de chave.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">9.3</span><span class="qtxt">A cerca virtual (raio e coordenadas por unidade) — quem fornece esses dados?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">9.4</span><span class="qtxt">A folha de pagamento do RH deve calcular encargos de verdade (INSS, IRRF, FGTS) ou integrar com folha externa? Há integração com eSocial?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Hoje os valores são apenas exibidos (semeados), sem cálculo.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">9.5</span><span class="qtxt">Quais funções de RH são realmente usadas? (recrutamento/kanban, férias, atestados, avaliação de desempenho, regras da rede)</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">9.6</span><span class="qtxt">O app de RH (hoje em React, embarcado) deve ser unificado ao sistema principal ou continuar separado?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">10</span> Documentos, arquivos e Disco Virtual <span class="seccount">(5 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">10.1</span><span class="qtxt">Onde os arquivos devem ser armazenados? (Supabase Storage, Amazon S3, Google Drive real)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">10.2</span><span class="qtxt">O Disco Virtual exige integração real com a API do Google Drive ou armazenamento próprio basta?</span></div>
+      <div class="hint">Hoje a integração com o Drive é simulada (guarda só o link).</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">10.3</span><span class="qtxt">Anexos de contratos/PDF do Jurídico precisam de upload real, versionamento e histórico?</span></div>
+      <div class="hint">Hoje o anexo guarda apenas o nome do arquivo.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">10.4</span><span class="qtxt">É necessária assinatura eletrônica de contratos (ex.: D4Sign, Clicksign, Gov.br)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">10.5</span><span class="qtxt">Fotos clínicas (antes/depois) precisam de armazenamento seguro, com consentimento e controle de acesso?</span><span class="crit">CRÍTICA</span></div>
+      <div class="hint">Hoje as fotos ficam só na memória da sessão.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">11</span> CRM, Marketing, Expansão e SAC <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q ">
+      <div class="qhead"><span class="qid">11.1</span><span class="qtxt">Os estágios do funil do CRM e as regras de SLA (ex.: 48h) são os definitivos?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">11.2</span><span class="qtxt">Como funciona hoje a captação de leads por geolocalização e a "integração com o site"? Existe um site/endpoint real para receber os leads?</span></div>
+      <div class="hint">Hoje o endpoint é apenas um texto de exemplo.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">11.3</span><span class="qtxt">No SAC, quais integrações de canais são reais e necessárias? (Reclame Aqui, Procon, Instagram, BLIP, Sults)</span></div>
+      <div class="hint">Hoje aparecem com status fixo, sem conexão.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">11.4</span><span class="qtxt">A regra de reembolso (multa de 30%, isenção "por nossa culpa") é a política oficial? Quem aprova?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">11.5</span><span class="qtxt">A regra de acordos do SAC ("1º pagamento após o dia 15", parcelamento) é definitiva?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">11.6</span><span class="qtxt">A Gestão de Indiques (sorteio mensal, prêmio, link por unidade) será usada de fato e com que regras?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">12</span> LGPD, segurança e compliance <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">12.1</span><span class="qtxt">A empresa possui encarregado de dados (DPO), política de privacidade e termos de uso?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">12.2</span><span class="qtxt">Qual o fluxo de consentimento exigido para dados de saúde e uso de imagem (fotos clínicas)?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">12.3</span><span class="qtxt">Quais as regras de retenção e exclusão de dados (direito ao esquecimento)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">12.4</span><span class="qtxt">Por quanto tempo os logs de auditoria devem ser mantidos e quem pode acessá-los?</span></div>
+      <div class="hint">Hoje a auditoria guarda os últimos 400 eventos, em memória.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">12.5</span><span class="qtxt">Há exigência de criptografia, anonimização ou segregação de dados sensíveis?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">12.6</span><span class="qtxt">Existe necessidade de trilha de aprovação/consentimento para envio de mensagens de marketing (opt-in)?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">13</span> Experiência, responsividade e dispositivos <span class="seccount">(5 perguntas)</span></h2>
+    <div class="q ">
+      <div class="qhead"><span class="qid">13.1</span><span class="qtxt">Quais dispositivos e navegadores são prioritários? (PC da recepção, tablet, celular do franqueado)</span></div>
+      <div class="hint">Validaremos em desktop, tablet e mobile.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">13.2</span><span class="qtxt">Nas lojas, o App do Cliente roda em tablet compartilhado ou no celular do próprio cliente?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">13.3</span><span class="qtxt">O sistema precisa de outros idiomas além do português, ou requisitos de acessibilidade?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">13.4</span><span class="qtxt">Existe manual de identidade visual oficial (logo em alta, cores, tipografia) a seguir?</span></div>
+      <div class="hint">O protótipo usa tema vinho/dourado.</div>
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">13.5</span><span class="qtxt">O funcionamento offline (PWA com cache) é um requisito importante para as unidades?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">14</span> Performance, escala e disponibilidade <span class="seccount">(3 perguntas)</span></h2>
+    <div class="q ">
+      <div class="qhead"><span class="qid">14.1</span><span class="qtxt">Quais são os picos de uso (horários e dias) e quantos usuários simultâneos esperados?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">14.2</span><span class="qtxt">Há um tempo de resposta aceitável para telas e relatórios pesados?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">14.3</span><span class="qtxt">Qual o volume esperado de vendas/agendamentos/mensagens por mês na rede inteira?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">15</span> Homologação, treinamento e suporte <span class="seccount">(5 perguntas)</span></h2>
+    <div class="q ">
+      <div class="qhead"><span class="qid">15.1</span><span class="qtxt">Quem, do lado do cliente, será responsável por homologar cada módulo? (usaremos o checklist de homologação)</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">15.2</span><span class="qtxt">Haverá ambiente e massa de dados específicos para testes/homologação?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">15.3</span><span class="qtxt">Como será o treinamento das unidades? (presencial, online, material, "treina o treinador")</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">15.4</span><span class="qtxt">Como deve ser o suporte após o go-live? (canais, horário, SLA de atendimento)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">15.5</span><span class="qtxt">A manutenção evolutiva e a correção de bugs serão contratadas como pacote contínuo?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+<section class="sec">
+    <h2><span class="secid">16</span> Projeto, prazo, orçamento e governança <span class="seccount">(6 perguntas)</span></h2>
+    <div class="q isc">
+      <div class="qhead"><span class="qid">16.1</span><span class="qtxt">Qual o orçamento disponível e o modelo de contratação? (escopo fechado x time &amp; materiais x mensalidade)</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">16.2</span><span class="qtxt">Qual o prazo desejado e qual a flexibilidade dele?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q isc">
+      <div class="qhead"><span class="qid">16.3</span><span class="qtxt">Quem é o ponto focal do cliente com autonomia para decisões?</span><span class="crit">CRÍTICA</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">16.4</span><span class="qtxt">Qual a cadência de reuniões de acompanhamento e a ferramenta de gestão a usar?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">16.5</span><span class="qtxt">Quais os critérios de aceite e as condições de pagamento por entrega/fase?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div><div class="q ">
+      <div class="qhead"><span class="qid">16.6</span><span class="qtxt">A quem pertence a propriedade intelectual e o código-fonte ao final do projeto?</span></div>
+      
+      <div class="ans"><div class="line"></div><div class="line"></div></div>
+    </div>
+  </section>
+
+<!-- ANOTAÇÕES -->
+<div class="notes">
+  <h1>Anotações e decisões pendentes</h1>
+  <div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div><div class="nline"></div>
+</div>
+
+</body></html>

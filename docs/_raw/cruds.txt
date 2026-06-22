@@ -1,0 +1,129 @@
+Adquirente (taxas de cartão) :: ops=read,update :: tela=Financeiro > Configurações :: edição inline de nome/deb/cred/parc/pix/prazo em FIN_CFG.adquirentes
+Agendamento :: ops=create,read,update,delete :: tela=view-agenda / aba tab-agendamentos da ficha :: Clique em horario livre cria agendamento. Status: Bloqueio, Agendado, Confirmado, Em atendimento, Finalizado (bloqueado/lock), Compareceu/Nao compareceu/Cancelou. Nao comparecimento gera automacao WhatsApp e pode excluir agendamento
+Auditoria :: ops=create,read :: tela=view-auditoria :: auditLog insere; buildAuditoria le/filtra. Imutavel (append-only, max 400).
+Automação/Mensagem (padrão da rede) :: ops=create,read,update,toggle-usar :: tela=view-autos :: Só admin cria/edita mensagens PADRÃO (AUTOS). Unidade apenas ativa/desativa uso (switch). Sem delete de padrão.
+Automação/Mensagem (personalizada da unidade) :: ops=create,read,update,delete,toggle-ativo :: tela=view-autos :: Não-admin cria/edita/exclui em MENS_CUSTOM (escopo por uni). Criação via prompts.
+Carteira/Fidelidade :: ops=read :: tela=view-cliente-ficha (tab-carteira) :: Pontos do clube, cashback, plano de assinatura, pacotes contratados com sessoes restantes
+Categoria de recebível :: ops=create,read,delete :: tela=Financeiro > Configurações :: finAddCat (create), splice inline (delete; Royalties protegida)
+CategoriaComissao :: ops=create,read,update :: tela=view-comissoes :: Nova categoria (btnNovaCom), cards (comCards), simulador de premiacao
+CategoriaContaPagar :: ops=create,read,update,delete,toggle-ativo :: tela=view-catpag :: Editor em arvore (catpEditor), Novo grupo (btnNovoCatP), salvar alteracoes
+CategoriaContaReceber :: ops=create,read,update,delete,toggle-ativo :: tela=view-catrec :: Editor em arvore (catrEditor), Novo grupo (btnNovoCatR), salvar alteracoes
+Certificado :: ops=create :: tela=view-universidade (Alunos) :: uniCert gera HTML/PDF apenas para status Concluido
+Chamado (SAC interno) :: ops=create,read,update,toggle-ativo :: tela=view-chamados :: saveCham (create), chamDetail (read), chamSetStatus (update status), chamFinalizar (toggle fin/reabrir), chamReply (add msg ao thread). Sem delete.
+Checklist (aplicacao) :: ops=read,update :: tela=view-checklist :: chkAplicar aplica modelo as unidades; mensal/semana auto-preenchidos
+Cliente :: ops=create,read,update,delete/inativar,toggle-ativo,import,cloud-sync :: tela=view-clientes / view-cliente-ficha :: Novo (btnNovoCliente), Importar (btnImportarCli), Base na nuvem (btnCloudBase->cloudCustomers), filtros, paginacao. Ficha: Salvar Cliente (fichaSalvar), Inativar, Unificar Cliente (deduplicacao), Bloqueios, App. Badge de possivel duplicado.
+Comunicado :: ops=read :: tela=view-comunicados :: No trecho lido apenas seed e filtros; CRUD provavel em linhas seguintes (>6418)
+Conciliação bancária (lançamento) :: ops=read :: tela=Financeiro > Conciliação :: FIN_CONC gerado em finSeed; finRodarConc reprocessa
+Configuracoes da unidade (desconto/agenda) :: ops=read,update :: tela=view-unidade :: DESC_LIMIT por cargo, DESC_MAX_UNIDADE, CORTESIA_LIMIT_MES, AGENDA_GAP, AGENDA_NOSHOW; edicao so Proprietario/Gerente de Campo
+Configuração financeira (FIN_CFG) :: ops=read,update :: tela=Financeiro > Configurações :: royaltyPct, fundoPct, vencDia, banco, adquirentes, régua; finSalvarCfg persiste
+Conta a pagar (despesa da rede) :: ops=create,read,update,toggle-ativo :: tela=Financeiro > Contas a Pagar :: finImportExcel (create), finPagarHTML (read/filtros), finPagar (→pago), finSetPrio (update prioridade), finSuspender (toggle suspenso). 'Nova despesa' é placeholder (toast)
+Conta a receber (recebível da unidade) :: ops=create,read,update,toggle-ativo :: tela=Financeiro > Contas a Receber :: finImportExcel (create), finReceberHTML (read/filtros), finGerarUm (gera boleto), finBaixaUm/finBaixaLote (baixa→pago), finSuspender (toggle suspenso). Sem delete (soft via suspenso/política)
+Contas a pagar/receber, Assinaturas, Contratos, Notas Fiscais, Ordens de Serviço, Metas, Crédito, Fidelidade, Avaliações, Anamnese, Perfis, Exportações :: ops=read :: tela=view-relatorios :: No trecho são apenas relatórios (REL_DEFS) — read-only com filtros/KPIs/tabelas; dados ilustrativos. CRUD real dessas entidades está em outros trechos.
+Contrato (do cliente) :: ops=read :: tela=view-cliente-ficha (tab-contratos) :: Lista contratos assinados/ativos do cliente, link Ver
+Cortesia :: ops=create,read :: tela=view-pdv :: 1 sessao gratuita por cliente (CORTESIA_CLIENTES) + teto mensal por unidade (CORTESIA_USED vs CORTESIA_LIMIT_MES)
+Desconto :: ops=create,read,update,toggle-ativo,filter :: tela=view-descontos :: Novo (btnNovoDesc). Aplica a Servico/Produto/Pacote, data de expiracao, por unidades
+Documento jurídico da unidade (contrato/pré-contrato/COF) :: ops=create,read,update,delete :: tela=Jurídico > Unidades :: jurAnexar (anexar/substituir), jurRemover (remover), jurDoc (read). Tipo: contrato, pre, cof
+Documento/FichaDigital (Anamnese) :: ops=create,read,update,inativar :: tela=view-docs / view-doc-editor :: Novo documento (btnNovoDoc). Editor: secoes dinamicas (addSecBtn), preview (docPreview), inativar (docInativar), salvar (docSave). Comportamento acumulativo de sessoes
+Escritório :: ops=create,read,update,toggle-ativo :: tela=view-unidades (Escritórios) :: Create/edit só Proprietário. Status Ativa/Inativa. persistState + auditLog. Sem delete.
+Etapa do CRM (CRM_STAGES) :: ops=create,read,update(renomear),delete :: tela=view-crm :: No modo personalizar funil: adicionar/renomear/excluir etapas; excluir etapa remove leads dela.
+EventoRede :: ops=create,read,toggle-visibilidade :: tela=view-agenda :: Novo evento (btnEvtRede), toggle Mostrar eventos (redeBandToggle->renderRede). Evento da rede nao bloqueia horario
+Fase de implantação :: ops=create,read,update,delete :: tela=Implantação :: implAddF/implDelF/implRender; nome editável; só admin
+Fornecedor :: ops=create,read,toggle-ativo,filter :: tela=view-fornecedores :: Novo (btnNovoForn). Nome, documento (CNPJ/CPF), telefone, estrategia a pagar, ativo
+FotoSessao :: ops=create,read :: tela=view-cliente-ficha (tab-acompanhamento) :: Registro fotografico via camera (abrirCamera/capturar) ou upload (uploadFoto/camFile), galeria fotosGaleria
+GrupoAssinatura :: ops=create,read,toggle-ativo,filter :: tela=view-grpassin :: Novo. Nome, Ativo
+GrupoProduto :: ops=create,read,toggle-ativo,filter :: tela=view-grpprod :: Novo. Nome, Ativo
+Indicação (amigo indicado) :: ops=create,read :: tela=App do cliente · Indicar :: appAddFriend (create), APP_FRIENDS lista (read), appSendRefer adiciona e credita +50 pts. Máx 5. Sem update/delete individual.
+Integração WhatsApp (por unidade) :: ops=create(conectar),delete(desconectar),read :: tela=view-autos :: UNI_WA por unidade; valida número >=10 dígitos.
+Lead/CRM :: ops=create,read,update(stage drag&drop) :: tela=view-crm :: Novo lead via modal (CRM_LEADS.unshift). Mudança de estágio via drag&drop. Sem delete direto de lead (apenas exclusão de etapa remove leads da etapa).
+Meta :: ops=read,update :: tela=view-metas :: Salvar metas (mSalvar). Meta de venda, agendamentos e clientes novos. Apuracao mensal/quinzenal/decendial. Reajuste automatico
+Modelo de Checklist :: ops=create,read,update,delete :: tela=view-checklist (Modelos) :: chkNewModel/chkEditModel/chkCopyModel/chkDelModel/chkSaveModel; modelos do sistema (sis) nao podem ser excluidos/editados, apenas copiados. Restrito a admin para criar/editar.
+ModeloContrato :: ops=create,read,update,inativar,toggle-ativo,filter :: tela=view-contratos / view-contrato-editor :: Novo (btnNovoContrato). Editor: nome, gatilho de emissao, enviar e-mail, todas unidades, titulo, termos (obrigatorio), upload assinatura, preview, inativar, salvar (contSalvar)
+MotivoCancelamento :: ops=create,read,toggle-ativo :: tela=view-motivos :: Novo motivo (btnNovoMotivo). Motivo, Tipo, Ativo. Mais config de automacao de nao comparecimento
+Notificação jurídica (cobrança) :: ops=create,read,update,delete :: tela=Jurídico > Cobranças :: finGerarNotifJuridica/jurSyncFinanceiro (create), jurSalvarAjuste (update), jurEnviarNotif (envia), jurDescartarNotif (delete). Gerada a partir de recebível em atraso
+OrdemServico :: ops=read,update,filter :: tela=view-os / aba tab-os da ficha :: Listagem com filtros e osRender(). Origem (Agenda/Pacote/Balcao/App/Site), tipos Compra/Execucao. Acoes Visualizar. Status Aberta/Fechada/Cancelada
+Pacote :: ops=create,read,update,toggle-ativo :: tela=view-pacotes :: openPacForm/savePacForm com composição serviços x sessões. PAC_OFF para inativar.
+Parcela de cálculo (atualização de débito) :: ops=create,read,update,delete :: tela=Financeiro > Cálculos :: calcAutoSeed/add inline (create), edição inline desc/venc/dataPag/valor/inc/incEnc (update), splice (delete)
+PerfilAcesso :: ops=create,read,update,toggle-ativo,filter :: tela=view-perfis / view-perfil-editor :: Novo (btnNovoPerfil). Editor: permGrid, marcar/desmarcar todas (permAll/permNone), salvar (permSalvar)
+Produto :: ops=create,read,update,toggle-ativo :: tela=view-produtos :: CAT_DEFS.prod. PROD_OFF para inativar.
+Prova/Quiz (Universidade) :: ops=read,update :: tela=view-universidade :: uniQuizSubmit marca UNI_DONE/UNI_NOTAS; aprovacao >=7
+Registro de auditoria :: ops=create,read :: tela=Auditoria :: auditLog (create), buildAuditoria (read/filtro). Append-only, máx 400. Sem update/delete (soft-delete policy)
+Resgate de pontos/fidelidade :: ops=create :: tela=App do cliente · Fidelidade :: appRedeem solicita resgate; confirmação pela unidade.
+Régua de cobrança :: ops=read,update :: tela=Financeiro > Configurações :: edição inline de dias/ação/canal em FIN_CFG.regua
+Serviço :: ops=create,read,update,toggle-ativo :: tela=view-servicos :: CAT_DEFS.serv. Inativação via SERV_OFF Set. Sem delete real.
+Tarefa de implantação :: ops=create,read,update,delete,toggle-ativo :: tela=Implantação :: implAddT/implDelT/implSetSt (situação Aberto/Em Andamento/Aguardando Predecessora/Concluído); campos nome/responsável/duração editáveis por admin; situação editável por todos
+Template de notificação jurídica :: ops=create,read,update,delete :: tela=Jurídico > Modelos :: jurNewTpl, jurDelTpl, edição inline de assunto/corpo (JUR_TEMPLATES)
+Trilha (Universidade) :: ops=create,read,update,delete :: tela=view-universidade (Gerenciar) :: uniGerNew/uniGerDel/uniGerEditor; etapas: uniAddEtapa/uniDelEtapa; provas: uniEditProva. Restrito a admin.
+Unidade :: ops=create,read,update(status),toggle-ativo :: tela=view-unidades :: Create só Proprietário (USER_ROLE/showToast). Status Ativa/Teste/Inativa via select inline; Inativa corta acesso do franqueado; Teste fica fora dos relatórios. Não há delete explícito.
+Venda/OS (PDV) :: ops=create :: tela=view-pdv :: pdvFinish gera OS fechada (origem PDV) via OS_DATA.unshift; sem update/delete no PDV. Carrinho: create/update/delete (pdvAdd/pdvQty/pdvDel).
+agendamento :: ops=create :: tela=apptModal :: apptSalvar; suporta sobreposicao, recorrencia e bloqueio.
+agendamento :: ops=create,read,cancel,bloqueio,recorrente :: tela=view-agenda (modal apptModal) :: Sobreposição com ciência; cadastro rápido de cliente.
+agendamento :: ops=read,update-confirmar :: tela=Agenda :: agConfirmar muda status para confirmado (por equipe ou pelo cliente via WhatsApp); EVENTS é seed em memória.
+automacao :: ops=read,create,toggle-ativo :: tela=view-automacoes :: Cards com ativar/desativar por clique. Create btnNovaAuto.
+automação :: ops=create,read,toggle-on/off,update :: tela=view-automacoes :: AUTOS + MENS_CUSTOM.
+categoria-financeira :: ops=create,read,update,delete,toggle-ativo :: tela=Categorias a pagar / a receber (editores) :: Árvore grupo>itens; catAddGroup/catAddItem, catEditGroup/catEditItem, catDelGroup/catDelItem, catToggle, catSave (persistState+auditLog).
+chamado / SAC :: ops=create,read,update-status,reply,acordo-pagamento :: tela=view-chamados / view-sac :: CHAMADOS + SAC (kanban/triagem/reembolso).
+chamado :: ops=create :: tela=view-chamados + chamMod :: saveCham abre chamado entre departamentos.
+checklist/indicador :: ops=create,read,update,ranking :: tela=view-checklist :: CHK_MODELS personalizáveis.
+cliente :: ops=create,import :: tela=cliModal + importModal :: Cadastro manual (Salvar cadastro) e importacao de planilha BEMP -> Supabase tabela customers (impGo).
+cliente :: ops=create,read,update,delete-inativar,toggle-ativo,import,cloud-read :: tela=view-clientes / view-cliente-ficha :: Novo (modal cliModal), ficha com inativar/unificar/bloqueios, importar CSV/XLSX -> Supabase customers, base na nuvem paginada.
+cliente :: ops=create,read,update,delete-merge,toggle-app :: tela=Clientes / Ficha do cliente :: create=cliSalvarNovo (valida duplicidade CPF/tel/nome); read=buildClientes (seed+IMPORTED) e cloudCustomers (Supabase paginado); update via ficha (botão salvar = toast); 'delete' efetivo só via unificação (cliUnificarConfirm remove duplicados, mantém preferido). marcarAppCadastro alterna flag app. Sem update real persistente de campos no trecho.
+cliente-importacao :: ops=create,read :: tela=Importar clientes (modal) :: impDoImport insere lotes de 500 em Supabase customers ou memória; dedup por documento>telefone>nome.
+colaborador :: ops=create,read,update,toggle-ativo (auto),reativar :: tela=view-colaboradores / view-colaborador-form :: Inativação automática >15 dias; sincronização bidirecional com Portal RH.
+colaborador :: ops=read,create,update,toggle-ativo :: tela=view-colaboradores + view-colaborador-form :: Lista buildColab(); form colabSalvar (create/update); filtro Ativo Todos/Sim/Nao; inativacao automatica por inatividade (15 dias).
+comunicado :: ops=create (admin),read,ack-ciente :: tela=view-comunicados :: Leitura obrigatória no 1º acesso (comReadMod).
+comunicado :: ops=read,create :: tela=view-comunicados + comMod :: saveCom cria; comCiente marca leitura obrigatoria (ciente). Apenas admin cria.
+conta a pagar/receber :: ops=read,create-lançamento,categoria: create/update/toggle/delete :: tela=view-contas / view-catpag / view-catrec :: Categorias em árvore editável (CATP_TREE/CATR_TREE).
+conta-pagar :: ops=read,create :: tela=view-contas :: Aba 'Contas a pagar' (data-ct=pagar). Novo lancamento. Filtro Status Em aberto/Pago/Vencido, Tipo Previsto/Realizado, Categoria.
+conta-receber :: ops=read,create :: tela=view-contas :: Aba 'Contas a receber' (data-ct=receber). Mesmo grid.
+contrato (modelo) :: ops=create,read,update,toggle-ativo,preview :: tela=view-contratos / view-contrato-editor :: Quando emitido + envio por e-mail p/ assinatura.
+desconto/cupom :: ops=create,read,update,toggle-ativo :: tela=view-descontos :: 
+documento/anamnese :: ops=create,read,update,toggle-ativo (inativar),preview :: tela=view-docs / view-doc-editor :: Acumulativo de sessões; unidades com acesso.
+evento da rede :: ops=create,read :: tela=view-agenda (modal evtMod) :: REDE_EVENTOS; audiência (Todos/Rede própria/Franquias/Franqueados/Office).
+evento-rede :: ops=create :: tela=evtMod :: saveEvt publica evento direcionado a audiencias.
+financeiro franqueadora :: ops=read,create-pagamento,conciliar,royalties,cálculos,upload Excel,DRE :: tela=view-finFranq :: 
+forma de pagamento :: ops=create,read,update,toggle-ativo :: tela=view-pgto :: 
+forma-pagamento :: ops=create :: tela=Nova forma de pagamento (modal) :: Modal pgModal estático (sem handler de salvar no trecho).
+forma-pagamento :: ops=read,create,toggle-ativo :: tela=view-pgto :: Colunas Tipo, Taxa %, Taxa a descontar na comissao %, Ativo, Acoes. Create btnNovoPg. Paginada (125 registros).
+fornecedor :: ops=create,read,update,toggle-ativo :: tela=view-fornecedores :: 
+foto-sessao :: ops=create :: tela=Ficha do cliente > Acompanhamento :: addFoto via câmera (getUserMedia) ou upload de arquivo.
+franqueado :: ops=create :: tela=view-minha-unidade(uni-dados) :: franqAdd() adiciona franqueado a lista franqList da unidade.
+grupo-servico :: ops=read,create :: tela=view-grpserv :: Coluna Ativo. Create via btnNovoGS.
+indicação :: ops=create-manual,read,update-status,sorteio :: tela=view-indiques :: CRM de indicações + sorteio mensal.
+item-catalogo :: ops=create,update :: tela=itemMod :: saveItem para servico/pacote/produto (titulo dinamico itemModTitle).
+lead / CRM :: ops=create,read,update-stage (drag&drop),delete-stage,rename-stage :: tela=view-crm :: CRM_LEADS/CRM_STAGES; SLA 48h; origens disparo/venda tardia.
+lead :: ops=create :: tela=Novo lead (modal) :: Modal leadModal com campos e botão Adicionar ao funil (leadSalvar fora do trecho).
+lead de expansão (franquia) :: ops=create,read,update-stage,import :: tela=view-expansao :: 
+lead/CRM :: ops=read,create,update :: tela=view-crm :: Kanban; novo lead via crmNovoLead; etapa inicial 'Novo Lead'; evolucao pelo funil (update de etapa por drag). Personalizar funil (crmCustom).
+meta :: ops=read,update,save :: tela=view-metas :: Regras automáticas de reajuste de meta de venda.
+meta :: ops=read,update-config,save :: tela=Metas :: setMetasPeriodo/updateMetas (cálculo em memória); mSalvar = toast 'Metas salvas e publicadas no Dashboard da unidade'. Sem persistência real no trecho.
+motivo de cancelamento :: ops=create,read,update,toggle-ativo :: tela=view-motivos :: 
+nota fiscal :: ops=create,read,update-status,cancel,reprocess,config-política :: tela=view-notas / view-minha-unidade(nfse) :: NFS-e (prefeitura), Lei do Salão Parceiro, IBS/CBS, CPF padrão.
+notificacao-juridica :: ops=create :: tela=jurMod :: jurEnviar envia notificacao extrajudicial por e-mail; jurFill aplica modelo.
+ordem de serviço (OS) :: ops=read,create,update-status :: tela=view-os / pdv :: OS_DATA seed; criada no PDV (pdvFinish). Status aberta/fechada/cancelada. Filtros extensos.
+ordem-servico :: ops=read,update-finalizar,update-contrato :: tela=Ordens de serviço :: osRender/osVer; finalizar bloqueado até contrato assinado (osEhVenda + r.contrato.status). Emissão/assinatura de contrato referenciadas (osEmitirContrato/osContratoAssinar/osFinalizar fora do trecho).
+organizacao :: ops=read,update :: tela=view-minha-conta :: Salvar Organizacao / Salvar agendamento online.
+origem de cliente :: ops=create,read,update,toggle-ativo,delete :: tela=view-origens :: 
+origem-cliente :: ops=read,create,toggle-ativo :: tela=view-origens :: Coluna Ativo + coluna Acoes -> editar/inativar. Create via btnNovaOrigem. Exportar disponivel.
+pacote :: ops=create,read,update,toggle-ativo :: tela=view-pacotes :: CAT_DEFS.pac.
+pacote :: ops=read,create,toggle-ativo :: tela=view-pacotes :: Create btnNovoPacote. Coluna Ativo, Acoes. Paginado (199).
+parceria :: ops=create,read,update,delete,toggle-ativo :: tela=Descontos & Parcerias :: descNovo/descSave (cria e edita), descDel (com confirm), parcToggle (ativa/inativa); validações de teto por catálogo e alçada.
+perfil de acesso :: ops=create,read,update-permissões,toggle-ativo,delete :: tela=view-perfis / view-perfil-editor :: PERFIS + grade PERMS.
+plano de assinatura :: ops=read :: tela=view-planos :: Lista (PLANOS); botão Novo apenas toast no protótipo.
+plano-assinatura :: ops=read,create :: tela=view-planos :: Lista com colunas Taxa de Adesao, Mensalidade, Modo de Utilizacao, Tipo de comissao, Identificador. Create via btnNovoPlano (provavelmente abre itemMod/saveItem). Filtro Ativo Sim/Nao/Todos sugere toggle-ativo em outro trecho.
+produto :: ops=create,read,update,toggle-ativo :: tela=view-produtos :: CAT_DEFS.prod.
+produto :: ops=read,create,toggle-ativo :: tela=view-produtos :: Create btnNovoProduto. Coluna Ativo, Insumo, Acoes.
+projeto de implantação :: ops=read,update-status fases :: tela=view-implantacao :: 
+prova-universidade :: ops=create :: tela=uniQuizMod :: uniQuizSubmit envia prova.
+sac-acordo :: ops=create :: tela=sacAcMod :: sacAcordoSalvar cria acordo de pagamento parcelado (reembolso/cobranca).
+sac-chamado :: ops=create,update :: tela=view-sac + sacMod :: sacSalvar; titulo dinamico sacModTitle (novo/editar).
+servico :: ops=read,create,toggle-ativo :: tela=view-servicos :: Create btnNovoServico (itemMod/saveItem). Colunas Ativo, Online, Acoes. Paginado (112).
+serviço :: ops=create,read,update,toggle-ativo :: tela=view-servicos :: CAT_DEFS.serv (Set SERV_OFF p/ inativo).
+trilha/treinamento :: ops=create,read,update,prova/quiz :: tela=view-universidade :: UNI_TRILHAS/ALUNOS/NOTAS.
+unidade :: ops=create (só Proprietário),read,update,toggle-status (Ativa/Teste/Inativa) :: tela=view-unidades / view-minha-unidade :: Status afeta relatórios e acesso do franqueado.
+unidade :: ops=read,create :: tela=Unidades / Nova unidade (modal) / Minha Unidade :: UNIDADES derivado de UNI_RAW + push de Unidade Treinamento; modal Nova unidade (uniSalvar fora do trecho) restrito a Proprietário; openUnitDetail abre detalhe.
+unidade :: ops=read,create,toggle-ativo :: tela=view-unidades :: Status Ativa/Em teste/Inativa. Create btnNovaUnidade restrito a Proprietarios. Acoes na tabela. Render via unidadesRows().
+unidade-config :: ops=read,update :: tela=view-minha-unidade :: Edicao de dados, horarios, bloqueios, fotos, cadastros vinculados, NFSe (multiplos botoes Salvar via showToast).
+venda-PDV-OS :: ops=create :: tela=view-pdv :: pdvFinish gera OS com desconto/alcada e emissao NFSe.
+venda-assinatura-OS :: ops=create :: tela=vaModal :: Salvar OS / Finalizar OS de venda de assinatura.
+venda-pacote-OS :: ops=create :: tela=vpModal :: Salvar OS / Finalizar OS de venda de pacote.
+Índices de correção (CALC_IDX) :: ops=read,update :: tela=Financeiro > Cálculos :: calcUpdateIndices atualiza via API BCB SGS

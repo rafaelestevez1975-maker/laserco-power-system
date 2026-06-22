@@ -1,0 +1,165 @@
+[20/06/2026, 23:18:21] Matheus Ferreira: Meu, mandando o que acho que precisa para o sistema de SAC
+
+[20/06/2026, 23:18:22] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+1.	Sistema de SAC
+
+•	Todas as Atendentes serão cadastradas em “Colaboradores” dentro do sistema (um dos itens iniciais), e devemos ter o cadastro de perfil com o de “Atendente”, dando as permissões.
+•	Teremos alguns fluxos para chegarem os leads no sistema de SAC: a) pelo site, no botão “SAC”(deve estar integrado). a) Pelo whats. c) Outros canais, inserido manualmente (Reclame Aqui, Procon, e-mail, abertura de chamado da unidade, etc...). 
+•	Atentar que podemos ter clientes e não clientes. Exemplo de solicitação de clientes: cancelamento de pacotes, cancelamento de contratos, reagendamento. Exemplo de solicitação de não clientes: Informações de unidades, informações sobre franquias ou sobre serviços.
+•	Hoje, pessoal abria um “chamado” no BLIP e preenchia na mão (inclusive o cadastro inicial) uma planilha excel tudo manual e ia dando os andamentos. Precisamos que tudo que for possível, venhamos a abrir o chamado automaticamente, através de dados coletas com um BOT (já fiz), que pega informações iniciais.
+•	IMPORTANTE: Como o sistema do SAC antes estava “fora” do nosso sistema, tinha lógica perguntar onde foi atendido, o que contratou, etc....com o SAC “DENTRO” do sistema, ao colocar dados como o CPF ou o telefone (obrigatórios no sistema), já conseguimos abrir o chamado do SAC “importando” os dados (o que contratou, quanto pagou, quantas sessões fez e, sendo o caso de cancelamento, até já fiz para calcular o valor de devolução (certificar se ficou ok essa parte.
+•	Antes, qualquer solicitação de pagamento era lançado na planilha do SAC e informado ao financeiro, que pagava ou não naquela data, mas nenhum enxergava o outro. Com tudo unificado, um lançamento de pagamento deve ser “espelhado” na contas a pagar do sistema do financeiro da franqueadora, que enxergará que é solicitação do SAC e deverá validar ou não o pagamento (data e valor). Havendo observação, alteração de data ou valor pelo financeiro, espelha de volta ao SAC para conhecimento *fiz tudo isso, só validar se funcionando).
+•	Precisamos integrar essa funcionalidade do SAC ao envio automático de mensagens por whats ao cliente, quando temos uma solicitação mais longa, como cancelamento, falta de resultado etc....isso evita contato para saber “como está a solicitação”, e reduz fluxo de trabalho.
+•	IDEAL: termo uma IA “ensinada” a dar diversas respostas simples, “aprendendo” como funciona tudo do nosso negócio e evitar ao máximo o contato humano, que deve ser usado em último caso (poderia ter apenas uma “supervisora” para certificar que está sendo falado de forma correta e os chamados são concluídos de forma automática).
+•	Devemos poder ver todas as conversas, que são distribuídas igualmente entre as atendentes (quantas tiverem trabalhando no período, pois pode ter alguém de folga, não logado, não recebe leads).
+•	Devemos criar alertas para dar andamento nos leads em no máximo 48hs (já fiz).
+
+[20/06/2026, 23:18:22] Matheus Ferreira: Viu te mandar na sequencia dos emai spontos, onde acho importante alinhar. Precisamos botar para rodar o quanto antes, nem que vnhamos a ir testando alguns itens inciialmente e arrumando outors.
+
+[20/06/2026, 23:18:22] Matheus Ferreira: Já te mando mais uns itens
+
+[20/06/2026, 23:18:23] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+2.	Financeiro Franqueadora
+
+Hoje, temos um sistema de “Fluxo de Caixa”, que simplesmente colocamos as contas a pagar e a receber, tudo manual, sem qualquer automação. Precisamos recadastrar a unidade que já tem cadastro no BEMP, temso que lançar todas as vendas manual, lançar os royalties, etc....
+
+Integrando no nosso sistema, teremos muitas vantagens: Já aproveita o cadastro da unidade do sistema e cria o “cliente” no financeiro, com todos os contatos; Aproveita as vendas no sistema e lança sozinho os royalties, etc...Assim, o que precisamos automatizar:
+
+•	Importar todas as vendas das próprias para dentro do sistema, só precisando lançar as despesas (inclusive de forma recorrente (previsão)).
+•	Criei no dash inicial uma “projeção de caixa da semana”, que considera o que está previsto receber e a projeção de vendas considerando as médias da semana anterior (certificar se ok).
+•	Criei um sistema simples de cálculo e atualização monetária. Certificar que o sistema faça as atualizações dos índices de correção.
+•	Contas a pagar e a receber: o sistema faz muito menu com “balões”, ficando um monte de item na tela. Sugiro trocar tudo por lista suspensa.
+•	Em receitas, precisamos botar um botão para adicionar receitas manualmente. No contas a pagar, destacar mais esse botão, ele está meio que escondido com tantos botões da mesma cor.
+•	Temos que ter uma automação pra que, todos os dias, seja feita a conciliação bancária e emitido relatório.
+•	IMPORTANTE: Certificar que a régua de relacionamento de cobrança funcione corretamente, com o envio de whats cobrando os franqueados (já que concluímos que whats é o mais fácil para isso). Podemos na régua de relacionamento, criar uma linha de parcelamento de royalties em 3x com 10% de multa e juros calculados no sistema (ele calcula sozinho, propõe os valores e, com o aceite, lança o crédito no sistema e entra no banco, gera boleto e envia para pagamento.
+•	Seria bom termos os registros de conversações do setor, ainda mais renegociações e cobranças.
+
+[20/06/2026, 23:18:23] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+3.	Jurídico
+
+A idéia é termos certo os documentos das franquias (Circular de Oferta de Franquia, pré-contrato e Contrato de Franquia). Depois, termos o histórico de notificações e os modelos de notificação. Devemos guardar ali os modelos de notificações do jurídico, para serem enviados por automação, seja do financeiro, quando há atraso de pagamento, ou envio “manual” por outros motivos.
+
+•	Temos que ter um backend para guardar todos os documentos.
+•	Tem que ter uma integração com o financeiro para cobrança de royalties, quando for o caso.
+
+[20/06/2026, 23:18:23] Matheus Ferreira: 4. App do cliente: sistema criou sozinho, não testei, precisa ver ele funcionado e testar, nõa sei. como fazer.
+
+[20/06/2026, 23:18:23] Matheus Ferreira: 5. Implantação: Não tem muito o que fazer, na realidade é um checklist que nós criamos para termos a ordem de todos os itens para inaugurar uma unidade. Nós iremos te reuniào com franqueado toda semana para tratar da evolução da implantação, coordenar todas as áreas (comercial, contratação, treinamento, etc…). Podemos ter mais de um checklist, como para o modelo de loja tradicional ou store im store, logo, podemos criar outro checklist. Franqueado deve poder acessar e ir cumprindo os itens (logo, ele não pode alterar o checklist, mas cumprir itens da lista, anexar documentos, etc…). SUGESTÃO: Caso não seja cumprido determinado item dentro do prazo, disparra mensagem de whats ao franqeuado cobrando de forma automática que ele cumpra e dê baixa em determinado item.
+
+[20/06/2026, 23:18:24] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+6. EXPANSÃO.
+
+AQUI TEMOS UM ITEM MUITO IMPORTANTE PARA NÓS. É FUNDAMENTAL que, para crescer a rede, possamos ter uma EXPNSÃO FORTE. É um item que podemos dar PRIORIDADE inicial também.
+
+
+•	Vi agora que criei os sub menus laterais, mas ficaram os menus dentro da tela junto, que devem ser eliminadas.
+•	Devemos certificar que possamos integrar nas demais formas de captar leads: Google (deve preencher o formulário do site), o site direto, geolocalizado (preenche pequeno cadastro e cai na lista), cadastro manual.
+•	O QUE NÃO FIZ: precisamos automatizar uma conversa inicial desses leads, esquentar os mesmos, dar informações iniciais e deixar para pessoas apenas os leads mis quentes. Seria bom ter uma “janela” ali para termos a visão das conversas com esses leads.
+•	IMPORTANTE: devemos dar uma atenção grande aos disparo de whats, que não podem parar nunca, para a captação de leads de franquia e revenda de unidades, com todos os dados dos disparos e o funil de vendas dos leads captados. Prefiro dar mais atenção a disparos de whats que fazer geolocalizado.
+•	Atentar que, hoje, estamos usando o mesmo CRM para venda de alguns equipamentos, depois ficará só franquia.
+
+[20/06/2026, 23:19:16] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+7.	Disco Virtual
+
+•	Devemos integrar com nosso Google WorkSpace, podendo criar dois discos: a) público e b) Privado.
+•	Disco público: administradores sobem documentos e demais usuários apenas vêem e podem baixar materiais.
+•	Disco Privado: unificamos em um único lugar tudo da rede, onde só administradores podem ver o material  o resto não. Exemplo: pasta de marketing, podemos ter uma campanha vigente no disco público e no disco privado, podemos guardar as campanhas do ano anterior.
+
+[21/06/2026, 15:38:09] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+8.	CHECKLIST
+
+Idéia é termos checklists de indicadores de forma automatizada, todas as semanas, através de um checklist pré-pronto (o check list em si, o que perguntar). 
+
+Esse checklist, em resumo, compara as metas determinadas em sistema, as médias de funil de vendas das lojas (agendamentos, comparecimentos, conversão e ticket médio) com a da unidade que está sendo avaliada.
+
+A partir de fragilidades em um dos indicadores, criaremos planos de ação que podem ser automatizados (o que fazer).
+
+Hoje, precisamos preencher manualmente o checklist de indicadores, pesquisar pergunta por pergunta no BEMP e preencher o checklist no SULTS, daí a importância de ter tudo junto, onde o sistema já pesquisa informações (programado toda segunda de manhã), vê as fragilidades A CADA SEMANA, cria os planos de ação (tudo no próprio sistema) e é acompanhado pela nossa equipe a resolução (TEM QUE ABRIR UM CHAT NO PLANO DE AÇÃO PARA REGISTAR COBRANÇA DE AÇÕES, APOIO E DÚVIDAS).
+
+Todo plano de ação abre segunda de manhã, e deve ser finalizado até sexta feira 18hs (tudo programado). Quinta feira 14hs deve abrir alerta caso o plano de ação siga em aberto e, sexta 18hs ele é encerrado com DESCUMPRIMENTO pela unidade (ideal ter isso registrado em sistema, todos os descumprimentos).
+
+Indicadores e planos de ação a serem sugeridos (permitir personalizar os planos de ação também):
+
+1.	AGENDAMENTO (abaixo da média da rede ou da média da unidade):
+
+•	Aumentar agenda mediante disparo de whats para a base com alguma oferta (poderia o sistema criar sozinho a sugestão).
+•	Criar automação para chamar clientes que tem pontos do clube fidelidade para fazer uma sessão cortesia (podemos criar já o fluxo de disparos, considerando os pontos do clientes x serviços a realizar).
+•	Ver se está sendo feito geolocalizado (pelo nosso CRM, tem de leads de geolocalizado). Devemos fazer ou aumentar investimento.
+•	Aumentar ação de indicações junto aos clientes, parcerias e gerar link em redes sociais.
+•	Buscar seguidores em redes sociais para conhecer a unidade mediante oferta de uma sessão cortesia.
+•	Focar em promoções para aumentar agenda de ultrassom.
+•	Utilizar o percentual de faltantes de clientes para aumentar a sobreposição de agendamentos e diminuir espaços vazios na agenda.
+•	Anotar parcerias na localidade com a criação de código de desconto ou vantagem do parceiro.
+
+2.	COMPARECIMENTO (falta acima da média da rede ou da unidade):
+
+•	Focar em ofertas e benefícios no momento da sessão, para aumentar o fluxo em loja.
+•	Certificar que o sistema de automação esteja funcionando, para confirmar agenda.
+
+3.	Baixa CONVERSÃO (agora podemos distinguir o funil de conversão em clientes novos e revenda):
+
+•	Aumentar ofertas diárias de balcão (automação com oferta 1h antes).
+•	Aumentar captação leads novos para aumentar conversão.
+
+4.	Baixo ticket médio: 
+
+•	Focar em pacotes e serviços com maior ticket médio.
+•	Ver na rede o que mais vende, com melhor ticket e cruzar com os dados da unidade, sugerindo a venda desses pacotes.
+•	Aumento da venda de ultrassom (sempre bom valor agregado).
+
+Ao final, o sistema deve sugerir uma SIMULAÇÃO do que a unidade venderia acaso acatadas as medidas solicitadas e melhorando os indicadores para a média da rede, e mantendo dados da unidade que estejam acima da média.
+
+[21/06/2026, 15:38:09] Matheus Ferreira: to fazendo aqui as observações e integções necessárias de cada item, vou mandando auqi
+
+[21/06/2026, 15:38:09] Matheus Ferreira: *DEPOIS OLHA O PAINEL ADMINISTRTAIVO DO SITE, ENTROU MUITA GENTE JÁ QUERENDO INDICAR E FAZER SESSÕES*, daí a importância de agilizar tudo e automatizar, enviando os leads direto a cada unidade.
+
+[21/06/2026, 15:38:24] Matheus Ferreira: Isso aqui e MUITO IMPORTANTE
+
+[21/06/2026, 15:38:40] Matheus Ferreira: Com base no que conversamos na call com Rafa
+
+[21/06/2026, 15:38:47] Matheus Ferreira: Ele tá de olho pelo visto
+
+[21/06/2026, 15:38:53] Matheus Ferreira: Então temos te agilizar
+
+[21/06/2026, 15:40:02] Matheus Ferreira: Precisamos conversar sobre a estrutura do Power System para as outras unidades
+
+[21/06/2026, 21:59:57] Matheus Ferreira: 9.	Chamados
+
+A idéia é ter o registro de todos os chamados (solicitações) de uma área à outra da franqueadora e destas com os franqueados.
+
+Por exemplo: Um franqueado precisa de determinado material, faz a solicitação pelo chamado, onde sabemos quando pediu, o que pediu e o retorno. Uma área nossa de operações pedindo pagamento para financeiro, por exemplo, e assim por diante.
+
+Devemos ter os relatórios de chamados, devemos colocar PRAZO DE 48hs PARA CUMPRIMENTO DO CHAMADO, ou ele entra em atraso e é assinalado em relatórios e a gestores.
+
+Tudo funciona em uma espécie de Intranet, sendo assinalado uma notificação quando chega um chamado ou quando este entra em atraso.
+
+[21/06/2026, 22:12:59] Matheus Ferreira: 10.	Comunicados
+
+Passamos o tempo todo informações à rede dos mais diversos assuntos: treinamento, eventos, materiais de marketing etc...o que era feito no SULTs.
+
+Assim, devemos tr esses comunicados integrados ao nosso sistema, devendo ser apenas observado:
+
+•	Só administradores envia comunicados.
+•	Que podemos selecionar para quem vão ser enviados os comunicados (nossos colaboradores, só colaboradores do escritório, só franqueados, funcionários franqueados e todos).
+•	Devemos ter dashboards de todos os que viram, deram ok aos comunicados, o que foi enviado e quando.
+
+[21/06/2026, 23:09:00] Matheus Ferreira: 11.	Recursos Humanos
+
+Um dos sistemas mais importantes do Power System, pois é novidade em relação ao SULTS e BEMP, e, aqui, eram utilizados diversos outros sistemas aleatórios, como um para prospectar vagas, um para bater ponto e assim por diante. Relatórios inexistentes, precisamos unificar tudo para gerir melhor a situação.
+
+São pontos de observação:
+
+•	Ponto Digital: deve ser onde o sistema criou para o colaborador BATER SEU PONTO, devendo ser visível ao colaborador no celular.
+•	Importante: Devemos integrar ao Google Maps para registrar um raio de 150m da unidade para o colaborador bater o ponto. 
+•	Registrar mais de um endereço para o caso de home office (afinal, não é férias, precisa estar em casa, trabalhando).
+•	Lista de Colaboradores é importante para filtrarmos quantos temos em cada área, CLT/PJ etc...devemos ter todos os filtros necessários.
+•	Depois dos colaboradores, temos um novo item de “Ponto”, que, na real, tem repetido para bater ponto, etc...deveria ser aqui GESTÃO DE PONTO (e ficar logo abaixo de ponto), onde apareceria alista de todo mundo que está batendo ponto, quem faltou, quem justificou e como está o saldo de horas dos colaboradores. Acessível apenas aos administradores (no ponto, o colaborador deve dar o saldo de horas).
+•	RECRUTAMENTO, é fundamental. AQUI DEVEM CAIR OS CURRÍCULOS cadastrados no site, BEM COMO DEVEMOS IMPORTAR OS CURRÍCULOS QUE HOJE TEMOS NO SULTS, com dashboards de tudo (local, cargo, estado, etc...). Toda captação de currículos, por qualquer caminho, deve cair aqui. Currículos deve ser o primeiro item.
+•	Ao selecionar um currículo, este cai no Kanban, e começa processo seletivo, sendo anotado isso na lista de currículos. Todo andamento neste candidato, é replicado no currículo, tipo: não está disponível, não quer shopping, etc...
+•	De preferência, ao selecionar currículos e dar início ao processo seletivo, devemos poder enviar automático mensagem ao candidato dizendo que ele foi pré-selecionado, se está disponível, se pode trabalhar final de semana etc....

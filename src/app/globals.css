@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * O visual do app vem do CSS real do protótipo (src/styles/legacy.css),
+ * importado no layout. Aqui ficam só utilitários NOVOS, com namespace lc-*
+ * para nunca colidir com as classes do legacy (ex.: .page-title, .btn-primary).
+ */
+@layer components {
+  .lc-card {
+    @apply rounded-xl border border-line bg-white shadow-sm;
+  }
+  .lc-title {
+    @apply font-display text-2xl font-bold text-brand-700;
+  }
+  .lc-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm
+           font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60;
+  }
+}

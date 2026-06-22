@@ -1,0 +1,630 @@
+### Login (auth-ov)
+  - nome (signup) [text] -> obrigatório no cadastro
+  - email [email] -> obrigatório, email, lowercase trim
+  - senha [password] -> obrigatório; conta teste=123456
+### Novo cliente (cliModal)
+  - Nome completo [text] -> obrigatório
+  - Telefone [tel] -> obrigatório, telefone +55 (DD) 00000-0000
+  - E-mail [email] -> obrigatório, email
+  - Onde nos conheceu? [select] -> obrigatório
+  - CPF/Documento [text] -> cpf/cnpj
+  - Gênero [select] -> 
+  - Cidade [text] -> 
+  - Unidade [select] -> obrigatório
+### Ficha do cliente (Dados básicos)
+  - Nome [text] -> obrigatório
+  - E-mail [email] -> email
+  - DDI/DDD/Telefone [tel] -> telefone
+  - Data de nascimento [date] -> data dd/mm/aaaa
+  - Gênero [select] -> 
+  - Como nos conheceu [select] -> 
+  - Tipo de documento [select] -> 
+  - Número do documento [text] -> cpf/cnpj/rg
+  - CEP [text] -> cep 00000-000
+  - Rua/Número/Complemento/Bairro/Cidade/Estado/País [text] -> 
+  - Verificado [checkbox] -> 
+### Novo agendamento (apptModal)
+  - Cliente [autocomplete(datalist)] -> obrigatório (ou cadastro rápido)
+  - Cadastro rápido: Telefone [tel] -> telefone
+  - Cadastro rápido: E-mail [email] -> email
+  - Serviços [multi] -> obrigatório, Avaliação 1ª opção
+  - Observação [textarea] -> 
+  - Recorrente: a cada N semanas/meses por N vezes [number] -> min 1
+  - Ciente da sobreposição [checkbox] -> 
+  - Agendou pelo SAC [checkbox] -> 
+### Nova forma de pagamento (pgModal)
+  - Nome [text] -> obrigatório
+  - Tipo [select] -> obrigatório
+  - Nº de parcelas [number] -> min 1
+  - Taxa (%) [text] -> número/percentual
+  - Taxa a descontar na comissão (%) [text] -> percentual
+  - Bandeira/operadora [text] -> 
+  - Ativo [select] -> 
+### Nova categoria (catModal)
+  - Nome [text] -> obrigatório
+  - Grupo [select] -> obrigatório
+  - Ativo [select] -> 
+### Item de catálogo (itemMod) serviço/pacote/produto
+  - Nome [text] -> obrigatório
+  - Preço (R$) [text] -> moeda
+  - Desc. Máx (%) [text] -> percentual 0-100
+  - Duração (hh:mm) [text] -> hora hh:mm (serviço)
+  - Grupo [select (Estético/Ultrassom/Depilação)] -> 
+  - Comissionável [select Sim/Não] -> 
+  - Cobertura de créditos [select (pacote)] -> 
+  - Validade (dias) [text (pacote)] -> número
+### Colaborador (form)
+  - Nome [text] -> obrigatório
+  - E-mail [email] -> email
+  - Perfil de acesso [select] -> obrigatório
+  - DDI/Telefone [tel] -> telefone
+  - Senha / Repita senha [password] -> confirmar igual; forçar troca opcional
+  - % Comissão padrão [text] -> percentual
+  - Ordem no App [number] -> min 1
+  - Exibe na agenda / Agendamento online [checkbox] -> 
+  - Serviços que executa [multi] -> 
+### Editor de documento/anamnese
+  - Nome do documento [text] -> obrigatório
+  - Tipo [select] -> 
+  - Descrição [text] -> 
+  - Preenchimento [select] -> 
+  - Unidades com acesso [checkbox-multi] -> 
+  - Acumulativo [checkbox] -> 
+  - Campos (pergunta/tipo/obrigatório/inválido) [dynamic] -> 
+### Editor de contrato
+  - Nome do modelo [text] -> obrigatório
+  - Quando emitido [select] -> 
+  - Enviar por e-mail p/ assinatura [select] -> 
+  - Título [text] -> 
+  - Termos [textarea] -> obrigatório
+  - Assinatura (upload) [file] -> JPEG/PNG até 5MB
+### Metas
+  - Unidade [select] -> 
+  - Apuração [seg (mensal/quinzenal/decendial)] -> 
+  - Meta mensal de venda [number] -> min 100000, step 2500
+  - Meta de agendamentos [number readonly (maior dos dois)] -> 
+  - Vendido/Agendado/Avaliações (sliders) [range] -> 
+### Novo comunicado (comMod)
+  - Título [text] -> obrigatório
+  - Mensagem [textarea] -> obrigatório
+  - Prioridade [select] -> 
+  - Categoria [select] -> 
+  - Enviar por e-mail [checkbox] -> 
+  - Direcionado a [checkbox-multi] -> obrigatório (ao menos um)
+  - Leitura obrigatória [checkbox] -> 
+### Novo evento da rede (evtMod)
+  - Assunto/título [text] -> obrigatório
+  - Tipo [select] -> 
+  - Data [text] -> data
+  - Início/Fim [text] -> hora hh:mm
+  - Link [url] -> 
+  - Direcionado a [checkbox-multi] -> obrigatório
+### Novo chamado (chamMod)
+  - Assunto [text] -> obrigatório
+  - De (solicitante) [select] -> 
+  - Para (responsável) [select] -> 
+  - Prioridade [select] -> 
+  - Etiqueta [select] -> 
+  - Descrição [textarea] -> obrigatório
+### Notificação jurídica (jurMod)
+  - Modelo [select] -> 
+  - Para (unidade/franqueado) [text readonly] -> 
+  - Assunto [text] -> 
+  - Mensagem [textarea] -> placeholders {} preenchidos auto
+### PDV
+  - Cliente [text/autocomplete] -> obrigatório
+  - Desconto % [number] -> 0-100, alçada por cargo
+  - Forma [select] -> 
+  - Parcelas [select] -> 
+  - Emitir NFS-e [checkbox] -> 
+### Filtros de Clientes
+  - Ativo/Verificado/App/Bloqueado/Leads [select] -> 
+  - Nome [text] -> 
+  - E-mail [email] -> 
+  - Telefone (DDI/DDD/Número) [tel] -> 
+  - Tipo/Número do documento [select/text] -> cpf/cnpj
+  - Gênero/Cidade/Status de pagamentos/Unidades [select/text] -> 
+### Filtros de Unidades
+  - Nome [text] -> 
+  - Tipo de documento [select CNPJ/CPF] -> 
+  - Número do documento [text] -> cnpj/cpf
+  - Controla estoque/NFSe/Tipo de loja [select] -> 
+### view-clientes (filtros)
+  - Ativo [select(Sim/Nao/Todos)] -> opcional, enum
+  - Nome [text] -> opcional, string
+  - E-mail [text] -> opcional, email
+  - Telefone DDI [text] -> opcional, prefixo +, default +55
+  - Telefone DDD [text] -> opcional, numerico 2 digitos
+  - Telefone Numero [text] -> opcional, telefone
+  - Tipo de documento [select(CPF/CNPJ/RG/Passaporte)] -> opcional, enum
+  - Numero do documento [text] -> opcional; se CPF=cpf, se CNPJ=cnpj
+  - Genero [select(Feminino/Masculino/Outro)] -> opcional, enum
+  - Verificado [select(Sim/Nao)] -> opcional, boolean
+  - App [select(Sim/Nao)] -> opcional, boolean
+  - Bloqueado [select(Sim/Nao)] -> opcional, boolean
+  - Status de pagamentos [select(Em dia/Pendente/Inadimplente)] -> opcional, enum
+  - Cidade [text] -> opcional, string
+  - Unidades [select(Todas as unidades + lista)] -> opcional, enum (id cliFiltroUni)
+  - Leads [select(Sim/Nao)] -> opcional, boolean
+### view-cliente-ficha (tab-dados - cadastro de cliente)
+  - Verificado [checkbox] -> boolean
+  - Nome [text (fichaNomeInput)] -> obrigatorio, string min 2
+  - E-mail [text] -> opcional, email
+  - DDI [text] -> obrigatorio se telefone, default +55
+  - DDD [text] -> numerico 2 digitos
+  - Telefone [text] -> telefone (mascara 9XXXX-XXXX)
+  - Data de nascimento [text/date (dd/mm/aaaa)] -> opcional, data valida, passado
+  - Genero [select(Feminino/Masculino/Outro)] -> enum
+  - Como nos conheceu? [select(Instagram/Facebook/Google/Indicacao/Loja fisica)] -> enum (origem do cliente)
+  - Tipo de documento [select(CPF/CNPJ/RG)] -> enum
+  - Numero do documento [text] -> se CPF=cpf valido, se CNPJ=cnpj valido
+  - Observacao [text] -> opcional
+  - CEP [text] -> opcional, cep (XXXXX-XXX)
+  - Rua [text] -> opcional
+  - Numero [text] -> opcional
+  - Complemento [text] -> opcional
+  - Bairro [text] -> opcional
+  - Cidade [text] -> opcional
+  - Estado [text] -> opcional, UF
+  - Pais [select(Brasil)] -> enum, default Brasil
+  - Leads (campos customizados) [select(Sim/Nao)] -> opcional
+### view-os (filtros)
+  - Periodo de criacao [select(Hoje/Ontem/Ultima semana/Este mes/Mes anterior/Ultimos 30 dias/Periodo)] -> enum periodo
+  - Periodo de fechamento [select periodo] -> opcional, enum periodo
+  - Periodo de cancelamento [select periodo] -> opcional, enum periodo
+  - Status [select(Aberta/Fechada/Cancelada) (osFiltroStatus)] -> opcional, enum
+  - Unidade(s) por estado [checkboxes (osUniWrap)] -> multiselect por estado
+  - ID ou comanda [text] -> opcional
+  - Origem [select(Agenda/Pacote/Balcao/App/Site)] -> opcional, enum
+  - Cliente nao informado [select(Sim/Nao)] -> opcional, boolean
+  - Pagamento [select(Dinheiro/Cartao credito/Cartao debito/PIX/Boleto)] -> opcional, enum
+  - Desconto maior que [number] -> opcional, numero >=0
+  - Desconto ($) [select(Com desconto/Sem desconto)] -> opcional, enum
+  - Total maior que [number] -> opcional, moeda >=0
+  - Colaborador [select] -> opcional, enum colaborador
+  - Servico [select] -> opcional, enum servico
+  - Produto [select] -> opcional, enum produto
+  - Status dos pagamentos [select(Pago/Pendente/Parcial)] -> opcional, enum
+  - Usuario que finalizou [select] -> opcional
+  - Usuario que cancelou [select] -> opcional
+  - Vendedor(a) [select] -> opcional, enum colaborador
+### view-doc-editor (editor de documento/anamnese)
+  - Nome do documento [text (docNome)] -> obrigatorio
+  - Tipo [select(Anamnese/Ficha tecnica/Termo de consentimento)] -> obrigatorio, enum
+  - Descricao [text] -> opcional
+  - Preenchimento [select(Obrigatorio para todos/Opcional/Somente clientes de ultrassom)] -> enum
+  - Unidades com acesso [checkboxes (unitAll + ucheck)] -> multiselect; unitAll marca todas
+  - Documento acumulativo de sessoes [checkbox (docAcumulativo)] -> boolean
+### view-descontos (filtros)
+  - Ativo [select(Sim/Nao/Todos)] -> enum
+  - Nome [text] -> opcional
+### view-metas
+  - Unidade [select] -> obrigatorio, enum unidade
+  - Apuracao (periodo) [seg(Mensal/Quinzenal/Decendial) data-div 1/2/3] -> enum
+  - Meta mensal de venda [number (mVenda)] -> obrigatorio, min 100000, step 2500
+  - Vendido no periodo (simulador) [range (mVendReal)] -> min 0
+  - Meta mensal de agendamentos [number (mAgend) readonly] -> min 0, step 10, calculado (maior entre media rede e mes anterior)
+  - Agendado no periodo (simulador) [range (mAgReal)] -> min 0
+  - Avaliacoes/clientes novos (simulador) [range (mNvReal)] -> min 0; regra 25% do total de clientes
+### view-perfis (filtros)
+  - Ativo [select(Sim/Nao/Todos)] -> enum
+  - Nome [text] -> opcional
+### view-perfil-editor
+  - Nome do perfil [text (permNome)] -> obrigatorio
+  - Ativo [select(Sim/Nao)] -> enum
+  - Permissoes [checkbox grid (permGrid)] -> multiselect; iniciam em branco
+### view-motivos (automacao nao comparecimento)
+  - Ativar automacao de nao comparecimento [checkbox] -> boolean
+  - Enviar 1a mensagem apos a sessao [text(ex 2 horas)] -> obrigatorio se ativo
+  - Maximo de mensagens no dia [number] -> min 1, max 2
+  - Intervalo entre mensagens [text(ex 2 horas)] -> obrigatorio se ativo
+  - Mensagem automatica (WhatsApp) [textarea] -> obrigatorio se ativo; suporta variaveis {cliente} {servico} {hora}
+  - Reagendar ao responder [checkbox] -> boolean
+  - Excluir e computar nao comparecimento se sem resposta [checkbox] -> boolean
+  - Nao exibir na agenda do dia seguinte [checkbox] -> boolean
+### view-comissoes (simulador)
+  - Categoria da colaboradora [select (simCat)] -> enum
+  - Meta da unidade [text (simMetaVal) disabled] -> somente leitura
+  - Vendido pela unidade [range (simVendido)] -> min 0, max 130000, step 1000
+  - Minha venda individual [range (simIndiv)] -> min 0, max 50000, step 500
+  - Sessoes executadas (mes) [number (simSessoes)] -> min 0
+### view-contratos (filtros)
+  - Ativo [select(Sim/Nao/Todos)] -> enum
+  - Nome do modelo [text] -> opcional
+### view-contrato-editor
+  - Nome do modelo [text (contNome)] -> obrigatorio
+  - Quando o contrato e emitido [select (contEmitido: Planos de Assinatura/Assinaturas/Creditos em Dinheiro,Pacotes,Servicos/Pacotes/Servicos)] -> obrigatorio, enum (gatilho)
+  - Enviar por e-mail para assinatura [select(Sim/Nao)] -> enum
+  - Habilitado para todas as unidades [select(Sim/Nao)] -> enum
+  - Titulo do contrato [text (contTitulo)] -> obrigatorio
+  - Termos do contrato [textarea (contTermos)] -> obrigatorio
+  - Assinatura do contratado [file] -> JPEG/PNG ate 5MB
+### view-fornecedores (filtros/cadastro)
+  - Ativo [select(Sim/Nao/Todos)] -> enum
+  - Nome [text] -> obrigatorio no cadastro
+  - Telefone DDI/DDD/Numero [text] -> telefone, DDI default +55
+  - Tipo de documento [select(CNPJ/CPF)] -> enum
+  - Numero do documento [text] -> se CNPJ=cnpj valido, se CPF=cpf valido
+### view-grpprod / view-grpassin (filtros)
+  - Ativo [select(Sim/Nao/Todos)] -> enum
+  - Nome [text] -> obrigatorio no cadastro
+### view-colaborador-form (Colaborador)
+  - colabNome (Nome) [text] -> obrigatorio, min 3
+  - E-mail [email] -> obrigatorio, email
+  - Perfil de acesso [select] -> obrigatorio; valores: Profissional|Gerente|Subgerente|Consultora de Vendas|SAC|Proprietario
+  - DDI [text] -> obrigatorio, padrao +55
+  - Telefone [tel] -> obrigatorio, telefone mask (00) 00000-0000
+  - Descricao [text] -> opcional
+  - Foto [file] -> opcional, JPG/PNG/GIF, max 1MB
+  - Forcar troca de senha no proximo acesso [checkbox] -> opcional (boolean)
+  - Senha de acesso [password] -> obrigatorio (em criacao), min 6
+  - Repita a senha de acesso [password] -> obrigatorio, deve igualar Senha
+  - Localizacao (pais) [select] -> obrigatorio, default Brasil
+  - Exibe na agenda [checkbox] -> boolean, default true
+  - Disponivel para agendamento online [checkbox] -> boolean, default true
+  - % Comissao padrao [text] -> numero/percentual >=0, formato 0,00
+  - Ordem no App [number] -> inteiro min 1
+  - Servicos que o colaborador executa [checkbox-list] -> opcional; suporta 'marcar todos' (colabServAll) e por grupo
+### cliModal (Novo cliente)
+  - Nome completo [text] -> obrigatorio (*), min 3
+  - Telefone [tel] -> obrigatorio (*), telefone +55 (00) 00000-0000
+  - E-mail [email] -> obrigatorio (*), email
+  - Onde nos conheceu? [select] -> obrigatorio (*); opcoes: Indicacao de amigo|Instagram|Facebook|Google/Busca|Site da rede|Landing Page|WhatsApp|Passei em frente a loja|Outro
+  - CPF / Documento [text] -> opcional, cpf valido se preenchido, mask 000.000.000-00
+  - Genero [select] -> opcional; Feminino|Masculino|Outro
+  - Cidade [text] -> opcional
+  - Unidade [select] -> obrigatorio (multitenant); Florianopolis Centro|Sao Jose|Balneario Camboriu|Blumenau
+### apptModal (Novo agendamento)
+  - Cliente (apptCliente, datalist clienteList) [autocomplete] -> obrigatorio (ou cadastro rapido)
+  - Cadastro rapido - Telefone [tel] -> condicional, telefone
+  - Cadastro rapido - E-mail [email] -> condicional, email
+  - Servicos (apptServicos) [multi-select] -> obrigatorio min 1; Avaliacao sempre 1a opcao
+  - Observacao [textarea] -> opcional
+  - Agendamento recorrente (recChk) [checkbox] -> opcional
+  - Repetir a cada N [number] -> se recorrente: inteiro min 1
+  - Unidade de repeticao (semana(s)/mes(es)) [select] -> se recorrente: obrigatorio
+  - por N vezes [number] -> se recorrente: inteiro min 1
+  - Estou ciente da sobreposicao (apptCiente) [checkbox] -> obrigatorio se houver overlap
+  - Agendou pelo SAC? [checkbox] -> opcional (campo customizado)
+### importModal (Importar clientes)
+  - Arquivo do BEMP (impFile) [file] -> obrigatorio, accept .csv/.xlsx/.xls
+  - Unidade de vinculo (impUni) [select] -> obrigatorio (multitenant)
+  - Origem / etiqueta (impOrigem) [text] -> opcional, default 'Migracao BEMP'
+  - Ignorar duplicados (impDedup) [checkbox] -> boolean, default true (dedup por telefone ou documento)
+  - Gravar no Supabase tabela customers (impCloud) [checkbox] -> boolean, default true
+### vpModal (Venda de Pacote)
+  - Cliente (vpCliente, datalist vendaClientes) [autocomplete] -> obrigatorio
+  - Pacotes (vpRows) [dynamic-list] -> obrigatorio min 1 (vpAdd)
+  - Observacao [textarea] -> opcional
+  - Vendedor(a) (vpVend) [select] -> obrigatorio (regra org: informar usuario que vendeu a OS)
+  - Comanda [text] -> opcional
+  - Desconto (R$) [text] -> moeda >=0 (sujeito a alcada)
+  - Total [text] -> calculado, disabled
+### vaModal (Venda de Assinatura)
+  - Cliente (datalist vendaClientes) [autocomplete] -> obrigatorio
+  - Plano de assinatura (vaPlano) [select] -> obrigatorio (*)
+  - Valor de mensalidade (vaMens) [text] -> calculado do plano, disabled, moeda
+  - Valor da taxa de Adesao (vaAdesao) [text] -> calculado do plano, disabled, moeda
+  - Total (vaTotal) [text] -> calculado, disabled, moeda
+  - Observacao [textarea] -> opcional
+  - Vendedor(a) (vaVend) [select] -> obrigatorio
+  - Comanda [text] -> opcional
+### uniModal (Nova unidade)
+  - Nome da unidade (uniNome) [text] -> obrigatorio (*), min 3
+  - CNPJ [text] -> opcional, cnpj valido, mask 00.000.000/0000-00
+  - Responsavel [select] -> opcional; Rafael Estevez|Juliana Gerente|Karoline da Silveira
+  - Cidade [text] -> opcional
+  - Estado (UF) [text] -> opcional, 2 letras
+  - Endereco [text] -> opcional
+  - Status da unidade [radio/cards] -> obrigatorio (*); Ativa|Teste (data-status), default Ativa
+### chamMod (Abrir chamado)
+  - Assunto (chamTit) [text] -> obrigatorio (*)
+  - De/solicitante (chamDe) [select] -> obrigatorio
+  - Para/responsavel (chamPara) [select] -> obrigatorio
+  - Prioridade (chamPrio) [select] -> Normal|Importante|Urgente, default Normal
+  - Etiqueta (chamTag) [select] -> Suporte|Financeiro|Implantacao|Projeto|Expansao|Solicitacao
+  - Descricao (chamMsg) [textarea] -> obrigatorio (*)
+### comMod (Novo comunicado)
+  - Titulo (comTit) [text] -> obrigatorio (*)
+  - Mensagem (comMsg) [textarea] -> obrigatorio (*)
+  - Prioridade (comPrio) [select] -> Normal|Importante|Urgente
+  - Categoria (comCat) [select] -> Sem categoria|Area Tecnica|Diretoria|Marketing|Operacao|RH
+  - Enviar tambem por e-mail (comEmail) [checkbox] -> boolean, default true
+  - Direcionado a (comAudi) [checkbox-group] -> obrigatorio min 1; Todos|Rede propria|Franquias|Franqueados|Office
+  - Exigir leitura obrigatoria com ciente (comObrig) [checkbox] -> boolean, default true
+### evtMod (Novo evento da rede)
+  - Assunto/titulo (evtTit) [text] -> obrigatorio (*)
+  - Tipo (evtTipo) [select] -> Treinamento online|Treinamento presencial|Reuniao da rede|Evento|Inauguracao
+  - Data (evtData) [text] -> obrigatorio, data dd/mm/aaaa
+  - Inicio (evtIni) [text] -> hora HH:MM
+  - Fim (evtFim) [text] -> hora HH:MM, > inicio
+  - Link do evento (evtLink) [text] -> opcional, url se online
+  - Direcionado a (evtAudi) [checkbox-group] -> obrigatorio min 1; Todos|Rede propria|Franquias|Franqueados|Office
+### jurMod (Notificacao juridica)
+  - Modelo (jurTpl) [select] -> obrigatorio (preenche corpo via jurFill)
+  - Para/unidade-franqueado (jurPara) [text] -> readonly, auto
+  - Assunto (jurAssunto) [text] -> obrigatorio
+  - Mensagem (jurCorpo) [textarea] -> obrigatorio; campos {chaves} preenchidos automaticamente, editaveis
+### comReadMod (Leitura obrigatoria 1o acesso)
+  - Li e compreendi o comunicado (comReadChk) [checkbox] -> obrigatorio para habilitar botao Ciente (comReadOk disabled ate marcar)
+### view-pdv (PDV)
+  - Cliente (pdvCli) [text/autocomplete] -> obrigatorio (regra OS: cliente nao pode ficar em branco)
+  - Busca catalogo (pdvSearch) [text] -> opcional
+  - Desconto % (pdvDescPct) [number] -> min 0 max 100; sujeito a alcada (pdvAlcada)
+  - Forma de pagamento (pdvForma) [select] -> obrigatorio; PIX|Dinheiro|Debito|Cartao de Credito|Link de Pagamento|Credito Recorrente PagoLivre (ate 12x, nao Ultrassom)
+  - Parcelas (pdvParc) [select] -> 1x..12x
+  - Emitir NFS-e ao finalizar (pdvNfse) [checkbox] -> boolean, default true
+### view-minha-unidade > Dados basicos
+  - Nome (uniNomeF) [text] -> obrigatorio
+  - Telefone (uniTelF) [tel] -> telefone
+  - WhatsApp [tel] -> telefone
+  - Razao Social [text] -> obrigatorio
+  - Tipo de documento [select] -> CNPJ|CPF
+  - Numero do documento (uniCnpjF) [text] -> cnpj/cpf conforme tipo, mask
+  - Endereco: CEP/Rua/Numero/Complemento/Bairro/Cidade/Estado/Pais [text] -> CEP mask 00000-000; Estado 2 letras
+  - Franquia/Tipo de loja [select] -> Tipo de loja Shopping|Loja de Rua
+  - Controla estoque / Usar lista propria de produtos / Gera comissoes nas contas a pagar / Comissao p/ pagamentos com pontos [select] -> Sim|Nao
+  - Limite fiscal (dias) [text] -> inteiro >=0
+  - GAP agenda (min) [select] -> 10(padrao)|15|20|30 (uniSetGap)
+  - Fuso horario [select] -> default America/Sao_Paulo
+  - Calculo de comissao [select] -> Total bruto|Valor liquido
+  - Integracao com Shopping [select] -> Sim|Nao
+  - Moeda [select] -> R$ Real
+  - Agendamento online / Agrupamento no App / Imagem da unidade [mixed] -> Imagem file
+### view-minha-unidade > NFSe
+  - Controle de emissao [select] -> Ao finalizar OS de execucao|Manual
+  - Emitir automaticamente / com Lei do Salao Parceiro / com confirmacao do usuario [select] -> Sim|Nao
+  - IBS/CBS Classificacao Tributaria e Codigo Indicador [select] -> Nao aplicavel|Com deducao na base
+  - Aliquotas PIS/COFINS/Federal/Estadual/Municipal (%) [text] -> percentual >=0 formato 0,00
+  - Data de expiracao do certificado [text] -> data dd/mm/aaaa
+  - Observacao padrao [text] -> opcional
+  - Tratamento cadastro invalido (endereco/sem cliente/CPF padrao) [mixed] -> CPF padrao mask 000.000.000-00
+### view-minha-conta > Dados basicos / Agendamento online
+  - Nome organizacao [text] -> obrigatorio
+  - Tema de cores [select] -> Azul Claro|Roxo|Dourado|Escuro
+  - Subdominio [text] -> obrigatorio, slug + sufixo .bemp.app
+  - Validade dos pontos (meses) [text] -> inteiro >0
+  - Informar usuario que vendeu a OS [select] -> Informar(obrigatorio)|Opcional|Nao informar
+  - Regras de OS (checkboxes) [checkbox] -> boolean
+  - Minutos antes do horario / para cancelar / Dias para agendamento futuro / Limite agendas / Limite servicos por agendamento [number] -> inteiro >=0
+  - Google Tag Manager [text] -> opcional, padrao GTM-XXXXXX
+  - Cor primaria/secundaria [color/text] -> hex
+  - Logos (Logo, Logotipo NFS-e, Logo do site) [file] -> JPEG/PNG max 1MB
+### Modal Venda/OS (rodapé)
+  - Observação [textarea] -> opcional
+  - Vendedor(a) [select#vaVend] -> opcional (preenchido dinamicamente)
+  - Comanda [text] -> opcional
+### Modal Nova unidade (uniModal)
+  - Nome da unidade [text#uniNome] -> obrigatório
+  - CNPJ [text] -> opcional; formato 00.000.000/0000-00 (cnpj)
+  - Responsável [select] -> opcional
+  - Cidade [text] -> opcional
+  - Estado [text (UF)] -> opcional; 2 letras
+  - Endereço [text] -> opcional
+  - Status da unidade [radio/cards data-status (Ativa|Teste)] -> obrigatório; default Ativa
+### Modal Novo lead (leadModal)
+  - Nome [text#leadNome] -> obrigatório
+  - Telefone [text#leadTel] -> opcional; telefone (00) 00000-0000
+  - Origem [select#leadOrigem] -> opcional; enum Instagram/Facebook/Google/Indicação/Geolocalização/Parcerias/Loja física/Outros
+  - Serviço de interesse [text#leadServico] -> opcional
+  - Valor estimado (R$) [text#leadValor] -> opcional; moeda
+  - Responsável [select#leadResp] -> opcional; enum KS/RC/SA/JG
+  - Temperatura [select#leadTemp] -> opcional; enum quente/morno/frio
+  - Etapa inicial [select#leadEtapa] -> opcional (preenchido dinamicamente)
+### Tela de login (authOv)
+  - Nome [text#authNome] -> obrigatório no modo cadastro (oculto no login)
+  - E-mail [email#authEmail] -> obrigatório; email
+  - Senha [password#authPass] -> obrigatório; Enter submete
+### Modal Nova forma de pagamento (pgModal)
+  - Nome [text] -> obrigatório
+  - Tipo [select] -> obrigatório; enum Crédito/Débito/PIX/Dinheiro/Link de Pagamento/Boleto/Transferência
+  - Nº de parcelas [number] -> min 1; default 1
+  - Taxa (%) [text] -> opcional; percentual/moeda
+  - Taxa a descontar na comissão (%) [text] -> opcional; percentual
+  - Bandeira / operadora [text] -> opcional
+  - Ativo [select (Sim/Não)] -> obrigatório; default Sim
+### Modal Nova categoria (catModal)
+  - Nome [text] -> obrigatório
+  - Grupo [select#catModalGrupo] -> obrigatório (preenchido dinamicamente)
+  - Ativo [select (Sim/Não)] -> obrigatório; default Sim
+### Modal Novo cliente (cliModal) — validado por cliSalvarNovo
+  - Nome [text#cliNNome] -> obrigatório; bloqueia nome repetido sem CPF
+  - Telefone [text#cliNTel] -> opcional; bloqueia duplicidade se >=8 dígitos
+  - CPF/Documento [text#cliNDoc] -> opcional; bloqueia duplicidade de CPF; cpf
+### Modal Nova/Editar parceria (descNovo) — validado por descSave
+  - Parceiro (loja/influencer) [text#pnParc] -> obrigatório
+  - Tipo [select#pnTipo] -> obrigatório; enum desc (Desconto %)/cash (Cashback R$)
+  - Valor [number#pnValor step0.01 min0] -> obrigatório; >0; se desc, <= teto por aplica/alçada
+  - Aplica a [select#pnAplica] -> enum Serviços/Produtos/Pacotes/Todos
+  - Unidade vinculada [select#pnUni] -> obrigatório
+  - Contato [text#pnContato] -> opcional
+  - Validade [text#pnVal] -> opcional; data dd/mm/aaaa
+### Ficha do cliente (campos de contato)
+  - Nome [text#fichaNomeInput] -> obrigatório
+  - DDD [text#fichaDDDInput] -> opcional; numérico
+  - Telefone [text#fichaTelInput] -> opcional; min 12 dígitos c/ 55 p/ WhatsApp
+  - E-mail [text#fichaEmailInput] -> opcional; email (valida @)
+### Importar clientes (importModal) — mapeamento + opções
+  - Arquivo (dropzone#impFile) [file CSV/XLSX] -> obrigatório; precisa ter linhas
+  - Unidade [select#impUni] -> obrigatório; UNIDADES
+  - Origem [text#impOrigem] -> default 'Migração BEMP'
+  - Deduplicar [checkbox#impDedup] -> opcional
+  - Gravar na nuvem [checkbox#impCloud] -> opcional; exige _sb
+  - Mapeamento de colunas [select por campo (nome/telefone/email/documento/genero/unidade)] -> auto-mapeado; ajustável
+### Metas (sliders/inputs)
+  - Meta de venda [number#mVenda] -> obrigatório; min R$ 100.000 (META_MIN)
+  - Agendamentos meta [number#mAgend] -> numérico
+  - Venda realizada [range#mVendReal] -> max calculado superPer*1.1
+  - Agendamentos realizados [range#mAgReal] -> max calculado
+  - Clientes novos/avaliações realizados [range#mNvReal] -> max calculado
+### Filtros de Unidades (uniMatchFilters)
+  - Nome [text#fUniNome] -> opcional; contém
+  - Documento/CNPJ [text#fUniDoc] -> opcional; contém
+  - Estoque [select#fUniEst (Sim/Não)] -> opcional
+  - Caixa [select#fUniCx (Sim/Não)] -> opcional
+  - NFSe [select#fUniNfse (Sim/Não)] -> opcional
+  - Tipo de loja [select#fUniLoja] -> opcional; Shopping/Loja de Rua
+### Filtros de OS
+  - Unidades (multi) [mu#osUniMu] -> opcional; multi-seleção por estado
+  - Status [select#osFiltroStatus] -> opcional; Aberta/Fechada/Cancelada
+  - Serviço [select#osFilServ] -> opcional; SERVICOS
+  - Produto [select#osFilProd] -> opcional; PRODUTOS
+### Cadastros de unidade (set uniNomeF/uniTelF/uniCnpjF + modal uniModal)
+  - uniNome [text] -> obrigatório (default 'Nova unidade' se vazio)
+  - uniNomeF (nome cadastro) [text] -> obrigatório
+  - uniTelF (telefone) [tel] -> telefone
+  - uniCnpjF (CNPJ) [text] -> cnpj
+  - status (status-opt Ativa/Teste/Inativa) [select] -> obrigatório, default Ativa
+### Modal Escritório (escNome...)
+  - escNome [text] -> obrigatório (showToast se vazio)
+  - escCidade [text] -> opcional
+  - escUf [text] -> opcional, maxlength 2, uppercase
+  - escTel [tel] -> telefone, opcional
+  - escEmail [email] -> email, opcional
+  - escResp (responsável) [text] -> opcional
+### Integração WhatsApp da unidade
+  - waNum (número WhatsApp) [tel] -> obrigatório, telefone, mínimo 10 dígitos numéricos (replace \D)
+### Nova mensagem/automação (prompts mensNova)
+  - nome [text] -> obrigatório (cancela se null)
+  - gatilho (gat) [text] -> opcional, default 'condição definida pela unidade'
+  - ação (ac) [text] -> opcional, default 'envia uma mensagem ao cliente'
+### Modal Novo Lead (leadModal)
+  - leadNome [text] -> obrigatório (default 'Novo lead')
+  - leadTel [tel] -> telefone (replace \D para armazenar só dígitos)
+  - leadOrigem [select] -> obrigatório (Instagram/Google/Indicação/Facebook/Loja física/Parcerias/Geolocalização/Disparo WhatsApp/Venda Tardia)
+  - leadServico [text] -> opcional, default '—'
+  - leadValor [text(moeda)] -> moeda BR (parse com replace de . e ,) — número >=0
+  - leadResp (responsável/iniciais) [text] -> obrigatório
+  - leadTemp (temperatura) [select] -> quente/morno/frio
+  - leadEtapa [select] -> obrigatório, options de CRM_STAGES
+### Modal Pacote (pacMod / openPacForm)
+  - pf_nome [text] -> obrigatório (req *, showToast se vazio)
+  - pf_cob (cobertura de créditos) [select] -> obrigatório: 'Qualquer unidade' | 'Unidade que realiza a venda'
+  - pf_val (validade em dias) [number] -> número inteiro >0, default 365
+  - pf_preco (preço R$) [text(moeda)] -> moeda BR, default 0,00
+  - pf_desc (desconto máximo %) [text] -> percentual 0-100, default 0,00
+  - pf_com (pagar comissão) [select] -> Venda | Execução | Não pagar, default Execução
+  - composição: pac-srv (serviço) [select] -> obrigatório por linha (filtra linhas sem serv)
+  - composição: pac-sess (sessões) [number] -> inteiro min 1, default 1
+### Modal genérico de item — Serviço (itemMod via CAT_DEFS.serv)
+  - Nome [text] -> obrigatório (showToast se vazio)
+  - Preço (R$) [text(moeda)] -> moeda BR
+  - Desc. Máx (%) [text] -> percentual 0-100
+  - Duração (hh:mm) [text] -> formato hh:mm, default 00:20
+  - Grupo [select] -> Estético|Ultrassom|Depilação
+  - Comissionável [select] -> Sim|Não
+  - Pagar comissão [select] -> Venda|Execução|Não pagar
+### Modal genérico de item — Produto (CAT_DEFS.prod)
+  - Nome [text] -> obrigatório
+  - Preço (R$) [text(moeda)] -> moeda BR
+  - Desc. Máx (%) [text] -> percentual
+### Filtros de Relatório (rfPeriod/rfDate/rfSel/rfUni/rfText)
+  - Período [select+date range] -> opções REL_PERIODS; 'Período…' habilita dois inputs date (de/até)
+  - Data [date] -> data
+  - Unidade(s) [multi-select] -> uma ou mais unidades + Tipo de unidade (Ambas/Próprias/Franquias)
+  - Cliente/Nome/Número NF [text] -> busca livre
+### App do cliente · Indicar amigo (appFriendInputs)
+  - Nome do amigo (frN) [text] -> obrigatório (ao menos um amigo preenchido em appSendRefer)
+  - Telefone (frT) [tel] -> opcional, telefone formato (00) 00000-0000
+  - Unidade (frU) [select] -> obrigatório, opções = APP_UNITS
+### Implantação · Projeto (IMPL_PROJ)
+  - Unidade / Projeto [text] -> obrigatório, editável só admin
+  - Início da implantação [text/date] -> data dd/mm/aaaa, editável só admin
+  - Inauguração (projetada) [text/date] -> data dd/mm/aaaa >= início, editável só admin
+  - Prazo total [text] -> calculado (disabled)
+### Implantação · Tarefa
+  - Tarefa (nome) [text] -> obrigatório, editável só admin
+  - Responsável (workflow) [select] -> obrigatório, opções IMPL_WF
+  - Duração (dias) [number] -> número inteiro min 1
+  - Situação [select] -> obrigatório, opções IMPL_ST
+### Jurídico · Anexar documento (jurUnitDet)
+  - Arquivo (contrato/pré-contrato/COF) [file] -> obrigatório no anexar, accept application/pdf
+### Jurídico · Template/Modelo
+  - Assunto [text] -> obrigatório, suporta merge {unidade}
+  - Mensagem/Corpo [textarea] -> obrigatório, merge {unidade}{franqueado}{cnpj}{prazo}{data}
+### Jurídico · Notificação (modal openJurNotif)
+  - Para (jurPara) [text] -> preenchido automaticamente (unidade · franqueado)
+  - Modelo (jurTpl) [select] -> obrigatório, opções JUR_TEMPLATES
+  - Assunto (jurAssunto) [text] -> obrigatório
+  - Corpo (jurCorpo) [textarea] -> obrigatório
+### Jurídico · Notificação de cobrança (card jurCobrancas)
+  - Assunto (jna_) [text] -> obrigatório quando pendente
+  - Notificação padrão (jnc_) [textarea] -> obrigatório quando pendente
+### Financeiro · Editar filtros (finFiltroOpen)
+  - Período (d1→d2) [date range] -> obrigatório (marcado com *), datas dd/mm/aaaa
+  - Status [select] -> opcional, opções por contexto
+  - Descrição [text] -> opcional
+  - Categoria [select] -> opcional
+  - Cliente/Fornecedor [select] -> opcional
+  - Observações [text] -> opcional
+  - Tags [select] -> opcional (Recorrente/Royalties/Avulso/Implantação)
+  - Valor mínimo [text/moeda] -> opcional, moeda R$
+  - Valor máximo [text/moeda] -> opcional, moeda R$ >= mínimo
+### Financeiro · Configurações
+  - % de royalties sobre faturamento bruto [number] -> obrigatório, número >=0, step 0.5
+  - % do fundo de marketing [number] -> obrigatório, número >=0, step 0.5
+  - Dia de vencimento (mês seguinte) [number] -> obrigatório, inteiro min 1 max 28
+  - Banco [text] -> obrigatório
+  - Agência [text] -> obrigatório
+  - Conta [text] -> obrigatório
+  - Convênio / Carteira [text] -> opcional
+  - Usuário (API) [text] -> opcional
+  - Senha / Token [password] -> disabled (mascarado, nunca trafega no navegador)
+  - Baixa automática pelo retorno bancário [checkbox] -> booleano
+  - Nova categoria (finNovaCat) [text] -> obrigatório no adicionar, sem duplicata
+  - Adquirente: nome/débito/crédito/parcelado/pix/prazo [text+number] -> números percentuais step 0.01; prazo inteiro
+  - Régua: dias/ação/canal [number+text] -> dias inteiro
+### Financeiro · Cálculos (parcela)
+  - Incluir (inc) [checkbox] -> booleano
+  - Lançamento (desc) [text] -> obrigatório
+  - Vencimento [text/date] -> obrigatório, data dd/mm/aaaa
+  - Pagamento (dataPag) [text/date] -> opcional, data dd/mm/aaaa (se pago em atraso)
+  - Principal (valor) [number] -> obrigatório, moeda, step 0.01
+  - Cobrar encargos (incEnc) [checkbox] -> booleano
+### Financeiro · Cálculos (parâmetros)
+  - Índice de correção [select] -> obrigatório, opções CALC_IDX (IGP-M/IPCA/INPC/SELIC/CDI)
+  - Multa (%) [number] -> número >=0, step 0.5
+  - Juros de mora (% a.m.) [number] -> número >=0, step 0.1
+  - Data do cálculo [text/date] -> obrigatório, data dd/mm/aaaa
+### Importação Excel (contas a pagar/receber)
+  - Arquivo planilha [file] -> obrigatório, accept .xlsx/.xls/.csv. Colunas reconhecidas: Unidade/Cliente, Categoria, Descrição, Valor(moeda), Vencimento(data), Status, Prioridade, Escopo/Fornecedor
+### view-pdv (PDV - Nova Venda)
+  - pdvCli (cliente) [text] -> obrigatorio (showToast 'Informe o cliente' se vazio)
+  - pdvSearch (busca de itens) [text] -> opcional
+  - pdvDescPct (desconto %) [number] -> numero min 0 max 100; clamp; acima da alcada do cargo exige aprovacao do gestor
+  - pdvForma (forma de pagamento) [select] -> obrigatorio (valor usado no recibo)
+  - pdvParc (parcelas) [select] -> obrigatorio
+  - pdvNfse (emitir NFS-e) [checkbox] -> opcional booleano
+### view-unidade (Limites de desconto / Agenda)
+  - DESC_LIMIT[cargo] (desc. max % por cargo) [number] -> numero min 0 max 100; so admin (Proprietario/Gerente de Campo) edita
+  - DESC_MAX_UNIDADE[uni] (desconto max da unidade %) [number] -> numero min 0 max 100
+  - CORTESIA_LIMIT_MES (teto mensal cortesias R$) [number] -> numero min 0; moeda
+  - AGENDA_GAP (GAP horarios min) [select] -> obrigatorio; opcoes 10/15/20/30; default 10
+  - AGENDA_NOSHOW (taxa media faltas %) [number] -> numero min 0 max 90
+### view-universidade (Quiz / Prova)
+  - uq{qi} (resposta multipla escolha) [radio] -> uma opcao por questao; nota minima 7,0 para aprovar
+### view-universidade (Gerenciar trilha / etapa)
+  - Nome da trilha [text] -> obrigatorio
+  - Cargo (role) [text] -> obrigatorio
+  - Prazo [text] -> texto (ex.: 30 dias)
+  - Titulo da etapa [text] -> obrigatorio
+  - Link/ID do YouTube (nao listado) [text] -> url ou id do youtube
+  - min (duracao em minutos) [number] -> numero min 1
+  - Prova (pergunta + opcoes) [text/prompt] -> pergunta obrigatoria; opcoes separadas por ; (a correta primeiro)
+### view-checklist (Builder de modelo)
+  - cbNome (nome do checklist) [text] -> obrigatorio (showToast se vazio)
+  - cbPeriod (periodicidade) [select] -> obrigatorio; Diario/Semanal/Quinzenal/Mensal
+  - cbAplic (aplicavel a) [select] -> obrigatorio; Todas as unidades/Rede propria/Franquias
+  - item.txt (pergunta) [text] -> ao menos 1 item com texto (showToast se nenhum)
+  - item.resp (tipo de resposta) [select] -> CHK_RESP: Nota(0-10)/Conforme-Nao conforme/Sim-Nao/Percentual/Texto livre
+  - item.peso [number] -> numero min 1
+  - item.plano (gera plano) [checkbox] -> booleano
+  - secao.nome [text] -> texto
+### view-chamados (Novo chamado - chamMod)
+  - chamTit (assunto) [text] -> obrigatorio (Preencha assunto e descricao)
+  - chamMsg (descricao) [textarea] -> obrigatorio
+  - chamDe (de/remetente) [select] -> obrigatorio; CHAM_PARTIES
+  - chamPara (para/destinatario) [select] -> obrigatorio; CHAM_PARTIES
+  - chamPrio (prioridade) [select] -> Normal/Importante/Urgente
+  - chamTag (assunto/tag) [select] -> Suporte/Financeiro/Implantacao/Projeto/Expansao/Solicitacao
+  - chamInput (resposta no thread) [text] -> nao vazio para enviar (Enter envia)

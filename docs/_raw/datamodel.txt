@@ -1,0 +1,133 @@
+- PROFS :: Colunas/profissionais da agenda. :: campos: [{n,ini}] profissionais (colunas da agenda)
+- EVENTS :: Eventos/agendamentos da agenda (status k: block/agendado/confirmado/os/finalizado). :: campos: [[{s,e,t,sub,k}]] por profissional
+- OS_DATA :: Ordens de serviço (cliente, comanda, origem, status, datas, desconto, total, unidade). :: campos: [{c,cmd,o,s,cr,fe,ca,d,t,u}]
+- UNI_RAW / UNIDADES :: Unidades da rede (~58 reais + Treinamento). Base do tenant. :: campos: {n/nome,cid/cidade,uf,t/tel,c/cnpj,e/endereco,m/email,tp/tipo,est,cx,nfse,resp,status}
+- CRM_STAGES / CRM_LEADS :: Funil CRM. :: campos: stages{id,nome,cor}; leads{id,nome,tel,origem,servico,valor,resp,temp,stage,tags,ultima,slaH,viaDisparo,vendaTardia}
+- SERVICOS :: Catálogo de serviços. :: campos: [nome,preço,descMáx,duração,grupo,comissionável,ordem]
+- PACOTES :: Catálogo de pacotes. :: campos: [nome,cobertura,validadeDias,valorTotal,descMáx]
+- PRODUTOS :: Catálogo de produtos. :: campos: [nome,descMáx?,preço]
+- PLANOS :: Planos de assinatura (Bronze/Prata/Ouro). :: campos: [nome,adesão,mensalidade,identificador]
+- PGTO :: Formas de pagamento (~125). :: campos: [nome,tipo,taxa%,taxaComissão%]
+- DESC :: Descontos/cupons. :: campos: [nome,serv%,prod%,pac%,expiração]
+- CATP_SEED/CATR_SEED -> CATP_TREE/CATR_TREE :: Categorias de contas a pagar/receber. :: campos: {grupo,itens:[{nome,ativo}]}
+- GRUPOS_PAG/CAT_PAG/CAT_REC :: Plano de contas do fluxo de caixa. :: campos: pares [categoria,grupo]
+- COLAB :: Colaboradores. :: campos: {nome,perfil,tel,agenda,ultimoAcesso,ativo,inativadoAuto}
+- PERFIS :: Perfis de acesso. :: campos: {nome,desc,users,atu,status}
+- PERMS :: Matriz de permissões por módulo. :: campos: [modulo,[ações]]
+- MOTIVOS :: Cadastro + automação WhatsApp. :: campos: motivos de cancelamento
+- ORIGENS :: Origens de cliente. :: campos: {nome,ativo,auto,campo}
+- DOCS_LIST :: Anamnese/ficha técnica. :: campos: documentos/fichas digitais
+- AUTOS / MENS_CUSTOM / AUTO_COL / CANAL_LBL :: Automações de mensagens. :: campos: {nome,cat,ic,gat,ac,canais,ativo,stat,det{servicos,janela,passos}}
+- DISP_API/DISP_BASES/DISP_CAMPS/VIP_GROUPS/CONV :: Disparos WhatsApp. :: campos: campanhas/bases/grupos VIP/conversas WhatsApp
+- COMUNICADOS / COM_PRIO / COMU_CATS / COM_NOMES :: Comunicados + leitura obrigatória. :: campos: comunicados oficiais
+- CHAMADOS / CHAM_PARTIES / CHAM_STATUS :: Chamados. :: campos: tickets SAC/interno
+- AUDIT :: Auditoria. :: campos: {ts,user,role,acao,det}
+- FIN_REC/FIN_PAG/FIN_CONC/FIN_CFG/FIN_CATS_REC/FIN_FILT :: Fluxo de caixa, royalties, conciliação. :: campos: financeiro da franqueadora
+- CALC_IDX/CALC_CFG/CALC_PARC/CALC_CATS :: Cálculos de correção/juros. :: campos: índices (IGP-M etc.), multa, juros
+- DRE_KEYS/DRE_LINHAS/LOJAS_PROPRIAS :: Demonstrativo de resultados. :: campos: DRE da franqueadora
+- DESC_LIMIT/CARGOS_DESC/DESC_MAX_UNIDADE :: Limites de desconto no PDV. :: campos: alçada de desconto por cargo/unidade
+- CORTESIA_LIMIT_MES/CORTESIA_USED/CORTESIA_CLIENTES :: 1 cortesia por cliente, teto mensal/unidade. :: campos: teto e controle de cortesias
+- UNI_TRILHAS/UNI_ALUNOS/UNI_DONE/UNI_NOTAS :: Trilhas, alunos, notas. :: campos: universidade corporativa
+- CHK_INDS/CHK_UNITS/CHK_MODELS/CHK_WEEKS/CHK_RESP :: PDCA semanal/mensal. :: campos: checklist de indicadores
+- IMPL_WF/IMPL_ST/IMPL_FASES/IMPL_PROJ :: Fluxo até inauguração. :: campos: implantação de unidade
+- JUR_DOCS/JUR_TEMPLATES/JUR_NOTIFS :: Documentos e notificações extrajudiciais. :: campos: jurídico
+- UNI_HORARIOS/UNI_BLOCKS/UNI_REL/FRANQUEADOS :: Horários, bloqueios, vínculos e franqueados. :: campos: config da unidade
+- APP/APP_NEXT/APP_PKGS/APP_SERV/APP_UNITS/APP_REDEEM/APP_FRIENDS/APP_TABS :: Mockup do app (fidelidade, sessões, indique). :: campos: app do cliente
+- PERIODS/REL_PERIODS/REL_UNI/REL_DEFS/OCOR/FUNIL_DATA/CORRIDA :: Dados de período, funil, ocorrências e corridinha de vendas. :: campos: dashboards e relatórios
+- IMP_FIELDS/IMP_FEM/IMP_MASC/IMPORTED :: Importação de clientes. :: campos: mapeamento de import + nomes p/ gênero
+- META_MIN/METAS/PLBL :: Regras de meta (mín R$100k). :: campos: metas e apuração
+- UNIDADES (inferido do unitDd e selects) :: Lista de unidades/franquias da rede usada no seletor de unidade, filtros de clientes/OS, metas e checkboxes de unidades com acesso; 'Unidade Treinamento' e ambiente de teste cujos dados nao entram em dashboards/relatorios :: campos: Florianopolis · Centro, Sao Jose, Balneario Camboriu, Joinville, Itajai, Blumenau, Unidade Treinamento (data-teste=1)
+- ROLES/PERFIS (inferido do roleDd) :: Perfis de acesso selecionaveis no topo (rolePill/roleDd); base para applyRole/isAdmin e PERMS :: campos: Proprietario, Gerente, Profissional, SAC, Marketing, Financeiro, Expansao, Implantacao, Ponto
+- PERIODOS (chips dashboard / filtros) :: Filtros de periodo reutilizados no dashboard e filtros de OS :: campos: hoje, ontem, semana, mes, ultimo (mes anterior), d30 (ultimos 30 dias), periodo (custom)
+- STATUS_AGENDA (legenda) :: Status de slots na agenda; Finalizado e bloqueado/imutavel; Evento da rede nao bloqueia horario :: campos: Bloqueio, Agendado, Confirmado, Em atendimento (OS aberta), Finalizado (lock), Evento da rede
+- STATUS_OS :: Status de ordens de servico :: campos: Aberta, Fechada, Cancelada
+- ORIGEM_OS :: Origem da ordem de servico/comanda :: campos: Agenda, Pacote, Balcao, App, Site
+- TIPO_OS :: Tipo de ordem (venda/compra vs execucao de sessao) :: campos: Compra, Execucao
+- FORMAS_PAGAMENTO :: Formas de pagamento usadas nos filtros de OS e cadastro :: campos: Dinheiro, Cartao de credito, Cartao de debito, PIX, Boleto
+- NIVEIS_CLUBE (carteira) :: Regras de fidelidade/cashback do Clube; base para tabela carteira/fidelidade e regras de resgate :: campos: Bronze 3%, Prata 5%, Ouro 8% (cashback); pontos 1pt por R$1; +50 pts por indicacao; pontos validade 12 meses; cashback validade 6 meses, uso min R$10
+- GATILHOS_CONTRATO (contEmitido) :: Quando um modelo de contrato e emitido :: campos: Planos de Assinatura, Assinaturas, Creditos em Dinheiro/Pacotes/Servicos, Pacotes, Servicos
+- APURACAO_META (seg metas/comissoes) :: Divisor de periodo para metas e premiacao de comissoes :: campos: Mensal (div=1), Quinzenal 15d (div=2), Decendial 10d (div=3)
+- GRUPOS_SERVICO :: Grupos de servico (Depilacao/Estetico/Ultrassom) (tbody#gsBody). :: campos: nome, ativo(bool)
+- FORMAS_PGTO :: Formas de pagamento (tbody#pgBody). :: campos: nome, tipo, taxa_pct, taxa_desc_comissao_pct, ativo(bool)
+- COLABORADORES :: Colaboradores/usuarios (tbody#colabBody + form). :: campos: nome, email, perfil_acesso, ddi, telefone, descricao, foto, exibe_agenda(bool), disponivel_online(bool), comissao_padrao_pct, ordem_app(int), servicos[](ids), ultimo_acesso(data), ativo(bool)
+- UNIDADES :: Unidades/franquias — entidade multitenant central (tbody#unidadesBody + view-minha-unidade). :: campos: nome, telefone, whatsapp, razao_social, tipo_documento(CNPJ|CPF), documento, endereco{cep,rua,numero,complemento,bairro,cidade,estado,pais}, franquia, tipo_loja(Shopping|Loja de Rua), controla_estoque(bool), lista_propria_produtos(bool), gera_comissoes_contas_pagar(bool), comissao_pontos(bool), limite_fiscal_dias(int), gap_agenda_min(int), fuso, calculo_comissao, integracao_shopping(bool), moeda, agendamento_online(bool), agrupamento_app, imagem, status(Ativa|Teste|Inativa), franqueados[]
+- ORGANIZACAO :: Configuracao global da organizacao (view-minha-conta). :: campos: nome, tema_cores, subdominio(.bemp.app), validade_pontos_meses(int), informar_vendedor_os, regras_os{...}, logos
+- CONTAS :: Contas a pagar/receber (view-contas). :: campos: tipo(pagar|receber), descricao, fornecedor, categoria, valor(moeda), data_prevista, data_realizada, status(Em aberto|Pago|Vencido), previsto_realizado
+- CLIENTES/customers :: Clientes (cliModal + importModal -> Supabase customers). :: campos: nome, telefone, email, documento(cpf), genero, cidade, unidade_id, origem
+- CRM_LEADS :: Leads do funil Kanban (view-crm). :: campos: nome, etapa(Novo Lead...), quadro(board), unidade_id
+- COMUNICADOS :: Comunicados (comMod). :: campos: titulo, mensagem, prioridade, categoria, enviar_email(bool), audiencia[], leitura_obrigatoria(bool), ciente_por[]
+- EVENTOS_REDE :: Eventos da rede (evtMod). :: campos: titulo, tipo, data, inicio, fim, link, audiencia[]
+- CHAMADOS :: Chamados entre departamentos (chamMod). :: campos: assunto, de, para, prioridade, etiqueta, descricao
+- NFSE_CONFIG :: Configuracao fiscal por unidade (uni-nfse). :: campos: controle_emissao, emitir_auto(bool), lei_salao_parceiro(bool), confirmacao_usuario(bool), ibs_cbs_class, ibs_cbs_op, aliquota_pis/cofins/federal/estadual/municipal, cert_expiracao, observacao_padrao, tratamento_invalido{...}, cpf_padrao
+- START/END/SLOT/AGENDA_GAP/AGENDA_NOSHOW/AGENDA_DUR :: Parâmetros de render e cálculo de ocupação da agenda :: campos: START=480, END=1200, SLOT=36px, GAP=10min, NOSHOW=45%, DUR=30min
+- CLI_FIRST/CLI_LAST/DDDS :: Geração de clientes seed/fake para a tabela :: campos: arrays de strings
+- CLI_REG :: Registro de clientes para detecção/unificação de duplicados :: campos: [{nome, cpf, tel, pacotes, contratos, imagens, legado, desde}]
+- CLI_APP :: Marca clientes com app da rede :: campos: {nome:boolean}
+- IMP_FIELDS :: Dicionário de auto-mapeamento na importação :: campos: {campo:[aliases de cabeçalho]}
+- IMP_FEM/IMP_MASC :: Inferência de gênero por nome na importação :: campos: Set de primeiros nomes
+- IMPORTED/IMP_ROWS/IMP_MAP/IMP_HEADERS :: Estado temporário do fluxo de import (registros normalizados: nome,telefone,email,documento,genero,ativo,verificado,origem,unidade) :: campos: buffers de importação
+- OS_LABEL/OS_UNITS :: Rótulos e unidades para OS :: campos: map de status; array de unidades
+- PERIODS :: Dados do dashboard por período (KPIs e funil) :: campos: {key:{lab,kl,ag,cmp,up,novos,aval,fn,f:{comp,cpct,conv,vpct,tk}}}
+- CATP_SEED/CATR_SEED :: Seed da árvore de categorias a pagar/receber (CATP reescrito sem itens NÃO USAR) :: campos: [{grupo, itens:[nome]}]
+- CATP_TREE/CATR_TREE :: Árvore editável de categorias com flag ativo :: campos: [{grupo, itens:[{nome, ativo}]}]
+- PARCERIAS :: Parcerias/descontos por unidade :: campos: [{parc, tipo(desc|cash), valor, aplica(Serviços|Produtos|Pacotes|Todos), uni, contato, val(validade), ativo}]
+- SESSOES :: Histórico de sessões por pacote (axila/ultrassom/limpeza) :: campos: {key:{nome, realizadas, total, rows:[[data, unidade, profissional, descricao]]}}
+- UNI_RAW :: Unidades oficiais da rede (~60 lojas) importadas do site :: campos: [{n:nome, cid:cidade, uf, t:telefone, c:CNPJ, e:endereco, m:email, tp:tipo(Shopping|Loja de Rua)}]
+- UF_CIDADE :: Mapa cidade->UF :: campos: {cidade:uf}
+- ESCRITORIOS :: Escritórios/matriz :: campos: [{nome, cidade, uf, tel, email, resp, status}]
+- AUTOS :: Mensagens/automações PADRÃO da rede (não editáveis pelas unidades). Categorias: Revenda, CRM, Cadastro, Agendamentos, Pós-venda, Fidelização, META, Personalizada. :: campos: {nome, cat, ic, gat(gatilho), ac(ação), canais:['wa'|'push'], ativo:bool, padrao:true, stat?, det?:{servicos:[], janela, passos:[[dia,titulo,texto]]}}
+- MENS_CUSTOM :: Mensagens personalizadas criadas por uma unidade, visíveis só para ela (escopo uni). :: campos: {nome, cat:'Personalizada', ic, gat, ac, canais:['wa'], ativo, uni}
+- AUTO_COL :: Cores por categoria de automação. :: campos: map categoria -> [bgColor, fgColor]
+- CANAL_LBL :: Rótulos dos canais. :: campos: {wa:'WhatsApp', push:'Sistema'}
+- UNI_WA :: Estado de conexão WhatsApp por unidade (multitenant). :: campos: { [uni]: {numero, conectado:bool} }
+- CRM_STAGES :: Etapas do funil de vendas (novo, contato, qualificado, avaliacao, proposta, negociacao, ganho, perdido). :: campos: {id, nome, cor}
+- TEMP :: Ícones de temperatura do lead. :: campos: {quente:🔥, morno:🌤️, frio:❄️}
+- SERV_OFF / PAC_OFF / PROD_OFF :: Soft-delete (inativação) de itens de catálogo — sugere coluna 'ativo' boolean no banco. :: campos: Set de índices inativados
+- CAT_DEFS :: Metaconfig dos formulários de catálogo. :: campos: {serv/pac/prod: {title, arr, off, build, body, fields:[[label,idx,type]], blank}}
+- REL_PERIODS / REL_UNI :: Opções de filtro padrão dos relatórios. :: campos: arrays de períodos e nomes de unidades
+- REL_DEFS :: Definição declarativa de TODOS os relatórios (assinaturas, agendamentos, ocorrencias, atendimentos, avaliacoes, clientes(8 abas), contratos, credito-dinheiro, crm, credito-recorrente, descontos, estatisticas, exportacoes, faturamento, ranking-vendas, fidelidade, financeiro, whatsapp, metas, notas-fiscais, ordens-servico, pacotes, pagamentos, perfis-acesso, anamnese). Cada pane define o schema de dados real esperado de cada entidade. :: campos: map relatório -> {tabs?, panes?, filtros, kpis, cols, rows, charts?, rank?, special?}
+- OCOR :: Ocorrências/intercorrências clínicas por sessão. :: campos: {d(data), cli, prof, serv, desc, tipo:'oc'(ocorrência)|'in'(intercorrência)}
+- FUNIL_DATA :: Dados do funil de vendas (novos x revenda). :: campos: {novos/revenda/todos: {lab, desc, ag, comp, conv, ticket, ticketN}}
+- CORRIDA / CORRIDA_MINHA :: Ranking gamificado entre unidades (corridinha de vendas). :: campos: [{u(unidade), dia(venda do dia), mes(pontos mês)}]; CORRIDA_MINHA = unidade do usuário
+- APP / APP_NEXT / APP_PKGS / APP_SERV / APP_UNITS / APP_REDEEM / APP_FRIENDS / APP_TABS :: Modelo de dados do app mobile do cliente (fidelidade, indicações, agendamento). :: campos: objetos/arrays do app do cliente (pontos, nível, cashback, próximo agendamento, pacotes done/total, serviços, unidades endereço/tel, itens de resgate por pontos, amigos indicados, abas)
+- FIN_CFG (referenciado) :: Configuração financeira da rede; percentual de royalties. :: campos: {royaltyPct (default 10)}
+- APP_SERV / APP_PKGS / APP_REDEEM / APP_UNITS / APP_FRIENDS / APP :: Seeds do app mobile do cliente: catálogo de serviços, pacotes/sessões, itens de resgate, unidades, amigos indicados e perfil de fidelidade do cliente :: campos: APP_SERV: {ic,n(nome),d(descrição),p(preço)}; APP_PKGS: {serv,done,total}; APP_REDEEM: {ic,n,p(pontos)}; APP_UNITS: {n(nome),e(endereço),t(telefone)}; APP_FRIENDS: {n,t,u(unidade)}; APP: {nivel,pts,cash,cashPct,nomeCompleto}
+- IMPL_WF :: Áreas/responsáveis (workflow) das tarefas de implantação :: campos: array de strings: Implantação, Expansão, Franqueado, Treinamento, Diretoria, Marketing, RH, Comercial, Compras
+- IMPL_ST / IMPL_STPILL :: Situações possíveis de tarefa de implantação e estilos :: campos: IMPL_ST: ['Aberto','Em Andamento','Aguardando Predecessora','Concluído']; IMPL_STPILL: mapa status→classe (draft/run/pend/ok)
+- IMPL_PROJ :: Projeto de implantação corrente (cabeçalho) :: campos: {unidade, inicio(dd/mm/aaaa), inaug(dd/mm/aaaa)}
+- IMPL_FASES :: Estrutura completa das 5 etapas e ~64 tarefas do fluxo de implantação (seed base para tabela fases/tarefas) :: campos: array de {cod(F01..),nome,t:[ [cod(T01..), nome, responsável, duraçãoDias, situação] ]}
+- JUR_DOCS :: Documentos contratuais anexados por unidade no Jurídico :: campos: mapa unidade→{contrato:{data,arq}|null, pre:{...}|null, cof:{...}|null}
+- JUR_TEMPLATES :: Modelos de notificação jurídica (royalties em atraso 1ª/2ª, uso indevido da marca, rescisão, descumprimento de padrões, inadimplência de taxas) :: campos: array {nome, assunto, corpo} com merge fields {unidade}{franqueado}{cnpj}{prazo}{data}
+- JUR_NOTIFS :: Fila de notificações jurídicas geradas a partir de recebíveis em atraso :: campos: array {id,finId,unidade,franqueado,cnpj,categoria,ref,valor,venc,dias,assunto,corpo,status(pendente/enviada),criadoEm}
+- FIN_CFG :: Configuração do financeiro da franqueadora (parâmetros de royalties, banco, adquirentes, régua de cobrança) :: campos: {royaltyPct:10, fundoPct:2, vencDia:10, banco:{nome,agencia,conta,convenio,login,autoBaixa}, adquirentes:[{nome,deb,cred,parc,pix,prazo}], regua:[{dias,acao,canal}]}
+- FIN_CATS_REC :: Categorias de recebíveis (cadastráveis) :: campos: ['Royalties','Taxa de franquia','Fundo de marketing','Aluguel de máquinas','Reembolso disparos Ultrassom','Locação de equipamentos','Taxa de tecnologia','Outros']
+- FIN_REC :: Contas a receber das unidades (royalties, fundo, aluguel, taxa de franquia, reembolsos, locação) :: campos: {id,unidade,categoria,ref(competência),bruto,valor,venc,status(aberto/atrasado/pago/suspenso),diasAtraso,boleto,enviado,dataPag,jurId,notificadoJur}
+- FIN_PAG :: Contas a pagar da franqueadora (folha, pró-labore, impostos, aluguel, tecnologia, marketing, contabilidade, fornecedores) :: campos: {id,categoria,descricao,escopo(Escritório/Rede/Lojas),valor,venc,status(aberto/pago/suspenso),prio(alta/media/baixa),sacAcordoId?}
+- FIN_CONC :: Conciliação bancária (vendas x extrato x taxa adquirente) :: campos: {data,unidade,adquirente,venda,taxaPct,taxa,esperado,recebido,status(ok/divergencia),obs}
+- FIN_FILT / FIN_FILT_DEF :: Estado dos filtros avançados de receber/pagar :: campos: {receber:{d1,d2,status,cat,desc,cliente,obs,tags}, pagar:{...}}
+- CALC_IDX :: Índices oficiais para correção monetária (atualizáveis via API SGS BCB) :: campos: mapa índice→{tipo(indice/taxa), mensal, acum12, aa, ref, sgs(código BCB)} para IGP-M, IPCA, INPC, SELIC, CDI
+- CALC_CFG :: Parâmetros do cálculo de atualização de débitos :: campos: {indice, multa:10, jurosAM:1, dataCalc, modo(nominal/acrescimos), idxFonte}
+- CALC_PARC / CALC_CATS :: Parcelas a atualizar (importadas dos recebíveis em atraso) :: campos: CALC_PARC: {desc,unidade,valor,venc,dataPag,inc,incEnc,finId}; CALC_CATS: categorias elegíveis ao cálculo
+- LOJAS_PROPRIAS :: Define quais unidades são lojas próprias x franquias (segmentação da DRE) :: campos: array de nomes de unidades próprias
+- DRE_KEYS / DRE_LINHAS :: Estrutura do DRE gerencial (linhas da demonstração de resultado) :: campos: DRE_KEYS: chaves de contas; DRE_LINHAS: [{l(label),k(key),t(tipo: cab/rev/subneg/itemneg/tot/totfinal/signed)}]
+- DESC_LIMIT / CARGOS_DESC / DESC_MAX_UNIDADE :: Alçada de desconto do PDV por cargo e teto por unidade :: campos: DESC_LIMIT: mapa cargo→% máx; CARGOS_DESC: lista de cargos; DESC_MAX_UNIDADE: mapa unidade→% máx (default 30)
+- DRE_LINHAS :: Estrutura de linhas do DRE gerencial (receita bruta, deducoes, custos, lucro bruto, despesas operacionais, EBITDA, depreciacao, EBIT, resultado financeiro, IR, lucro liquido) :: campos: [{l:label, k:chave, t:tipo(cab/subneg/itemneg/tot/totfinal/signed/rev)}]
+- DESC_LIMIT :: Limite de desconto por cargo (rede) :: campos: {cargo: percentual} (Consultora de Vendas:5, Profissional:5, SAC:10, Gerente:15, Gerente de Campo:25, Administrador:100, Proprietario:100)
+- CARGOS_DESC :: Lista de cargos para alcada de desconto :: campos: ['Consultora de Vendas','Profissional','SAC','Gerente','Gerente de Campo','Administrador','Proprietario']
+- DESC_MAX_UNIDADE :: Desconto maximo por unidade :: campos: {nomeUnidade: percentual} (default 30)
+- CORTESIA_LIMIT_MES :: Teto mensal de cortesias por unidade (R$) :: campos: number (default 2000)
+- CORTESIA_USED :: R$ de cortesia ja concedido no mes por unidade :: campos: {unidade: valorUsado}
+- CORTESIA_CLIENTES :: Clientes que ja receberam sessao gratuita (1 por cliente) :: campos: {clienteKey: true}
+- UNI_TRILHAS :: Trilhas de EAD por cargo com videos e provas (franqueado, gerente, consultora, saude, onboard) :: campos: [{id, role, nome, cor, prazo, etapas:[{n, yt, min, prova:[{q,opts,c}]}], final:[{q,opts,c}]}]
+- UNI_ALUNOS :: Alunos da Universidade com progresso, nota, prazo e status :: campos: [{nome, cargo, trilha, prog, nota, prazo, status}]
+- UNI_DONE / UNI_NOTAS :: Conclusao e notas de etapas/prova final :: campos: {trilhaId:idx => bool/nota}
+- CHK_INDS :: Indicadores do funil (Agendamentos, Comparecimento, Conversao novos/revenda, Ticket medio, No-show, Ocupacao) com meta, peso, criterio e acao de plano :: campos: [{k, lab, meta, suf, inv, peso, act}]
+- CHK_UNITS :: Valores dos indicadores por unidade (SP Vila Olimpia, FLN Centro, POA Iguatemi, Manaus, Cuiaba) :: campos: [{u:nomeUnidade, v:{ag,comp,convN,convR,ticket,noshow,ocup}}]
+- CHK_SEMANA / CHK_WEEKS :: Semana de referencia e semanas arquivadas para evolucao :: campos: string / ['S 18/05',...]
+- CHK_RESP :: Tipos de resposta dos itens de checklist :: campos: ['Nota (0-10)','Conforme / Nao conforme','Sim / Nao','Percentual (%)','Texto livre']
+- CHK_MODELS :: Modelos de checklist (PDCA mensal do sistema, funil semanal, padronizacao da loja) editaveis :: campos: [{nome, period, aplic, sis?, secoes:[{nome, itens:[{txt, resp, peso, plano}]}]}]
+- CHAM_PARTIES :: Partes (de/para) dos chamados :: campos: ['Comercial','Marketing','Financeiro','Operacoes','SAC','Expansao','RH','Area Tecnica','Franqueado · <unidade>'...]
+- CHAM_STATUS / CHAM_STPILL :: Status dos chamados e estilo visual :: campos: ['Novo','Andamento','Ag. Solicitante','Ag. Responsavel','Resolvido','Concluido'] / mapa de pill
+- COM_PRIO :: Prioridades de comunicado :: campos: {Normal/Importante/Urgente: [bg, cor, icone]}
+- COMU_CATS :: Categorias de comunicado :: campos: ['Sem categoria','Area Tecnica','Diretoria','Marketing','Operacao','RH']
+- ASSUNTOS :: Assuntos para filtro de comunicados :: campos: ['Marketing','Operacoes','Comercial','Area Tecnica','Diretoria','Treinamentos','Recursos Humanos']

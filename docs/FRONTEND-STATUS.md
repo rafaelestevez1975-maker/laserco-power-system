@@ -1,0 +1,107 @@
+# Frontend — Status do Clone e Mapa do que Falta
+
+> Estado da migração do protótipo (`legacy/index.html`) para o app Next.js.
+> **Método do clone:** o frontend renderizado de **todas as 101 telas/sub-telas** do
+> protótipo foi capturado em modo demonstração e é servido em cada rota — clone
+> **visual 1:1**. A **funcionalidade real** (dados do Supabase, ações, integrações)
+> é construída por cima, módulo a módulo, conforme [BACKLOG.md](BACKLOG.md).
+
+## Legenda
+- ✅ **Frontend clonado** — a tela aparece idêntica ao protótipo (HTML real + CSS real).
+- 🔌 **Funcional** — ligado a dados/ações reais (Supabase/UAZAPI). Hoje: só shell + auth.
+- ⏳ **Pendente** — falta implementar a funcionalidade (ver EPIC do BACKLOG).
+
+## Estado global (2026-06-22)
+| Camada | Status |
+|---|---|
+| Estrutura Next.js (App Router, TS, Tailwind, @supabase/ssr) | ✅ |
+| Tema vinho/dourado + fontes + ícones Tabler (1:1 do protótipo) | ✅ |
+| Shell: sidebar + topbar + navegação + menu completo | ✅ funcional |
+| Login + middleware de auth (Supabase, backend `lkii`) | ✅ funcional |
+| Logout + perfil do usuário (perfis_usuario) | ✅ funcional |
+| **Frontend das 101 telas** | ✅ clonado (estático) |
+| **Funcionalidade das telas** | ⏳ por módulo (abaixo) |
+| Multitenant — contexto de unidade + papel reais no shell (admin = `admin_geral`; seletor com as 82 unidades reais via RLS) | 🟡 parcial (EPIC 1) |
+| **Menu lateral gateado por permissão real** (usuario_cargos → cargo_permissoes → permissoes; 42 recursos) | ✅ (EPIC 1) |
+| RBAC fino por **botão/ação dentro das telas** + RLS por tela/dado | ⏳ EPIC 1 |
+| **CRM `/crm` — funcional com dados reais** (lê `crm_etapas`+`crm_leads` por unidade; KPIs reais; **criar lead** + **mover por drag&drop** com server actions respeitando RLS/constraints; caixa de entrada `site_leads`) | ✅ funcional (EPIC 3) — falta roteamento automático do site (EPIC 22) |
+
+## O que ainda NÃO funciona (geral, por design do clone)
+- **Interações internas da tela** (abas, filtros, ordenação, botões) — os handlers do
+  protótipo foram removidos no clone; serão reescritos em React por módulo.
+- **Dados são de exemplo** (mock do protótipo) — substituídos por dados reais do
+  Supabase ao implementar cada módulo.
+- **Sub-tabs dentro de uma view** (ex.: abas de um relatório) ainda não alternam.
+
+---
+
+## Mapa por módulo (rota → o que falta para ficar funcional)
+
+### Acompanhamento (3 telas) — ✅ frontend
+- `/` (Dashboard) · `/agenda` · `/os`
+- ⏳ **Falta:** Dashboard com KPIs/funil reais por unidade (EPIC 5); Agenda com CRUD de
+  agendamentos + grade por profissional (EPIC 7); OS com lista/abertura/fechamento reais (EPIC 6).
+
+### Cadastros & Catálogo (19 telas) — ✅ frontend
+- `/cadastros/{anamnese, categorias-pagar, categorias-receber, parcerias, formas-pagamento,
+  grupo-servicos, comissoes, metas, contratos, motivos, planos, perfis, origens}`
+- `/clientes` · `/colaboradores` · `/contas` · `/pacotes` · `/produtos` · `/servicos`
+- ⏳ **Falta:** CRUD real de cada cadastro com persistência + validações + RBAC (EPIC 1, 4, 7, 8);
+  Clientes com base na nuvem + importação Excel (EPIC 7); Matriz de comissões com simulador (EPIC 4.1);
+  Perfis de acesso gravando `cargo_permissoes` de verdade (EPIC 1).
+
+### Gestão · Relatórios (25 telas) — ✅ frontend
+- `/relatorios/{assinaturas, ocorrencias, agendamentos, anamnese, atendimentos, avaliacoes,
+  clientes, contratos, credito-dinheiro, crm, credito-recorrente, descontos, estatisticas,
+  exportacoes, faturamento, ranking-vendas, fidelidade, financeiro, whatsapp, metas,
+  notas-fiscais, ordens-servico, pacotes, pagamentos, perfis-acesso}`
+- ⏳ **Falta:** filtros reais (período/unidade), dados das tabelas vindos do Supabase e
+  exportação real (Excel/CSV) — hoje o botão Exportar é visual (EPIC 13.1).
+
+### Gestão · Dashboards (7 telas) — ✅ frontend
+- `/dashboards/{financeiro, gerencial, funil, vendas-geral, vendas-mes, vendas-comparativo, vendas-historico}`
+- ⏳ **Falta:** gráficos com dados reais; os de **Vendas** virão do app de Vendas/Supabase (EPIC 5/13).
+
+### Gestão · Comunicação, CRM & Conteúdo (11 telas) — ✅ frontend
+- `/automacoes` · `/disparos` · `/crm` · `/indiques` · `/marketing` · `/comunicados` ·
+  `/chamados` · `/checklist` · `/universidade` · `/disco` · `/notas`
+- ⏳ **Falta (P0/P1):** CRM Kanban com leads reais + ingestão dos leads do site (EPIC 3);
+  Disparos WhatsApp via **UAZAPI** (EPIC 10.4/16.2); Comunicados com audiência + leitura (EPIC 19);
+  Chamados intranet + SLA 48h (EPIC 18); Checklist PDCA automatizado + chat no plano (EPIC 17);
+  Disco Virtual com Google Workspace público/privado (EPIC 12.4); Notas Fiscais (EPIC 12.5, 2º momento).
+
+### Recursos Humanos (9 telas) — ✅ frontend
+- `/ponto` · `/rh` · `/rh/{colaboradores, ponto, recrutamento, folha, ferias, desempenho, regras}`
+- ⏳ **Falta:** Ponto GPS real + cerca 150m + home office (EPIC 20.1/20.2); Gestão de Ponto admin
+  (EPIC 20.3); Recrutamento com currículos do site + import SULTS + msg ao candidato (EPIC 20.5–20.7).
+
+### Expansão (7 telas) — ✅ frontend — **P0**
+- `/expansao` · `/expansao/{captacao, funil, leads, disparos, whatsapp, tipos}`
+- ⏳ **Falta:** captação multicanal (site/Google/geo), funil real, **disparos WhatsApp que não
+  param** + janela de conversas + esquentar lead (EPIC 16).
+
+### SAC (10 telas) — ✅ frontend — **P0**
+- `/sac` · `/sac/{chamados, kanban, triagem, relatorios, pagamentos, atendentes, ranking, importar, config}`
+- ⏳ **Falta:** entrada multicanal + BOT, auto-import por CPF/telefone, cálculo de reembolso,
+  espelho ↔ Financeiro, distribuição entre atendentes, WhatsApp automático (EPIC 15).
+
+### Franqueadora / Admin (4 telas) — ✅ frontend
+- `/implantacao` · `/financeiro` · `/juridico` · `/auditoria`
+- ⏳ **Falta:** Financeiro (import vendas/royalties, projeção, DRE, régua de cobrança WhatsApp,
+  conciliação — EPIC 9); Jurídico (Storage de documentos + integração cobrança — EPIC 9.7);
+  Implantação (múltiplos checklists + franqueado executor + lembrete WhatsApp — EPIC 12.3);
+  Auditoria (`audit_log` real — EPIC 13.2).
+
+### Rede & Conta (6 telas) — ✅ frontend
+- `/minha-unidade` · `/unidades` · `/minha-conta` · `/app-cliente` · `/exportacoes` · `/ajuda`
+- ⏳ **Falta:** Unidades com CRUD + status (EPIC 2); Minha Unidade/Conta com configs reais;
+  App do Cliente (validar/definir escopo — EPIC 7.5); Exportações reais; Ajuda (conteúdo).
+
+---
+
+## Próximas ondas (resumo — detalhe em BACKLOG.md §"Sequência sugerida")
+1. **Fundação:** EPIC 1 (RBAC/multitenant aplicado no shell e nas telas).
+2. **P0 do cliente:** EPIC 3 (leads do site → CRM) · EPIC 16 (Expansão/disparos) · EPIC 15 (SAC).
+3. **Operação/Financeiro:** EPIC 6/5/9/7.
+4. **Gestão da rede:** EPIC 17 (Checklist) · 18 (Chamados) · 19 (Comunicados) · 20 (RH) · 13.
+5. **Conteúdo:** EPIC 12 (Jurídico/Disco/Implantação/Universidade) · 14 (migração + go-live).
