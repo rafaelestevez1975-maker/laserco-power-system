@@ -163,3 +163,38 @@ São pontos de observação:
 •	RECRUTAMENTO, é fundamental. AQUI DEVEM CAIR OS CURRÍCULOS cadastrados no site, BEM COMO DEVEMOS IMPORTAR OS CURRÍCULOS QUE HOJE TEMOS NO SULTS, com dashboards de tudo (local, cargo, estado, etc...). Toda captação de currículos, por qualquer caminho, deve cair aqui. Currículos deve ser o primeiro item.
 •	Ao selecionar um currículo, este cai no Kanban, e começa processo seletivo, sendo anotado isso na lista de currículos. Todo andamento neste candidato, é replicado no currículo, tipo: não está disponível, não quer shopping, etc...
 •	De preferência, ao selecionar currículos e dar início ao processo seletivo, devemos poder enviar automático mensagem ao candidato dizendo que ele foi pré-selecionado, se está disponível, se pode trabalhar final de semana etc....
+
+
+12.	Gestão de Indiques
+
+Imagine que a Espaço Laser cresceu como cresceu basicamente através de indicações de clientes. E clientes NOVOS, para nós, é muito importante (vende mais converte mais, melhor ticket etc,,,).
+
+Para incentivar que os clientes dêem indicação, nós trocamos indiques mensais (de 3 a 5) por concorrer a um sorteio de pacote de laser ou sessão de ultrassom (um por unidade).
+
+Pontos importantes:
+
+•	Deve cair aqui de forma automática as indicações do site e podemos botar de forma manual também (já está assim, em tese, precisa integrar site). IMPORTANTE: Cada unidade recebe e vê as suas indicações, nós vemos todos. 
+•	IDEAL termos um dash das indicações das unidades (isso não fiz), para termos uma visão geral de tudo.
+•	Kanban: parece bom, mas não está “abrindo o lead” para evoluir. Ao abrir, precisamos poder escrever ou ter o andamento.
+•	AUTOMAÇÀO DESEJADA: Entrou uma indicação, já sabemos quem indicou e quem foi indicado, assim, podemos fazer com que ocorra um envio automático de mensagem, do tipo “olá aqui é da Laser&Co XXX, sua amiga YYY veio aqui e conseguiu para você uma sessão expriência de rejuvenescimento facial 4D à laser para vir conhecer nossa unidade, Tenho disponibilidade apenas esta semana no dia XYZ, conseguimos agendar para você aproveitar esta oportunidade?”. Devemos criar toda a régua de venda: primeiro, segundo e terceiro contatos, sem interferência humana, com evolução automática no Kanban, até que venha agendar (entra humano), ou desistimos (arquiva/perdido).
+
+[22/06/2026, 11:57:08] Matheus Ferreira: Show, irmòa, vai tocando aí que j’avou mandando mais
+[22/06/2026, 11:57:08] Matheus Ferreira: PRECISAMOS BOTAR PARA RODAR ALGUMA COSA JÁ NA SEMANA.
+[22/06/2026, 11:59:06] Matheus Ferreira: Gestão e SAC, sai hoje ? Com as integrações do site ?
+[22/06/2026, 12:05:25] Matheus Ferreira: ANOTAÇÕES IMPORTANTES DO POWER SYSTEM
+
+13.⁠ ⁠CRM
+
+•⁠  ⁠Transformar o “pipeline” atual em um CRM de verdade. Vejam como querem fazer e pode tocar ficha.
+
+14.⁠ ⁠Disparos de WhatsApp
+
+IMPORTANTÍSSIMO e FUNDAMENTAL para as unidades, para fazer disparos nas suas bases, em outras bases, gerar campanhas de fim de mês, etc..... Deve funcionar da seguinte forma:
+
+•⁠  ⁠UM whatsapp POR UNIDADE (ou mais de um, se possível, caso um bloqueie, por exemplo).
+•⁠  ⁠Trocar o menu que ficou interno para que fique como sub-menu do menu principal (lateral).
+•⁠  ⁠Precisamos poder mediar tudo das msgs (envio, abertura, venda, etc....), ver as conversas, entrar os leads em um Kanban (?), etc...enfim, precisamos.
+•⁠  ⁠Fora isso, criamos um GRUPO VIP, que é o seguinte: Criaremos grupos POR LOJA (até por isso o whats é separado), de clientes selecionados para termos UM DIA de vendas com preços “diferentes”. Subiremos as campanhas, criaremos materiais (teremos sempre as datas pré-definidas). A IA deve automatizar o “aquecimento” do grupo, com mensagens conforme cronograma que criamos (grupo abre 5 dias antes). As msg precisamos definir, ou a IA fazer e programar quando lançado no grupo.
+•⁠  ⁠IDEAL: Que a pessoa ao dizer “EU QUERO” a uma oferta, o sistema possa até gerar um link de pagamento para fechar a venda (acredito que seja no privado, como temos o whats e tudo o mais, nõa vejo problemas).
+•⁠  ⁠O Sistema de grupo VIP deve poder medir tudo: quantas pessoas, quantas vendas, ticket médio e venda total.
+•⁠  ⁠No dia seguinte, pela tarde, chamamos de “repescagem” e abrimos mais uns pacotes promocionais para aproveitar o grupo antes de fechar.

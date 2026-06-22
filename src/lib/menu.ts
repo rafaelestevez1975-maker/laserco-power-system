@@ -113,6 +113,8 @@ export const MENU: Section[] = [
       { label: 'Mensagens e Automações', href: '/automacoes', icon: 'ti-brand-whatsapp', perm: 'marketing.campanha' },
       { label: 'Disparos WhatsApp API', href: '/disparos', icon: 'ti-brand-whatsapp', badge: 'NOVO', perm: 'marketing.campanha' },
       { label: 'CRM', href: '/crm', icon: 'ti-affiliate', perm: 'crm.lead' },
+      { label: 'Leads do Site', href: '/leads-site', icon: 'ti-inbox', badge: 'NOVO', perm: 'crm.lead' },
+      { label: 'Canais WhatsApp', href: '/canais', icon: 'ti-brand-whatsapp', badge: 'NOVO' },
       { label: 'Gestão de Indiques', href: '/indiques', icon: 'ti-gift', badge: 'NOVO', perm: 'crm.lead' },
       {
         label: 'Recursos Humanos', icon: 'ti-briefcase', key: 'rh', perm: 'rh.', children: [

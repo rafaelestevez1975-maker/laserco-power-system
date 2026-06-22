@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { CrmBoard, type Etapa, type Lead } from '@/components/crm/CrmBoard'
@@ -40,10 +41,10 @@ export default async function CrmPage() {
         {activeUnit ? ' da unidade ativa' : ' (todas as unidades que você acessa)'}.
       </div>
 
-      <div className="crm-note" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-500)' }}>
+      <Link href="/leads-site" className="crm-note" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-500)', display: 'block', textDecoration: 'none', color: 'inherit' }}>
         <i className="ti ti-inbox" /> <b>Leads do site:</b> {siteLeadsCount ?? 0} na caixa de entrada
-        {' '}— roteamento automático (site → CRM por unidade) no EPIC 22/3.2.
-      </div>
+        {' '}— clique para rotear por unidade (SAC / CRM). <i className="ti ti-arrow-right" />
+      </Link>
 
       {vencidos > 0 && (
         <div id="crmAlert">

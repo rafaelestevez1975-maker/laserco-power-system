@@ -24,7 +24,14 @@
 | Multitenant — contexto de unidade + papel reais no shell (admin = `admin_geral`; seletor com as 82 unidades reais via RLS) | 🟡 parcial (EPIC 1) |
 | **Menu lateral gateado por permissão real** (usuario_cargos → cargo_permissoes → permissoes; 42 recursos) | ✅ (EPIC 1) |
 | RBAC fino por **botão/ação dentro das telas** + RLS por tela/dado | ⏳ EPIC 1 |
-| **CRM `/crm` — funcional com dados reais** (lê `crm_etapas`+`crm_leads` por unidade; KPIs reais; **criar lead** + **mover por drag&drop** com server actions respeitando RLS/constraints; caixa de entrada `site_leads`) | ✅ funcional (EPIC 3) — falta roteamento automático do site (EPIC 22) |
+| **CRM `/crm` — funcional com dados reais** (lê `crm_etapas`+`crm_leads` por unidade; KPIs reais; **criar lead** + **mover por drag&drop** com server actions respeitando RLS/constraints) | ✅ funcional (EPIC 3) |
+| **Ponte dos leads do site `/leads-site`** — caixa de entrada lê `site_leads` reais e **roteia por unidade**: tipo `sac` → `sac_tickets`; demais → `crm_leads` (validado: insert SAC 201 + CRM 201) | ✅ roteamento manual (EPIC 22/3.2) — falta auto-match de unidade + processamento automático |
+| **SAC `/sac` + `/sac/chamados` + `/sac/kanban`** — Dashboard (KPIs reais), lista filtrável, **abrir chamado**, **kanban drag&drop**, **detalhe do ticket** + **Reembolso/Acordo** (calcula multa% → cria espelho no Financeiro + move p/ "Em pagamento") | ✅ funcional (EPIC 15) — falta triagem WhatsApp |
+| **Financeiro `/financeiro` (Contas a Pagar)** — lista despesas reais + KPIs; **"Dar baixa"** marca pago e, se for reembolso do SAC (`origem_ref_id`→ticket), **conclui o chamado automaticamente** (ciclo SAC↔Financeiro validado ponta a ponta) | ✅ ciclo fechado (EPIC 9/15) — falta o restante do Financeiro (fluxo de caixa, DRE, royalties, cobrança) |
+| **Canais WhatsApp `/canais` (UAZAPI)** — admin token wired; lista as instâncias Laser (status real), **criar canal** (admin), **conectar via QR Code** (gera QR real + polling) e desconectar | ✅ conexão funcional (EPIC 16/21) |
+| **Disparos `/expansao/disparos`** — compositor (canal conectado + mensagem + base de números + delay) → cria campanha de **envio em massa na UAZAPI** (`/sender/simple`, delay anti-ban); exige canal conectado | ✅ pronto (EPIC 16) — envio real depende de conectar um canal; falta personalização `{nome}` (via /sender/advanced) |
+| **Triagem WhatsApp `/sac/triagem`** — janela estilo WhatsApp Web (conversas reais) + **responder pelo canal conectado** (sendText + grava saída) + **abrir chamado a partir da conversa** (vincula `ticket_id`, validado 201) | ✅ funcional (EPIC 15) — resposta real depende de canal conectado |
+| **Webhook `/api/webhooks/uazapi`** — recebe eventos da UAZAPI e **grava entradas em `sac_whatsapp_chats`/`sac_whatsapp_mensagens`** (dedup por wa_id, upsert do chat) → alimenta a Triagem (inserts validados 201) | ✅ roteamento de entrada (EPIC 15/16) — falta abrir chamado a partir da conversa |
 
 ## O que ainda NÃO funciona (geral, por design do clone)
 - **Interações internas da tela** (abas, filtros, ordenação, botões) — os handlers do
