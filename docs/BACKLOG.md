@@ -252,6 +252,23 @@
 - [ ] **PB.2 (S) P1** **Agenda — granularidade de 10 min** (hoje 1h): ajuste simples (agência faz).
 - [ ] **PB.3 (S) P0** Depois do build: **nada de novos módulos/integrações/mudanças de formulário**; edições no **2º ambiente** → deploy. Segredos em **Vercel Kubernetes Secrets**.
 
+## EPIC 23 — Gestão de Indiques (P1) — *anotação #12 (22/06)*
+
+- [ ] **23.1 (M) P1 🔌** Indicações do **site → Indiques** (automático) + entrada manual; **cada unidade vê as suas, franqueadora vê todas** (RLS).
+- [ ] **23.2 (S) P1** **Dashboard de indicações** (visão geral de todas as unidades).
+- [ ] **23.3 (M) P1** **Kanban: "abrir o lead"** — modal com andamento/notas para evoluir a indicação.
+- [ ] **23.4 (L) P2 🔌** **Régua automática (IA):** 1º/2º/3º contato por WhatsApp sem humano, **evolução automática no Kanban** até agendar (entra humano) ou arquivar/perdido.
+- [ ] **23.5 (S) P2** Sorteio mensal (3–5 indiques) por unidade — já no protótipo; tornar real.
+
+## Acréscimos — anotações 13–14 (22/06)
+
+**CRM (EPIC 3.1):** 🟢 "pipeline → CRM de verdade" — **ENTREGUE** (CRM real: criar/mover/leads por unidade).
+
+**Disparos / Grupo VIP (EPIC 16):**
+- [ ] **16.6 (S) P0** **UI:** trocar o menu interno por **sub-menu lateral** (Expansão/Disparos).
+- [ ] **16.7 (M) P1 🔌** **Mediação completa**: medir envio/abertura/venda, **ver conversas**, entrar leads num **Kanban**.
+- [ ] **16.8 (L) P2 🔌** **GRUPO VIP:** grupos **por loja**, dia de vendas com preços diferentes; **IA aquece** por cronograma (abre 5 dias antes); **link de pagamento** ao "EU QUERO"; **métricas** (pessoas, vendas, ticket, total).
+
 ## Acréscimos a épicos existentes (requisitos do cliente)
 
 **Financeiro Franqueadora (EPIC 9):**

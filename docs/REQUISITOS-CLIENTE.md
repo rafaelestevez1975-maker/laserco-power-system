@@ -196,6 +196,30 @@
 
 ---
 
+## 12. Gestão de Indiques ⭐ — *anotação #12 (22/06)*
+
+**Contexto:** a rede cresceu por **indicação**; cliente novo vale muito. Incentivo: trocar 3–5 indiques/mês por concorrer a um **sorteio mensal** (pacote laser / sessão ultrassom), um por unidade.
+
+- 🟢 Indicações do **site** caem aqui automático + entrada manual (precisa integrar o site). **Cada unidade vê as suas; a franqueadora vê todas.**
+- 🔴 **Dashboard de indicações** (visão geral de todas as unidades) — não feito.
+- 🔴 **Kanban: "abrir o lead"** para escrever/registrar o andamento (hoje não abre).
+- 🔴 🔌 **Régua de venda automática (IA):** ao entrar a indicação (sabe-se quem indicou e quem foi indicado), enviar **1º, 2º e 3º contatos** por WhatsApp sem humano, com **evolução automática no Kanban**, até **agendar** (entra humano) ou **arquivar/perdido**.
+
+## 13. CRM — *anotação #13 (22/06)*
+- 🟢 **Transformar o "pipeline" num CRM de verdade.** → **JÁ ENTREGUE** na migração (CRM real: criar/mover/leads por unidade).
+
+## 14. Disparos de WhatsApp ⭐⭐ (IMPORTANTÍSSIMO) — *anotação #14 (22/06)*
+- 🔴 🔌 **Um WhatsApp por unidade** (ou mais de um por unidade, caso um bloqueie).
+- 🔴 **UI:** trocar o **menu interno** por **sub-menu do menu lateral**.
+- 🔴 **Mediar tudo**: envio, abertura, venda; **ver as conversas**; entrar os leads num **Kanban**.
+- 🔴 🔌 **GRUPO VIP:** grupos **por loja** (por isso WhatsApp separado), de clientes selecionados, para **um dia de vendas** com preços diferentes. **A IA aquece o grupo** por cronograma (grupo abre **5 dias antes**), com campanhas/materiais em datas pré-definidas.
+- 🔴 🔌 **IDEAL:** ao cliente dizer "EU QUERO", o sistema gera **link de pagamento** (no privado) para fechar a venda.
+- 🔴 **Métricas do Grupo VIP:** nº de pessoas, nº de vendas, ticket médio e venda total.
+
+## 🚨 Urgência (22/06)
+- *"PRECISAMOS BOTAR PARA RODAR ALGO JÁ NA SEMANA."* · *"Gestão e SAC saem hoje, com as integrações do site?"*
+- → Confirma o foco: **SAC + CRM/Gestão + integração de leads do site** primeiro (já funcionais na migração). Conectar o **canal WhatsApp** (QR) destrava disparos/respostas reais.
+
 ## Resumo de prioridades (repriorização do cliente)
 | Módulo | Prioridade resultante | Por quê |
 |---|---|---|
