@@ -33,6 +33,8 @@
 | **Disparos `/expansao/disparos`** — compositor (canal conectado + mensagem + base de números + delay) → cria campanha de **envio em massa na UAZAPI** (`/sender/simple`, delay anti-ban); exige canal conectado | ✅ pronto (EPIC 16) — envio real depende de conectar um canal; falta personalização `{nome}` (via /sender/advanced) |
 | **Triagem WhatsApp `/sac/triagem`** — janela estilo WhatsApp Web (conversas reais) + **responder pelo canal conectado** (sendText + grava saída) + **abrir chamado a partir da conversa** (vincula `ticket_id`, validado 201) | ✅ funcional (EPIC 15) — resposta real depende de canal conectado |
 | **Webhook `/api/webhooks/uazapi`** — recebe eventos da UAZAPI e **grava entradas em `sac_whatsapp_chats`/`sac_whatsapp_mensagens`** (dedup por wa_id, upsert do chat) → alimenta a Triagem (inserts validados 201) | ✅ roteamento de entrada (EPIC 15/16) — falta abrir chamado a partir da conversa |
+| **Comunicados `/comunicados`** — tabelas reais `comunicados`+`comunicado_leituras` (migration **039**, RLS por papel); KPIs (destinatários/cientes/**taxa de leitura**), filtros (período/destinatário/assunto), **dashboard** por assunto/destinatário, abas (publicados/agendados/encerrados), **novo comunicado** (só admin), **gate "ciente"** do 1º acesso, **relatório de quem leu** (admin). Inserts validados 201 | ✅ funcional (EPIC 19) — falta gate global de leitura obrigatória no login + envio de e-mail real |
+| **Chamados `/chamados`** — tabelas reais `chamados`+`chamado_mensagens`+função `chamado_prazo_sla()` (migration **040**, RLS por papel); recebidos/enviados, KPIs (ativos/finalizados/atrasados), filtros, **abrir chamado**, **thread de retornos**, **finalizar/reabrir**, **SLA 48h corridas** (decisão do cliente; sexta→domingo validado). Inserts validados 201 | ✅ funcional (EPIC 18) — falta atribuição de responsável + notificação (intranet) ao entrar em atraso |
 
 ## O que ainda NÃO funciona (geral, por design do clone)
 - **Interações internas da tela** (abas, filtros, ordenação, botões) — os handlers do
@@ -73,9 +75,9 @@
 ### Gestão · Comunicação, CRM & Conteúdo (11 telas) — ✅ frontend
 - `/automacoes` · `/disparos` · `/crm` · `/indiques` · `/marketing` · `/comunicados` ·
   `/chamados` · `/checklist` · `/universidade` · `/disco` · `/notas`
+- ✅ **Comunicados** (EPIC 19) e ✅ **Chamados** (EPIC 18) **funcionais** — ver tabela de estado global.
 - ⏳ **Falta (P0/P1):** CRM Kanban com leads reais + ingestão dos leads do site (EPIC 3);
-  Disparos WhatsApp via **UAZAPI** (EPIC 10.4/16.2); Comunicados com audiência + leitura (EPIC 19);
-  Chamados intranet + SLA 48h (EPIC 18); Checklist PDCA automatizado + chat no plano (EPIC 17);
+  Disparos WhatsApp via **UAZAPI** (EPIC 10.4/16.2); Checklist PDCA automatizado + chat no plano (EPIC 17);
   Disco Virtual com Google Workspace público/privado (EPIC 12.4); Notas Fiscais (EPIC 12.5, 2º momento).
 
 ### Recursos Humanos (9 telas) — ✅ frontend

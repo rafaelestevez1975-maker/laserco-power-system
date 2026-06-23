@@ -74,8 +74,10 @@ export async function marcarCiente(comunicadoId: string): Promise<ActionResult> 
   const { data: perfil } = await sb.from('perfis_usuario').select('unidade_id').eq('id', user.id).single()
   const unidade_id = (perfil as { unidade_id?: string | null } | null)?.unidade_id ?? null
 
+  // ignoreDuplicates → ON CONFLICT DO NOTHING (evita o caminho de UPDATE, que não
+  // tem policy self em comunicado_leituras; reconfirmar "ciente" é no-op).
   const { error } = await sb.from('comunicado_leituras')
-    .upsert({ comunicado_id: comunicadoId, perfil_id: user.id, unidade_id, ciente: true }, { onConflict: 'comunicado_id,perfil_id' })
+    .upsert({ comunicado_id: comunicadoId, perfil_id: user.id, unidade_id, ciente: true }, { onConflict: 'comunicado_id,perfil_id', ignoreDuplicates: true })
   if (error) return { ok: false, error: rlsMsg(error.message, 'registrar ciente') }
   revalidatePath('/comunicados')
   return { ok: true }
