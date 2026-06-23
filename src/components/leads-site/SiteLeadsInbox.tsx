@@ -16,10 +16,12 @@ export type SiteLead = {
   quando: string | null
   routed: boolean
   destino: string | null
+  unidadeLabel?: string | null
+  sugestaoUnidadeId?: string | null
 }
 export type Unidade = { id: string; nome: string }
 
-const TIPO_DESTINO: Record<string, 'SAC' | 'CRM'> = { sac: 'SAC' }
+const TIPO_DESTINO: Record<string, 'SAC' | 'CRM' | 'RH'> = { sac: 'SAC', curriculo: 'RH' }
 const destinoDe = (t: string) => TIPO_DESTINO[t.toLowerCase()] ?? 'CRM'
 
 function TipoBadge({ tipo }: { tipo: string }) {
@@ -37,8 +39,8 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
 
-  async function rotear(id: string) {
-    const u = unit[id] || activeUnitId || ''
+  async function rotear(id: string, sugestao?: string | null) {
+    const u = unit[id] || sugestao || activeUnitId || ''
     if (!u) { setMsg('Selecione a unidade de destino primeiro.'); return }
     setBusy(id); setMsg('')
     const res = await rotearSiteLead(id, u)
@@ -81,15 +83,18 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
                 </span>
               ) : (
                 <>
-                  <select
-                    value={unit[l.id] ?? activeUnitId ?? ''}
-                    onChange={(e) => setUnit((p) => ({ ...p, [l.id]: e.target.value }))}
-                    style={{ flex: 1, minWidth: 0, padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5 }}
-                  >
-                    <option value="">Unidade…</option>
-                    {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
-                  </select>
-                  <button className="btn btn-primary" disabled={busy === l.id} onClick={() => rotear(l.id)} style={{ whiteSpace: 'nowrap' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <select
+                      value={unit[l.id] ?? l.sugestaoUnidadeId ?? activeUnitId ?? ''}
+                      onChange={(e) => setUnit((p) => ({ ...p, [l.id]: e.target.value }))}
+                      style={{ width: '100%', padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5 }}
+                    >
+                      <option value="">Unidade…</option>
+                      {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                    </select>
+                    {l.sugestaoUnidadeId && !unit[l.id] && <div style={{ fontSize: 10.5, color: 'var(--green)', marginTop: 2 }}>✨ sugerida pelo site{l.unidadeLabel ? `: ${l.unidadeLabel}` : ''}</div>}
+                  </div>
+                  <button className="btn btn-primary" disabled={busy === l.id} onClick={() => rotear(l.id, l.sugestaoUnidadeId)} style={{ whiteSpace: 'nowrap' }}>
                     {busy === l.id ? '…' : <><i className="ti ti-arrow-right" /> {destinoDe(l.tipo)}</>}
                   </button>
                 </>

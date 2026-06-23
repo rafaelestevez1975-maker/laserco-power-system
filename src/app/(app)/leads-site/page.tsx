@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { siteClient, siteConfigurado } from '@/lib/supabase/site'
+import { matchUnidadeId } from '@/lib/unidade-match'
 import { SiteLeadsInbox, type SiteLead } from '@/components/leads-site/SiteLeadsInbox'
 
 type SiteRow = { id: string; tipo?: string; nome?: string; telefone?: string; email?: string; unidade?: string; created_at?: string
@@ -10,6 +11,7 @@ type LkiiRow = { id: string; created_at: string | null; data: { tipo?: string; o
 
 export default async function LeadsSitePage() {
   const ctx = await getSessionContext()
+  const unidades = ctx?.unidades ?? []
   const site = siteClient()
   let leads: SiteLead[] = []
 
@@ -29,6 +31,8 @@ export default async function LeadsSitePage() {
       quando: r.created_at ?? null,
       routed: r.dados?._roteado === true,
       destino: r.dados?._routed_to ?? null,
+      unidadeLabel: r.unidade ?? null,
+      sugestaoUnidadeId: matchUnidadeId(r.unidade, unidades),
     }))
   } else {
     // Fallback: lkii.site_leads (apenas teste, enquanto não há a service key do site).

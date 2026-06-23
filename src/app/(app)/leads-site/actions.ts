@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { siteClient } from '@/lib/supabase/site'
 
-export type RouteResult = { ok: boolean; error?: string; destino?: 'CRM' | 'SAC' }
+export type RouteResult = { ok: boolean; error?: string; destino?: 'CRM' | 'SAC' | 'RH' }
 
 type Parsed = { tipo: string; nome: string; email: string | null; tel: string | null; mensagem: string | null; area: string | null }
 const ORIGEM_CRM: Record<string, string> = { indicacao: 'indicacao', oferta: 'formulario', avaliacao: 'formulario', agendamento: 'formulario', franquia: 'formulario' }
@@ -16,7 +16,6 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return { ok: false, error: 'Sessão expirada.' }
-  if (!unidadeId) return { ok: false, error: 'Selecione a unidade de destino.' }
 
   const site = siteClient()
   let parsed: Parsed | null = null
@@ -42,12 +41,51 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
   }
   if (jaRoteado) return { ok: false, error: 'Este lead já foi roteado.' }
 
+  let destino: 'CRM' | 'SAC' | 'RH'
+  let novoId: string | undefined
+
+  async function marcarRoteado(dest: string, nid?: string) {
+    const at = new Date().toISOString()
+    if (site) {
+      const { data: cur } = await site.from('lasercompany_leads').select('dados').eq('id', siteLeadId).single()
+      const dados = { ...((cur as { dados?: object })?.dados ?? {}), _roteado: true, _routed_to: dest, _routed_id: nid, _routed_at: at }
+      await site.from('lasercompany_leads').update({ dados }).eq('id', siteLeadId)
+    } else {
+      const { data: cur } = await sb.from('site_leads').select('data').eq('id', siteLeadId).single()
+      const dataNova = { ...((cur as { data?: object })?.data ?? {}), status: 'roteado', routed_to: dest, routed_id: nid, routed_at: at }
+      await sb.from('site_leads').update({ data: dataNova }).eq('id', siteLeadId)
+    }
+    revalidatePath('/leads-site'); revalidatePath('/crm')
+  }
+
+  // Currículo → RH: candidato no "Banco de Talentos (Site)" (candidatos.vaga_id é obrigatório).
+  if (parsed.tipo === 'curriculo') {
+    destino = 'RH'
+    // garante a vaga guarda-chuva
+    const { data: vExist } = await sb.from('vagas').select('id').eq('titulo', 'Banco de Talentos (Site)').limit(1).maybeSingle()
+    let vagaId = (vExist as { id?: string } | null)?.id
+    if (!vagaId) {
+      let uniId: string | undefined = unidadeId || undefined
+      if (!uniId) { const { data: u } = await sb.from('unidades').select('id').eq('ativa', true).order('nome', { ascending: true }).limit(1).single(); uniId = (u as { id?: string } | null)?.id }
+      if (!uniId) return { ok: false, error: 'Sem unidade para vincular o banco de talentos.' }
+      const { data: nv, error: ev } = await sb.from('vagas').insert({ unidade_id: uniId, titulo: 'Banco de Talentos (Site)', cargo: 'consultora_vendas', status: 'aberta', total_vagas: 99 }).select('id').single()
+      if (ev) return { ok: false, error: /row-level|policy|permission/i.test(ev.message) ? 'Sem permissão p/ criar vaga.' : ev.message }
+      vagaId = (nv as { id?: string })?.id
+    }
+    const notas = [parsed.area && `Cargo/área: ${parsed.area}`, parsed.mensagem].filter(Boolean).join(' · ')
+    const { data: ins, error } = await sb.from('candidatos').insert({
+      vaga_id: vagaId, nome: parsed.nome, email: parsed.email, telefone: parsed.tel || '',
+      fonte: 'portal', estagio_kanban: 'triagem', notas_internas: notas || null,
+    }).select('id').single()
+    if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão p/ cadastrar candidato.' : error.message }
+    novoId = (ins as { id?: string })?.id
+    await marcarRoteado(destino, novoId); return { ok: true, destino }
+  }
+
+  if (!unidadeId) return { ok: false, error: 'Selecione a unidade de destino.' }
   const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
   if (!empresa_id) return { ok: false, error: 'Unidade sem empresa vinculada.' }
-
-  let destino: 'CRM' | 'SAC'
-  let novoId: string | undefined
 
   if (parsed.tipo === 'sac') {
     destino = 'SAC'
@@ -71,18 +109,6 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     novoId = (ins as { id?: string })?.id
   }
 
-  // marca a origem como roteada
-  const marca = { _roteado: true, _routed_to: destino, _routed_id: novoId, _routed_at: new Date().toISOString() }
-  if (site) {
-    const { data: cur } = await site.from('lasercompany_leads').select('dados').eq('id', siteLeadId).single()
-    const dados = { ...((cur as { dados?: object })?.dados ?? {}), ...marca }
-    await site.from('lasercompany_leads').update({ dados }).eq('id', siteLeadId)
-  } else {
-    const { data: cur } = await sb.from('site_leads').select('data').eq('id', siteLeadId).single()
-    const dataNova = { ...((cur as { data?: object })?.data ?? {}), status: 'roteado', routed_to: destino, routed_id: novoId, routed_at: marca._routed_at }
-    await sb.from('site_leads').update({ data: dataNova }).eq('id', siteLeadId)
-  }
-
-  revalidatePath('/leads-site'); revalidatePath('/crm')
+  await marcarRoteado(destino, novoId)
   return { ok: true, destino }
 }
