@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { titleFor } from '@/lib/menu'
+import { NotificacoesSino } from './NotificacoesSino'
 import type { SessionUser, Unidade } from './AppShell'
 
 export function Topbar({
@@ -77,9 +78,7 @@ export function Topbar({
         )}
       </div>
 
-      <div className="top-pop">
-        <button className="icon-btn" title="Notificações"><i className="ti ti-bell" /></button>
-      </div>
+      <NotificacoesSino />
 
       <div className="top-pop">
         <button className="btn-venda"><i className="ti ti-shopping-cart-plus" /> Nova Venda</button>

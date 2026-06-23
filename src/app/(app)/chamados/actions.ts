@@ -93,6 +93,19 @@ export async function responderChamado(chamadoId: string, mensagem: string): Pro
   return { ok: true }
 }
 
+/** Assume o chamado como responsável (o usuário atual passa a ser o responsável). */
+export async function assumirChamado(chamadoId: string): Promise<ActionResult & { responsavel?: string }> {
+  const { sb, user, perfil } = await ctxUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const nome = perfil?.nome_completo ?? user.email ?? 'Responsável'
+  const { error } = await sb.from('chamados')
+    .update({ responsavel_id: user.id, responsavel_nome: nome })
+    .eq('id', chamadoId)
+  if (error) return { ok: false, error: rlsMsg(error.message, 'assumir o chamado') }
+  revalidatePath('/chamados')
+  return { ok: true, responsavel: nome }
+}
+
 /** Finaliza ou reabre um chamado. */
 export async function finalizarChamado(chamadoId: string, finalizar: boolean): Promise<ActionResult> {
   const sb = await createClient()

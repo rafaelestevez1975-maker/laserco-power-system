@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { abrirChamado, carregarThread, responderChamado, finalizarChamado, type ChamadoForm, type MensagemRow } from '@/app/(app)/chamados/actions'
+import { abrirChamado, carregarThread, responderChamado, finalizarChamado, assumirChamado, type ChamadoForm, type MensagemRow } from '@/app/(app)/chamados/actions'
 
 export type Chamado = {
   id: string; numero: number; assunto: string; etiqueta: string
@@ -166,15 +166,24 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
 function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmin: boolean; onBack: () => void }) {
   const [msgs, setMsgs] = useState<MensagemRow[] | null>(null)
   const [fin, setFin] = useState(chamado.finalizado)
+  const [resp, setResp] = useState(chamado.responsavel)
   const [texto, setTexto] = useState('')
   const [busy, setBusy] = useState(false)
   const [erro, setErro] = useState('')
+  const chatRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     carregarThread(chamado.id).then((r) => setMsgs(r.ok ? r.mensagens ?? [] : []))
   }, [chamado.id])
+  // Rola o chat para a última mensagem sempre que a thread muda.
+  useEffect(() => { const el = chatRef.current; if (el) el.scrollTop = el.scrollHeight }, [msgs])
   const lim = fmtBR(prazoSLA(chamado.abertoEm))
   const atrasado = estaAtrasado(chamado.abertoEm, fin)
+
+  function assumir() {
+    setBusy(true); setErro('')
+    assumirChamado(chamado.id).then((r) => { setBusy(false); if (r.ok) setResp(r.responsavel || resp); else setErro(r.error || 'Erro.') })
+  }
 
   function enviar() {
     const t = texto.trim(); if (!t) return
@@ -202,16 +211,17 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
           <span style={{ marginLeft: 'auto' }}><SitPill fin={fin} /></span>
         </div>
         <h3 style={{ fontSize: 17, fontWeight: 700 }}>{chamado.assunto}</h3>
-        <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>{chamado.de} <i className="ti ti-arrow-right" /> {chamado.para} · responsável: {chamado.responsavel} · aberto {new Date(chamado.abertoEm).toLocaleString('pt-BR')}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>{chamado.de} <i className="ti ti-arrow-right" /> {chamado.para} · responsável: {resp === '—' ? <span className="muted">a atribuir</span> : <b>{resp}</b>} · aberto {new Date(chamado.abertoEm).toLocaleString('pt-BR')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-clock" /> Prazo de resolução (SLA 48h): <b>{lim}</b>{!fin && atrasado && <span className="wa-pill" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginLeft: 6 }}>atrasado</span>}</span>
+          {isAdmin && !fin && <button className="btn" disabled={busy} onClick={assumir}><i className="ti ti-user-check" /> Assumir</button>}
           <button className="btn btn-primary" disabled={busy} onClick={toggleFin}>{fin ? <><i className="ti ti-rotate" /> Reabrir chamado</> : <><i className="ti ti-flag-check" /> Finalizar chamado</>}</button>
         </div>
         {erro && <div style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 8 }}>{erro}</div>}
       </div>
 
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="chat-msgs" style={{ height: 340, borderRadius: 0 }}>
+        <div className="chat-msgs" ref={chatRef} style={{ height: 340, borderRadius: 0 }}>
           {msgs === null && <div style={{ padding: 16, color: 'var(--text-3)' }}>Carregando…</div>}
           {msgs?.map((m) => (
             <div key={m.id} className={`msg ${m.papel_remetente === 'solicitante' ? 'in' : 'out'}`}>
@@ -226,7 +236,6 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
           <button className="chat-send" style={{ background: 'var(--brand-500)' }} disabled={busy} onClick={enviar}><i className="ti ti-send" /></button>
         </div>
       </div>
-      {!isAdmin && null}
     </>
   )
 }
@@ -236,7 +245,9 @@ function NovoChamado({ onClose, onSaved, onError, origemFranqueado }: { onClose:
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   function salvar() {
-    setErr(''); if (!f.assunto.trim() || !f.descricao.trim()) { setErr('Preencha assunto e descrição.'); return }
+    setErr('')
+    if (!f.assunto.trim() || !f.descricao.trim()) { setErr('Preencha assunto e descrição.'); return }
+    if (f.de_parte === f.para_parte) { setErr('“De” e “Para” não podem ser o mesmo departamento.'); return }
     setBusy(true)
     abrirChamado(f).then((r) => {
       setBusy(false)
