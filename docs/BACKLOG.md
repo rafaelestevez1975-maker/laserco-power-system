@@ -295,6 +295,7 @@
 
 - [ ] **Supabase do outro projeto** — recebido token de gerência (sbp_…) via chat: **revogar/rotacionar** e configurar como env var; validar/normalizar schema. *(Ver memória — token não versionado.)*
 - [ ] **Acesso ao painel administrativo do site** lasercompany.com + mapa dos formulários (indicação/agendar/SAC) e roteamento por unidade.
+- [ ] 🚧 **Service key do Supabase do site (`riutcbwillvqjrpaefkb`)** — o site grava em `lasercompany_leads`, mas a **anon key não lê (RLS)**. Sem a service key, a ponte `/leads-site` não puxa os leads reais. Definir `SITE_SUPABASE_SERVICE_KEY` no `.env.local`. *(Confirmado 22/06: site usa Supabase separado do backend `lkii`.)*
 - [ ] **Regras do módulo Saque** (quem saca, gatilho, aprovação, meio de pagamento).
 - [ ] **Detalhes do BOT do SAC** já criado (onde está, payload que coleta) para integrar.
 - [ ] **Conversa sobre a estrutura multitenant / rollout para as outras unidades.**

@@ -1,42 +1,60 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
+import { siteClient, siteConfigurado } from '@/lib/supabase/site'
 import { SiteLeadsInbox, type SiteLead } from '@/components/leads-site/SiteLeadsInbox'
 
-type Row = { id: string; created_at: string | null; data: {
-  tipo?: string; origem?: string; status?: string | null; routed_to?: string
-  dados?: { nome?: string; email?: string; whatsapp?: string; telefone?: string; mensagem?: string; area?: string }
-} | null }
+type SiteRow = { id: string; tipo?: string; nome?: string; telefone?: string; email?: string; unidade?: string; created_at?: string
+  dados?: { nome?: string; telefone?: string; whatsapp?: string; email?: string; mensagem?: string; area?: string; origem?: string; _roteado?: boolean; _routed_to?: string } }
+type LkiiRow = { id: string; created_at: string | null; data: { tipo?: string; origem?: string; status?: string; routed_to?: string
+  dados?: { nome?: string; email?: string; whatsapp?: string; telefone?: string; mensagem?: string; area?: string } } | null }
 
 export default async function LeadsSitePage() {
   const ctx = await getSessionContext()
-  const sb = await createClient()
+  const site = siteClient()
+  let leads: SiteLead[] = []
 
-  const { data } = await sb.from('site_leads').select('id, data, created_at').order('created_at', { ascending: false }).limit(500)
-  const rows = (data ?? []) as Row[]
-
-  const leads: SiteLead[] = rows.map((r) => {
-    const d = r.data?.dados ?? {}
-    return {
-      id: r.id,
-      tipo: r.data?.tipo ?? '—',
-      nome: d.nome?.trim() || 'Lead do site',
-      email: d.email || null,
-      contato: d.whatsapp || d.telefone || null,
-      area: d.area || null,
-      mensagem: d.mensagem || null,
-      origem: r.data?.origem || null,
-      quando: r.created_at,
-      routed: r.data?.status === 'roteado',
-      destino: r.data?.routed_to ?? null,
-    }
-  })
+  if (site) {
+    // Fonte REAL: lasercompany_leads (Supabase do site).
+    const { data } = await site.from('lasercompany_leads')
+      .select('id, tipo, nome, telefone, email, unidade, created_at, dados')
+      .order('created_at', { ascending: false }).limit(500)
+    leads = ((data ?? []) as SiteRow[]).map((r) => ({
+      id: r.id, tipo: r.tipo ?? '—',
+      nome: r.nome || r.dados?.nome || 'Lead do site',
+      email: r.email || r.dados?.email || null,
+      contato: r.telefone || r.dados?.telefone || r.dados?.whatsapp || null,
+      area: r.dados?.area || r.unidade || null,
+      mensagem: r.dados?.mensagem || null,
+      origem: r.dados?.origem || r.unidade || null,
+      quando: r.created_at ?? null,
+      routed: r.dados?._roteado === true,
+      destino: r.dados?._routed_to ?? null,
+    }))
+  } else {
+    // Fallback: lkii.site_leads (apenas teste, enquanto não há a service key do site).
+    const sb = await createClient()
+    const { data } = await sb.from('site_leads').select('id, data, created_at').order('created_at', { ascending: false }).limit(500)
+    leads = ((data ?? []) as LkiiRow[]).map((r) => {
+      const d = r.data?.dados ?? {}
+      return { id: r.id, tipo: r.data?.tipo ?? '—', nome: d.nome?.trim() || 'Lead do site', email: d.email || null,
+        contato: d.whatsapp || d.telefone || null, area: d.area || null, mensagem: d.mensagem || null,
+        origem: r.data?.origem || null, quando: r.created_at, routed: r.data?.status === 'roteado', destino: r.data?.routed_to ?? null }
+    })
+  }
 
   return (
     <div className="view active">
       <div className="crm-note">
-        <i className="ti ti-route" /> Leads vindos do site (indicação, agendamento, SAC, franquia, etc.). Roteie cada um
-        para a <b>unidade</b> certa — tipo <b>SAC</b> vira chamado no SAC; os demais viram lead no <b>CRM</b>.
+        <i className="ti ti-route" /> Leads vindos do site — roteie cada um para a <b>unidade</b> certa
+        (tipo <b>SAC</b> vira chamado; os demais viram lead no <b>CRM</b>).
       </div>
+      {!siteConfigurado() && (
+        <div className="crm-note" style={{ background: 'var(--amber-bg)', borderColor: 'var(--amber)' }}>
+          <i className="ti ti-alert-triangle" /> <b>Fonte real do site não conectada.</b> O site grava em
+          <b> riut.lasercompany_leads</b> (Supabase separado, com RLS) — defina <code>SITE_SUPABASE_SERVICE_KEY</code> no
+          <code>.env.local</code> para puxar os leads reais. Exibindo a base de teste por enquanto.
+        </div>
+      )}
       <SiteLeadsInbox leads={leads} unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
     </div>
   )
