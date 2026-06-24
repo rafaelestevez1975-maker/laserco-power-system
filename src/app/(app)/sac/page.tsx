@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getSessionContext } from '@/lib/session'
 
 export default async function SacDashboardPage() {
+  const ctx = await getSessionContext()
+  const activeUnit = ctx?.activeUnitId ?? null
   const sb = await createClient()
   const c = async (col?: string, val?: unknown) => {
     let q = sb.from('sac_tickets').select('id', { count: 'exact', head: true })
+    if (activeUnit) q = q.eq('unidade_id', activeUnit) // respeita a unidade ativa do topo
     if (col) q = q.eq(col, val as never)
     const { count } = await q
     return count ?? 0

@@ -14,11 +14,14 @@ const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ?
 export default async function RecrutamentoPage() {
   const ctx = await getSessionContext()
   const sb = await createClient()
-  const { data } = await sb
+  let q = sb
     .from('candidatos')
-    .select('id,nome,email,telefone,cpf,fonte,estagio_kanban,score_triagem_ia,notas_internas,motivo_reprovacao,criado_em,vaga_id,vagas(titulo,cargo,unidade_id,unidades(nome,cidade,estado))')
+    .select('id,nome,email,telefone,cpf,fonte,estagio_kanban,score_triagem_ia,notas_internas,motivo_reprovacao,criado_em,vaga_id,vagas!inner(titulo,cargo,unidade_id,unidades(nome,cidade,estado))')
     .order('criado_em', { ascending: false })
     .limit(1000)
+  // respeita a unidade ativa do topo (a unidade vem da vaga do candidato)
+  if (ctx?.activeUnitId) q = q.eq('vagas.unidade_id', ctx.activeUnitId)
+  const { data } = await q
 
   const candidatos: Candidato[] = ((data ?? []) as Row[]).map((r) => {
     const vaga = one<Embed>(r.vagas)

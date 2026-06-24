@@ -17,7 +17,9 @@ export default async function ChamadosPage() {
   // → cai em "Recebidos" sob a ótica da franqueadora. Admin abre a partir de um departamento.
   const origemFranqueado = !isAdmin && activeUnit && activeUnit !== 'Todas as unidades' ? `Franqueado · ${activeUnit}` : null
   const sb = await createClient()
-  const { data } = await sb.from('chamados').select('*').order('aberto_em', { ascending: false }).limit(500)
+  let q = sb.from('chamados').select('*').order('aberto_em', { ascending: false }).limit(500)
+  if (ctx?.activeUnitId) q = q.eq('de_unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
+  const { data } = await q
 
   const chamados: Chamado[] = ((data ?? []) as Row[]).map((r) => ({
     id: r.id, numero: r.numero, assunto: r.assunto, etiqueta: r.etiqueta || 'Solicitação',

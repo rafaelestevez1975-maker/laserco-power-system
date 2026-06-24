@@ -29,6 +29,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   if (canal) query = query.eq('canal', canal)
   if (fase) query = query.eq('fase', fase)
   if (q) query = query.ilike('nome_cliente', `%${q}%`)
+  if (ctx?.activeUnitId) query = query.eq('unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
 
   const { data, count } = await query
   const tickets = (data ?? []) as Ticket[]

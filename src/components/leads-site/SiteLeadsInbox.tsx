@@ -37,6 +37,7 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
   const router = useRouter()
   const [unit, setUnit] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
+  const [bulk, setBulk] = useState(false)
   const [msg, setMsg] = useState('')
 
   async function rotear(id: string, sugestao?: string | null) {
@@ -49,6 +50,24 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
     else { setMsg(`Lead roteado para ${res.destino}.`); router.refresh() }
   }
 
+  /** Roteia TODOS os pendentes de uma vez: cada lead vai para o destino do seu tipo
+   *  (SAC/CRM/RH) na unidade sugerida pelo site (ou a unidade ativa). */
+  async function rotearTodos() {
+    const pend = leads.filter((l) => !l.routed)
+    if (!pend.length) return
+    if (!confirm(`Rotear automaticamente ${pend.length} lead(s)? Cada um vai para o destino do seu tipo (SAC/CRM/RH), na unidade sugerida pelo site.`)) return
+    setBulk(true); setMsg('Roteando…')
+    let ok = 0, pulados = 0
+    for (const l of pend) {
+      const u = unit[l.id] || l.sugestaoUnidadeId || activeUnitId || ''
+      const res = await rotearSiteLead(l.id, u)
+      if (res.ok) ok++; else pulados++
+    }
+    setBulk(false)
+    setMsg(`Roteados automaticamente: ${ok}.${pulados ? ` Sem unidade definida (ficam manuais): ${pulados}.` : ''}`)
+    router.refresh()
+  }
+
   const pendentes = leads.filter((l) => !l.routed).length
 
   return (
@@ -57,7 +76,12 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
         <i className="ti ti-inbox" style={{ color: 'var(--brand-500)' }} />
         <b>Caixa de entrada do site</b>
         <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{pendentes} pendente(s) · {leads.length} no total</span>
-        {msg && <span style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--brand-600)' }}>{msg}</span>}
+        {msg && <span style={{ fontSize: 12.5, color: 'var(--brand-600)' }}>{msg}</span>}
+        {pendentes > 0 && (
+          <button className="btn btn-primary" style={{ marginLeft: 'auto' }} disabled={bulk} onClick={rotearTodos}>
+            {bulk ? 'Roteando…' : <><i className="ti ti-rocket" /> Rotear automaticamente ({pendentes})</>}
+          </button>
+        )}
       </div>
 
       {leads.length === 0 && <div style={{ padding: 20, color: 'var(--text-3)', fontSize: 13 }}>Nenhum lead do site na caixa de entrada.</div>}

@@ -1,16 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
+import { getSessionContext } from '@/lib/session'
 import { FinContasPagar, type Lancamento } from '@/components/financeiro/FinContasPagar'
 
 const money = (v: number) => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
 
 export default async function FinanceiroPage() {
+  const ctx = await getSessionContext()
   const sb = await createClient()
-  const { data } = await sb
+  let q = sb
     .from('lancamentos_financeiros')
     .select('id, descricao, valor, status, data_vencimento, origem_ref_id, plano_contas(nome)')
     .eq('tipo', 'despesa')
     .order('data_vencimento', { ascending: false })
     .limit(200)
+  if (ctx?.activeUnitId) q = q.eq('unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
+  const { data } = await q
 
   const lancamentos: Lancamento[] = (data ?? []).map((r) => {
     const pc = (r as { plano_contas?: { nome?: string } | { nome?: string }[] }).plano_contas
