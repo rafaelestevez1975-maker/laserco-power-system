@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { CrmBoard, type Etapa, type Lead } from '@/components/crm/CrmBoard'
+import { moedaBR } from '@/lib/fmt'
 
-const money = (v: number) => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
+const money = moedaBR
 
 export default async function CrmPage() {
   const ctx = await getSessionContext()

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { moverTicketFase } from '@/app/(app)/sac/kanban/actions'
 import { solicitarReembolso } from '@/app/(app)/sac/actions'
+import { moedaBR } from '@/lib/fmt'
 
 export type Ticket = {
   id: string; numero: number | null; protocolo: string | null; nome_cliente: string | null
@@ -21,7 +22,7 @@ const FASES: { nome: string; cor: string }[] = [
   { nome: 'Concluído', cor: '#1F9D6B' },
 ]
 const prioColor = (p: string | null) => (p === 'alta' || p === 'critica' ? '#C2410C' : p === 'baixa' ? '#64748B' : '#9A6700')
-const money = (v: number | null) => (v == null ? null : 'R$ ' + Math.round(v).toLocaleString('pt-BR'))
+const money = (v: number | null) => (v == null ? null : moedaBR(v))
 
 export function SacKanban({ tickets: ticketsProp }: { tickets: Ticket[] }) {
   const router = useRouter()

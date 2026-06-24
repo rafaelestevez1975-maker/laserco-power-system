@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { darBaixaLancamento } from '@/app/(app)/financeiro/actions'
+import { moedaBR } from '@/lib/fmt'
 
 export type Lancamento = {
   id: string; descricao: string | null; valor: number | null; status: string | null
   data_vencimento: string | null; categoria: string | null; origem_ref_id: string | null
 }
 
-const money = (v: number | null) => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
+const money = moedaBR
 const stPill = (s: string | null): React.CSSProperties =>
   s === 'pago' ? { background: '#E7F0EC', color: '#15803D' } : s === 'vencido' ? { background: '#FBE9EB', color: '#D85563' } : { background: '#FBEFD9', color: '#9A6700' }
 

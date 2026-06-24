@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { msgErro as rlsMsg } from '@/lib/sb'
 
 export type ComunicadoForm = {
   titulo: string
@@ -16,8 +17,7 @@ export type ComunicadoForm = {
 }
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
-const rlsMsg = (m: string, what: string) =>
-  /row-level|policy|permission|denied/i.test(m) ? `Sem permissão para ${what}.` : m
+// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
 /** Cria um comunicado (somente admin_geral  garantido pela RLS). */
 export async function criarComunicado(form: ComunicadoForm): Promise<ActionResult> {

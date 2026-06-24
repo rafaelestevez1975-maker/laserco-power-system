@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { msgErro as rlsMsg } from '@/lib/sb'
 
 export type ChamadoForm = {
   assunto: string
@@ -14,8 +15,7 @@ export type ChamadoForm = {
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 export type MensagemRow = { id: string; autor_nome: string | null; papel_remetente: string; mensagem: string; criada_em: string }
 
-const rlsMsg = (m: string, what: string) =>
-  /row-level|policy|permission|denied/i.test(m) ? `Sem permissão para ${what}.` : m
+// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
 async function ctxUser() {
   const sb = await createClient()

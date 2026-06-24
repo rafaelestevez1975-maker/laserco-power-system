@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { moverCandidato, iniciarProcesso, atualizarNotas, criarCurriculo, type NovoCurriculo } from '@/app/(app)/rh/recrutamento/actions'
+import { waHref, dataBR } from '@/lib/fmt'
 
 export type Candidato = {
   id: string; nome: string; email: string | null; telefone: string | null; cpf: string | null
@@ -26,8 +27,7 @@ const EM_PROCESSO = new Set(['entrevista_rh', 'teste_tecnico', 'entrevista_gesto
 const DRAG_OFF = new Set(['contratado', 'reprovado'])
 const FONTE_LABEL: Record<string, string> = { portal: 'Site', whatsapp: 'WhatsApp', indicacao: 'Indicação', linkedin: 'LinkedIn', outro: 'Outro' }
 
-const waHref = (tel?: string | null) => { const d = (tel || '').replace(/\D/g, ''); return d ? `https://wa.me/${d.startsWith('55') ? d : '55' + d}` : null }
-const dataBR = (s: string) => { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '' } }
+// waHref e dataBR vêm de @/lib/fmt (DRY — ver docs/CONSOLIDACAO.md D3/D4)
 
 function Kpis({ items }: { items: [string, string, string][] }) {
   return <div className="rel-kpis">{items.map(([l, v, ic]) => (

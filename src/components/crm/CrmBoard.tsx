@@ -6,6 +6,7 @@ import {
   DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
 import { criarLead, moverLead } from '@/app/(app)/crm/actions'
+import { moedaBR, waHref } from '@/lib/fmt'
 
 export type Etapa = { id: string; nome: string; cor: string }
 export type Lead = {
@@ -14,11 +15,7 @@ export type Lead = {
 }
 export type Unidade = { id: string; nome: string }
 
-const money = (v: number) => 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
-const waHref = (tel?: string | null) => {
-  const d = (tel || '').replace(/\D/g, '')
-  return d ? `https://wa.me/${d.startsWith('55') ? d : '55' + d}` : null
-}
+const money = moedaBR
 const temp = (s: number | null) => (s == null ? '' : s >= 0.7 ? '🔥' : s >= 0.4 ? '🌤️' : '❄️')
 
 export function CrmBoard({

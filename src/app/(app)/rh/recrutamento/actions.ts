@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { msgErro as rlsMsg } from '@/lib/sb'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -10,8 +11,7 @@ export const ESTAGIOS = ['triagem', 'entrevista_rh', 'teste_tecnico', 'entrevist
 export type Estagio = (typeof ESTAGIOS)[number]
 const FONTES = ['portal', 'whatsapp', 'indicacao', 'linkedin', 'outro']
 
-const rlsMsg = (m: string, what: string) =>
-  /row-level|policy|permission|denied/i.test(m) ? `Sem permissão para ${what}.` : m
+// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
 /** Move um candidato para outro estágio do kanban (com motivo quando reprovado). */
 export async function moverCandidato(id: string, estagio: Estagio, motivo?: string): Promise<ActionResult> {

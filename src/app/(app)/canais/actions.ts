@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { msgErro as rlsMsg } from '@/lib/sb'
 import { getSessionContext } from '@/lib/session'
 import { listInstances, createInstance, connectInstance, getStatus, disconnectInstance, configurarWebhook, urlWebhook, type ConnState } from '@/lib/uazapi'
 
 export type Escopo = 'unidade' | 'geral'
 export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number }
 
-const rlsMsg = (m: string, what: string) =>
-  /row-level|policy|permission|denied/i.test(m) ? `Sem permissão para ${what}.` : m
+// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
 async function tokenPorNome(nome: string): Promise<string | null> {
   const all = await listInstances()
