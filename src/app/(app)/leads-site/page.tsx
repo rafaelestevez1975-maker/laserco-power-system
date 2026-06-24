@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
-import { siteClient, siteConfigurado } from '@/lib/supabase/site'
+import { siteClient } from '@/lib/supabase/site'
 import { matchUnidadeId } from '@/lib/unidade-match'
 import { SiteLeadsInbox, type SiteLead } from '@/components/leads-site/SiteLeadsInbox'
 
@@ -48,17 +48,6 @@ export default async function LeadsSitePage() {
 
   return (
     <div className="view active">
-      <div className="crm-note">
-        <i className="ti ti-route" /> Leads vindos do site  roteie cada um para a <b>unidade</b> certa
-        (tipo <b>SAC</b> vira chamado; os demais viram lead no <b>CRM</b>).
-      </div>
-      {!siteConfigurado() && (
-        <div className="crm-note" style={{ background: 'var(--amber-bg)', borderColor: 'var(--amber)' }}>
-          <i className="ti ti-alert-triangle" /> <b>Fonte real do site não conectada.</b> O site grava em
-          <b> riut.lasercompany_leads</b> (Supabase separado, com RLS)  defina <code>SITE_SUPABASE_SERVICE_KEY</code> no
-          <code>.env.local</code> para puxar os leads reais. Exibindo a base de teste por enquanto.
-        </div>
-      )}
       <SiteLeadsInbox leads={leads} unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
     </div>
   )

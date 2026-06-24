@@ -25,11 +25,6 @@ export default async function FinanceiroPage() {
 
   return (
     <div className="view active">
-      <div className="crm-note">
-        <i className="ti ti-businessplan" /> <b>Financeiro Franqueadora · Contas a Pagar.</b> Os reembolsos do SAC caem aqui
-        como solicitação; ao <b>dar baixa</b>, o chamado é <b>concluído automaticamente</b> (espelho de volta).
-      </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, margin: '4px 0 18px' }}>
         <div className="metric-box"><span>A pagar (pendente)</span><b>{money(aPagar)}</b></div>
         <div className="metric-box"><span>Pago</span><b>{money(pago)}</b></div>

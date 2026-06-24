@@ -20,10 +20,6 @@ export default async function SacTriagemPage() {
 
   return (
     <div className="view active">
-      <div className="crm-note">
-        <i className="ti ti-brand-whatsapp" /> <b>Triagem WhatsApp.</b> Conversas recebidas pelo WhatsApp  o bot coleta os dados
-        e a atendente abre o chamado. Entradas novas chegam pelo webhook da UAZAPI.
-      </div>
       <TriagemWhatsapp chats={chats} msgs={msgs} />
     </div>
   )

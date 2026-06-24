@@ -41,11 +41,6 @@ export default async function CanaisPage() {
 
   return (
     <div className="view active">
-      <div className="crm-note">
-        <i className="ti ti-brand-whatsapp" /> <b>Canais de WhatsApp.</b> Cada canal é um número conectado via QR Code (UAZAPI).
-        Defina <b>um número por franquia</b> (escopo “Unidade”) e, opcionalmente, um <b>número geral</b> da franqueadora 
-        os disparos saem pelo canal da unidade, com <b>delay anti-ban</b> por canal. Se cair, reconecte aqui.
-      </div>
       {erro
         ? <div className="rel-card" style={{ padding: 16, color: 'var(--red)' }}>{erro}</div>
         : <CanaisManager canais={canais} unidades={unidades} isAdmin={ctx?.isAdmin ?? false} activeUnitId={ctx?.activeUnitId ?? null} activeUnitName={ctx?.activeUnitName ?? ''} />}
