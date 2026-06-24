@@ -88,6 +88,32 @@ export async function marcarLido(chatId: string): Promise<{ ok: boolean }> {
   return { ok: true }
 }
 
+/** Adiciona uma nota interna à conversa (não vai ao cliente). */
+export async function adicionarNota(chatId: string, texto: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { user, nome } = await operador(sb)
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  if (!texto.trim()) return { ok: false, error: 'Escreva a nota.' }
+  const { error } = await sb.from('sac_whatsapp_notas').insert({ chat_id: chatId, autor_id: user.id, autor_nome: nome, texto: texto.trim() })
+  if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão.' : error.message }
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
+/** Altera o status da conversa: aberto | pendente | resolvido. */
+export async function alterarStatusConversa(chatId: string, status: 'aberto' | 'pendente' | 'resolvido'): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  if (!['aberto', 'pendente', 'resolvido'].includes(status)) return { ok: false, error: 'Status inválido.' }
+  const patch: Record<string, unknown> = { status }
+  if (status === 'resolvido') patch.nao_lidas = 0
+  const { error } = await sb.from('sac_whatsapp_chats').update(patch).eq('id', chatId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
 /** Abre um chamado no SAC a partir da conversa e vincula o chat ao ticket. */
 export async function abrirChamadoDaConversa(chatId: string): Promise<{ ok: boolean; error?: string; jaExistia?: boolean }> {
   const sb = await createClient()

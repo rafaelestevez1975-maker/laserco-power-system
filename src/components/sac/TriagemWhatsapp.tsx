@@ -2,11 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa } from '@/app/(app)/sac/triagem/actions'
 
-export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null }
+export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null; status: string | null }
 export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; criado_em: string | null }
 export type Atendente = { id: string; nome: string }
+export type Nota = { id: string; chat_id: string | null; autor_nome: string | null; texto: string | null; criada_em: string | null }
+
+const SLA_MIN = 5
+const STATUS_LABEL: Record<string, string> = { aberto: 'Aberto', pendente: 'Pendente', resolvido: 'Resolvido' }
 
 const isIn = (d: string | null) => !/out|saida|saída|enviad|atendente|bot/i.test(d || '')
 const hora = (s: string | null) => (s ? new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '')
@@ -14,7 +18,7 @@ const iniciais = (n: string | null, tel: string | null) => (n?.trim()?.[0]?.toUp
 
 type Aba = 'minhas' | 'fila' | 'todas'
 
-export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; operadorId: string | null }) {
+export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: { chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; notas: Nota[]; operadorId: string | null }) {
   const router = useRouter()
   const [busca, setBusca] = useState('')
   const [aba, setAba] = useState<Aba>('todas')
@@ -24,6 +28,16 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats
   const [aviso, setAviso] = useState('')
   const [lidos, setLidos] = useState<Set<string>>(new Set())
   const [transfer, setTransfer] = useState('')
+  const [notasOpen, setNotasOpen] = useState(false)
+  const [notaTxt, setNotaTxt] = useState('')
+
+  // última mensagem por conversa → base do SLA de 1ª resposta (espera quando a última é do cliente)
+  const ultimaMsgChat = useMemo(() => { const m = new Map<string, Msg>(); for (const x of msgs) if (x.chat_id) m.set(x.chat_id, x); return m }, [msgs])
+  const aguardandoMin = (chatId: string): number | null => {
+    const lm = ultimaMsgChat.get(chatId)
+    if (!lm || !isIn(lm.direcao) || !lm.criado_em) return null
+    return Math.floor((Date.now() - new Date(lm.criado_em).getTime()) / 60000)
+  }
 
   const nomeAtendente = useMemo(() => new Map(atendentes.map((a) => [a.id, a.nome])), [atendentes])
   const minhasN = chats.filter((c) => c.atendente_id && c.atendente_id === operadorId).length
@@ -71,6 +85,17 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats
   const chat = chats.find((c) => c.id === sel) || null
   const minha = !!chat?.atendente_id && chat.atendente_id === operadorId
   const respNome = chat?.atendente_id ? (nomeAtendente.get(chat.atendente_id) || 'Atribuído') : null
+  const espera = chat ? aguardandoMin(chat.id) : null
+  const notasSel = notas.filter((n) => n.chat_id === sel)
+  const stat = chat?.status || 'aberto'
+
+  async function addNota() {
+    if (!sel || !notaTxt.trim()) return
+    setBusy(true)
+    const res = await adicionarNota(sel, notaTxt)
+    setBusy(false)
+    if (res.ok) { setNotaTxt(''); router.refresh() } else setAviso(res.error || 'Erro ao salvar nota.')
+  }
 
   const tab = (id: Aba): React.CSSProperties => ({
     flex: 1, textAlign: 'center', padding: '8px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
@@ -131,9 +156,15 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats
                   {chat.telefone}
                   {' · '}{respNome ? <span style={{ color: minha ? 'var(--green)' : 'var(--text-2)' }}>{minha ? 'você' : respNome}</span> : <span style={{ color: 'var(--amber)' }}>não atribuído</span>}
                   {chat.bot_ativo ? ' · 🤖 bot' : ''}
+                  {espera != null && espera >= 1 && <span style={{ marginLeft: 6, color: espera >= SLA_MIN ? 'var(--red)' : 'var(--amber)', fontWeight: 700 }}>· ⏱ {espera}min aguardando</span>}
                 </div>
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select value={stat} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as 'aberto' | 'pendente' | 'resolvido'), 'Status atualizado.')}
+                  style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }} title="Status da conversa">
+                  {(['aberto', 'pendente', 'resolvido'] as const).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                </select>
+                <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
                 {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
                 {chat.atendente_id && <button className="btn" disabled={busy} onClick={() => acao(() => devolverConversa(chat.id), 'Devolvida à fila.')}><i className="ti ti-arrow-back-up" /> Devolver</button>}
                 <select value={transfer} disabled={busy} onChange={(e) => { const v = e.target.value; setTransfer(''); if (v) acao(() => transferirConversa(chat.id, v), 'Conversa transferida.') }}
@@ -159,6 +190,22 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats
                 )
               })}
             </div>
+            {notasOpen && (
+              <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 10, maxHeight: 200, overflowY: 'auto' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}><i className="ti ti-notes" /> Notas internas (não vão ao cliente)</div>
+                {notasSel.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Nenhuma nota ainda.</div>}
+                {notasSel.map((n) => (
+                  <div key={n.id} style={{ fontSize: 12.5, marginBottom: 6, borderLeft: '2px solid var(--gold-500)', paddingLeft: 8 }}>
+                    <div>{n.texto}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{n.autor_nome || '—'} · {n.criada_em ? new Date(n.criada_em).toLocaleString('pt-BR') : ''}</div>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <input value={notaTxt} onChange={(e) => setNotaTxt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNota() }} placeholder="Adicionar nota interna…" style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5 }} />
+                  <button className="btn" disabled={busy || !notaTxt.trim()} onClick={addNota}>Salvar</button>
+                </div>
+              </div>
+            )}
             <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface)', padding: 10 }}>
               {aviso && <div style={{ fontSize: 12, color: 'var(--brand-600)', marginBottom: 6 }}>{aviso}</div>}
               <div style={{ display: 'flex', gap: 8 }}>
