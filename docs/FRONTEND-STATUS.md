@@ -82,8 +82,14 @@
 
 ### Recursos Humanos (9 telas) — ✅ frontend
 - `/ponto` · `/rh` · `/rh/{colaboradores, ponto, recrutamento, folha, ferias, desempenho, regras}`
-- ⏳ **Falta:** Ponto GPS real + cerca 150m + home office (EPIC 20.1/20.2); Gestão de Ponto admin
-  (EPIC 20.3); Recrutamento com currículos do site + import SULTS + msg ao candidato (EPIC 20.5–20.7).
+- ✅ **`/rh/recrutamento` — funcional** (rota real sobre `candidatos`/`vagas` do lkii): **Currículos (banco de talentos)**
+  com filtros (busca/cargo/estado/fonte/estágio) + **dashboards** (por cargo/estado/fonte) + KPIs (triagem/processo/contratados/conversão);
+  **Kanban** dos 7 estágios (drag&drop @dnd-kit, contratado/reprovado travados); **iniciar processo** explícito por candidato
+  (anti-ban: não joga a lista toda), **reprovar com motivo**, **notas espelhadas no currículo**, **novo currículo** manual.
+  Currículos do site já caem aqui (ponte leads-site). Inserts validados 201 · escopo multitenant (RH da rede vê todos via RLS 041; franquia vê a sua).
+- ⏳ **Falta:** msg automática de disponibilidade via WhatsApp (depende de canal conectado); **import SULTS/planilha** (EPIC 20.5);
+  agendamento de entrevista (EPIC 20 P1); Ponto GPS real + cerca 150m + home office (EPIC 20.1/20.2); Gestão de Ponto admin (EPIC 20.3);
+  Colaboradores com filtros (EPIC 20.4); demais telas RH (folha/férias/desempenho/regras).
 
 ### Expansão (7 telas) — ✅ frontend — **P0**
 - `/expansao` · `/expansao/{captacao, funil, leads, disparos, whatsapp, tipos}`
