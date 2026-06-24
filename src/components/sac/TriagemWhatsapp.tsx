@@ -2,22 +2,38 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido } from '@/app/(app)/sac/triagem/actions'
 
-export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null }
+export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null }
 export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; criado_em: string | null }
+export type Atendente = { id: string; nome: string }
 
 const isIn = (d: string | null) => !/out|saida|saída|enviad|atendente|bot/i.test(d || '')
 const hora = (s: string | null) => (s ? new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '')
 const iniciais = (n: string | null, tel: string | null) => (n?.trim()?.[0]?.toUpperCase()) || (tel ? tel.slice(-2) : '?')
 
-export function TriagemWhatsapp({ chats, msgs }: { chats: Chat[]; msgs: Msg[] }) {
+type Aba = 'minhas' | 'fila' | 'todas'
+
+export function TriagemWhatsapp({ chats, msgs, atendentes, operadorId }: { chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; operadorId: string | null }) {
   const router = useRouter()
   const [busca, setBusca] = useState('')
+  const [aba, setAba] = useState<Aba>('todas')
   const [sel, setSel] = useState<string | null>(chats[0]?.id ?? null)
   const [texto, setTexto] = useState('')
   const [busy, setBusy] = useState(false)
   const [aviso, setAviso] = useState('')
+  const [lidos, setLidos] = useState<Set<string>>(new Set())
+  const [transfer, setTransfer] = useState('')
+
+  const nomeAtendente = useMemo(() => new Map(atendentes.map((a) => [a.id, a.nome])), [atendentes])
+  const minhasN = chats.filter((c) => c.atendente_id && c.atendente_id === operadorId).length
+  const filaN = chats.filter((c) => !c.atendente_id).length
+
+  function selecionar(id: string) {
+    setSel(id); setAviso('')
+    const c = chats.find((x) => x.id === id)
+    if (c && c.nao_lidas && !lidos.has(id)) { setLidos((p) => new Set(p).add(id)); marcarLido(id) }
+  }
 
   async function enviar() {
     if (!sel || !texto.trim()) return
@@ -35,39 +51,69 @@ export function TriagemWhatsapp({ chats, msgs }: { chats: Chat[]; msgs: Msg[] })
     if (!res.ok) setAviso(res.error || 'Falha ao abrir chamado.')
     else { setAviso(res.jaExistia ? 'Esta conversa já tem um chamado vinculado.' : 'Chamado aberto e vinculado à conversa. ✅'); router.refresh() }
   }
+  async function acao(fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) {
+    setBusy(true); setAviso('')
+    const res = await fn()
+    setBusy(false)
+    if (!res.ok) setAviso(res.error || 'Erro.'); else { setAviso(okMsg); router.refresh() }
+  }
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase()
-    return q ? chats.filter((c) => (c.nome || '').toLowerCase().includes(q) || (c.telefone || '').includes(q)) : chats
-  }, [chats, busca])
+    let arr = chats
+    if (aba === 'minhas') arr = arr.filter((c) => c.atendente_id && c.atendente_id === operadorId)
+    else if (aba === 'fila') arr = arr.filter((c) => !c.atendente_id)
+    if (q) arr = arr.filter((c) => (c.nome || '').toLowerCase().includes(q) || (c.telefone || '').includes(q))
+    return arr
+  }, [chats, busca, aba, operadorId])
 
   const thread = useMemo(() => msgs.filter((m) => m.chat_id === sel), [msgs, sel])
   const chat = chats.find((c) => c.id === sel) || null
+  const minha = !!chat?.atendente_id && chat.atendente_id === operadorId
+  const respNome = chat?.atendente_id ? (nomeAtendente.get(chat.atendente_id) || 'Atribuído') : null
+
+  const tab = (id: Aba): React.CSSProperties => ({
+    flex: 1, textAlign: 'center', padding: '8px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+    color: aba === id ? 'var(--brand-600)' : 'var(--text-3)', borderBottom: aba === id ? '2px solid var(--brand-500)' : '2px solid transparent',
+  })
 
   return (
     <div className="cli-card" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', height: 'calc(100vh - 220px)', minHeight: 420, overflow: 'hidden' }}>
       {/* Lista de conversas */}
       <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
+          <div style={tab('todas')} onClick={() => setAba('todas')}>Todas ({chats.length})</div>
+          <div style={tab('minhas')} onClick={() => setAba('minhas')}>Minhas ({minhasN})</div>
+          <div style={tab('fila')} onClick={() => setAba('fila')}>Fila ({filaN})</div>
+        </div>
         <div style={{ padding: 10, borderBottom: '1px solid var(--line)' }}>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔎 Buscar conversa..."
             style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {filtrados.length === 0 && <div style={{ padding: 16, color: 'var(--text-3)', fontSize: 13 }}>Nenhuma conversa.</div>}
-          {filtrados.map((c) => (
-            <div key={c.id} onClick={() => setSel(c.id)}
-              style={{ display: 'flex', gap: 10, padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid var(--line)', background: c.id === sel ? 'var(--surface-2)' : undefined }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700, flexShrink: 0 }}>{iniciais(c.nome, c.telefone)}</span>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <b style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone || ''}</b>
-                  <span style={{ fontSize: 10.5, color: 'var(--text-3)', flexShrink: 0 }}>{hora(c.ultima_msg_em)}</span>
+          {filtrados.map((c) => {
+            const unread = !!c.nao_lidas && !lidos.has(c.id)
+            return (
+              <div key={c.id} onClick={() => selecionar(c.id)}
+                style={{ display: 'flex', gap: 10, padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid var(--line)', background: c.id === sel ? 'var(--surface-2)' : undefined }}>
+                <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700, flexShrink: 0 }}>{iniciais(c.nome, c.telefone)}</span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <b style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone || ''}</b>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-3)', flexShrink: 0 }}>{hora(c.ultima_msg_em)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.ultima_msg || ''}</div>
+                  <div style={{ fontSize: 10.5, marginTop: 2 }}>
+                    {c.atendente_id
+                      ? <span style={{ color: c.atendente_id === operadorId ? 'var(--green)' : 'var(--text-3)' }}><i className="ti ti-user-check" /> {c.atendente_id === operadorId ? 'Você' : (nomeAtendente.get(c.atendente_id) || 'Atribuído')}</span>
+                      : <span style={{ color: 'var(--amber)' }}><i className="ti ti-inbox" /> na fila</span>}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.ultima_msg || ''}</div>
+                {unread && <span style={{ alignSelf: 'center', background: 'var(--green)', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{c.nao_lidas}</span>}
               </div>
-              {!!c.nao_lidas && <span style={{ alignSelf: 'center', background: 'var(--green)', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{c.nao_lidas}</span>}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -77,13 +123,24 @@ export function TriagemWhatsapp({ chats, msgs }: { chats: Chat[]; msgs: Msg[] })
           <div style={{ margin: 'auto', color: 'var(--text-3)' }}>Selecione uma conversa</div>
         ) : (
           <>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700 }}>{iniciais(chat.nome, chat.telefone)}</span>
               <div>
                 <b style={{ fontSize: 13 }}>{chat.nome || chat.telefone}</b>
-                <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{chat.telefone} {chat.bot_ativo ? '· 🤖 bot ativo' : ''}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>
+                  {chat.telefone}
+                  {' · '}{respNome ? <span style={{ color: minha ? 'var(--green)' : 'var(--text-2)' }}>{minha ? 'você' : respNome}</span> : <span style={{ color: 'var(--amber)' }}>não atribuído</span>}
+                  {chat.bot_ativo ? ' · 🤖 bot' : ''}
+                </div>
               </div>
-              <div style={{ marginLeft: 'auto' }}>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
+                {chat.atendente_id && <button className="btn" disabled={busy} onClick={() => acao(() => devolverConversa(chat.id), 'Devolvida à fila.')}><i className="ti ti-arrow-back-up" /> Devolver</button>}
+                <select value={transfer} disabled={busy} onChange={(e) => { const v = e.target.value; setTransfer(''); if (v) acao(() => transferirConversa(chat.id, v), 'Conversa transferida.') }}
+                  style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }}>
+                  <option value="">Transferir…</option>
+                  {atendentes.filter((a) => a.id !== chat.atendente_id).map((a) => <option key={a.id} value={a.id}>{a.id === operadorId ? 'Para mim' : a.nome}</option>)}
+                </select>
                 {chat.ticket_id
                   ? <span className="os-st" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><i className="ti ti-headset" /> Chamado vinculado</span>
                   : <button className="btn btn-primary" disabled={busy} onClick={abrirChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
@@ -95,6 +152,7 @@ export function TriagemWhatsapp({ chats, msgs }: { chats: Chat[]; msgs: Msg[] })
                 const entrada = isIn(m.direcao)
                 return (
                   <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '72%', background: entrada ? 'var(--surface)' : '#DCF8C6', border: '1px solid var(--line)', borderRadius: 10, padding: '7px 11px' }}>
+                    {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-600)', marginBottom: 1 }}>{m.autor}</div>}
                     <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{m.texto || <i style={{ color: 'var(--text-3)' }}>[{m.tipo || 'mídia'}]</i>}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'right', marginTop: 2 }}>{hora(m.criado_em)}</div>
                   </div>
