@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 
 export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null; status: string | null }
 export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; criado_em: string | null }
@@ -30,6 +30,19 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const [transfer, setTransfer] = useState('')
   const [notasOpen, setNotasOpen] = useState(false)
   const [notaTxt, setNotaTxt] = useState('')
+  const [cliOpen, setCliOpen] = useState(false)
+  const [cli, setCli] = useState<ClienteResumo | null>(null)
+  const [cliBusy, setCliBusy] = useState(false)
+
+  async function abrirCliente() {
+    const novo = !cliOpen; setCliOpen(novo)
+    if (novo && sel) {
+      const c = chats.find((x) => x.id === sel)
+      setCliBusy(true); setCli(null)
+      const r = await buscarClientePorContato(c?.telefone ?? null)
+      setCli(r); setCliBusy(false)
+    }
+  }
 
   // última mensagem por conversa → base do SLA de 1ª resposta (espera quando a última é do cliente)
   const ultimaMsgChat = useMemo(() => { const m = new Map<string, Msg>(); for (const x of msgs) if (x.chat_id) m.set(x.chat_id, x); return m }, [msgs])
@@ -44,7 +57,7 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const filaN = chats.filter((c) => !c.atendente_id).length
 
   function selecionar(id: string) {
-    setSel(id); setAviso('')
+    setSel(id); setAviso(''); setCliOpen(false); setCli(null); setNotasOpen(false)
     const c = chats.find((x) => x.id === id)
     if (c && c.nao_lidas && !lidos.has(id)) { setLidos((p) => new Set(p).add(id)); marcarLido(id) }
   }
@@ -164,6 +177,7 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                   style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }} title="Status da conversa">
                   {(['aberto', 'pendente', 'resolvido'] as const).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                 </select>
+                <button className="btn" onClick={abrirCliente}><i className="ti ti-user-search" /> Cliente</button>
                 <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
                 {!chat.bot_ativo && <button className="btn" disabled={busy} onClick={() => acao(() => reativarIA(chat.id), 'IA reativada nesta conversa.')} title="Voltar o atendimento automático por IA">🤖 Reativar IA</button>}
                 {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
@@ -191,6 +205,27 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                 )
               })}
             </div>
+            {cliOpen && (
+              <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 10, maxHeight: 220, overflowY: 'auto' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}><i className="ti ti-user-search" /> Cliente (identificado por telefone/CPF)</div>
+                {cliBusy && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Buscando no cadastro…</div>}
+                {!cliBusy && cli && !cli.achou && <div style={{ fontSize: 12, color: 'var(--amber)' }}>Não encontrei cadastro para este contato — pode ser não-cliente.</div>}
+                {!cliBusy && cli?.achou && (
+                  <div style={{ fontSize: 12.5, display: 'grid', gap: 4 }}>
+                    <div><b>{cli.nome}</b> {cli.ativo === false && <span style={{ color: 'var(--text-3)' }}>(inativo)</span>}{cli.verificado && <span style={{ color: 'var(--green)' }}> ✓ verificado</span>}</div>
+                    <div style={{ color: 'var(--text-2)' }}>{[cli.cpf && `CPF ${cli.cpf}`, cli.telefone, cli.email].filter(Boolean).join(' · ')}</div>
+                    {(cli.cidade || cli.estado) && <div style={{ color: 'var(--text-2)' }}>{[cli.cidade, cli.estado].filter(Boolean).join('/')}</div>}
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 2 }}>
+                      <span>📅 {cli.agendamentos ?? 0} agend.</span>
+                      <span>✅ {cli.concluidos ?? 0} sessões</span>
+                      <span>💳 créditos {cli.saldoCreditos ?? 0}</span>
+                      <span>⭐ {cli.saldoPontos ?? 0} pts</span>
+                      {cli.totalGasto != null && <span>💰 R$ {Math.round(cli.totalGasto).toLocaleString('pt-BR')}</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {notasOpen && (
               <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 10, maxHeight: 200, overflowY: 'auto' }}>
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}><i className="ti ti-notes" /> Notas internas (não vão ao cliente)</div>

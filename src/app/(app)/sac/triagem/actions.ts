@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { listInstances, sendText } from '@/lib/uazapi'
 
 type Perfil = { nome_completo?: string; papel?: string; unidade_id?: string | null }
@@ -86,6 +87,58 @@ export async function marcarLido(chatId: string): Promise<{ ok: boolean }> {
   if (!user) return { ok: false }
   await sb.from('sac_whatsapp_chats').update({ nao_lidas: 0 }).eq('id', chatId)
   return { ok: true }
+}
+
+export type ClienteResumo = {
+  achou: boolean
+  id?: string; nome?: string; cpf?: string | null; telefone?: string | null; email?: string | null
+  cidade?: string | null; estado?: string | null; ativo?: boolean | null; verificado?: boolean | null
+  saldoCreditos?: number | null; saldoPontos?: number | null
+  agendamentos?: number; concluidos?: number; totalGasto?: number | null
+}
+
+/** Auto-import: identifica o cliente por CPF (ou telefone) e traz um resumo do histórico
+ *  (agendamentos, sessões concluídas, total gasto, saldos) — base para o atendimento e o cálculo de devolução. */
+export async function buscarClientePorContato(telefone?: string | null, cpf?: string | null): Promise<ClienteResumo> {
+  const sb = await createClient()
+  const { user, perfil } = await operador(sb)
+  if (!user) return { achou: false }
+  // PII do cliente: só papéis de atendimento/gestão.
+  if (!['admin_geral', 'sac', 'gestor'].includes(perfil?.papel || '')) return { achou: false }
+  const cpfDig = (cpf || '').replace(/\D/g, '')
+  const telDig = (telefone || '').replace(/\D/g, '')
+
+  const adm = adminClient() // leitura agregada read-only (já validada a autorização acima)
+  const cols = 'id, nome, cpf, telefone, email, cidade, estado, ativo, verificado, saldo_creditos, saldo_pontos, bemp_id'
+  let cli: Record<string, unknown> | null = null
+  if (cpfDig.length >= 11) {
+    const { data } = await adm.from('clientes').select(cols).or(`cpf.eq.${cpfDig},cpf.eq.${cpf}`).limit(1).maybeSingle()
+    cli = data as Record<string, unknown> | null
+  }
+  if (!cli && telDig.length >= 8) {
+    const last = telDig.slice(-8)
+    const { data } = await adm.from('clientes').select(cols).ilike('telefone', `%${last}%`).limit(1).maybeSingle()
+    cli = data as Record<string, unknown> | null
+  }
+  if (!cli) return { achou: false }
+
+  const id = cli.id as string
+  const bempId = cli.bemp_id as string | null
+  const { count: ag } = await adm.from('agendamentos').select('id', { count: 'exact', head: true }).eq('cliente_id', id)
+  const { count: conc } = await adm.from('agendamentos').select('id', { count: 'exact', head: true }).eq('cliente_id', id).not('concluido_em', 'is', null)
+  let totalGasto: number | null = null
+  if (bempId) {
+    const { data: bills } = await adm.from('bemp_billings').select('total').eq('bemp_customer_id', bempId).limit(2000)
+    if (bills) totalGasto = (bills as { total: number | null }[]).reduce((s, b) => s + (Number(b.total) || 0), 0)
+  }
+
+  return {
+    achou: true, id, nome: cli.nome as string, cpf: cli.cpf as string | null, telefone: cli.telefone as string | null,
+    email: cli.email as string | null, cidade: cli.cidade as string | null, estado: cli.estado as string | null,
+    ativo: cli.ativo as boolean | null, verificado: cli.verificado as boolean | null,
+    saldoCreditos: cli.saldo_creditos as number | null, saldoPontos: cli.saldo_pontos as number | null,
+    agendamentos: ag ?? 0, concluidos: conc ?? 0, totalGasto,
+  }
 }
 
 /** Reativa a IA de atendimento na conversa (volta o bot e remove o atendente humano). */
