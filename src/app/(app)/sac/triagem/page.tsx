@@ -18,7 +18,7 @@ export default async function SacTriagemPage() {
 
   const { data: msgsRaw } = await sb
     .from('sac_whatsapp_mensagens')
-    .select('id, chat_id, direcao, autor, tipo, texto, criado_em')
+    .select('id, chat_id, direcao, autor, tipo, texto, midia_url, midia_mimetype, status, criado_em')
     .order('criado_em', { ascending: true })
     .limit(800)
   const msgs = (msgsRaw ?? []) as Msg[]

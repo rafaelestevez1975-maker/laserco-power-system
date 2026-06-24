@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { adminClient } from '@/lib/supabase/admin'
-import { listInstances, sendText } from '@/lib/uazapi'
+import { listInstances, sendText, sendMedia } from '@/lib/uazapi'
 
 type Perfil = { nome_completo?: string; papel?: string; unidade_id?: string | null }
 async function operador(sb: Awaited<ReturnType<typeof createClient>>) {
@@ -39,6 +39,38 @@ export async function responderConversa(chatId: string, texto: string): Promise<
   })
   // Ao responder, assume a conversa (se ainda sem dono) e pausa o bot.
   const patch: Record<string, unknown> = { ultima_msg: texto.trim().slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: agora, bot_ativo: false }
+  if (!c.atendente_id) patch.atendente_id = user.id
+  await sb.from('sac_whatsapp_chats').update(patch).eq('id', chatId)
+
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
+/** Envia mídia (imagem/áudio/voz/documento) pelo canal e registra a saída. */
+export async function enviarMidia(chatId: string, m: { tipo: 'image' | 'audio' | 'ptt' | 'video' | 'document'; file: string; caption?: string; nomeArquivo?: string; mimetype?: string }): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { user, nome } = await operador(sb)
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  if (!m.file) return { ok: false, error: 'Arquivo vazio.' }
+
+  const { data: chat } = await sb.from('sac_whatsapp_chats').select('id, telefone, atendente_id').eq('id', chatId).single()
+  const c = chat as { telefone?: string; atendente_id?: string | null } | null
+  if (!c?.telefone) return { ok: false, error: 'Conversa não encontrada.' }
+
+  const all = await listInstances()
+  const canal = all.find((i) => /laser/i.test(i.name) && i.status === 'connected')
+  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+
+  const env = await sendMedia(canal.token, c.telefone, m.tipo, m.file, { caption: m.caption, docName: m.nomeArquivo })
+  if (!env.ok) return { ok: false, error: env.error || 'Falha no envio da mídia.' }
+
+  const agora = new Date().toISOString()
+  const previewTxt = m.caption || ({ image: '📷 Imagem', audio: '🎤 Áudio', ptt: '🎤 Áudio', video: '🎬 Vídeo', document: '📎 Documento' }[m.tipo] || '📩 Mídia')
+  await sb.from('sac_whatsapp_mensagens').insert({
+    chat_id: chatId, direcao: 'saida', autor: nome, enviada_por: user.id, tipo: m.tipo === 'ptt' ? 'audio' : m.tipo,
+    texto: m.caption || null, midia_url: env.fileURL || null, midia_mimetype: m.mimetype || null, midia_nome: m.nomeArquivo || null, status: 'sent', criado_em: agora,
+  })
+  const patch: Record<string, unknown> = { ultima_msg: previewTxt.slice(0, 120), ultima_msg_tipo: m.tipo === 'ptt' ? 'audio' : m.tipo, ultima_msg_em: agora, bot_ativo: false }
   if (!c.atendente_id) patch.atendente_id = user.id
   await sb.from('sac_whatsapp_chats').update(patch).eq('id', chatId)
 

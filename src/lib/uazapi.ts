@@ -96,6 +96,15 @@ export async function sendText(token: string, numero: string, texto: string): Pr
   return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha no envio.' }
 }
 
+export type MidiaTipo = 'image' | 'video' | 'audio' | 'ptt' | 'document' | 'sticker'
+/** Envia mídia por uma instância (token). `file` = URL pública OU base64 (data URI ou puro). */
+export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, file: string, opts: { caption?: string; docName?: string } = {}): Promise<{ ok: boolean; error?: string; fileURL?: string }> {
+  const { ok, body } = await instPost('/send/media', token, { number: normTel(numero), type: tipo, file, ...opts })
+  if (!ok) return { ok: false, error: (body as { error?: string })?.error || 'Falha no envio de mídia.' }
+  const b = body as { fileURL?: string; message?: { fileURL?: string } }
+  return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
+}
+
 export type CampanhaInput = { numbers: string[]; text: string; delayMin: number; delayMax: number; info?: string }
 
 /** Cria uma campanha de envio em massa (UAZAPI gerencia a fila + delay anti-ban). */

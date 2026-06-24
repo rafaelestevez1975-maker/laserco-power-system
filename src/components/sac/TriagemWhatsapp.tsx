@@ -2,10 +2,35 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { useRef } from 'react'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+
+// ticks de entrega (status da UAZAPI)
+function Ticks({ status }: { status?: string | null }) {
+  const s = (status || '').toLowerCase()
+  if (s.includes('read')) return <span style={{ color: '#34B7F1', fontSize: 11 }}>✓✓</span>
+  if (s.includes('deliver')) return <span style={{ color: 'var(--text-3)', fontSize: 11 }}>✓✓</span>
+  if (s.includes('fail') || s.includes('erro')) return <span style={{ color: 'var(--red)', fontSize: 11 }}>⚠</span>
+  return <span style={{ color: 'var(--text-3)', fontSize: 11 }}>✓</span>
+}
+// lê um arquivo como data URI (base64)
+const lerComoDataURL = (f: File) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsDataURL(f) })
+// comprime imagem no navegador (max 1600px, JPEG) p/ caber no limite
+async function comprimirImagem(f: File): Promise<string> {
+  if (!f.type.startsWith('image/')) return lerComoDataURL(f)
+  const dataUrl = await lerComoDataURL(f)
+  try {
+    const img = document.createElement('img'); img.src = dataUrl; await img.decode()
+    const max = 1600; let { width: w, height: h } = img
+    if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r) }
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+    cv.getContext('2d')!.drawImage(img, 0, 0, w, h)
+    return cv.toDataURL('image/jpeg', 0.82)
+  } catch { return dataUrl }
+}
 
 export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null; status: string | null }
-export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; criado_em: string | null }
+export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; midia_url?: string | null; midia_mimetype?: string | null; status?: string | null; criado_em: string | null }
 export type Atendente = { id: string; nome: string }
 export type Nota = { id: string; chat_id: string | null; autor_nome: string | null; texto: string | null; criada_em: string | null }
 
@@ -33,6 +58,10 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const [cliOpen, setCliOpen] = useState(false)
   const [cli, setCli] = useState<ClienteResumo | null>(null)
   const [cliBusy, setCliBusy] = useState(false)
+  const [gravando, setGravando] = useState(false)
+  const fileRef = useRef<HTMLInputElement | null>(null)
+  const recRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
 
   async function abrirCliente() {
     const novo = !cliOpen; setCliOpen(novo)
@@ -69,6 +98,32 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
     setBusy(false)
     if (!res.ok) setAviso(res.error || 'Falha ao enviar.')
     else { setTexto(''); router.refresh() }
+  }
+
+  async function enviarArquivo(f: File | null | undefined) {
+    if (!f || !sel) return
+    const tipo: 'image' | 'audio' | 'video' | 'document' = f.type.startsWith('image/') ? 'image' : f.type.startsWith('audio/') ? 'audio' : f.type.startsWith('video/') ? 'video' : 'document'
+    setBusy(true); setAviso('')
+    const file = tipo === 'image' ? await comprimirImagem(f) : await lerComoDataURL(f)
+    const r = await enviarMidia(sel, { tipo, file, nomeArquivo: f.name, mimetype: f.type, caption: texto.trim() || undefined })
+    setBusy(false)
+    if (!r.ok) setAviso(r.error || 'Falha ao enviar arquivo.'); else { setTexto(''); router.refresh() }
+  }
+  async function gravarVoz() {
+    if (gravando) { recRef.current?.stop(); return }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream); recRef.current = mr; chunksRef.current = []
+      mr.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(chunksRef.current, { type: 'audio/ogg' })
+        const file = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(blob) })
+        if (sel) { setBusy(true); const r = await enviarMidia(sel, { tipo: 'ptt', file, mimetype: 'audio/ogg' }); setBusy(false); if (!r.ok) setAviso(r.error || 'Falha no áudio.'); else router.refresh() }
+        setGravando(false)
+      }
+      mr.start(); setGravando(true)
+    } catch { setAviso('Não consegui acessar o microfone.') }
   }
   async function abrirChamado() {
     if (!sel) return
@@ -196,11 +251,16 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
               {thread.length === 0 && <div style={{ margin: 'auto', color: 'var(--text-3)', fontSize: 13 }}>Sem mensagens nesta conversa.</div>}
               {thread.map((m) => {
                 const entrada = isIn(m.direcao)
+                const t = (m.tipo || '').toLowerCase()
                 return (
                   <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '72%', background: entrada ? 'var(--surface)' : '#DCF8C6', border: '1px solid var(--line)', borderRadius: 10, padding: '7px 11px' }}>
                     {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-600)', marginBottom: 1 }}>{m.autor}</div>}
-                    <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{m.texto || <i style={{ color: 'var(--text-3)' }}>[{m.tipo || 'mídia'}]</i>}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'right', marginTop: 2 }}>{hora(m.criado_em)}</div>
+                    {m.midia_url && t.includes('image') && <img src={m.midia_url} alt="" style={{ maxWidth: 220, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
+                    {m.midia_url && t.includes('audio') && <audio controls src={m.midia_url} style={{ maxWidth: 230, display: 'block', marginBottom: 4 }} />}
+                    {m.midia_url && t.includes('video') && <video controls src={m.midia_url} style={{ maxWidth: 230, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
+                    {m.midia_url && (t.includes('document') || t.includes('outro')) && <a href={m.midia_url} target="_blank" rel="noopener" style={{ fontSize: 12.5, color: 'var(--brand-600)' }}><i className="ti ti-file" /> {m.texto || 'Documento'}</a>}
+                    {(m.texto || !m.midia_url) && <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{m.texto || (!m.midia_url ? <i style={{ color: 'var(--text-3)' }}>[{m.tipo || 'mídia'}]</i> : null)}</div>}
+                    <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'right', marginTop: 2, display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>{hora(m.criado_em)} {!entrada && <Ticks status={m.status} />}</div>
                   </div>
                 )
               })}
@@ -244,11 +304,14 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
             )}
             <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface)', padding: 10 }}>
               {aviso && <div style={{ fontSize: 12, color: 'var(--brand-600)', marginBottom: 6 }}>{aviso}</div>}
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input ref={fileRef} type="file" hidden accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" onChange={(e) => { enviarArquivo(e.target.files?.[0]); e.currentTarget.value = '' }} />
+                <button className="btn" title="Anexar arquivo/foto" disabled={busy} onClick={() => fileRef.current?.click()}><i className="ti ti-paperclip" /></button>
+                <button className="btn" title={gravando ? 'Parar e enviar áudio' : 'Gravar áudio'} disabled={busy} onClick={gravarVoz} style={gravando ? { color: 'var(--red)', borderColor: 'var(--red)' } : undefined}><i className={`ti ${gravando ? 'ti-player-stop-filled' : 'ti-microphone'}`} /></button>
                 <input
                   value={texto} onChange={(e) => setTexto(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }}
-                  placeholder="Responder pelo WhatsApp…"
+                  placeholder={gravando ? '🔴 Gravando áudio…' : 'Responder pelo WhatsApp…'}
                   style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 20, fontSize: 13 }}
                 />
                 <button className="btn btn-primary" disabled={busy || !texto.trim()} onClick={enviar}>
