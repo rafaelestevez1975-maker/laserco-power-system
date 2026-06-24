@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
-import { normTel } from '@/lib/uazapi'
+import { normTel, listInstances, sendText } from '@/lib/uazapi'
+import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
 
 /**
  * Webhook de entrada da UAZAPI. Grava as mensagens recebidas em
@@ -14,7 +15,7 @@ type Msg = {
   messageTimestamp?: number; status?: string; fileURL?: string
 }
 type WebhookBody = { EventType?: string; event?: string; message?: Msg; token?: string }
-type ChatRow = { id: string; nome: string | null; nao_lidas: number }
+type ChatRow = { id: string; nome: string | null; nao_lidas: number; bot_ativo?: boolean | null; atendente_id?: string | null }
 
 function classificarTipo(mt?: string): string {
   const t = (mt ?? '').toLowerCase()
@@ -72,13 +73,13 @@ export async function POST(req: NextRequest) {
     if (dup) return NextResponse.json({ ok: true, dedup: true })
   }
 
-  const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas').eq('telefone', telefone).maybeSingle()
+  const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas, bot_ativo, atendente_id').eq('telefone', telefone).maybeSingle()
   let chat = chatRaw as ChatRow | null
   if (!chat) {
     const { data: created, error } = await sb.from('sac_whatsapp_chats').insert({
       telefone, wa_chatid: msg.chatid, nome: !fromMe ? (msg.senderName || null) : null,
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando, nao_lidas: fromMe ? 0 : 1,
-    }).select('id, nome, nao_lidas').single()
+    }).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
     if (error || !created) return NextResponse.json({ error: 'db-insert-failed' }, { status: 500 })
     chat = created as ChatRow
   } else {
@@ -94,6 +95,37 @@ export async function POST(req: NextRequest) {
     autor: fromMe ? (msg.senderName || 'WhatsApp') : (msg.senderName || chat.nome || telefone),
     tipo, texto: texto || null, midia_url: msg.fileURL || null, status: msg.status ?? null, criado_em: quando,
   })
+
+  // IA de atendimento (OpenRouter): responde quando é mensagem do cliente,
+  // o bot está ativo, não há atendente humano e a IA está configurada.
+  const botAtivo = chat.bot_ativo ?? true
+  if (!fromMe && tipo === 'text' && texto && botAtivo && !chat.atendente_id && iaConfigurada()) {
+    try {
+      const { data: hist } = await sb.from('sac_whatsapp_mensagens')
+        .select('direcao, autor, texto').eq('chat_id', chat.id).order('criado_em', { ascending: true }).limit(20)
+      const historico: MensagemHistorico[] = (hist ?? []).map((m: { direcao: string | null; autor: string | null; texto: string | null }) => ({
+        autor: /entrada/i.test(m.direcao || '') ? 'cliente' : (/assistente|ia|bot/i.test(m.autor || '') ? 'ia' : 'atendente'),
+        texto: m.texto || '',
+      }))
+      const r = await gerarRespostaSAC(historico)
+      if (r?.resposta) {
+        const all = await listInstances()
+        const canal = all.find((i) => /laser/i.test(i.name) && i.status === 'connected')
+        if (canal?.token) {
+          const env = await sendText(canal.token, telefone, r.resposta)
+          const ag = new Date().toISOString()
+          await sb.from('sac_whatsapp_mensagens').insert({
+            chat_id: chat.id, direcao: 'saida', autor: 'Assistente IA', tipo: 'text', texto: r.resposta, status: env.ok ? 'sent' : 'failed', criado_em: ag,
+          })
+          const patch: Record<string, unknown> = { ultima_msg: r.resposta.slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: ag }
+          if (r.transferir) patch.bot_ativo = false // assunto sensível → fila humana
+          if (r.nomeCliente && !chat.nome) patch.nome = r.nomeCliente
+          await sb.from('sac_whatsapp_chats').update(patch).eq('id', chat.id)
+          return NextResponse.json({ ok: true, telefone, ia: true, transferir: r.transferir })
+        }
+      }
+    } catch (e) { console.error('webhook IA:', (e as Error).message) }
+  }
 
   return NextResponse.json({ ok: true, telefone, direcao: fromMe ? 'saida' : 'entrada' })
 }

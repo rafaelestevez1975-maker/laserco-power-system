@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA } from '@/app/(app)/sac/triagem/actions'
 
 export type Chat = { id: string; telefone: string | null; nome: string | null; ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number | null; bot_ativo: boolean | null; ticket_id: string | null; atendente_id: string | null; status: string | null }
 export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; criado_em: string | null }
@@ -165,6 +165,7 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                   {(['aberto', 'pendente', 'resolvido'] as const).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                 </select>
                 <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
+                {!chat.bot_ativo && <button className="btn" disabled={busy} onClick={() => acao(() => reativarIA(chat.id), 'IA reativada nesta conversa.')} title="Voltar o atendimento automático por IA">🤖 Reativar IA</button>}
                 {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
                 {chat.atendente_id && <button className="btn" disabled={busy} onClick={() => acao(() => devolverConversa(chat.id), 'Devolvida à fila.')}><i className="ti ti-arrow-back-up" /> Devolver</button>}
                 <select value={transfer} disabled={busy} onChange={(e) => { const v = e.target.value; setTransfer(''); if (v) acao(() => transferirConversa(chat.id, v), 'Conversa transferida.') }}

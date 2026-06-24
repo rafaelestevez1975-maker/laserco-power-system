@@ -88,6 +88,17 @@ export async function marcarLido(chatId: string): Promise<{ ok: boolean }> {
   return { ok: true }
 }
 
+/** Reativa a IA de atendimento na conversa (volta o bot e remove o atendente humano). */
+export async function reativarIA(chatId: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { error } = await sb.from('sac_whatsapp_chats').update({ bot_ativo: true, atendente_id: null }).eq('id', chatId)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
 /** Adiciona uma nota interna à conversa (não vai ao cliente). */
 export async function adicionarNota(chatId: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const sb = await createClient()
