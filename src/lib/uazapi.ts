@@ -105,6 +105,22 @@ export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, 
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
 }
 
+/** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar. */
+export function urlWebhook(): string {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://laserco-power-system.vercel.app').replace(/\/$/, '')
+  const secret = process.env.UAZAPI_WEBHOOK_SECRET
+  return `${base}/api/webhooks/uazapi${secret ? `?secret=${encodeURIComponent(secret)}` : ''}`
+}
+
+/** POST /webhook (token da instância) — garante que a instância entrega os eventos no nosso endpoint.
+ *  excludeMessages: ["wasSentByApi"] evita loop com o que o próprio sistema/IA envia. */
+export async function configurarWebhook(token: string, url: string): Promise<{ ok: boolean; error?: string }> {
+  const { ok, body } = await instPost('/webhook', token, {
+    url, enabled: true, events: ['messages', 'messages_update', 'connection'], excludeMessages: ['wasSentByApi'],
+  })
+  return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha ao configurar webhook.' }
+}
+
 export type CampanhaInput = { numbers: string[]; text: string; delayMin: number; delayMax: number; info?: string }
 
 /** Cria uma campanha de envio em massa (UAZAPI gerencia a fila + delay anti-ban). */

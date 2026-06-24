@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
-import { listInstances, createInstance, connectInstance, getStatus, disconnectInstance, type ConnState } from '@/lib/uazapi'
+import { listInstances, createInstance, connectInstance, getStatus, disconnectInstance, configurarWebhook, urlWebhook, type ConnState } from '@/lib/uazapi'
 
 export type Escopo = 'unidade' | 'geral'
 export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number }
@@ -84,6 +84,7 @@ export async function conectarCanal(nome: string): Promise<{ ok: boolean; error?
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }
   const token = await tokenPorNome(nome)
   if (!token) return { ok: false, error: 'Canal não encontrado.' }
+  await configurarWebhook(token, urlWebhook()).catch(() => null) // garante que as mensagens cheguem na Triagem/IA
   const state = await connectInstance(token)
   revalidatePath('/canais')
   return { ok: true, state }
