@@ -1,6 +1,9 @@
 /**
  * Estrutura de navegação portada 1:1 do protótipo (legacy/index.html):
  * mesmas seções, rótulos, ícones (Tabler) e badges. Cada item vira uma rota Next.
+ *
+ * Convenção do badge NOVO (definida com o cliente p/ homologação): NOVO = tela
+ * FUNCIONAL, pronta para testar. Itens sem NOVO ainda são clone visual (sem dados/ações).
  */
 export type Badge = 'NOVO' | 'ADMIN' | 'GPS' | 'BASE'
 
@@ -111,8 +114,8 @@ export const MENU: Section[] = [
         ],
       },
       { label: 'Mensagens e Automações', href: '/automacoes', icon: 'ti-brand-whatsapp', perm: 'marketing.campanha' },
-      { label: 'Disparos WhatsApp API', href: '/disparos', icon: 'ti-brand-whatsapp', badge: 'NOVO', perm: 'marketing.campanha' },
-      { label: 'CRM', href: '/crm', icon: 'ti-affiliate', perm: 'crm.lead' },
+      { label: 'Disparos WhatsApp API', href: '/disparos', icon: 'ti-brand-whatsapp', perm: 'marketing.campanha' },
+      { label: 'CRM', href: '/crm', icon: 'ti-affiliate', badge: 'NOVO', perm: 'crm.lead' },
       { label: 'Leads do Site', href: '/leads-site', icon: 'ti-inbox', badge: 'NOVO', perm: 'crm.lead' },
       { label: 'Canais WhatsApp', href: '/canais', icon: 'ti-brand-whatsapp', badge: 'NOVO' },
       { label: 'Gestão de Indiques', href: '/indiques', icon: 'ti-gift', badge: 'NOVO', perm: 'crm.lead' },
@@ -122,7 +125,7 @@ export const MENU: Section[] = [
           { label: 'Dashboard', href: '/rh', icon: 'ti-layout-dashboard', title: 'RH · Dashboard' },
           { label: 'Colaboradores', href: '/rh/colaboradores', icon: 'ti-users', title: 'RH · Colaboradores' },
           { label: 'Ponto', href: '/rh/ponto', icon: 'ti-clock', title: 'RH · Ponto' },
-          { label: 'Recrutamento', href: '/rh/recrutamento', icon: 'ti-user-plus', title: 'RH · Recrutamento' },
+          { label: 'Recrutamento', href: '/rh/recrutamento', icon: 'ti-user-plus', title: 'RH · Recrutamento', badge: 'NOVO' },
           { label: 'Folha de Pagamento', href: '/rh/folha', icon: 'ti-cash', title: 'RH · Folha de Pagamento' },
           { label: 'Férias e Ausências', href: '/rh/ferias', icon: 'ti-calendar', title: 'RH · Férias e Ausências' },
           { label: 'Desempenho', href: '/rh/desempenho', icon: 'ti-chart-bar', title: 'RH · Desempenho' },
@@ -132,9 +135,9 @@ export const MENU: Section[] = [
       { label: 'Marketing', href: '/marketing', icon: 'ti-ad-2', perm: 'marketing.' },
       { label: 'Comunicados', href: '/comunicados', icon: 'ti-speakerphone', badge: 'NOVO' },
       { label: 'Chamados', href: '/chamados', icon: 'ti-ticket', badge: 'NOVO' },
-      { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist', badge: 'NOVO' },
-      { label: 'Universidade Corporativa', href: '/universidade', icon: 'ti-school', badge: 'NOVO', perm: 'treinamento.curso' },
-      { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud', badge: 'NOVO' },
+      { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist' },
+      { label: 'Universidade Corporativa', href: '/universidade', icon: 'ti-school', perm: 'treinamento.curso' },
+      { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud' },
       { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice' },
     ],
   },
@@ -147,18 +150,18 @@ export const MENU: Section[] = [
           { label: 'Captação de Leads', href: '/expansao/captacao', icon: 'ti-map-pin-share', title: 'Expansão · Captação (Geo + Site)' },
           { label: 'Funil', href: '/expansao/funil', icon: 'ti-filter-cog', title: 'Expansão · Funil de Vendas' },
           { label: 'Leads', href: '/expansao/leads', icon: 'ti-list-check', title: 'Expansão · Leads (Kanban / Lista)' },
-          { label: 'Disparos WhatsApp', href: '/expansao/disparos', icon: 'ti-send', title: 'Expansão · Disparos WhatsApp' },
+          { label: 'Disparos WhatsApp', href: '/expansao/disparos', icon: 'ti-send', title: 'Expansão · Disparos WhatsApp', badge: 'NOVO' },
           { label: 'WhatsApp CRM', href: '/expansao/whatsapp', icon: 'ti-brand-whatsapp', title: 'Expansão · WhatsApp CRM' },
           { label: 'Tipo de Lead', href: '/expansao/tipos', icon: 'ti-tag', title: 'Expansão · Tipo de Lead' },
         ],
       },
-      { label: 'Implantação de Unidade', href: '/implantacao', icon: 'ti-building-plus', badge: 'NOVO' },
+      { label: 'Implantação de Unidade', href: '/implantacao', icon: 'ti-building-plus' },
       {
-        label: 'SAC', icon: 'ti-headset', key: 'sacm', badge: 'NOVO', perm: 'sac.', children: [
-          { label: 'Dashboard', href: '/sac', icon: 'ti-layout-dashboard', title: 'SAC · Dashboard' },
-          { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados' },
-          { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban' },
-          { label: 'Triagem WhatsApp', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Triagem WhatsApp' },
+        label: 'SAC', icon: 'ti-headset', key: 'sacm', perm: 'sac.', children: [
+          { label: 'Dashboard', href: '/sac', icon: 'ti-layout-dashboard', title: 'SAC · Dashboard', badge: 'NOVO' },
+          { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados', badge: 'NOVO' },
+          { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban', badge: 'NOVO' },
+          { label: 'Triagem WhatsApp', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Triagem WhatsApp', badge: 'NOVO' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes' },
@@ -167,7 +170,7 @@ export const MENU: Section[] = [
           { label: 'Configurações', href: '/sac/config', icon: 'ti-settings', title: 'SAC · Configurações' },
         ],
       },
-      { label: 'Financeiro Franqueadora', href: '/financeiro', icon: 'ti-businessplan', badge: 'ADMIN', perm: 'financeiro.' },
+      { label: 'Financeiro Franqueadora', href: '/financeiro', icon: 'ti-businessplan', badge: 'NOVO', perm: 'financeiro.' },
       { label: 'Jurídico', href: '/juridico', icon: 'ti-gavel', badge: 'ADMIN', admin: true },
       { label: 'Auditoria', href: '/auditoria', icon: 'ti-history', badge: 'ADMIN', perm: 'sistema.audit' },
     ],
@@ -178,7 +181,7 @@ export const MENU: Section[] = [
       { label: 'Minha Unidade', href: '/minha-unidade', icon: 'ti-building-bank' },
       { label: 'Todas unidades', href: '/unidades', icon: 'ti-buildings', perm: 'sistema.unidade' },
       { label: 'Minha conta', href: '/minha-conta', icon: 'ti-user-circle' },
-      { label: 'App do Cliente', href: '/app-cliente', icon: 'ti-device-mobile', badge: 'NOVO' },
+      { label: 'App do Cliente', href: '/app-cliente', icon: 'ti-device-mobile' },
       { label: 'Exportações', href: '/exportacoes', icon: 'ti-download' },
       { label: 'Ajuda', href: '/ajuda', icon: 'ti-help-circle', badge: 'BASE' },
     ],
