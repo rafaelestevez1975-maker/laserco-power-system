@@ -1,4 +1,4 @@
-# Ecossistema Laser&Co — Projetos, Supabases e Integração
+# Ecossistema Laser&Co  Projetos, Supabases e Integração
 
 > Mapa dos projetos irmãos em `/home/jvneto/ProjetosLMK/Laser/`, dos **dois** Supabases em jogo, do **modelo multitenant/RBAC que já existe** e do **fluxo de leads do site**. Base para decidir a estrutura do Power System e a reutilização de backend. Complementa [MAPEAMENTO.md](MAPEAMENTO.md), [ARQUITETURA-NEXT.md](ARQUITETURA-NEXT.md), [BACKLOG.md](BACKLOG.md) e [REQUISITOS-CLIENTE.md](REQUISITOS-CLIENTE.md).
 >
@@ -10,10 +10,10 @@
 
 | Projeto | O que é | Stack | Supabase |
 |---|---|---|---|
-| `laserco-power-system` | **Protótipo do Power System** (este repo) — layout aprovado | HTML single‑file | `riutcbwillvqjrpaefkb` |
+| `laserco-power-system` | **Protótipo do Power System** (este repo)  layout aprovado | HTML single‑file | `riutcbwillvqjrpaefkb` |
 | `lasercompany-site` | **Site institucional** (lasercompany.com) + painel admin | HTML + JS vanilla | `riutcbwillvqjrpaefkb` |
-| `SAC` (`gestao-sac`) | **App de SAC** — interface rejeitada, **funcionamento aproveitável** | **Next.js 15 + TS + Supabase + Tailwind + UAZAPI** | `lkiihnxznphxqekrgsgi` |
-| `RH` | **App de RH** (origem do `portal-rh.html`) — **dono do schema base** | Next.js + Supabase | `lkiihnxznphxqekrgsgi` |
+| `SAC` (`gestao-sac`) | **App de SAC**  interface rejeitada, **funcionamento aproveitável** | **Next.js 15 + TS + Supabase + Tailwind + UAZAPI** | `lkiihnxznphxqekrgsgi` |
+| `RH` | **App de RH** (origem do `portal-rh.html`)  **dono do schema base** | Next.js + Supabase | `lkiihnxznphxqekrgsgi` |
 | `crm-maquinas-de-rede` | **CRM de venda de equipamentos** (o "mesmo CRM" citado em Expansão) | a confirmar | a confirmar |
 | `rescisoes-laser` | **Rescisões** (cancelamentos/jurídico) | a confirmar | a confirmar |
 
@@ -23,18 +23,18 @@
 
 ## 2. Os dois Supabases
 
-### A) `riutcbwillvqjrpaefkb` — protótipo + site institucional
+### A) `riutcbwillvqjrpaefkb`  protótipo + site institucional
 - Usado pelo **protótipo** (`app_state` blob, `profiles`, `sales_entries`, `customers`, `units_db`, `goals`, `invites`).
 - Usado pelo **site** (`lasercompany_leads`, `lasercompany_events`, `lasercompany_roles`, `lasercompany_config`).
 - Anon key pública `sb_publishable_8FW_…` (a mesma no protótipo e no site).
 
-### B) `lkiihnxznphxqekrgsgi` — RH + SAC (o backend a reaproveitar) ⭐
+### B) `lkiihnxznphxqekrgsgi`  RH + SAC (o backend a reaproveitar) ⭐
 - **Schema maduro e abrangente** (migrations 001–051). Destaques:
   - **009 multi‑tenancy + RBAC granular + audit log**, **010 seed RBAC**.
   - **011 financeiro**, **012/013 SAC + Gmail**, **014 bemp_sync**, **015 crm_leads**, **016 equipamentos/processos**, **017 LGPD avançado**, **019 whatsapp_uazapi**, **020 indiques_kpis**, **021 plano_acao_ia**, **022/023 clone BEMP catálogo/operações**, **024/025 SULTS sync/expansão**, **026 campanhas_whatsapp**, **028 cargos_por_setor**, **030–051 refinos de SAC/RLS/clientes**.
 - **Service role key + UAZAPI** ficam em `.env.local` (fora do git).
 
-> ⚠️ O token `sbp_…` compartilhado no chat é de **gerência da conta** — revogar/rotacionar e usar via env var (ver memória `reference-laserco-supabase-token`).
+> ⚠️ O token `sbp_…` compartilhado no chat é de **gerência da conta**  revogar/rotacionar e usar via env var (ver memória `reference-laserco-supabase-token`).
 
 ---
 
@@ -81,8 +81,8 @@ lasercompany_leads: { tipo, nome, telefone, email, unidade, unidade_email, dados
 Outras tabelas do site: `lasercompany_events` (analytics), `lasercompany_roles` (admin/viewer do painel do site), `lasercompany_config` (config do site). O **painel administrativo do site** (onde "entrou muita gente") está no próprio site (`app.js`/`procdata.js`), protegido por sessão Supabase + papel.
 
 ### Plano de integração (2 opções)
-- **Opção A — Ponte/sync (recomendada para começar JÁ):** uma rotina no Power System (Edge Function/cron ou Realtime) lê `lasercompany_leads` de `riutcbwillvqjrpaefkb`, **deduplica**, **roteia por `unidade`/`unidade_email` → `unidade_id`** e cria `crm_leads`/registros de Expansão/Indiques/RH em `lkiihnxznphxqekrgsgi`. Não exige mexer no site agora.
-- **Opção B — Webhook direto:** alterar os `submitX()` do site para também `POST` num endpoint do Power System (`/api/webhooks/leads-site`). Mais limpo a médio prazo; exige deploy do site.
+- **Opção A  Ponte/sync (recomendada para começar JÁ):** uma rotina no Power System (Edge Function/cron ou Realtime) lê `lasercompany_leads` de `riutcbwillvqjrpaefkb`, **deduplica**, **roteia por `unidade`/`unidade_email` → `unidade_id`** e cria `crm_leads`/registros de Expansão/Indiques/RH em `lkiihnxznphxqekrgsgi`. Não exige mexer no site agora.
+- **Opção B  Webhook direto:** alterar os `submitX()` do site para também `POST` num endpoint do Power System (`/api/webhooks/leads-site`). Mais limpo a médio prazo; exige deploy do site.
 
 > Como o site **já está recebendo gente agora**, a Opção A entrega valor sem bloquear no deploy do site. Definir o **roteamento por unidade** (o site manda `unidade` como texto/e‑mail; precisamos casar com `unidades.id`).
 
@@ -92,7 +92,7 @@ Outras tabelas do site: `lasercompany_events` (analytics), `lasercompany_roles` 
 
 1. **Backend único = `lkiihnxznphxqekrgsgi`** (RH+SAC). O Power System passa a ser o **front unificado** (layout roxo aprovado do protótipo) sobre esse backend, que já tem RBAC/multitenant/CRM/SAC/Financeiro/WhatsApp/Indiques/Plano‑de‑Ação‑IA.
 2. **Template de arquitetura = app `SAC`** (Next.js 15 + `@supabase/ssr` + Server Actions + RLS + UAZAPI + Tailwind paleta `laser-600/700`). Reaproveitar `src/lib/supabase/*`, padrões de Server Actions, RBAC e o webhook UAZAPI.
-3. **SAC entra "dentro"** do Power System reusando suas tabelas `sac_*` e componentes (kanban, tickets, premiação, importar, whatsapp) — só re‑vestido no layout do Power System.
+3. **SAC entra "dentro"** do Power System reusando suas tabelas `sac_*` e componentes (kanban, tickets, premiação, importar, whatsapp)  só re‑vestido no layout do Power System.
 4. **Bridge dos leads do site** (Opção A) como primeira entrega de valor (P0, urgente).
 5. **Expansão** consome `crm_leads` (origem `franquia`/site) + disparos UAZAPI ininterruptos + qualificação IA (`ia_*`).
 6. Consolidar dados do protótipo (`riutcbwillvqjrpaefkb`) que não existam no backend novo (ex.: `sales_entries`, catálogos) via migração.

@@ -1,4 +1,4 @@
-# Checklist de Homologação — Laser&Co Power System (funcional)
+# Checklist de Homologação  Laser&Co Power System (funcional)
 
 > **Escopo:** este checklist cobre **o que já está FUNCIONAL** no Power System (app em produção,
 > backend Supabase `lkii`), no nível de **tela, ação, botão/link, campo, validação, regra de negócio,
@@ -9,7 +9,7 @@
 > **Data-base:** 2026-06-24 · **Versão:** commits `edbe24f` (Comunicados/Chamados) + `afd9c10` (RH/Recrutamento)
 
 ## Sobre "os três sistemas"
-O ecossistema tem **3 apps** sobre o **mesmo backend `lkii`**: **(1) Power System** (este — front unificado,
+O ecossistema tem **3 apps** sobre o **mesmo backend `lkii`**: **(1) Power System** (este  front unificado,
 em homologação), **(2) app RH** e **(3) app SAC**. A estratégia aprovada é **unificar tudo no Power System**;
 as funcionalidades de **SAC** e **Recrutamento (RH)** já estão **reescritas nativamente** aqui e cobertas abaixo.
 Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologação do cliente é **no Power System**.
@@ -21,7 +21,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 2. **Status:** `⬜ Não Testado` · `✅ Aprovado` · `❌ Reprovado`.
 3. **Evidência:** print da tela, ID do registro criado no banco, código HTTP, ou link do ticket/lead/chamado gerado.
 4. **Responsável:** quem validou (preencher).
-5. Teste com os **usuários de teste** (senha única `Laser&Co#2026`) — ver matriz de perfis abaixo — para cobrir RBAC/multitenant.
+5. Teste com os **usuários de teste** (senha única `Laser&Co#2026`)  ver matriz de perfis abaixo  para cobrir RBAC/multitenant.
 6. Versão planilha (para preencher Status/Responsável): [`checklist-funcional.csv`](checklist-funcional.csv).
 
 ### Legenda de prioridade
@@ -85,7 +85,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 |---|---|---|---|---|---|---|
 | RESP-1 | Desktop (≥1280px) | Layout completo, sidebar fixa, tabelas/kanban sem quebra | ⬜ | Print | layout 1:1 do protótipo | |
 | RESP-2 | Tablet (~768–1024px) | Conteúdo se ajusta; sidebar colapsável | ⬜ | Print | **a validar** | |
-| RESP-3 | Mobile (≤480px) | Sidebar vira menu móvel; tabelas com scroll horizontal | ⬜ | Print | **a validar — foco era desktop** | |
+| RESP-3 | Mobile (≤480px) | Sidebar vira menu móvel; tabelas com scroll horizontal | ⬜ | Print | **a validar  foco era desktop** | |
 
 ### Performance / comportamento geral
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
@@ -106,12 +106,12 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 |---|---|---|---|---|---|---|
 | SHL-1 | Sidebar (menu lateral) | Lista seções/itens conforme o protótipo, com ícones; item ativo destacado | ⬜ | | gateado por permissão (RBAC-1) | |
 | SHL-2 | Navegação entre telas | Clicar no item abre a rota correspondente | ⬜ | | | |
-| SHL-3 | Topbar — usuário | Mostra nome/iniciais e papel do usuário logado | ⬜ | | perfis_usuario | |
+| SHL-3 | Topbar  usuário | Mostra nome/iniciais e papel do usuário logado | ⬜ | | perfis_usuario | |
 | SHL-4 | Seletor de unidade | Admin troca a unidade ativa; franquia vê só as suas | ⬜ | | cookie `lc_unit` | |
 | SHL-5 | Sino de notificações | Exibe contador e lista (chamado novo/atrasado, comunicado pendente) | ⬜ | | ver módulo Notificações | |
 | SHL-6 | Logout | Encerra sessão e volta ao login | ⬜ | | | |
 
-### 2. CRM  (`/crm`)  — P0
+### 2. CRM  (`/crm`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | CRM-1 | Quadro Kanban | Mostra etapas reais (`crm_etapas`) e leads por etapa, por unidade | ⬜ | | dados reais lkii | |
@@ -124,7 +124,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | CRM-8 | Link WhatsApp do card | Abre wa.me do telefone | ⬜ | | | |
 | CRM-9 | Permissão/escopo | Franquia vê só seus leads; rede vê todos | ⬜ | | RLS | |
 
-### 3. Gestão de Indiques  (`/indiques`)  — P0
+### 3. Gestão de Indiques  (`/indiques`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | IND-1 | Lista de indicações | Mostra indicações por unidade (franqueadora vê todas) | ⬜ | | | |
@@ -135,7 +135,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | IND-6 | "Abrir o lead" / evoluir | Avança o status do indicado (pendente→…→comprou) | ⬜ | | validado 200 | |
 | IND-7 | Escopo multitenant | Franquia só as suas; rede todas | ⬜ | | | |
 
-### 4. Leads do Site  (`/leads-site`)  — P0
+### 4. Leads do Site  (`/leads-site`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | LDS-1 | Inbox de leads do site | Lista os leads reais do site (`riut.lasercompany_leads`) | ⬜ | print | 77 leads reais | |
@@ -148,7 +148,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | LDS-8 | Marca como roteado | Lead roteado não pode ser roteado de novo | ⬜ | | _roteado=true | |
 | LDS-9 | Fallback sem service key | Se o site não estiver conectado, mostra aviso e base de teste | ⬜ | | | |
 
-### 5. SAC — Dashboard / Chamados / Kanban  (`/sac`, `/sac/chamados`, `/sac/kanban`)  — P0
+### 5. SAC  Dashboard / Chamados / Kanban  (`/sac`, `/sac/chamados`, `/sac/kanban`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | SAC-1 | Dashboard (KPIs) | Mostra indicadores reais de chamados | ⬜ | | | |
@@ -160,14 +160,14 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | SAC-7 | Reembolso/Acordo | Calcula multa % → cria espelho no Financeiro + move p/ "Em pagamento" | ⬜ | lançamento criado | regra de negócio P0 | |
 | SAC-8 | Escopo | Franquia só seus; rede todos | ⬜ | | | |
 
-### 6. SAC — Triagem WhatsApp  (`/sac/triagem`)  — P0
+### 6. SAC  Triagem WhatsApp  (`/sac/triagem`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | TRI-1 | Janela de conversas | Lista conversas reais estilo WhatsApp Web | ⬜ | | alimentada pelo webhook | |
 | TRI-2 | Responder | Envia pelo canal conectado e grava a saída | ⬜ | | **depende de canal conectado** | |
 | TRI-3 | Abrir chamado da conversa | Cria ticket vinculado (`ticket_id`) | ⬜ | ID ticket | validado 201 | |
 
-### 7. Financeiro — Contas a Pagar  (`/financeiro`)  — P0
+### 7. Financeiro  Contas a Pagar  (`/financeiro`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | FIN-1 | Lista de despesas | Mostra `lancamentos_financeiros` (despesas) + KPIs | ⬜ | | | |
@@ -175,7 +175,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | FIN-3 | Ciclo SAC↔Financeiro | Se for reembolso do SAC (origem_ref_id), dar baixa **conclui o chamado** | ⬜ | ticket concluído | regra P0 validada ponta a ponta | |
 | FIN-4 | Escopo | Franquia só sua; rede toda | ⬜ | | | |
 
-### 8. Canais WhatsApp (UAZAPI)  (`/canais`)  — P0
+### 8. Canais WhatsApp (UAZAPI)  (`/canais`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | CAN-1 | Listar instâncias | Mostra as instâncias e status real | ⬜ | | admin token UAZAPI | |
@@ -184,22 +184,22 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | CAN-4 | Desconectar | Encerra a instância | ⬜ | | | |
 | CAN-5 | Integração UAZAPI | Chamadas reais à API (instance/all, connect, status) | ⬜ | | | |
 
-### 9. Disparos WhatsApp  (`/expansao/disparos`)  — P0
+### 9. Disparos WhatsApp  (`/expansao/disparos`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | DIS-1 | Compositor | Seleciona canal conectado, mensagem, base de números, delay | ⬜ | | | |
 | DIS-2 | Validação | Exige canal conectado e base de números | ⬜ | | | |
 | DIS-3 | Criar campanha | Dispara envio em massa (`/sender/simple`, delay anti-ban) | ⬜ | campanha na UAZAPI | **envio real depende de canal conectado** | |
-| DIS-4 | Personalização `{nome}` | (Pendente) — via /sender/advanced | ⬜ | | **não implementado** | |
+| DIS-4 | Personalização `{nome}` | (Pendente)  via /sender/advanced | ⬜ | | **não implementado** | |
 
-### 10. Webhook UAZAPI (entrada)  (`/api/webhooks/uazapi`)  — P0
+### 10. Webhook UAZAPI (entrada)  (`/api/webhooks/uazapi`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | WHK-1 | Recebe eventos | Endpoint aceita o POST da UAZAPI | ⬜ | 200 | secret | |
 | WHK-2 | Grava entrada | Cria/atualiza `sac_whatsapp_chats`/`_mensagens` (dedup por wa_id) | ⬜ | registro | valida 201 | |
 | WHK-3 | Alimenta a Triagem | Mensagem recebida aparece na Triagem | ⬜ | | precisa canal conectado | |
 
-### 11. Comunicados  (`/comunicados`)  — P1
+### 11. Comunicados  (`/comunicados`)   P1
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | COM-1 | Lista + abas | Tabela de comunicados com abas Todos/Publicados/Agendados/Encerrados | ⬜ | | | |
@@ -215,7 +215,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | COM-11 | Encerrar/Reabrir | Admin muda o status do comunicado | ⬜ | | | |
 | COM-12 | E-mail real | (Pendente) envio por e-mail | ⬜ | | **não implementado (depende Gmail)** | |
 
-### 12. Chamados (intranet)  (`/chamados`)  — P1
+### 12. Chamados (intranet)  (`/chamados`)   P1
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | CHM-1 | Abas Recebidos/Enviados | Separa por origem (franqueado = recebido) | ⬜ | | | |
@@ -231,7 +231,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | CHM-11 | SLA 48h corridas | Mostra data-limite e marca **Atrasado** após 48h | ⬜ | | sexta→domingo validado | |
 | CHM-12 | Escopo/RLS | Vê os da sua unidade + os que abriu/é responsável; admin tudo | ⬜ | | | |
 
-### 13. RH — Recrutamento  (`/rh/recrutamento`)  — P1
+### 13. RH  Recrutamento  (`/rh/recrutamento`)   P1
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | RH-1 | Aba Currículos (banco de talentos) | Lista todos os currículos (`candidatos`) | ⬜ | | | |
@@ -257,7 +257,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 
 ---
 
-## Telas ainda NÃO funcionais (clone visual / snapshot — fora desta homologação)
+## Telas ainda NÃO funcionais (clone visual / snapshot  fora desta homologação)
 > Presentes no sistema como **clone 1:1 do protótipo**, porém **sem dados/ações reais** ainda.
 > Não devem ser homologadas nesta fase; servem para validar **layout**.
 

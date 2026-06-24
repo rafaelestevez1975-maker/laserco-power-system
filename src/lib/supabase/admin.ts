@@ -1,6 +1,6 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-// Service-role client — só usar em server actions ou rotas API que precisam
+// Service-role client  só usar em server actions ou rotas API que precisam
 // bypassar RLS (ex.: webhooks UAZAPI, crons internos). NUNCA expor pro browser.
 export function adminClient() {
   return createSupabaseClient(

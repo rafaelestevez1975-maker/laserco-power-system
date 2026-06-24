@@ -5,7 +5,7 @@
 <style>.embedded-frame .sidebar{display:none!important}.embedded-frame .main{flex:1 1 100%!important;width:100%!important}.embedded-frame #auth-overlay{display:none!important}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laser&Co — Sistema de Vendas</title>
+<title>Laser&Co  Sistema de Vendas</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -270,8 +270,8 @@ tr:hover td{background:rgba(0,0,0,.015)}
     </div>
   </div>
   <div id="user-badge">
-    <strong id="ub-name">—</strong>
-    <span class="badge-role" id="ub-role-badge">—</span>
+    <strong id="ub-name"></strong>
+    <span class="badge-role" id="ub-role-badge"></span>
     <button class="btn-logout" onclick="doLogout()">Sair</button>
   </div>
 </div>
@@ -351,7 +351,7 @@ tr:hover td{background:rgba(0,0,0,.015)}
 
 <div class="modal-overlay" id="modal-goals">
   <div class="modal" style="width:640px">
-    <h3 id="modal-goals-title">Metas — <span id="mg-unit-name"></span></h3>
+    <h3 id="modal-goals-title">Metas  <span id="mg-unit-name"></span></h3>
     <div class="form-group">
       <label>Ano</label>
       <select id="mg-year" onchange="renderGoalInputs()"></select>
@@ -540,7 +540,7 @@ async function syncFromSupabase() {
   }
 }
 
-// Auth state change listener — only handles logout and page-load session restore
+// Auth state change listener  only handles logout and page-load session restore
 supa.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_OUT') {
     document.getElementById('auth-overlay').classList.remove('hidden');
@@ -856,14 +856,14 @@ function getCtx(id) {
 }
 function sc(id, c) { charts[id] = c; }
 
-function fmt(v, d=0) { if (!v||isNaN(v)) return '—'; return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmt(v, d=0) { if (!v||isNaN(v)) return ''; return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function fmtK(v) {
-  if (!v||isNaN(v)) return '—';
+  if (!v||isNaN(v)) return '';
   if (v>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
   if (v>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})+'K';
   return fmt(v);
 }
-function pct(v) { if (v===null||isNaN(v)) return '—'; return (v*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
+function pct(v) { if (v===null||isNaN(v)) return ''; return (v*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
 function dpct(curr,prev) { if (!prev) return null; return (curr-prev)/prev; }
 function pctCls(v) { if (v===null) return 'neutral'; return v>=0?'up':'down'; }
 function sign(v) { if (v===null) return ''; return (v>=0?'+':'')+(v*100).toFixed(1)+'%'; }
@@ -991,13 +991,13 @@ function renderDashboard() {
     <div style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <span style="font-size:20px">🚨</span>
-        <strong style="color:#dc2626;font-size:15px">${alertCritico.length} ${alertCritico.length===1?'unidade':'unidades'} em ALERTA CRÍTICO — projeção abaixo de 65% da meta</strong>
+        <strong style="color:#dc2626;font-size:15px">${alertCritico.length} ${alertCritico.length===1?'unidade':'unidades'} em ALERTA CRÍTICO  projeção abaixo de 65% da meta</strong>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         ${alertCritico.map(u=>`
           <div style="background:#fff;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:8px 14px;min-width:200px">
             <div style="font-weight:700;font-size:13px;color:#1a1a2e">${u.name}</div>
-            <div style="font-size:12px;color:#dc2626;margin-top:2px">Proj: ${fmtK(u.proj)} — Meta: ${fmtK(u.goal)} — <strong>${pct(u.proj/u.goal)}</strong></div>
+            <div style="font-size:12px;color:#dc2626;margin-top:2px">Proj: ${fmtK(u.proj)}  Meta: ${fmtK(u.goal)}  <strong>${pct(u.proj/u.goal)}</strong></div>
           </div>`).join('')}
       </div>
     </div>` : ''}
@@ -1006,7 +1006,7 @@ function renderDashboard() {
     <div style="background:rgba(245,158,11,0.07);border:1.5px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 20px;margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <span style="font-size:18px">⚠️</span>
-        <strong style="color:#b45309;font-size:14px">${alertAtencao.length} ${alertAtencao.length===1?'unidade':'unidades'} em atenção — projeção entre 65% e 99% da meta</strong>
+        <strong style="color:#b45309;font-size:14px">${alertAtencao.length} ${alertAtencao.length===1?'unidade':'unidades'} em atenção  projeção entre 65% e 99% da meta</strong>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${alertAtencao.map(u=>`
@@ -1020,7 +1020,7 @@ function renderDashboard() {
       <div class="kpi-card">
         <div class="kpi-label">Faturamento no Mês</div>
         <div class="kpi-value" style="color:var(--accent)">${fmtK(currTotal)}</div>
-        <div class="kpi-sub"><span class="kpi-delta ${pctCls(d_pm)}">${sign(d_pm)||'—'}</span> vs mesmo dia mês ant.</div>
+        <div class="kpi-sub"><span class="kpi-delta ${pctCls(d_pm)}">${sign(d_pm)||''}</span> vs mesmo dia mês ant.</div>
         ${goalTotal?`<div class="goal-bar-wrap"><div class="goal-bar" style="width:${Math.min(goalRatio*100,100)}%;background:${goalBarColor(goalRatio)}"></div></div>
         <div class="kpi-sub" style="margin-top:4px">${pct(goalRatio)} da meta (${fmtK(goalTotal)})</div>`:''}
       </div>
@@ -1032,7 +1032,7 @@ function renderDashboard() {
       </div>
       <div class="kpi-card">
         <div class="kpi-label">vs Mesmo Mês ${year-1}</div>
-        <div class="kpi-value" style="color:${d_py>=0?'var(--green)':'var(--red)'}">${sign(d_py)||'—'}</div>
+        <div class="kpi-value" style="color:${d_py>=0?'var(--green)':'var(--red)'}">${sign(d_py)||''}</div>
         <div class="kpi-sub">${fmtK(prevYearTotal)} em ${year-1}</div>
       </div>
       <div class="kpi-card">
@@ -1069,26 +1069,26 @@ function renderDashboard() {
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Melhor Unidade</div>
-        <div class="kpi-value" style="font-size:17px;overflow:hidden;text-overflow:ellipsis">${topUnit||'—'}</div>
+        <div class="kpi-value" style="font-size:17px;overflow:hidden;text-overflow:ellipsis">${topUnit||''}</div>
         <div class="kpi-sub">${fmtK(topVal)}</div>
       </div>
     </div>
 
     <div class="chart-grid">
       <div class="chart-card full">
-        <div class="chart-title">Evolução Mensal — ${year} vs ${year-1}${monthlyGoals.some(v=>v>0)?' + Metas':''}</div>
+        <div class="chart-title">Evolução Mensal  ${year} vs ${year-1}${monthlyGoals.some(v=>v>0)?' + Metas':''}</div>
         <div class="chart-wrap tall"><canvas id="ch-evo"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Franquias vs Próprias — ${MONTHS[month-1]}/${year}</div>
+        <div class="chart-title">Franquias vs Próprias  ${MONTHS[month-1]}/${year}</div>
         <div class="chart-wrap"><canvas id="ch-split"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Top 10 Unidades — ${MONTHS[month-1]}/${year}</div>
+        <div class="chart-title">Top 10 Unidades  ${MONTHS[month-1]}/${year}</div>
         <div class="chart-wrap"><canvas id="ch-top"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">% Meta por Unidade (Projeção) — ${MONTHS[month-1]}/${year}</div>
+        <div class="chart-title">% Meta por Unidade (Projeção)  ${MONTHS[month-1]}/${year}</div>
         <div class="chart-wrap"><canvas id="ch-meta"></canvas></div>
       </div>
     </div>
@@ -1102,7 +1102,7 @@ function renderDashboard() {
     </div>
 
     <div class="table-wrap">
-      <div class="table-header"><h3>Ranking — ${MONTHS_FULL[month-1]} ${year}</h3></div>
+      <div class="table-header"><h3>Ranking  ${MONTHS_FULL[month-1]} ${year}</h3></div>
       <table><thead><tr>
         <th>#</th><th>Unidade</th><th>UF</th><th>Tipo</th>
         <th>Mês Atual</th><th>Meta</th><th>% Meta</th><th>Projeção</th><th>% Proj.</th>
@@ -1115,17 +1115,17 @@ function renderDashboard() {
         const d1  = dpct(u.curr,u.prev), d2 = dpct(u.curr,u.py);
         return `<tr style="${rankRowBg(u)}">
           <td style="color:var(--text3)">${i+1}</td>
-          <td style="font-weight:600">${u.name}</td><td>${u.uf||'—'}</td>
+          <td style="font-weight:600">${u.name}</td><td>${u.uf||''}</td>
           <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
           <td style="font-weight:700">${fmt(u.curr)}</td>
-          <td style="color:var(--blue)">${u.goal?fmt(u.goal):'—'}</td>
-          <td class="pct ${goalCls(gr)}">${gr?pct(gr):'—'}</td>
+          <td style="color:var(--blue)">${u.goal?fmt(u.goal):''}</td>
+          <td class="pct ${goalCls(gr)}">${gr?pct(gr):''}</td>
           <td style="color:var(--yellow)">${fmtK(u.proj)}</td>
-          <td class="pct ${goalCls(gpr)}">${gpr?pct(gpr):'—'}</td>
+          <td class="pct ${goalCls(gpr)}">${gpr?pct(gpr):''}</td>
           <td style="color:var(--text2)">${fmt(u.prev)}</td>
-          <td class="pct ${pctCls(d1)}">${sign(d1)||'—'}</td>
+          <td class="pct ${pctCls(d1)}">${sign(d1)||''}</td>
           <td style="color:var(--text2)">${fmt(u.py)}</td>
-          <td class="pct ${pctCls(d2)}">${sign(d2)||'—'}</td>
+          <td class="pct ${pctCls(d2)}">${sign(d2)||''}</td>
           <td>${fmtK(u.yearTotal)}</td>
         </tr>`;
       }).join('')}
@@ -1276,26 +1276,26 @@ function renderMensal() {
       </div>
       <div class="kpi-card">
         <div class="kpi-label">vs ${MONTHS[prevM-1]}/${prevMY}</div>
-        <div class="kpi-value" style="color:${(d_pm||0)>=0?'var(--green)':'var(--red)'}">${sign(d_pm)||'—'}</div>
+        <div class="kpi-value" style="color:${(d_pm||0)>=0?'var(--green)':'var(--red)'}">${sign(d_pm)||''}</div>
         <div class="kpi-sub">${fmtK(prevMTotal)} no mês anterior</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">vs ${MONTHS[month-1]}/${year-1}</div>
-        <div class="kpi-value" style="color:${(d_py||0)>=0?'var(--green)':'var(--red)'}">${sign(d_py)||'—'}</div>
+        <div class="kpi-value" style="color:${(d_py||0)>=0?'var(--green)':'var(--red)'}">${sign(d_py)||''}</div>
         <div class="kpi-sub">${fmtK(prevYTotal)} mesmo mês ano ant.</div>
       </div>
     </div>
 
     <div class="chart-grid">
       <div class="chart-card full">
-        <div class="chart-title">Diário e Acumulado — ${MONTHS_FULL[month-1]} ${year}</div>
+        <div class="chart-title">Diário e Acumulado  ${MONTHS_FULL[month-1]} ${year}</div>
         <div class="chart-wrap tall"><canvas id="ch-daily"></canvas></div>
       </div>
     </div>
 
     <div class="table-wrap">
       <div class="table-header">
-        <h3>Resumo por Unidade — ${MONTHS_FULL[month-1]} ${year}</h3>
+        <h3>Resumo por Unidade  ${MONTHS_FULL[month-1]} ${year}</h3>
         <button class="btn btn-green admin-only" onclick="openEntryModal()">+ Lançar</button>
       </div>
       <div style="overflow-x:auto"><table>
@@ -1309,30 +1309,30 @@ function renderMensal() {
         <tbody>
         ${unitRows.map(u=>`<tr>
           <td style="font-weight:600">${u.name}</td>
-          <td>${u.uf||'—'}</td>
+          <td>${u.uf||''}</td>
           <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
           <td style="font-weight:700">${fmt(u.acum)}</td>
-          <td style="color:var(--blue)">${u.goal?fmt(u.goal):'—'}</td>
-          <td class="pct ${goalCls(u.gr)}">${u.gr?pct(u.gr):'—'}</td>
+          <td style="color:var(--blue)">${u.goal?fmt(u.goal):''}</td>
+          <td class="pct ${goalCls(u.gr)}">${u.gr?pct(u.gr):''}</td>
           <td style="color:var(--yellow)">${fmtK(u.proj)}</td>
           <td style="color:var(--text2)">${fmtK(u.avg)}</td>
           <td style="color:var(--text2)">${fmt(u.prev)}</td>
-          <td class="pct ${pctCls(u.d_pm)}">${sign(u.d_pm)||'—'}</td>
+          <td class="pct ${pctCls(u.d_pm)}">${sign(u.d_pm)||''}</td>
           <td style="color:var(--text2)">${fmt(u.py)}</td>
-          <td class="pct ${pctCls(u.d_py)}">${sign(u.d_py)||'—'}</td>
+          <td class="pct ${pctCls(u.d_py)}">${sign(u.d_py)||''}</td>
         </tr>`).join('')}
         </tbody>
         <tfoot><tr class="totals-row">
           <td colspan="3">TOTAL (${unitRows.length} un.)</td>
           <td>${fmt(totalAccum)}</td>
-          <td>${totalGoal?fmt(totalGoal):'—'}</td>
-          <td class="pct ${goalCls(totalGoal?totalAccum/totalGoal:null)}">${totalGoal?pct(totalAccum/totalGoal):'—'}</td>
+          <td>${totalGoal?fmt(totalGoal):''}</td>
+          <td class="pct ${goalCls(totalGoal?totalAccum/totalGoal:null)}">${totalGoal?pct(totalAccum/totalGoal):''}</td>
           <td style="color:var(--yellow)">${fmtK(totalProj)}</td>
-          <td>—</td>
+          <td></td>
           <td>${fmt(totalPrev)}</td>
-          <td class="pct ${pctCls(dpct(totalAccum,totalPrev))}">${sign(dpct(totalAccum,totalPrev))||'—'}</td>
+          <td class="pct ${pctCls(dpct(totalAccum,totalPrev))}">${sign(dpct(totalAccum,totalPrev))||''}</td>
           <td>${fmt(totalPY)}</td>
-          <td class="pct ${pctCls(dpct(totalAccum,totalPY))}">${sign(dpct(totalAccum,totalPY))||'—'}</td>
+          <td class="pct ${pctCls(dpct(totalAccum,totalPY))}">${sign(dpct(totalAccum,totalPY))||''}</td>
         </tr></tfoot>
       </table></div>
     </div>`;
@@ -1383,34 +1383,34 @@ function renderComparativo() {
     <div class="section-title">Comparativo ${year-1} vs ${year}</div>
     <div class="chart-grid">
       <div class="chart-card full">
-        <div class="chart-title">Faturamento Mensal — ${year-1} vs ${year}</div>
+        <div class="chart-title">Faturamento Mensal  ${year-1} vs ${year}</div>
         <div class="chart-wrap tall"><canvas id="ch-cbar"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Crescimento % — ${year} vs ${year-1}</div>
+        <div class="chart-title">Crescimento %  ${year} vs ${year-1}</div>
         <div class="chart-wrap"><canvas id="ch-cgr"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Acumulado — ${year-1} vs ${year}</div>
+        <div class="chart-title">Acumulado  ${year-1} vs ${year}</div>
         <div class="chart-wrap"><canvas id="ch-ccum"></canvas></div>
       </div>
     </div>
     <div class="table-wrap">
-      <div class="table-header"><h3>Unidades — Total Anual ${year-1} vs ${year}</h3></div>
+      <div class="table-header"><h3>Unidades  Total Anual ${year-1} vs ${year}</h3></div>
       <table><thead><tr><th>#</th><th>Unidade</th><th>UF</th><th>Tipo</th><th>Total ${year-1}</th><th>Total ${year}</th><th>Δ%</th></tr></thead>
       <tbody>${unitComp.map((u,i)=>{const d=dpct(u.curr,u.prev);return`<tr>
         <td style="color:var(--text3)">${i+1}</td>
-        <td style="font-weight:600">${u.name}</td><td>${u.uf||'—'}</td>
+        <td style="font-weight:600">${u.name}</td><td>${u.uf||''}</td>
         <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
         <td style="color:var(--text2)">${fmtK(u.prev)}</td>
         <td style="font-weight:700">${fmtK(u.curr)}</td>
-        <td class="pct ${pctCls(d)}">${sign(d)||'—'}</td>
+        <td class="pct ${pctCls(d)}">${sign(d)||''}</td>
       </tr>`;}).join('')}</tbody>
       <tfoot><tr class="totals-row">
         <td colspan="4">TOTAL</td>
         <td>${fmtK(unitComp.reduce((s,u)=>s+u.prev,0))}</td>
         <td>${fmtK(unitComp.reduce((s,u)=>s+u.curr,0))}</td>
-        <td class="pct ${pctCls(dpct(unitComp.reduce((s,u)=>s+u.curr,0),unitComp.reduce((s,u)=>s+u.prev,0)))}">${sign(dpct(unitComp.reduce((s,u)=>s+u.curr,0),unitComp.reduce((s,u)=>s+u.prev,0)))||'—'}</td>
+        <td class="pct ${pctCls(dpct(unitComp.reduce((s,u)=>s+u.curr,0),unitComp.reduce((s,u)=>s+u.prev,0)))}">${sign(dpct(unitComp.reduce((s,u)=>s+u.curr,0),unitComp.reduce((s,u)=>s+u.prev,0)))||''}</td>
       </tr></tfoot></table>
     </div>`;
 
@@ -1451,7 +1451,7 @@ function renderHistorico() {
   document.getElementById('page-historico').innerHTML = `
     <div class="section-title">Histórico de Faturamento</div>
     <div class="chart-card" style="margin-bottom:20px">
-      <div class="chart-title">Evolução Mensal — Todos os Anos</div>
+      <div class="chart-title">Evolução Mensal  Todos os Anos</div>
       <div class="chart-wrap tall"><canvas id="ch-hl"></canvas></div>
     </div>
     <div class="table-wrap" style="margin-bottom:20px">
@@ -1462,12 +1462,12 @@ function renderHistorico() {
           const vals=ALL_YEARS.map(y=>u.years[y]||0);
           const first=vals.find(v=>v>0),last=[...vals].reverse().find(v=>v>0),n=ALL_YEARS.filter(y=>u.years[y]>0).length;
           const cagr=n>1&&first?Math.pow(last/first,1/(n-1))-1:null;
-          return`<tr><td style="font-weight:600">${u.name}</td><td>${u.uf||'—'}</td>
+          return`<tr><td style="font-weight:600">${u.name}</td><td>${u.uf||''}</td>
           <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
-          ${ALL_YEARS.map(y=>`<td>${u.years[y]?fmtK(u.years[y]):'—'}</td>`).join('')}
-          <td class="pct ${cagr!==null?(cagr>=0?'good':'bad'):'neutral'}">${cagr!==null?sign(cagr):'—'}</td></tr>`;
+          ${ALL_YEARS.map(y=>`<td>${u.years[y]?fmtK(u.years[y]):''}</td>`).join('')}
+          <td class="pct ${cagr!==null?(cagr>=0?'good':'bad'):'neutral'}">${cagr!==null?sign(cagr):''}</td></tr>`;
         }).join('')}</tbody>
-        <tfoot><tr class="totals-row"><td colspan="3">TOTAL</td>${ALL_YEARS.map(y=>`<td>${fmtK(grandTotals[y])}</td>`).join('')}<td>—</td></tr></tfoot>
+        <tfoot><tr class="totals-row"><td colspan="3">TOTAL</td>${ALL_YEARS.map(y=>`<td>${fmtK(grandTotals[y])}</td>`).join('')}<td></td></tr></tfoot>
       </table></div>
     </div>
     <div class="table-wrap">
@@ -1476,7 +1476,7 @@ function renderHistorico() {
         <thead><tr><th>Ano</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead>
         <tbody>${monthlyTotals.map(row=>{const t=row.months.reduce((s,v)=>s+v,0);return`<tr>
           <td style="font-weight:700">${row.year}</td>
-          ${row.months.map(v=>`<td>${v?fmtK(v):'—'}</td>`).join('')}
+          ${row.months.map(v=>`<td>${v?fmtK(v):''}</td>`).join('')}
           <td style="font-weight:700;color:var(--accent)">${fmtK(t)}</td>
         </tr>`;}).join('')}</tbody>
       </table></div>
@@ -1508,24 +1508,24 @@ function renderUnidades() {
   unitData.forEach(u=>{if(!u.uf)return;if(!byUF[u.uf])byUF[u.uf]={total:0,count:0};byUF[u.uf].total+=u.monthTotal;byUF[u.uf].count++;});
 
   document.getElementById('page-unidades').innerHTML = `
-    <div class="section-title">Unidades — ${MONTHS_FULL[month-1]} ${year}</div>
+    <div class="section-title">Unidades  ${MONTHS_FULL[month-1]} ${year}</div>
     <div class="two-col" style="margin-bottom:20px">
       <div class="chart-card"><div class="chart-title">Por Estado (mês)</div><div class="chart-wrap"><canvas id="ch-uf"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">Franquias vs Próprias (ano)</div><div class="chart-wrap"><canvas id="ch-tipo"></canvas></div></div>
     </div>
     <div class="table-wrap">
-      <div class="table-header"><h3>Todas as Unidades — ${year}</h3></div>
+      <div class="table-header"><h3>Todas as Unidades  ${year}</h3></div>
       <div style="overflow-x:auto"><table>
         <thead><tr><th>#</th><th>Unidade</th><th>Cidade</th><th>UF</th><th>Tipo</th><th>Supervisor</th>
         ${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>Total ${year}</th></tr></thead>
         <tbody>${unitData.map((u,i)=>`<tr>
           <td style="color:var(--text3)">${i+1}</td>
           <td style="font-weight:600;min-width:150px">${u.name}</td>
-          <td style="color:var(--text2)">${u.cidade||'—'}</td>
-          <td>${u.uf||'—'}</td>
+          <td style="color:var(--text2)">${u.cidade||''}</td>
+          <td>${u.uf||''}</td>
           <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
-          <td style="color:var(--text2)">${u.supervisor||'—'}</td>
-          ${u.months.map(v=>`<td style="color:${v?'var(--text)':'var(--text3)'}">${v?fmtK(v):'—'}</td>`).join('')}
+          <td style="color:var(--text2)">${u.supervisor||''}</td>
+          ${u.months.map(v=>`<td style="color:${v?'var(--text)':'var(--text3)'}">${v?fmtK(v):''}</td>`).join('')}
           <td style="font-weight:700;color:var(--accent)">${fmtK(u.yearTotal)}</td>
         </tr>`).join('')}</tbody>
       </table></div>
@@ -1589,7 +1589,7 @@ function renderLancamento() {
   const totPctP  = totGoal ? totProj/totGoal : null;
 
   document.getElementById('page-lancamento').innerHTML = `
-    <div class="section-title">Lançamento — ${MONTHS_FULL[month-1]} ${year}</div>
+    <div class="section-title">Lançamento  ${MONTHS_FULL[month-1]} ${year}</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <button class="btn btn-green admin-only" onclick="openEntryModal()">+ Lançar Venda</button>
       <button class="btn btn-ghost" onclick="exportCSV()">Exportar CSV</button>
@@ -1621,13 +1621,13 @@ function renderLancamento() {
             ${days.map((v,i)=>{const d=i+1,isT=d===todayDay;
               return`<td class="${currentRole==='admin'?'editable-cell':''}${isT?' today-col':''}"
                 onclick="if(currentRole==='admin')editCell('${u.name.replace(/'/g,"\\'")}',${year},${month},${d},this)"
-                style="${isT?'background:rgba(230,60,90,.04);':''}">${v?`<span style="color:var(--green);font-weight:600">${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>`;
+                style="${isT?'background:rgba(230,60,90,.04);':''}">${v?`<span style="color:var(--green);font-weight:600">${v.toLocaleString('pt-BR',{maximumFractionDigits:0})}</span>`:'<span style="color:var(--text3);font-size:11px"></span>'}</td>`;
             }).join('')}
-            <td style="font-weight:700;color:var(--accent);border-left:2px solid rgba(230,60,90,.15)">${s.total>0?fmt(s.total):'—'}</td>
-            <td style="color:var(--blue)">${s.goal?fmt(s.goal):'—'}</td>
-            <td class="pct ${goalCls(s.pctReal)}">${s.pctReal!==null?pct(s.pctReal):'—'}</td>
-            <td style="color:var(--yellow)">${s.proj>0?fmtK(s.proj):'—'}</td>
-            <td class="pct ${goalCls(s.pctProj)}">${s.pctProj!==null?pct(s.pctProj):'—'}</td>
+            <td style="font-weight:700;color:var(--accent);border-left:2px solid rgba(230,60,90,.15)">${s.total>0?fmt(s.total):''}</td>
+            <td style="color:var(--blue)">${s.goal?fmt(s.goal):''}</td>
+            <td class="pct ${goalCls(s.pctReal)}">${s.pctReal!==null?pct(s.pctReal):''}</td>
+            <td style="color:var(--yellow)">${s.proj>0?fmtK(s.proj):''}</td>
+            <td class="pct ${goalCls(s.pctProj)}">${s.pctProj!==null?pct(s.pctProj):''}</td>
           </tr>`;
         }).join('')}
         </tbody>
@@ -1635,13 +1635,13 @@ function renderLancamento() {
           <td style="position:sticky;left:0;z-index:2;background:var(--surface2);box-shadow:2px 0 4px rgba(0,0,0,.06);white-space:nowrap">TOTAL</td>
           ${Array.from({length:daysInMonth},(_,i)=>{
             const d=i+1, dt=units.reduce((s,u)=>s+getDaySale(u.name,year,month,d),0);
-            return`<td>${dt>0?fmtK(dt):'—'}</td>`;
+            return`<td>${dt>0?fmtK(dt):''}</td>`;
           }).join('')}
           <td style="border-left:2px solid rgba(230,60,90,.15)">${fmtK(totTotal)}</td>
-          <td style="color:var(--blue)">${totGoal?fmtK(totGoal):'—'}</td>
-          <td class="pct ${goalCls(totPctR)}">${totPctR!==null?pct(totPctR):'—'}</td>
+          <td style="color:var(--blue)">${totGoal?fmtK(totGoal):''}</td>
+          <td class="pct ${goalCls(totPctR)}">${totPctR!==null?pct(totPctR):''}</td>
           <td style="color:var(--yellow)">${fmtK(totProj)}</td>
-          <td class="pct ${goalCls(totPctP)}">${totPctP!==null?pct(totPctP):'—'}</td>
+          <td class="pct ${goalCls(totPctP)}">${totPctP!==null?pct(totPctP):''}</td>
         </tr></tfoot>
       </table></div>
     </div>`;
@@ -1649,7 +1649,7 @@ function renderLancamento() {
 
 function editCell(unitName, year, month, day, cell) {
   const cur = getDaySale(unitName, year, month, day);
-  const val = prompt(`${unitName} — ${day}/${month}/${year}\nValor atual: ${cur?fmt(cur):'—'}\n\nNovo valor (R$):`, cur||'');
+  const val = prompt(`${unitName}  ${day}/${month}/${year}\nValor atual: ${cur?fmt(cur):''}\n\nNovo valor (R$):`, cur||'');
   if (val===null) return;
   const num = parseFloat(String(val).replace(',','.'));
   if (isNaN(num)||num<0) { alert('Valor inválido'); return; }
@@ -1697,7 +1697,7 @@ function renderGestao() {
     </div>
     <div class="table-wrap">
       <div class="table-header">
-        <h3>Unidades — ${activeCount} ativas${inactiveCount?' / '+inactiveCount+' inativas':''}</h3>
+        <h3>Unidades  ${activeCount} ativas${inactiveCount?' / '+inactiveCount+' inativas':''}</h3>
         <span style="font-size:12px;color:var(--text3)">Gerencie cadastro e metas mensais</span>
       </div>
       <div style="overflow-x:auto"><table>
@@ -1712,10 +1712,10 @@ function renderGestao() {
           return`<tr style="${ativo?'':'opacity:.5'}">
             <td style="color:var(--text3)">${i+1}</td>
             <td style="font-weight:600">${u.name}</td>
-            <td style="color:var(--text2)">${u.cidade||'—'}</td>
-            <td>${u.uf||'—'}</td>
+            <td style="color:var(--text2)">${u.cidade||''}</td>
+            <td>${u.uf||''}</td>
             <td><span class="badge badge-${u.tipo==='FRANQUIA'?'F':'P'}">${u.tipo==='FRANQUIA'?'F':'P'}</span></td>
-            <td style="color:var(--text2)">${u.supervisor||'—'}</td>
+            <td style="color:var(--text2)">${u.supervisor||''}</td>
             <td>
               <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;
                 background:${ativo?'rgba(16,185,129,.12)':'rgba(148,163,184,.12)'};
@@ -1723,7 +1723,7 @@ function renderGestao() {
                 ${ativo?'ATIVA':'INATIVA'}
               </span>
             </td>
-            <td>${goalYear?fmtK(goalYear):'<span style="color:var(--text3)">—</span>'}</td>
+            <td>${goalYear?fmtK(goalYear):'<span style="color:var(--text3)"></span>'}</td>
             <td style="text-align:left;white-space:nowrap">
               <button class="btn btn-ghost btn-sm" onclick="openUnitModal('${u.name.replace(/'/g,"\\'")}')">Editar</button>
               <button class="btn btn-blue btn-sm" style="margin-left:4px" onclick="openGoalsModal('${u.name.replace(/'/g,"\\'")}')">Metas</button>
@@ -1739,7 +1739,7 @@ function renderGestao() {
     </div>
 
     <div class="table-wrap">
-      <div class="table-header"><h3>Resumo Metas vs Realizado — ${year}</h3></div>
+      <div class="table-header"><h3>Resumo Metas vs Realizado  ${year}</h3></div>
       <div style="overflow-x:auto"><table>
         <thead><tr>
           <th>Unidade</th>
@@ -1755,9 +1755,9 @@ function renderGestao() {
             ${goals.map((g,i)=>{
               const real=getMonthTotal(u.name,year,i+1);
               const r=g?real/g:null;
-              return`<td title="${real?fmt(real):'sem dados'}">${g?`<span class="pct ${goalCls(r)}">${fmtK(g)}</span>`:'—'}</td>`;
+              return`<td title="${real?fmt(real):'sem dados'}">${g?`<span class="pct ${goalCls(r)}">${fmtK(g)}</span>`:''}</td>`;
             }).join('')}
-            <td style="font-weight:700">${totGoal?fmtK(totGoal):'—'}</td>
+            <td style="font-weight:700">${totGoal?fmtK(totGoal):''}</td>
           </tr>`;
         }).join('')}
         </tbody>

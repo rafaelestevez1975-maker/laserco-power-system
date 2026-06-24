@@ -57,7 +57,7 @@ export function NovoChamado({ unidades, activeUnitId }: { unidades: Unidade[]; a
               <div><label style={{ fontSize: 12, fontWeight: 600 }}>Motivo / assunto</label><input style={inp} value={f.motivo_label} onChange={(e) => set('motivo_label', e.target.value)} placeholder="Ex.: Cobrança indevida" /></div>
               <div><label style={{ fontSize: 12, fontWeight: 600 }}>Unidade</label>
                 <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
-                  <option value="">— Sem unidade / central —</option>
+                  <option value=""> Sem unidade / central </option>
                   {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
               </div>

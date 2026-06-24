@@ -18,7 +18,7 @@ export default async function ComunicadosPage() {
 
   const { data: comsRaw } = await sb.from('comunicados').select('*').order('criado_em', { ascending: false }).limit(500)
 
-  // Agregado de leituras (via service-role, só contagem) — taxa correta p/ qualquer papel.
+  // Agregado de leituras (via service-role, só contagem)  taxa correta p/ qualquer papel.
   const { data: leiturasAll } = await admin.from('comunicado_leituras').select('comunicado_id')
   const countMap: Record<string, number> = {}
   for (const r of (leiturasAll ?? []) as { comunicado_id: string }[]) countMap[r.comunicado_id] = (countMap[r.comunicado_id] ?? 0) + 1
@@ -40,7 +40,7 @@ export default async function ComunicadosPage() {
     status: (r.status as Comunicado['status']) ?? 'publicado',
     dest: r.total_destinatarios ?? 0,
     lidos: countMap[r.id] ?? 0,
-    autor: r.autor_nome || '—',
+    autor: r.autor_nome || '',
     quando: r.publicado_em || r.agendado_para || r.criado_em,
   }))
 

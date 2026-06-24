@@ -38,7 +38,7 @@ async function resolveRecursos(userId: string): Promise<string[]> {
       .select('permissoes(recurso_id)')
       .in('cargo_id', cargoIds)
     const set = new Set<string>()
-    // O embed pode vir como objeto (to-one) ou array, dependendo da inferência — tratamos os dois.
+    // O embed pode vir como objeto (to-one) ou array, dependendo da inferência  tratamos os dois.
     for (const row of (cps ?? []) as Array<Record<string, unknown>>) {
       const perm = row.permissoes as { recurso_id?: string } | Array<{ recurso_id?: string }> | null | undefined
       const arr = Array.isArray(perm) ? perm : perm ? [perm] : []
@@ -71,7 +71,7 @@ export async function getSessionContext(): Promise<SessionContext | null> {
   const recursos = isAdmin ? [] : await resolveRecursos(user.id)
 
   // Unidades que o usuário enxerga (RLS aplica). Nomes vêm com lixo de migração
-  // (prefixo [INATIVA], espaços) — limpamos para exibição.
+  // (prefixo [INATIVA], espaços)  limpamos para exibição.
   const { data: unidadesRaw } = await sb
     .from('unidades')
     .select('id, nome')

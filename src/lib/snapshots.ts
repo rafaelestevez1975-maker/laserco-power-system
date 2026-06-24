@@ -1,6 +1,6 @@
 /**
  * Snapshots do frontend renderizado do protótipo (legacy/index.html), capturados
- * em modo demonstração. Cada rota recebe o HTML real daquela tela — clone visual
+ * em modo demonstração. Cada rota recebe o HTML real daquela tela  clone visual
  * 1:1. A funcionalidade (dados reais, ações) é implementada por cima, módulo a
  * módulo, conforme docs/FRONTEND-STATUS.md e docs/BACKLOG.md.
  */

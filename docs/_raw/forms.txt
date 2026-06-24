@@ -427,11 +427,11 @@
   - Nome [text] -> obrigatório
   - Grupo [select#catModalGrupo] -> obrigatório (preenchido dinamicamente)
   - Ativo [select (Sim/Não)] -> obrigatório; default Sim
-### Modal Novo cliente (cliModal) — validado por cliSalvarNovo
+### Modal Novo cliente (cliModal)  validado por cliSalvarNovo
   - Nome [text#cliNNome] -> obrigatório; bloqueia nome repetido sem CPF
   - Telefone [text#cliNTel] -> opcional; bloqueia duplicidade se >=8 dígitos
   - CPF/Documento [text#cliNDoc] -> opcional; bloqueia duplicidade de CPF; cpf
-### Modal Nova/Editar parceria (descNovo) — validado por descSave
+### Modal Nova/Editar parceria (descNovo)  validado por descSave
   - Parceiro (loja/influencer) [text#pnParc] -> obrigatório
   - Tipo [select#pnTipo] -> obrigatório; enum desc (Desconto %)/cash (Cashback R$)
   - Valor [number#pnValor step0.01 min0] -> obrigatório; >0; se desc, <= teto por aplica/alçada
@@ -444,7 +444,7 @@
   - DDD [text#fichaDDDInput] -> opcional; numérico
   - Telefone [text#fichaTelInput] -> opcional; min 12 dígitos c/ 55 p/ WhatsApp
   - E-mail [text#fichaEmailInput] -> opcional; email (valida @)
-### Importar clientes (importModal) — mapeamento + opções
+### Importar clientes (importModal)  mapeamento + opções
   - Arquivo (dropzone#impFile) [file CSV/XLSX] -> obrigatório; precisa ter linhas
   - Unidade [select#impUni] -> obrigatório; UNIDADES
   - Origem [text#impOrigem] -> default 'Migração BEMP'
@@ -492,8 +492,8 @@
   - leadNome [text] -> obrigatório (default 'Novo lead')
   - leadTel [tel] -> telefone (replace \D para armazenar só dígitos)
   - leadOrigem [select] -> obrigatório (Instagram/Google/Indicação/Facebook/Loja física/Parcerias/Geolocalização/Disparo WhatsApp/Venda Tardia)
-  - leadServico [text] -> opcional, default '—'
-  - leadValor [text(moeda)] -> moeda BR (parse com replace de . e ,) — número >=0
+  - leadServico [text] -> opcional, default ''
+  - leadValor [text(moeda)] -> moeda BR (parse com replace de . e ,)  número >=0
   - leadResp (responsável/iniciais) [text] -> obrigatório
   - leadTemp (temperatura) [select] -> quente/morno/frio
   - leadEtapa [select] -> obrigatório, options de CRM_STAGES
@@ -506,7 +506,7 @@
   - pf_com (pagar comissão) [select] -> Venda | Execução | Não pagar, default Execução
   - composição: pac-srv (serviço) [select] -> obrigatório por linha (filtra linhas sem serv)
   - composição: pac-sess (sessões) [number] -> inteiro min 1, default 1
-### Modal genérico de item — Serviço (itemMod via CAT_DEFS.serv)
+### Modal genérico de item  Serviço (itemMod via CAT_DEFS.serv)
   - Nome [text] -> obrigatório (showToast se vazio)
   - Preço (R$) [text(moeda)] -> moeda BR
   - Desc. Máx (%) [text] -> percentual 0-100
@@ -514,7 +514,7 @@
   - Grupo [select] -> Estético|Ultrassom|Depilação
   - Comissionável [select] -> Sim|Não
   - Pagar comissão [select] -> Venda|Execução|Não pagar
-### Modal genérico de item — Produto (CAT_DEFS.prod)
+### Modal genérico de item  Produto (CAT_DEFS.prod)
   - Nome [text] -> obrigatório
   - Preço (R$) [text(moeda)] -> moeda BR
   - Desc. Máx (%) [text] -> percentual

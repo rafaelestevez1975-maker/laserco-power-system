@@ -149,7 +149,7 @@ function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onC
                 <option value="unidade">Unidade (número da franquia)</option>
                 <option value="geral">Geral (franqueadora)</option>
               </select>
-            ) : <input value={`Unidade — ${activeUnitName}`} disabled />}
+            ) : <input value={`Unidade  ${activeUnitName}`} disabled />}
           </div>
           {escopo === 'unidade' && isAdmin && (
             <div className="mf"><label>Unidade</label>

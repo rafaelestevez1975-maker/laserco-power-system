@@ -1,4 +1,4 @@
-# Arquitetura Alvo — Next.js + React + Supabase
+# Arquitetura Alvo  Next.js + React + Supabase
 
 > Reconstrução do Laser&Co Power System mantendo **layout/tema/fonte idênticos**, com validação por campo, validação de toda chamada Supabase, CRUD completo, RBAC granular por ação e multitenant real por franquia. Este documento define o **como**. O inventário do **o quê** está em [MAPEAMENTO.md](MAPEAMENTO.md); o plano de execução em [BACKLOG.md](BACKLOG.md).
 
@@ -18,7 +18,7 @@
 | Estado servidor | **React Query** (TanStack) onde houver UI muito interativa (Agenda, Kanban) | Cache + revalidação fina. |
 | Tabelas | **TanStack Table** | Filtros/paginação que o protótipo já tem. |
 | Gráficos | **Recharts** (ou manter Chart.js no módulo de Vendas) | Dashboards. |
-| Testes | **Vitest** (unit/Zod) + **Playwright** (e2e por tela) | "Revalidar tudo" — ver §8. |
+| Testes | **Vitest** (unit/Zod) + **Playwright** (e2e por tela) | "Revalidar tudo"  ver §8. |
 | PWA | `next-pwa` ou Service Worker custom (manter `sw.js`) | Preservar instalação/offline. |
 
 ---
@@ -147,12 +147,12 @@ export async function sb<T>(fn: () => PromiseLike<{data: T; error: PostgrestErro
 
 ## 7. Apps embarcados (RH e Vendas)
 
-- **Curto prazo:** manter `portal-rh.html` e `vendas-dashboards.html` embarcados (iframe/route), preservando a ponte de dados — porém **migrando a fonte de dados para as tabelas normalizadas** (não o blob).
+- **Curto prazo:** manter `portal-rh.html` e `vendas-dashboards.html` embarcados (iframe/route), preservando a ponte de dados  porém **migrando a fonte de dados para as tabelas normalizadas** (não o blob).
 - **Médio prazo:** reescrever RH e Vendas como rotas nativas Next reaproveitando os componentes de tabela/gráfico. Decisão a confirmar com o cliente (escopo).
 
 ---
 
-## 8. "Revalidar tudo" — política de qualidade (pedido explícito do cliente)
+## 8. "Revalidar tudo"  política de qualidade (pedido explícito do cliente)
 
 Toda alteração precisa ser **revalidada e assertiva**. Padrão por entrega:
 1. **Zod**: testes unitários dos schemas (casos válidos/ inválidos) com Vitest.
@@ -160,13 +160,13 @@ Toda alteração precisa ser **revalidada e assertiva**. Padrão por entrega:
 3. **E2E (Playwright)** por tela: CRUD completo (create/edit/delete) + erro abaixo do campo + botão gated por permissão.
 4. **RLS**: teste que confirma isolamento por `unit_id`.
 5. **Revisão**: rodar `/code-review` no diff antes de commit; corrigir achados.
-6. Nada de "salvar = toast" — toda ação persiste de verdade e dá feedback real.
+6. Nada de "salvar = toast"  toda ação persiste de verdade e dá feedback real.
 
 ---
 
 ## 9. Decisões a confirmar com o cliente
 
-- **Supabase:** o cliente fornecerá o projeto de outro sistema para reaproveitar — validar schema existente vs o modelo proposto (§4 do MAPEAMENTO) e planejar migração/normalização.
-- **Módulos com foco maior:** **Gestão**, **Saque** e **Integração com o site institucional (leads)**. O módulo **Saque** ainda não existe no protótipo — será modelado sobre Comissões/Premiações/Financeiro (definição de regra com o cliente).
-- **Site institucional:** lasercompany.com — mapear quais formulários/fluxos hoje vão para WhatsApp e passarão a cair no painel (CRM/leads).
+- **Supabase:** o cliente fornecerá o projeto de outro sistema para reaproveitar  validar schema existente vs o modelo proposto (§4 do MAPEAMENTO) e planejar migração/normalização.
+- **Módulos com foco maior:** **Gestão**, **Saque** e **Integração com o site institucional (leads)**. O módulo **Saque** ainda não existe no protótipo  será modelado sobre Comissões/Premiações/Financeiro (definição de regra com o cliente).
+- **Site institucional:** lasercompany.com  mapear quais formulários/fluxos hoje vão para WhatsApp e passarão a cair no painel (CRM/leads).
 - Escopo da reescrita nativa de RH/Vendas vs manter embarcado.

@@ -1,5 +1,5 @@
 /**
- * Casa o rótulo de unidade que o site manda (ex.: "Park Lagos Shopping — Cabo Frio/RJ")
+ * Casa o rótulo de unidade que o site manda (ex.: "Park Lagos Shopping  Cabo Frio/RJ")
  * com a `unidades.id` do backend (nomes tipo "Cabo Frio - Park Lagos Cabo").
  * Usa interseção de tokens normalizados; testado: 37/37 dos rótulos reais casaram.
  */
@@ -14,7 +14,7 @@ const toks = (s: string) => new Set(norm(s).split(' ').filter((w) => w.length > 
 
 export function matchUnidadeId(label: string | null | undefined, unidades: Uni[]): string | null {
   if (!label) return null
-  const head = label.split(/—|-|\/|·/)[0]
+  const head = label.split(/|-|\/|·/)[0]
   const lt = toks(head.length > 2 ? head : label)
   if (lt.size === 0) return null
   let best: Uni | null = null

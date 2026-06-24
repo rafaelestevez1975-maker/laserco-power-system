@@ -64,7 +64,7 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
   return { ok: true }
 }
 
-/** Solicita reembolso de um chamado: cria o ESPELHO no Financeiro (Contas a Pagar —
+/** Solicita reembolso de um chamado: cria o ESPELHO no Financeiro (Contas a Pagar 
  *  lançamento despesa, categoria "Devoluções e Descontos", origem_ref_id = ticket) e
  *  move o chamado para "Em pagamento". O Financeiro valida/paga depois. */
 export async function solicitarReembolso(

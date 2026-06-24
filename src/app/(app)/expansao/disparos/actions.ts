@@ -19,7 +19,7 @@ export async function dispararCampanha(
   const all = await listInstances()
   const canal = all.find((i) => i.name === canalNome)
   if (!canal?.token) return { ok: false, error: 'Canal não encontrado.' }
-  if (canal.status !== 'connected') return { ok: false, error: `O canal "${canalNome}" está desconectado — conecte-o em Canais antes de disparar.` }
+  if (canal.status !== 'connected') return { ok: false, error: `O canal "${canalNome}" está desconectado  conecte-o em Canais antes de disparar.` }
 
   const dMin = Math.max(1, delayMin || 0)
   const dMax = Math.max(dMin, delayMax || dMin)

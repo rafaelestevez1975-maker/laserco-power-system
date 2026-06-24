@@ -30,7 +30,7 @@ function TipoBadge({ tipo }: { tipo: string }) {
     agendamento: 'var(--brand-500)', franquia: 'var(--gold-600)', curriculo: 'var(--blue)', indicacao: 'var(--green)',
   }
   const c = map[tipo.toLowerCase()] ?? 'var(--text-3)'
-  return <span style={{ background: c, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>{tipo || '—'}</span>
+  return <span style={{ background: c, color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>{tipo || ''}</span>
 }
 
 export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteLead[]; unidades: Unidade[]; activeUnitId: string | null }) {

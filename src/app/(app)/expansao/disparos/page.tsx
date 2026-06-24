@@ -28,7 +28,7 @@ export default async function DisparosPage() {
     <div className="view active">
       <div className="crm-note">
         <i className="ti ti-send" /> <b>Disparos de WhatsApp.</b> O envio em massa roda na UAZAPI com <b>delay</b> entre mensagens
-        (anti-ban). O sistema já seleciona o <b>canal da sua unidade</b> — escolha a base de números e dispare.
+        (anti-ban). O sistema já seleciona o <b>canal da sua unidade</b>  escolha a base de números e dispare.
       </div>
       <DisparoComposer canais={canais} activeUnitId={ctx?.activeUnitId ?? null} />
     </div>

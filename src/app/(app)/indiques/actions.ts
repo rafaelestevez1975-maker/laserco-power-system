@@ -52,7 +52,7 @@ export async function criarIndicacao(input: NovaIndicacaoInput): Promise<{ ok: b
   return { ok: true }
 }
 
-/** Atualiza o andamento de um indicado (status + observação) — "abrir o lead". */
+/** Atualiza o andamento de um indicado (status + observação)  "abrir o lead". */
 export async function atualizarIndicado(id: string, status: string, observacoes?: string): Promise<{ ok: boolean; error?: string }> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()

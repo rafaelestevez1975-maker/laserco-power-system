@@ -28,7 +28,7 @@ export default async function CanaisPage() {
           bindingId: b?.id,
           escopo: b?.escopo,
           unidadeId: b?.unidade_id ?? null,
-          unidadeNome: b?.unidade_id ? uniNome.get(b.unidade_id) ?? '—' : null,
+          unidadeNome: b?.unidade_id ? uniNome.get(b.unidade_id) ?? '' : null,
           rotulo: b?.rotulo ?? null,
           delayMin: b?.delay_min ?? 20,
           delayMax: b?.delay_max ?? 45,
@@ -43,7 +43,7 @@ export default async function CanaisPage() {
     <div className="view active">
       <div className="crm-note">
         <i className="ti ti-brand-whatsapp" /> <b>Canais de WhatsApp.</b> Cada canal é um número conectado via QR Code (UAZAPI).
-        Defina <b>um número por franquia</b> (escopo “Unidade”) e, opcionalmente, um <b>número geral</b> da franqueadora —
+        Defina <b>um número por franquia</b> (escopo “Unidade”) e, opcionalmente, um <b>número geral</b> da franqueadora 
         os disparos saem pelo canal da unidade, com <b>delay anti-ban</b> por canal. Se cair, reconecte aqui.
       </div>
       {erro

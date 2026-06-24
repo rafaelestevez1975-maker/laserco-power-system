@@ -1,17 +1,17 @@
-# Guia do Desenvolvedor — `index.html`
+# Guia do Desenvolvedor  `index.html`
 
 `index.html` é grande (~900 KB) porque é uma SPA single-file. Esta página explica **como ele é organizado** para você navegar e estender com segurança.
 
 ## Estrutura do arquivo (de cima para baixo)
 
-1. **`<head>` / `<style>`** — variáveis CSS de tema (`--brand-500: #6B4E9E`, `--gold-500`, etc.) e todas as classes (`.nav-item`, `.rel-card`, `.cli-table`, `.kpi`, `.os-st`, ...).
-2. **Sidebar** (`<aside class="sidebar">`) — o menu. Cada item:
+1. **`<head>` / `<style>`**  variáveis CSS de tema (`--brand-500: #6B4E9E`, `--gold-500`, etc.) e todas as classes (`.nav-item`, `.rel-card`, `.cli-table`, `.kpi`, `.os-st`, ...).
+2. **Sidebar** (`<aside class="sidebar">`)  o menu. Cada item:
    - `data-view="x"` → abre a view `x`.
    - `data-submenu="x"` + um `<div class="submenu" id="sub-x">` logo abaixo → grupo expansível.
    - `data-admin="1"` → só admin enxerga.
    - `data-rhpage` / `data-exppage` / `data-dash` / `data-rep` → parâmetro extra para módulos com sub-páginas.
-3. **Views** (`<section class="view" id="view-x">`) — uma por tela. Muitas têm só um contêiner (`<div id="xWrap">`) preenchido por JS.
-4. **`<script>` principal** — todo o JavaScript: dados (seeds), funções `buildX()`, helpers de relatório, o roteador e a inicialização.
+3. **Views** (`<section class="view" id="view-x">`)  uma por tela. Muitas têm só um contêiner (`<div id="xWrap">`) preenchido por JS.
+4. **`<script>` principal**  todo o JavaScript: dados (seeds), funções `buildX()`, helpers de relatório, o roteador e a inicialização.
 
 ## Roteador
 

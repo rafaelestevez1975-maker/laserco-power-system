@@ -17,7 +17,7 @@ export async function responderConversa(chatId: string, texto: string): Promise<
 
   const all = await listInstances()
   const canal = all.find((i) => /laser/i.test(i.name) && i.status === 'connected')
-  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado  conecte um número em Canais.' }
 
   const env = await sendText(canal.token, c.telefone, texto.trim())
   if (!env.ok) return { ok: false, error: env.error || 'Falha no envio.' }

@@ -1,4 +1,4 @@
-/* Laser&Co Power System — Service Worker (PWA) */
+/* Laser&Co Power System  Service Worker (PWA) */
 const CACHE = 'lcps-v2';
 const CORE = [
   '/', '/index.html', '/manifest.webmanifest',

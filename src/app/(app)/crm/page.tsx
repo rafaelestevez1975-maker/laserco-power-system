@@ -37,19 +37,19 @@ export default async function CrmPage() {
   return (
     <div className="view active">
       <div className="crm-note">
-        <i className="ti ti-info-circle" /> Funil padrão Laser&amp;Co — dados reais
+        <i className="ti ti-info-circle" /> Funil padrão Laser&amp;Co  dados reais
         {activeUnit ? ' da unidade ativa' : ' (todas as unidades que você acessa)'}.
       </div>
 
       <Link href="/leads-site" className="crm-note" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-500)', display: 'block', textDecoration: 'none', color: 'inherit' }}>
         <i className="ti ti-inbox" /> <b>Leads do site:</b> {siteLeadsCount ?? 0} na caixa de entrada
-        {' '}— clique para rotear por unidade (SAC / CRM). <i className="ti ti-arrow-right" />
+        {' '} clique para rotear por unidade (SAC / CRM). <i className="ti ti-arrow-right" />
       </Link>
 
       {vencidos > 0 && (
         <div id="crmAlert">
           <div className="crm-sla-alert">
-            <i className="ti ti-alarm" /> <b>{vencidos} lead(s) com prazo de 48h vencido</b> — dê andamento para não perder a venda.
+            <i className="ti ti-alarm" /> <b>{vencidos} lead(s) com prazo de 48h vencido</b>  dê andamento para não perder a venda.
           </div>
         </div>
       )}

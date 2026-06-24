@@ -37,7 +37,7 @@ export function CienteModal({ comunicados }: { comunicados: PendenteCom[] }) {
     <div className="modal-ov open" style={{ zIndex: 400 }}>
       <div className="modal" style={{ width: 560 }}>
         <div className="modal-head">
-          <h3><i className="ti ti-speakerphone" /> Comunicado da rede — leitura obrigatória</h3>
+          <h3><i className="ti ti-speakerphone" /> Comunicado da rede  leitura obrigatória</h3>
           {comunicados.length > 1 && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{i + 1} de {comunicados.length}</span>}
         </div>
         <div className="modal-body" style={{ display: 'block' }}>

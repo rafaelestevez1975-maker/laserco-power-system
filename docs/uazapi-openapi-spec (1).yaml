@@ -16615,7 +16615,7 @@ paths:
                     updated: 3
                     failed: 0
         '207':
-          description: Sucesso parcial — ao menos um campo falhou
+          description: Sucesso parcial  ao menos um campo falhou
           content:
             application/json:
               schema:
@@ -16671,7 +16671,7 @@ paths:
                     description: Mensagem de autenticação
                     example: client not found
         '500':
-          description: Falha total — nenhum campo foi atualizado
+          description: Falha total  nenhum campo foi atualizado
           content:
             application/json:
               schema:

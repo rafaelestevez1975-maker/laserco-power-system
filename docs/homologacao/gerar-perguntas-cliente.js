@@ -1,6 +1,6 @@
 /* ============================================================================
  *  Gerador do Questionário de Descoberta (Discovery) para o Cliente
- *  Laser&Co Power System — perguntas para viabilizar o projeto 100%
+ *  Laser&Co Power System  perguntas para viabilizar o projeto 100%
  *  ---------------------------------------------------------------------------
  *  Converte para PDF com:
  *    weasyprint perguntas-cliente.html "Perguntas-Cliente-LaserCo.pdf"
@@ -12,7 +12,7 @@
 
 const META = {
   sistema: 'Laser&Co Power System',
-  doc: 'Questionário de Descoberta (Discovery) — Cliente',
+  doc: 'Questionário de Descoberta (Discovery)  Cliente',
   geradoEm: '18/06/2026',
 };
 
@@ -58,15 +58,15 @@ const SECOES = [
 
 { id:5, titulo:'Autenticação, perfis de acesso e multi-unidade', perguntas:[
 {q:'O conjunto de 13 perfis de acesso está correto e completo? Falta algum perfil?', hint:'Hoje: Administrador, Gestor, Franqueado, Gerente de Campo, Consultor, Gerente/Sub, Profissional de Saúde, Colaborador, Marketing, Financeiro, Expansão, Implantação, Ponto.'},
-{q:'Cada unidade precisa de isolamento total dos dados (cada franqueado só vê o seu)?', hint:'Hoje o estado é um único registro compartilhado em nuvem — não há isolamento por unidade.', crit:true},
+{q:'Cada unidade precisa de isolamento total dos dados (cada franqueado só vê o seu)?', hint:'Hoje o estado é um único registro compartilhado em nuvem  não há isolamento por unidade.', crit:true},
 {q:'Um mesmo usuário pode pertencer/operar em mais de uma unidade?'},
 {q:'Quais são as regras exatas de quem pode ler e escrever o quê, por perfil e por unidade?', crit:true},
 {q:'É necessário login com Google/Microsoft (SSO) e/ou autenticação em duas etapas (2FA)?'},
 {q:'A recuperação de senha por e-mail é obrigatória?', hint:'Hoje não existe "Esqueci minha senha" no sistema principal.'},
-{q:'Há política de senha forte, troca periódica e bloqueio por inatividade?', hint:'Hoje há inativação automática de colaborador após 15 dias sem acesso — confirmar a regra.'},
+{q:'Há política de senha forte, troca periódica e bloqueio por inatividade?', hint:'Hoje há inativação automática de colaborador após 15 dias sem acesso  confirmar a regra.'},
 ]},
 
-{ id:6, titulo:'Fiscal — emissão de Notas Fiscais (NFS-e)', perguntas:[
+{ id:6, titulo:'Fiscal  emissão de Notas Fiscais (NFS-e)', perguntas:[
 {q:'Quais municípios/prefeituras precisam de emissão de NFS-e? (cada unidade emite na sua cidade)', crit:true},
 {q:'Cada unidade já possui certificado digital (A1/A3) e inscrição municipal? Quem fornece e mantém?', crit:true},
 {q:'Vamos usar um intermediador/provedor de NFS-e (ex.: PlugNotas, NFE.io, Focus NFe, eNotas) ou integração direta com cada prefeitura?', hint:'Define custo, prazo e complexidade. Hoje é tudo simulado.', crit:true},
@@ -77,16 +77,16 @@ const SECOES = [
 ]},
 
 { id:7, titulo:'Pagamentos, recorrência e financeiro bancário', perguntas:[
-{q:'O gateway de crédito recorrente definitivo é o PagoLivre? Já há contrato e credenciais de API?', hint:'O código cita PagoLivre e, em outro ponto, Asaas — precisa unificar.', crit:true},
+{q:'O gateway de crédito recorrente definitivo é o PagoLivre? Já há contrato e credenciais de API?', hint:'O código cita PagoLivre e, em outro ponto, Asaas  precisa unificar.', crit:true},
 {q:'Quais formas de pagamento e parcelamento reais, com taxas por adquirente e limites? (PIX, débito, crédito, link, recorrência)'},
 {q:'A conciliação bancária será via Open Finance, API do banco ou arquivo CNAB? Quais bancos/adquirentes?', crit:true},
 {q:'A emissão de boletos será por qual banco/convênio? A régua de cobrança automática é requisito?', hint:'Hoje boletos, baixa e envio são simulados.'},
-{q:'Qual a regra exata de royalties? (% sobre faturamento bruto, % do fundo de marketing, dia de vencimento)', hint:'Protótipo usa 10% de royalties e 2% de fundo — confirmar.'},
+{q:'Qual a regra exata de royalties? (% sobre faturamento bruto, % do fundo de marketing, dia de vencimento)', hint:'Protótipo usa 10% de royalties e 2% de fundo  confirmar.'},
 {q:'Há integração necessária com ERP/sistema contábil externo?'},
 {q:'As regras de juros (1% a.m.), multa (10%) e correção monetária para inadimplência estão corretas?', hint:'Hoje os índices vêm da API do Banco Central.'},
 ]},
 
-{ id:8, titulo:'Comunicação — WhatsApp, e-mail e SMS', perguntas:[
+{ id:8, titulo:'Comunicação  WhatsApp, e-mail e SMS', perguntas:[
 {q:'O WhatsApp será via API Oficial (Meta Cloud) ou via solução não-oficial (Z-API, BLIP)?', hint:'Muda custo, aprovação e estabilidade. Hoje todos os disparos são simulados.', crit:true},
 {q:'Já existe conta Meta Business verificada e números aprovados? Cada unidade terá o seu número?', crit:true},
 {q:'Quem arca com o custo por mensagem/conversa e qual o volume mensal estimado?'},
@@ -99,7 +99,7 @@ const SECOES = [
 { id:9, titulo:'Ponto Digital, Google Maps e RH', perguntas:[
 {q:'A folha de ponto precisa ter validade legal (Portaria 671/MTP, REP-P), espelho de ponto e banco de horas?', crit:true},
 {q:'Já existe chave do Google Maps com billing ativo, ou podemos usar OpenStreetMap?', hint:'Hoje o GPS do navegador é real; o mapa depende de chave.'},
-{q:'A cerca virtual (raio e coordenadas por unidade) — quem fornece esses dados?'},
+{q:'A cerca virtual (raio e coordenadas por unidade)  quem fornece esses dados?'},
 {q:'A folha de pagamento do RH deve calcular encargos de verdade (INSS, IRRF, FGTS) ou integrar com folha externa? Há integração com eSocial?', hint:'Hoje os valores são apenas exibidos (semeados), sem cálculo.', crit:true},
 {q:'Quais funções de RH são realmente usadas? (recrutamento/kanban, férias, atestados, avaliação de desempenho, regras da rede)'},
 {q:'O app de RH (hoje em React, embarcado) deve ser unificado ao sistema principal ou continuar separado?'},
@@ -196,10 +196,10 @@ const sectionsHTML = SECOES.map(sec=>{
 
 const html = `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8">
-<title>${esc(META.doc)} — ${esc(META.sistema)}</title>
+<title>${esc(META.doc)}  ${esc(META.sistema)}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm 16mm 14mm;
-    @bottom-center { content: "${META.doc} — ${META.sistema}"; font-size: 7pt; color:#8a6f78; }
+    @bottom-center { content: "${META.doc}  ${META.sistema}"; font-size: 7pt; color:#8a6f78; }
     @bottom-right  { content: "Página " counter(page) " / " counter(pages); font-size: 7pt; color:#8a6f78; }
   }
   @page :first { @bottom-center{content:""} @bottom-right{content:""} }
@@ -253,9 +253,9 @@ const html = `<!DOCTYPE html>
 
 <!-- CAPA -->
 <div class="cover">
-  <div class="brand">Laser&amp;Co — Levantamento de Requisitos</div>
+  <div class="brand">Laser&amp;Co  Levantamento de Requisitos</div>
   <h1>Perguntas para o Cliente</h1>
-  <div class="sub">Questionário de descoberta para viabilizar o projeto do ${esc(META.sistema)} de ponta a ponta — sem retrabalho e sem surpresas.</div>
+  <div class="sub">Questionário de descoberta para viabilizar o projeto do ${esc(META.sistema)} de ponta a ponta  sem retrabalho e sem surpresas.</div>
   <div class="meta">
     <div><b>Documento:</b> ${esc(META.doc)}</div>
     <div><b>Sistema:</b> ${esc(META.sistema)}</div>
@@ -272,7 +272,7 @@ const html = `<!DOCTYPE html>
   <p>Este roteiro foi montado a partir da <b>análise do protótipo atual</b>. Hoje o sistema é uma demonstração navegável:
   muitos fluxos funcionam apenas na tela (botões sem ação, dados de exemplo) e várias integrações externas (fiscal, pagamentos,
   WhatsApp, Google Drive) ainda são simuladas. Para levar o projeto a <b>produção 100% funcional</b>, é preciso fechar com o
-  cliente as decisões abaixo — cada resposta destrava uma parte do desenvolvimento.</p>
+  cliente as decisões abaixo  cada resposta destrava uma parte do desenvolvimento.</p>
   <p>As perguntas marcadas como <span class="crit">CRÍTICA</span> são bloqueadoras: sem elas, não é seguro estimar prazo,
   custo nem começar a construir. Recomenda-se respondê-las primeiro, ainda no kickoff.</p>
 
@@ -287,8 +287,8 @@ const html = `<!DOCTYPE html>
   <tbody>${indexRows}</tbody></table>
 
   <h3>Dica de condução</h3>
-  <p>Sugestão de ordem na reunião: (1) Visão geral e escopo/MVP — para alinhar expectativa; (2) Dados e infraestrutura —
-  para destravar o ambiente; (3) Integrações fiscais, de pagamento e de comunicação — normalmente os maiores riscos de prazo;
+  <p>Sugestão de ordem na reunião: (1) Visão geral e escopo/MVP  para alinhar expectativa; (2) Dados e infraestrutura 
+  para destravar o ambiente; (3) Integrações fiscais, de pagamento e de comunicação  normalmente os maiores riscos de prazo;
   (4) LGPD e compliance; (5) Projeto, prazo e governança. Registre as respostas direto neste documento ou em ata.</p>
 </div>
 
@@ -304,4 +304,4 @@ ${sectionsHTML}
 </body></html>`;
 
 require('fs').writeFileSync(__dirname + '/perguntas-cliente.html', html);
-console.log('OK — perguntas-cliente.html gerado. Seções:', SECOES.length, '| Perguntas:', total, '| Críticas:', criticas);
+console.log('OK  perguntas-cliente.html gerado. Seções:', SECOES.length, '| Perguntas:', total, '| Críticas:', criticas);

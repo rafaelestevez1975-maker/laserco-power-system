@@ -19,7 +19,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
 const rlsMsg = (m: string, what: string) =>
   /row-level|policy|permission|denied/i.test(m) ? `Sem permissão para ${what}.` : m
 
-/** Cria um comunicado (somente admin_geral — garantido pela RLS). */
+/** Cria um comunicado (somente admin_geral  garantido pela RLS). */
 export async function criarComunicado(form: ComunicadoForm): Promise<ActionResult> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
@@ -84,7 +84,7 @@ export async function marcarCiente(comunicadoId: string): Promise<ActionResult> 
 }
 
 export type LeitorRow = { nome: string; unidade: string | null; lido_em: string }
-/** Relatório de leitura (quem deu "ciente") — somente admin. */
+/** Relatório de leitura (quem deu "ciente")  somente admin. */
 export async function relatorioLeitura(comunicadoId: string): Promise<{ ok: boolean; error?: string; leitores?: LeitorRow[] }> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
@@ -103,12 +103,12 @@ export async function relatorioLeitura(comunicadoId: string): Promise<{ ok: bool
     const un = r.unidades as { nome?: string } | { nome?: string }[] | null
     const perfilNome = Array.isArray(pu) ? pu[0]?.nome_completo : pu?.nome_completo
     const uniNome = Array.isArray(un) ? un[0]?.nome : un?.nome
-    return { nome: perfilNome || '—', unidade: uniNome ?? null, lido_em: r.lido_em as string }
+    return { nome: perfilNome || '', unidade: uniNome ?? null, lido_em: r.lido_em as string }
   })
   return { ok: true, leitores }
 }
 
-/** Encerra (ou reabre) um comunicado — admin. */
+/** Encerra (ou reabre) um comunicado  admin. */
 export async function definirStatusComunicado(id: string, status: 'publicado' | 'encerrado' | 'agendado'): Promise<ActionResult> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()

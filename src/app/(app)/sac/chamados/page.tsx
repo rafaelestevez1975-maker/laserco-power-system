@@ -57,16 +57,16 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
               )}
               {tickets.map((t, i) => (
                 <tr key={i}>
-                  <td><b>{t.protocolo || `SAC-${t.numero ?? '—'}`}</b></td>
+                  <td><b>{t.protocolo || `SAC-${t.numero ?? ''}`}</b></td>
                   <td>
-                    {t.nome_cliente || '—'}
+                    {t.nome_cliente || ''}
                     {t.telefone_cliente && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{t.telefone_cliente}</div>}
                   </td>
-                  <td>{t.canal || '—'}</td>
-                  <td>{t.unidade_id ? (uniNome.get(t.unidade_id) ?? '—') : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-                  <td>{t.motivo_label || '—'}</td>
-                  <td><span style={prioPill(t.prioridade)}>{(t.prioridade || '—').replace(/^\w/, (c) => c.toUpperCase())}</span></td>
-                  <td><span style={fasePill(t.fase)}>{t.fase || '—'}</span></td>
+                  <td>{t.canal || ''}</td>
+                  <td>{t.unidade_id ? (uniNome.get(t.unidade_id) ?? '') : <span style={{ color: 'var(--text-3)' }}></span>}</td>
+                  <td>{t.motivo_label || ''}</td>
+                  <td><span style={prioPill(t.prioridade)}>{(t.prioridade || '').replace(/^\w/, (c) => c.toUpperCase())}</span></td>
+                  <td><span style={fasePill(t.fase)}>{t.fase || ''}</span></td>
                   <td>{t.sla_violado ? <span style={pill('#FBE9EB', '#D85563')}><i className="ti ti-alarm" /> Violado</span> : <span style={pill('#E7F0EC', '#15803D')}>OK</span>}</td>
                 </tr>
               ))}

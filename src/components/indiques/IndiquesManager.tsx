@@ -34,9 +34,9 @@ export function IndiquesManager({ indicacoes, unidades, activeUnitId, uniNome }:
               {indicacoes.length === 0 && <tr><td colSpan={6} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhuma indicação ainda. Registre a primeira ou conecte a ponte do site.</td></tr>}
               {indicacoes.map((ind) => (
                 <tr key={ind.id}>
-                  <td><b>{ind.indicador_nome || '—'}</b></td>
-                  <td>{ind.indicador_telefone || '—'}</td>
-                  <td>{ind.unidade_id ? (uniNome[ind.unidade_id] ?? '—') : '—'}</td>
+                  <td><b>{ind.indicador_nome || ''}</b></td>
+                  <td>{ind.indicador_telefone || ''}</td>
+                  <td>{ind.unidade_id ? (uniNome[ind.unidade_id] ?? '') : ''}</td>
                   <td>{ind.indicacao_indicados?.length ?? 0}</td>
                   <td><span className="orig-tag" style={{ fontSize: 11 }}>{ind.status || 'ativa'}</span></td>
                   <td style={{ textAlign: 'right' }}><button className="btn" onClick={() => setAberta(ind)}><i className="ti ti-arrow-right" /> Abrir</button></td>
@@ -79,7 +79,7 @@ function NovaIndicacao({ unidades, activeUnitId, onClose, onSaved }: { unidades:
           <div><label style={lbl}>Prêmio do mês</label><input style={inp} value={f.premio_descricao} onChange={(e) => set('premio_descricao', e.target.value)} placeholder="Ex.: Sessão de ultrassom" /></div>
           <div><label style={lbl}>Unidade</label>
             <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
-              <option value="">— Selecione —</option>{unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+              <option value=""> Selecione </option>{unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
             </select>
           </div>
         </div>
@@ -103,7 +103,7 @@ function NovaIndicacao({ unidades, activeUnitId, onClose, onSaved }: { unidades:
 
 function AbrirLead({ indicacao, onClose, onSaved }: { indicacao: Indicacao; onClose: () => void; onSaved: () => void }) {
   return (
-    <Modal onClose={onClose} title={`Indicação de ${indicacao.indicador_nome || '—'}`}>
+    <Modal onClose={onClose} title={`Indicação de ${indicacao.indicador_nome || ''}`}>
       {indicacao.premio_descricao && <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 10 }}>Prêmio: {indicacao.premio_descricao}</div>}
       <div style={{ display: 'grid', gap: 10 }}>
         {(indicacao.indicacao_indicados ?? []).map((ind) => <IndicadoRow key={ind.id} ind={ind} onSaved={onSaved} />)}
@@ -123,7 +123,7 @@ function IndicadoRow({ ind, onSaved }: { ind: Indicado; onSaved: () => void }) {
   return (
     <div style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <b style={{ flex: 1 }}>{ind.nome || '—'}</b>
+        <b style={{ flex: 1 }}>{ind.nome || ''}</b>
         <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{ind.telefone}</span>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: cor[status] || '#999' }} />
       </div>

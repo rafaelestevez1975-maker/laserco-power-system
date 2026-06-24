@@ -112,7 +112,7 @@ function Card({ lead }: { lead: Lead }) {
       </div>
       {lead.servico_interesse && <div className="lc-serv">{lead.servico_interesse}</div>}
       <div className="lc-meta">
-        <span className="lc-val">{lead.valor_estimado ? money(lead.valor_estimado) : '—'}</span>
+        <span className="lc-val">{lead.valor_estimado ? money(lead.valor_estimado) : ''}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           {lead.origem && <span className="orig-tag" style={{ fontSize: 10 }}>{lead.origem}</span>}
           {wa && (

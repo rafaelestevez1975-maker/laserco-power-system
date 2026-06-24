@@ -31,7 +31,7 @@ export default async function RecrutamentoPage() {
       notas: r.notas_internas,
       motivoReprovacao: r.motivo_reprovacao,
       criado: r.criado_em,
-      cargo: vaga?.cargo || '—',
+      cargo: vaga?.cargo || '',
       vagaTitulo: vaga?.titulo || null,
       unidade: uni?.nome || null,
       cidade: uni?.cidade || null,

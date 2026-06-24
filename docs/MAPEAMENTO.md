@@ -1,4 +1,4 @@
-# Mapeamento do Sistema — Laser&Co Power System
+# Mapeamento do Sistema  Laser&Co Power System
 
 > **Objetivo deste documento:** inventário técnico completo do protótipo atual (3 SPAs HTML single‑file) para servir de base à reconstrução em **Next.js (App Router) + React + TypeScript + Supabase**, mantendo **layout, tema, fontes e UX idênticos**, com **validação por campo**, **validação de toda chamada Supabase**, **CRUD completo**, **RBAC granular por ação/botão** e **multitenant real por franquia**.
 >
@@ -14,7 +14,7 @@
 | `vendas-dashboards.html` | **Dashboards de Vendas** (embarcado via iframe) | JS puro + Chart.js + Supabase (`sales_entries`) | 1.898 |
 | `portal-rh.html` | **Portal de RH** (embarcado via iframe) | React/Vite já compilado (bundle minificado) | bundle |
 
-### Estado real do backend hoje (imaturo — ponto crítico da migração)
+### Estado real do backend hoje (imaturo  ponto crítico da migração)
 - Projeto Supabase **`riutcbwillvqjrpaefkb`** (us‑east‑2, Postgres 17). Chaves públicas embutidas (anon key, protegida por RLS).
 - **Quase tudo é seed em memória / `localStorage`.** A "nuvem" salva **o estado inteiro como UM blob JSON** na linha `laserco_prototype` da tabela `app_state` (`cloudSave`/`cloudLoad`, debounce 1.2s). **Não há normalização.**
 - Tabelas que existem de fato: `app_state` (blob), `profiles` (`id, role, nome`), `sales_entries` (`unit, year, month, day, value`), `customers`, `units_db`, `goals`, `invites`.
@@ -161,7 +161,7 @@ Legenda de prioridade: **P0** = foco do cliente / fundação · **P1** = núcleo
 
 > Cada tabela operacional ganha `id uuid pk`, `unit_id uuid` (tenant), `created_at/updated_at`, `active boolean` (soft‑delete) e RLS por `unit_id`. Estruturas globais da rede (catálogo padrão, perfis, índices) podem ser por organização.
 
-**Tenancy & acesso:** `organizations` · `franchises`/`units` (de `UNI_RAW`, ~60) · `offices` · `users` (auth) · `memberships` (user × unit × role — **usuário em N franquias**) · `roles` · `permissions` · `role_permissions`.
+**Tenancy & acesso:** `organizations` · `franchises`/`units` (de `UNI_RAW`, ~60) · `offices` · `users` (auth) · `memberships` (user × unit × role  **usuário em N franquias**) · `roles` · `permissions` · `role_permissions`.
 
 **Operação:** `customers` · `appointments` · `service_orders` · `service_order_items` · `sales_entries` (já existe) · `network_events` · `client_documents`/`document_sections`/`document_fields` · `session_photos` (Storage).
 
@@ -185,9 +185,9 @@ Legenda de prioridade: **P0** = foco do cliente / fundação · **P1** = núcleo
 
 ---
 
-## 5. RBAC — Permissões e Perfis
+## 5. RBAC  Permissões e Perfis
 
-### 5.1 Matriz de permissões (`PERMS`) — ~52 módulos com ações
+### 5.1 Matriz de permissões (`PERMS`)  ~52 módulos com ações
 Cada módulo tem uma lista de ações granulares (a serem aplicadas **por botão**). Exemplos do código atual:
 - **Clientes:** Bloquear agendamentos · Exportar · Incluir/Alterar/Inativar · Modificar clientes com OS finalizada · Unificar Clientes · Visualizar · Visualizar dados completos.
 - **Ordens de serviço:** Alterar/remover insumos · Aplicar descontos manuais · Cancelar OSs fechadas · Incluir/Alterar/Cancelar OS · Informar data de fechamento.
@@ -198,7 +198,7 @@ Cada módulo tem uma lista de ações granulares (a serem aplicadas **por botão
 
 > **Hoje a matriz NÃO é aplicada** (salvar = toast). No alvo, cada ação vira uma chave `modulo.acao` consultada por um hook/guard.
 
-### 5.2 Perfis e visibilidade (`ROLE_ALLOW`) — 9 perfis
+### 5.2 Perfis e visibilidade (`ROLE_ALLOW`)  9 perfis
 | Perfil | Acesso |
 |---|---|
 | **Proprietário** | tudo (admin) |
@@ -219,14 +219,14 @@ Cada módulo tem uma lista de ações granulares (a serem aplicadas **por botão
 
 ---
 
-## 6. Multitenant — modelo alvo
+## 6. Multitenant  modelo alvo
 
 - **Tenant = Franquia/Unidade** (`units`, ~60 reais de `UNI_RAW` + "Unidade Treinamento" que fica fora de relatórios/dashboards).
 - **Usuário pertence a N franquias** via `memberships (user_id, unit_id, role_id)`. Ex.: um RH responde por "franquia A" e "franquia B".
 - **Escopo de dados por `unit_id`** com **RLS** no Postgres; o cliente da unidade ativa define o filtro (substituir o atual `uniAtual()` por contexto de sessão server‑side).
 - **Status da unidade** (Ativa/Teste/Inativa) afeta: Teste fica fora de relatórios/dashboards; Inativa corta acesso do franqueado.
 - **Operações cross‑tenant** existem e precisam de permissão especial: transferir créditos/pontos/dinheiro **entre unidades**; visão "Todas as unidades" (franqueadora); DRE consolidado vs por loja.
-- **Papéis da rede** (franqueadora) vs **papéis da unidade** (franqueado) — admin da rede enxerga todas, franqueado só a(s) sua(s).
+- **Papéis da rede** (franqueadora) vs **papéis da unidade** (franqueado)  admin da rede enxerga todas, franqueado só a(s) sua(s).
 
 ---
 
@@ -234,18 +234,18 @@ Cada módulo tem uma lista de ações granulares (a serem aplicadas **por botão
 
 | Integração | Onde aparece | Estado | Alvo |
 |---|---|---|---|
-| **Site institucional (lasercompany.com) → Leads** | CRM, Expansão | Hoje leads chegam por **WhatsApp** manualmente | **P0** — webhook/endpoint que recebe leads do site e cai no CRM (`leads`) com origem/etiqueta; notificação. |
+| **Site institucional (lasercompany.com) → Leads** | CRM, Expansão | Hoje leads chegam por **WhatsApp** manualmente | **P0**  webhook/endpoint que recebe leads do site e cai no CRM (`leads`) com origem/etiqueta; notificação. |
 | **WhatsApp API / Web** | Automações, Disparos, SAC, Motivos | Mock | Provedor (Meta Cloud API / 360dialog / Z‑API) por unidade (`whatsapp_integrations`). |
 | **Asaas / PagoLivre (Crédito Recorrente)** | PDV, Notas, Planos | Mencionado | Cobrança recorrente até 12x (não Ultrassom). |
 | **NFS‑e (prefeituras)** | Notas, Minha Unidade | Config UI | Emissor por município (inscrição + token), IBS/CBS, Lei do Salão Parceiro. |
-| **Banco Central — API SGS** | Financeiro › Cálculos | Referenciado | Índices IGP‑M/IPCA/INPC/SELIC/CDI para correção monetária. |
+| **Banco Central  API SGS** | Financeiro › Cálculos | Referenciado | Índices IGP‑M/IPCA/INPC/SELIC/CDI para correção monetária. |
 | **Banco/Boleto (retorno bancário)** | Royalties, Cobrança | Mock | Geração de boleto + baixa por retorno. |
 | **Google Drive** | Disco Virtual | UI | Vincular pastas (upload só admin). |
 | **Google Maps / GPS** | Ponto Digital | UI | Cerca virtual valida presença na unidade. |
 | **E‑mail** | Comunicados, Jurídico, Indicações, Contratos | Mock | Envio transacional. |
 | **Instagram** | Indiques (sorteio ao vivo) | UI | Sorteio mensal. |
 | **Import/Export Excel** | Clientes, Contas (pagar/receber) | Parser no front | Import em lote validado server‑side. |
-| **Supabase Storage** | Fotos de sessão, logos, assinaturas, anexos jurídicos | — | Buckets com RLS (LGPD: fotos clínicas). |
+| **Supabase Storage** | Fotos de sessão, logos, assinaturas, anexos jurídicos |  | Buckets com RLS (LGPD: fotos clínicas). |
 
 ---
 
@@ -253,7 +253,7 @@ Cada módulo tem uma lista de ações granulares (a serem aplicadas **por botão
 
 | Tabela | Operação | Onde |
 |---|---|---|
-| `app_state` | upsert/select (blob `laserco_prototype`) | `cloudSave`/`cloudLoad` — **substituir por modelo normalizado** |
+| `app_state` | upsert/select (blob `laserco_prototype`) | `cloudSave`/`cloudLoad`  **substituir por modelo normalizado** |
 | `profiles` | select (`role, nome` por `id`) | `onAuthed` |
 | `sales_entries` | upsert/select (`unit,year,month,day,value`) | `registrarVendaCloud`, dashboards de vendas |
 | `customers` | insert (lotes 500) / select (paginado, ilike, range) | importação + base na nuvem |

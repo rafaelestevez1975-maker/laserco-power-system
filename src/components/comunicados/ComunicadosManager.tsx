@@ -31,7 +31,7 @@ const ST_LABEL: Record<string, string> = { rascunho: 'Rascunho', agendado: 'Agen
 const ST_PILL: Record<string, string> = { publicado: 'ok', agendado: 'pend', encerrado: 'done', rascunho: 'draft' }
 
 function pct(l: number, d: number) { return Math.round((l / Math.max(d, 1)) * 100) }
-function dataBR(s: string) { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '—' } }
+function dataBR(s: string) { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '' } }
 function dentroPeriodo(iso: string, per: string): boolean {
   if (!per || per.startsWith('Período')) return true
   const d = new Date(iso); if (isNaN(+d)) return true
@@ -102,11 +102,11 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
   const list = base.filter((c) => tab === 'Todos' || c.status === tab.replace(/s$/, '').toLowerCase())
 
   const porAssunto = useMemo(() => {
-    const o: Record<string, number> = {}; base.forEach((c) => { o[c.categoria || '—'] = (o[c.categoria || '—'] ?? 0) + 1 })
+    const o: Record<string, number> = {}; base.forEach((c) => { o[c.categoria || ''] = (o[c.categoria || ''] ?? 0) + 1 })
     return Object.entries(o).sort((a, b) => b[1] - a[1]) as [string, number][]
   }, [base])
   const porDest = useMemo(() => {
-    const o: Record<string, number> = {}; base.forEach((c) => (c.audiencia.length ? c.audiencia : ['—']).forEach((x) => { o[x] = (o[x] ?? 0) + 1 }))
+    const o: Record<string, number> = {}; base.forEach((c) => (c.audiencia.length ? c.audiencia : ['']).forEach((x) => { o[x] = (o[x] ?? 0) + 1 }))
     return Object.entries(o).sort((a, b) => b[1] - a[1]) as [string, number][]
   }, [base])
 
@@ -140,7 +140,7 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
           {pendentesObrig.map((c) => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <i className="ti ti-urgent" /> <b>{c.titulo}</b>
-              <span style={{ fontSize: 12.5, opacity: 0.9 }}>— leitura obrigatória</span>
+              <span style={{ fontSize: 12.5, opacity: 0.9 }}> leitura obrigatória</span>
               <button className="btn btn-primary" disabled={pending} onClick={() => darCiente(c.id)} style={{ marginLeft: 'auto' }}>
                 <i className="ti ti-check" /> Estou ciente
               </button>
@@ -200,7 +200,7 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
                   <td>{dataBR(c.quando)}</td>
                   <td>{c.audiencia.map((a) => <span className="evt-audi-tag" key={a}>{a}</span>)}</td>
                   <td>{c.obrigatorio ? <span className="wa-pill pend">Sim</span> : <span className="muted">Não</span>}</td>
-                  <td>{c.email ? <i className="ti ti-mail" style={{ color: 'var(--green)' }} /> : <span className="muted">—</span>}</td>
+                  <td>{c.email ? <i className="ti ti-mail" style={{ color: 'var(--green)' }} /> : <span className="muted"></span>}</td>
                   <td><span className="orig-tag">{c.categoria}</span></td>
                   <td><span className={`wa-pill ${ST_PILL[c.status] || 'draft'}`}>{ST_LABEL[c.status]}</span></td>
                   <td style={{ whiteSpace: 'nowrap' }}>
@@ -280,7 +280,7 @@ function ReportModal({ data, onClose }: { data: { com: Comunicado; leitores: Lei
           {leitores && leitores.length > 0 && (
             <div className="cli-scroll" style={{ maxHeight: 320 }}>
               <table className="cli-table"><thead><tr><th>Nome</th><th>Unidade</th><th>Leu em</th></tr></thead>
-                <tbody>{leitores.map((l, i) => <tr key={i}><td>{l.nome}</td><td>{l.unidade ?? '—'}</td><td>{new Date(l.lido_em).toLocaleString('pt-BR')}</td></tr>)}</tbody>
+                <tbody>{leitores.map((l, i) => <tr key={i}><td>{l.nome}</td><td>{l.unidade ?? ''}</td><td>{new Date(l.lido_em).toLocaleString('pt-BR')}</td></tr>)}</tbody>
               </table>
             </div>
           )}

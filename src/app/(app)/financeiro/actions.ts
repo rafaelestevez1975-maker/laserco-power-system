@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 
 /** Dá baixa (marca como pago) num lançamento. Se for um reembolso do SAC
  *  (origem_ref_id aponta para um sac_ticket), conclui o chamado automaticamente
- *  — é o "espelha de volta" pedido na reunião. */
+ *   é o "espelha de volta" pedido na reunião. */
 export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: boolean; error?: string; concluiuChamado?: boolean }> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()

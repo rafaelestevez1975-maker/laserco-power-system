@@ -55,7 +55,7 @@ export function DisparoComposer({ canais, activeUnitId }: { canais: CanalOpt[]; 
           <select style={inp} value={canal} onChange={(e) => trocarCanal(e.target.value)}>
             {canais.map((c) => <option key={c.nome} value={c.nome}>{c.label}{c.escopo === 'geral' ? ' · geral' : ''}</option>)}
           </select>
-          {sel && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{sel.escopo === 'geral' ? 'Canal geral da franqueadora' : sel.escopo === 'unidade' ? 'Canal da unidade' : 'Canal sem vínculo — defina em Canais'}</div>}
+          {sel && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{sel.escopo === 'geral' ? 'Canal geral da franqueadora' : sel.escopo === 'unidade' ? 'Canal da unidade' : 'Canal sem vínculo  defina em Canais'}</div>}
         </div>
         <div><label style={{ fontSize: 12, fontWeight: 600 }}>Nome da campanha</label><input style={inp} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Oferta junho" /></div>
       </div>

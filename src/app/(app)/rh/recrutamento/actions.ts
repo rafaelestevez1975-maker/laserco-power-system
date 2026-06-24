@@ -28,9 +28,9 @@ export async function moverCandidato(id: string, estagio: Estagio, motivo?: stri
 }
 
 /** Inicia o processo seletivo de um currículo: triagem → entrevista_rh.
- *  (Ação explícita por candidato — anti-ban: NÃO joga a lista toda no kanban.)
+ *  (Ação explícita por candidato  anti-ban: NÃO joga a lista toda no kanban.)
  *  A mensagem automática de disponibilidade via WhatsApp dispara quando houver
- *  um canal conectado (UAZAPI) — registrada como nota por enquanto. */
+ *  um canal conectado (UAZAPI)  registrada como nota por enquanto. */
 export async function iniciarProcesso(id: string): Promise<ActionResult> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
@@ -39,7 +39,7 @@ export async function iniciarProcesso(id: string): Promise<ActionResult> {
   const c = cur as { notas_internas?: string | null; estagio_kanban?: string } | null
   if (!c) return { ok: false, error: 'Currículo não encontrado.' }
   if (c.estagio_kanban !== 'triagem') return { ok: false, error: 'Este currículo já está em processo.' }
-  const nota = [c.notas_internas, '• Pré-selecionado — aguardando msg de disponibilidade (WhatsApp)'].filter(Boolean).join('\n')
+  const nota = [c.notas_internas, '• Pré-selecionado  aguardando msg de disponibilidade (WhatsApp)'].filter(Boolean).join('\n')
   const { error } = await sb.from('candidatos').update({ estagio_kanban: 'entrevista_rh', notas_internas: nota }).eq('id', id)
   if (error) return { ok: false, error: rlsMsg(error.message, 'iniciar o processo') }
   revalidatePath('/rh/recrutamento')

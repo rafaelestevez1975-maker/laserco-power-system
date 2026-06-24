@@ -27,7 +27,7 @@ const DRAG_OFF = new Set(['contratado', 'reprovado'])
 const FONTE_LABEL: Record<string, string> = { portal: 'Site', whatsapp: 'WhatsApp', indicacao: 'Indicação', linkedin: 'LinkedIn', outro: 'Outro' }
 
 const waHref = (tel?: string | null) => { const d = (tel || '').replace(/\D/g, ''); return d ? `https://wa.me/${d.startsWith('55') ? d : '55' + d}` : null }
-const dataBR = (s: string) => { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '—' } }
+const dataBR = (s: string) => { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '' } }
 
 function Kpis({ items }: { items: [string, string, string][] }) {
   return <div className="rel-kpis">{items.map(([l, v, ic]) => (
@@ -82,7 +82,7 @@ export function RecrutamentoManager({ candidatos, isAdmin }: { candidatos: Candi
   const contratados = filtrados.filter((c) => c.estagio === 'contratado').length
 
   const porCargo = useMemo(() => tally(filtrados.map((c) => c.cargo)), [filtrados])
-  const porEstado = useMemo(() => tally(filtrados.map((c) => c.estado || '—')), [filtrados])
+  const porEstado = useMemo(() => tally(filtrados.map((c) => c.estado || '')), [filtrados])
   const porFonte = useMemo(() => tally(filtrados.map((c) => FONTE_LABEL[c.fonte] || c.fonte)), [filtrados])
 
   function optimistic(id: string, estagio: string) { setCands((p) => p.map((c) => (c.id === id ? { ...c, estagio } : c))) }
@@ -96,7 +96,7 @@ export function RecrutamentoManager({ candidatos, isAdmin }: { candidatos: Candi
   async function iniciar(id: string) {
     setMsg(''); const before = cands; optimistic(id, 'entrevista_rh')
     const r = await iniciarProcesso(id)
-    if (!r.ok) { setCands(before); setMsg(r.error || 'Erro.') } else { setMsg('Processo iniciado — candidato movido para Entrevista RH.'); router.refresh() }
+    if (!r.ok) { setCands(before); setMsg(r.error || 'Erro.') } else { setMsg('Processo iniciado  candidato movido para Entrevista RH.'); router.refresh() }
   }
   function reprovar(id: string) {
     const motivo = window.prompt('Motivo da reprovação (aparece no currículo):', '')
@@ -116,7 +116,7 @@ export function RecrutamentoManager({ candidatos, isAdmin }: { candidatos: Candi
   return (
     <>
       <div className="rel-legend">
-        <b>Banco de talentos</b> — todo currículo (site, WhatsApp, indicação, manual) cai aqui. O recrutador <b>filtra</b> e só então
+        <b>Banco de talentos</b>  todo currículo (site, WhatsApp, indicação, manual) cai aqui. O recrutador <b>filtra</b> e só então
         <b> inicia o processo</b> de um candidato (entra no Kanban). Cada franquia vê os currículos da sua unidade; a franqueadora vê todos.
       </div>
 
@@ -171,7 +171,7 @@ export function RecrutamentoManager({ candidatos, isAdmin }: { candidatos: Candi
                         {c.telefone && <span>{c.telefone}</span>}{c.email && <span>· {c.email}</span>}
                       </div></td>
                       <td>{c.cargo}</td>
-                      <td style={{ fontSize: 12.5 }}>{[c.cidade, c.estado].filter(Boolean).join(' / ') || c.unidade || '—'}</td>
+                      <td style={{ fontSize: 12.5 }}>{[c.cidade, c.estado].filter(Boolean).join(' / ') || c.unidade || ''}</td>
                       <td><span className="orig-tag" style={{ fontSize: 10.5 }}>{FONTE_LABEL[c.fonte] || c.fonte}</span></td>
                       <td><EstagioPill e={c.estagio} />{c.estagio === 'reprovado' && c.motivoReprovacao && <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{c.motivoReprovacao}</div>}</td>
                       <td style={{ fontSize: 12.5 }}>{dataBR(c.criado)}</td>
@@ -208,7 +208,7 @@ export function RecrutamentoManager({ candidatos, isAdmin }: { candidatos: Candi
 
 function tally(arr: (string | null | undefined)[]): [string, number][] {
   const o: Record<string, number> = {}
-  arr.forEach((x) => { const k = (x || '—') as string; o[k] = (o[k] ?? 0) + 1 })
+  arr.forEach((x) => { const k = (x || '') as string; o[k] = (o[k] ?? 0) + 1 })
   return Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 12) as [string, number][]
 }
 
@@ -219,7 +219,7 @@ function Coluna({ etapa, candidatos, onIniciar }: { etapa: { id: string; label: 
       <div className="kan-head"><span className="dot" style={{ background: etapa.cor }} /><span className="t">{etapa.label}</span><span className="cnt">{candidatos.length}</span></div>
       <div className="kan-sum">{etapa.id === 'triagem' ? 'novos currículos' : 'no estágio'}</div>
       <div ref={setNodeRef} className="kan-body" style={isOver ? { outline: '2px dashed var(--brand-400)', outlineOffset: -4, borderRadius: 8 } : undefined}>
-        {candidatos.length === 0 && <div style={{ padding: 10, fontSize: 12, color: 'var(--text-3)' }}>—</div>}
+        {candidatos.length === 0 && <div style={{ padding: 10, fontSize: 12, color: 'var(--text-3)' }}></div>}
         {candidatos.map((c) => <CardCand key={c.id} c={c} onIniciar={onIniciar} />)}
       </div>
     </div>
@@ -258,7 +258,7 @@ function NotasModal({ candidato, onClose, onSaved }: { candidato: Candidato; onC
       <div className="modal" style={{ width: 520 }}>
         <div className="modal-head"><h3><i className="ti ti-notes" /> {candidato.nome}</h3><button className="modal-close" onClick={onClose}>×</button></div>
         <div className="modal-body" style={{ display: 'block' }}>
-          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 8 }}>{candidato.cargo} · {[candidato.cidade, candidato.estado].filter(Boolean).join('/') || '—'} · <EstagioPill e={candidato.estagio} /></div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 8 }}>{candidato.cargo} · {[candidato.cidade, candidato.estado].filter(Boolean).join('/') || ''} · <EstagioPill e={candidato.estagio} /></div>
           <div className="mf"><label>Andamento / notas (espelhado no currículo)</label>
             <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={6} placeholder="Ex.: não está disponível, não quer shopping, mora longe…" />
           </div>

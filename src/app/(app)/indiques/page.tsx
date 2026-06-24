@@ -28,7 +28,7 @@ export default async function IndiquesPage() {
   return (
     <div className="view active">
       <div className="crm-note">
-        <i className="ti ti-gift" /> <b>Gestão de Indiques.</b> Indicações do site (e manuais) por unidade — a franqueadora vê todas.
+        <i className="ti ti-gift" /> <b>Gestão de Indiques.</b> Indicações do site (e manuais) por unidade  a franqueadora vê todas.
         Abra cada lead para evoluir o andamento (pendente → contato → agendou → comprou).
       </div>
 

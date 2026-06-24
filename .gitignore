@@ -11,7 +11,7 @@ next-env.d.ts
 # production
 /build
 
-# env (segredos — nunca versionar)
+# env (segredos  nunca versionar)
 .env
 .env.local
 .env*.local

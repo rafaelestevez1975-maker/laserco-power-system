@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
  * onde o lasercompany.com grava os leads (`lasercompany_leads`).
  * É um Supabase SEPARADO do backend do Power System (`lkii`).
  *
- * A anon key pública só consegue INSERIR (a RLS bloqueia SELECT) — por isso a
+ * A anon key pública só consegue INSERIR (a RLS bloqueia SELECT)  por isso a
  * ponte precisa da SERVICE KEY do site para LER e sincronizar. Server-only.
  * Sem a chave, retorna null e a ponte cai no fallback (lkii.site_leads).
  */

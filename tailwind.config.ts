@@ -20,8 +20,8 @@ const config: Config = {
           200: '#E9C7D0',
           300: '#CE8E9C',
           400: '#A8455C',
-          500: '#8A2A41', // primária — botões / acentos
-          600: '#6E2032', // ativa — sidebar selecionada
+          500: '#8A2A41', // primária  botões / acentos
+          600: '#6E2032', // ativa  sidebar selecionada
           700: '#571826',
           800: '#3F1119',
           900: '#230A10', // theme-color / topo

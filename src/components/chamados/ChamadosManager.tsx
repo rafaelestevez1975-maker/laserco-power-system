@@ -105,7 +105,7 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
       <div className="rel-legend">
         Solicitações <b>entre departamentos da franqueadora</b> e <b>entre franqueados e os departamentos</b>, nos dois sentidos. Filtre por
         <b> período</b>, <b>situação</b> (ativos/finalizados), <b>assunto</b> e <b>departamento</b>. Cada chamado deve ser resolvido em
-        <b> até 48 horas</b> a partir da abertura — passou disso, entra em <b>atraso</b> e a data-limite aparece no chamado.
+        <b> até 48 horas</b> a partir da abertura  passou disso, entra em <b>atraso</b> e a data-limite aparece no chamado.
       </div>
 
       <Kpis items={[
@@ -148,7 +148,7 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
                 <td style={{ color: 'var(--text-3)' }}>#{c.numero}</td>
                 <td><span className="cli-name">{c.assunto}</span><div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.etiqueta} · aberto {new Date(c.abertoEm).toLocaleDateString('pt-BR')}</div></td>
                 <td style={{ fontSize: 12 }}>{c.de} <i className="ti ti-arrow-right" style={{ color: 'var(--brand-400)' }} /> {c.para}</td>
-                <td>{c.responsavel === '—' ? <span className="muted">a atribuir</span> : c.responsavel}</td>
+                <td>{c.responsavel === '' ? <span className="muted">a atribuir</span> : c.responsavel}</td>
                 <td><SitPill fin={c.finalizado} /></td>
                 <td><PrazoCell c={c} /></td>
                 <td><span className="os-link" onClick={() => setDet(c)}><i className="ti ti-eye" /> Abrir</span></td>
@@ -211,7 +211,7 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
           <span style={{ marginLeft: 'auto' }}><SitPill fin={fin} /></span>
         </div>
         <h3 style={{ fontSize: 17, fontWeight: 700 }}>{chamado.assunto}</h3>
-        <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>{chamado.de} <i className="ti ti-arrow-right" /> {chamado.para} · responsável: {resp === '—' ? <span className="muted">a atribuir</span> : <b>{resp}</b>} · aberto {new Date(chamado.abertoEm).toLocaleString('pt-BR')}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>{chamado.de} <i className="ti ti-arrow-right" /> {chamado.para} · responsável: {resp === '' ? <span className="muted">a atribuir</span> : <b>{resp}</b>} · aberto {new Date(chamado.abertoEm).toLocaleString('pt-BR')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-clock" /> Prazo de resolução (SLA 48h): <b>{lim}</b>{!fin && atrasado && <span className="wa-pill" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginLeft: 6 }}>atrasado</span>}</span>
           {isAdmin && !fin && <button className="btn" disabled={busy} onClick={assumir}><i className="ti ti-user-check" /> Assumir</button>}
@@ -265,7 +265,7 @@ function NovoChamado({ onClose, onSaved, onError, origemFranqueado }: { onClose:
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>De</label>
               {origemFranqueado
-                ? <input value={origemFranqueado} disabled title="Sua unidade — definido pelo seu acesso" />
+                ? <input value={origemFranqueado} disabled title="Sua unidade  definido pelo seu acesso" />
                 : <select value={f.de_parte} onChange={(e) => setF({ ...f, de_parte: e.target.value })}>{PARTES.map((p) => <option key={p}>{p}</option>)}</select>}
             </div>
             <div className="mf"><label>Para</label><select value={f.para_parte} onChange={(e) => setF({ ...f, para_parte: e.target.value })}>{PARTES.map((p) => <option key={p}>{p}</option>)}</select></div>

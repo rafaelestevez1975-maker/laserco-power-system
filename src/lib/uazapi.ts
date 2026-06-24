@@ -1,5 +1,5 @@
 /**
- * Cliente UAZAPI (uazapiGO v2) — server-only.
+ * Cliente UAZAPI (uazapiGO v2)  server-only.
  * - Endpoints de administração (criar/listar instâncias) usam header `admintoken`.
  * - Endpoints de instância (connect/status/disconnect/send) usam header `token` (token da instância).
  * Env: UAZAPI_BASE_URL, UAZAPI_ADMIN_TOKEN, UAZAPI_TOKEN (instância padrão).
@@ -90,7 +90,7 @@ export function normTel(raw: string): string {
   return d.startsWith('55') ? d : '55' + d
 }
 
-/** Envia texto por uma instância (token da instância) — base para os disparos. */
+/** Envia texto por uma instância (token da instância)  base para os disparos. */
 export async function sendText(token: string, numero: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const { ok, body } = await instPost('/send/text', token, { number: normTel(numero), text: texto })
   return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha no envio.' }

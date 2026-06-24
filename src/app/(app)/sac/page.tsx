@@ -31,7 +31,7 @@ export default async function SacDashboardPage() {
   return (
     <div className="view active">
       <div className="crm-note">
-        <i className="ti ti-info-circle" /> Visão geral do SAC — dados reais ({total.toLocaleString('pt-BR')} chamados).
+        <i className="ti ti-info-circle" /> Visão geral do SAC  dados reais ({total.toLocaleString('pt-BR')} chamados).
         Os leads do site tipo <b>SAC</b> e os demais canais caem aqui.
         {' '}<Link href="/sac/chamados" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Ver chamados →</Link>
       </div>

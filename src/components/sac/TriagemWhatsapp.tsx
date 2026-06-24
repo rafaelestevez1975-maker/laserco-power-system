@@ -60,10 +60,10 @@ export function TriagemWhatsapp({ chats, msgs }: { chats: Chat[]; msgs: Msg[] })
               <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700, flexShrink: 0 }}>{iniciais(c.nome, c.telefone)}</span>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <b style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone || '—'}</b>
+                  <b style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone || ''}</b>
                   <span style={{ fontSize: 10.5, color: 'var(--text-3)', flexShrink: 0 }}>{hora(c.ultima_msg_em)}</span>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.ultima_msg || '—'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.ultima_msg || ''}</div>
               </div>
               {!!c.nao_lidas && <span style={{ alignSelf: 'center', background: 'var(--green)', color: '#fff', fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', padding: '0 5px' }}>{c.nao_lidas}</span>}
             </div>
