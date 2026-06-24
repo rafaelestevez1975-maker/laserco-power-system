@@ -21,7 +21,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 2. **Status:** `⬜ Não Testado` · `✅ Aprovado` · `❌ Reprovado`.
 3. **Evidência:** print da tela, ID do registro criado no banco, código HTTP, ou link do ticket/lead/chamado gerado.
 4. **Responsável:** quem validou (preencher).
-5. Teste com os **usuários de teste** (senha única `Laser&Co#2026`)  ver matriz de perfis abaixo  para cobrir RBAC/multitenant.
+5. Teste com os **usuários de teste** (senha única `LaserCo@2026`)  ver matriz de perfis abaixo  para cobrir RBAC/multitenant.
 6. Versão planilha (para preencher Status/Responsável): [`checklist-funcional.csv`](checklist-funcional.csv).
 
 ### Legenda de prioridade
