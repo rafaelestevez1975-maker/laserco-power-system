@@ -61,7 +61,12 @@ function NovaIndicacao({ unidades, activeUnitId, onClose, onSaved }: { unidades:
   const setInd = (i: number, k: string, v: string) => setIndicados((p) => p.map((x, j) => (j === i ? { ...x, [k]: v } : x)))
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setErr(''); setSaving(true)
+    e.preventDefault(); setErr('')
+    if (!f.indicador_nome.trim()) { setErr('Informe quem indicou.'); return }
+    if (!f.unidade_id) { setErr('Selecione a unidade da indicação.'); return }
+    const validos = indicados.filter((i) => i.nome.trim() && (i.telefone ?? '').trim())
+    if (validos.length < 3) { setErr('Preencha nome e WhatsApp de pelo menos 3 indicados (a campanha exige de 3 a 5).'); return }
+    setSaving(true)
     const res = await criarIndicacao({ ...f, unidade_id: f.unidade_id || null, indicados })
     setSaving(false)
     if (!res.ok) setErr(res.error || 'Erro.'); else onSaved()

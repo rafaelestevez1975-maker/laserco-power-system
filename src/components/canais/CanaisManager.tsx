@@ -127,8 +127,11 @@ function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onC
     setErr('')
     if (!editando && !nome.trim()) { setErr('Informe o nome do canal.'); return }
     if (escopo === 'unidade' && isAdmin && !unidadeId) { setErr('Selecione a unidade.'); return }
+    const min = Number(dMin), max = Number(dMax)
+    if (!Number.isFinite(min) || min < 1) { setErr('Delay mínimo inválido (use ≥ 1 segundo).'); return }
+    if (!Number.isFinite(max) || max < min) { setErr('O delay máximo deve ser maior ou igual ao mínimo.'); return }
     setBusy(true)
-    const form = { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: Number(dMin), delayMax: Number(dMax) }
+    const form = { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: min, delayMax: max }
     const res = editando ? await salvarVinculo({ ...form, id: base!.bindingId }) : await criarCanal(form)
     setBusy(false)
     if (!res.ok) { setErr(res.error || 'Erro ao salvar.'); return }

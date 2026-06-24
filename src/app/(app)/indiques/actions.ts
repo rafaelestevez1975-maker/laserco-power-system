@@ -25,7 +25,8 @@ export async function criarIndicacao(input: NovaIndicacaoInput): Promise<{ ok: b
   if (!input.unidade_id) return { ok: false, error: 'Selecione a unidade da indicação.' }
   // indicado exige nome + telefone (telefone é NOT NULL no schema)
   const indicados = (input.indicados || []).filter((i) => i.nome?.trim() && i.telefone?.trim())
-  if (indicados.length === 0) return { ok: false, error: 'Adicione ao menos um indicado com nome e WhatsApp.' }
+  if (indicados.length < 3) return { ok: false, error: 'Cadastre de 3 a 5 indicados (cada um com nome e WhatsApp).' }
+  if (indicados.length > 5) return { ok: false, error: 'Máximo de 5 indicados por indicação.' }
 
   const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', input.unidade_id).single()
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
