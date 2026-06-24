@@ -3,13 +3,18 @@
 import { useMemo, useState } from 'react'
 import { dispararCampanha } from '@/app/(app)/expansao/disparos/actions'
 
-export function DisparoComposer({ canais }: { canais: string[] }) {
-  const [canal, setCanal] = useState(canais[0] ?? '')
+export type CanalOpt = { nome: string; label: string; escopo: 'unidade' | 'geral' | null; unidadeId: string | null; delayMin: number; delayMax: number }
+
+export function DisparoComposer({ canais, activeUnitId }: { canais: CanalOpt[]; activeUnitId: string | null }) {
+  // Pré-seleciona o canal da unidade ativa (ou o 1º).
+  const inicial = canais.find((c) => c.unidadeId && c.unidadeId === activeUnitId) ?? canais[0]
+  const [canal, setCanal] = useState(inicial?.nome ?? '')
+  const sel = canais.find((c) => c.nome === canal) ?? inicial
   const [nome, setNome] = useState('')
   const [texto, setTexto] = useState('')
   const [numeros, setNumeros] = useState('')
-  const [dMin, setDMin] = useState('20')
-  const [dMax, setDMax] = useState('45')
+  const [dMin, setDMin] = useState(String(inicial?.delayMin ?? 20))
+  const [dMax, setDMax] = useState(String(inicial?.delayMax ?? 45))
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'erro'; txt: string } | null>(null)
 
@@ -19,9 +24,15 @@ export function DisparoComposer({ canais }: { canais: string[] }) {
   )
   const inp: React.CSSProperties = { width: '100%', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit' }
 
+  function trocarCanal(n: string) {
+    setCanal(n)
+    const c = canais.find((x) => x.nome === n)
+    if (c) { setDMin(String(c.delayMin)); setDMax(String(c.delayMax)) }
+  }
+
   async function disparar() {
     if (!canal) { setMsg({ tipo: 'erro', txt: 'Selecione um canal conectado.' }); return }
-    if (!confirm(`Disparar para ${total} número(s) pelo canal "${canal}"?`)) return
+    if (!confirm(`Disparar para ${total} número(s) pelo canal "${sel?.label ?? canal}"?`)) return
     setSaving(true); setMsg(null)
     const res = await dispararCampanha(canal, texto, numeros, Number(dMin), Number(dMax), nome)
     setSaving(false)
@@ -32,7 +43,7 @@ export function DisparoComposer({ canais }: { canais: string[] }) {
   if (canais.length === 0) {
     return (
       <div className="rel-card" style={{ padding: 16 }}>
-        Nenhum canal de WhatsApp <b>conectado</b>. Conecte um número em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais WhatsApp</a> antes de disparar.
+        Nenhum canal de WhatsApp <b>conectado</b>. Conecte o número da sua unidade em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais WhatsApp</a> antes de disparar.
       </div>
     )
   }
@@ -40,10 +51,11 @@ export function DisparoComposer({ canais }: { canais: string[] }) {
   return (
     <div className="rel-card" style={{ padding: 18, display: 'grid', gap: 12, maxWidth: 720 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div><label style={{ fontSize: 12, fontWeight: 600 }}>Canal (número conectado)</label>
-          <select style={inp} value={canal} onChange={(e) => setCanal(e.target.value)}>
-            {canais.map((c) => <option key={c} value={c}>{c}</option>)}
+        <div><label style={{ fontSize: 12, fontWeight: 600 }}>Canal (número da unidade)</label>
+          <select style={inp} value={canal} onChange={(e) => trocarCanal(e.target.value)}>
+            {canais.map((c) => <option key={c.nome} value={c.nome}>{c.label}{c.escopo === 'geral' ? ' · geral' : ''}</option>)}
           </select>
+          {sel && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{sel.escopo === 'geral' ? 'Canal geral da franqueadora' : sel.escopo === 'unidade' ? 'Canal da unidade' : 'Canal sem vínculo — defina em Canais'}</div>}
         </div>
         <div><label style={{ fontSize: 12, fontWeight: 600 }}>Nome da campanha</label><input style={inp} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Oferta junho" /></div>
       </div>
