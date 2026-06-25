@@ -103,6 +103,7 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 - **Indiques** — regra 3–5 indicados aplicada no server **e** no client (feedback por campo).
 - **CRM** — "Personalizar funil" agora funcional (criar/renomear/remover etapa; admin-only; protege etapas de sistema e com leads). Antes era botão morto.
 - **Leads-site** — mensagem de resultado do roteamento em massa mais honesta.
+- **SAC Chamados** — busca avançada (cliente/protocolo/CPF/telefone via `or()`), filtro por atendente + coluna de atendente, e **paginação real** (antes limitava a 60; há ~2,1 mil tickets). Validado no banco.
 
 ### ⏳ Pendentes — são **expansões de feature** (não bugs), precisam de decisão/escopo
 | Tela | Falta | Tamanho | Observação |
@@ -112,7 +113,6 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 | Comunicados | preview antes de publicar; arquivar (soft-delete) | S | — |
 | Financeiro | **Contas a Receber** (hoje só Contas a Pagar) | L | novo módulo de dados + KPIs |
 | RH Recrutamento | WhatsApp de disponibilidade; score de triagem estruturado | M | envio depende de canal conectado |
-| SAC Chamados | filtro por atendente; busca avançada; paginação (limit 60) | S | — |
 | Chamados | classificação de caixa por flag (hoje regex em `de_parte`, funciona p/ valores controlados) | S | robustez, baixa prioridade |
 | RBAC | `crm_etapas` tem RLS `authenticated/ALL` (qualquer logado escreve) — gate é só no app | S | endurecer via migration se necessário |
 
