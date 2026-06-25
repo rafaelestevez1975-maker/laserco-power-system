@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
-import { criarLead, moverLead } from '@/app/(app)/crm/actions'
+import { criarLead, moverLead, criarEtapa, renomearEtapa, excluirEtapa } from '@/app/(app)/crm/actions'
 import { moedaBR, waHref } from '@/lib/fmt'
 
 export type Etapa = { id: string; nome: string; cor: string }
@@ -19,12 +19,13 @@ const money = moedaBR
 const temp = (s: number | null) => (s == null ? '' : s >= 0.7 ? '🔥' : s >= 0.4 ? '🌤️' : '❄️')
 
 export function CrmBoard({
-  etapas, leads: leadsProp, unidades, activeUnitId,
-}: { etapas: Etapa[]; leads: Lead[]; unidades: Unidade[]; activeUnitId: string | null }) {
+  etapas, leads: leadsProp, unidades, activeUnitId, isAdmin,
+}: { etapas: Etapa[]; leads: Lead[]; unidades: Unidade[]; activeUnitId: string | null; isAdmin: boolean }) {
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>(leadsProp)
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState(false)
+  const [funil, setFunil] = useState(false)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   useEffect(() => setLeads(leadsProp), [leadsProp])
@@ -51,7 +52,7 @@ export function CrmBoard({
       <div className="crm-toolbar">
         <input placeholder="🔎 Buscar lead..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ minWidth: 200 }} />
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-          <button className="btn"><i className="ti ti-adjustments" /> Personalizar funil</button>
+          {isAdmin && <button className="btn" onClick={() => setFunil(true)}><i className="ti ti-adjustments" /> Personalizar funil</button>}
           <button className="btn btn-primary" onClick={() => setModal(true)}><i className="ti ti-plus" /> Novo lead</button>
         </div>
       </div>
@@ -71,7 +72,53 @@ export function CrmBoard({
           onSaved={() => { setModal(false); router.refresh() }}
         />
       )}
+
+      {funil && <FunilModal etapas={etapas} onClose={() => setFunil(false)} onSaved={() => router.refresh()} />}
     </>
+  )
+}
+
+function FunilModal({ etapas, onClose, onSaved }: { etapas: Etapa[]; onClose: () => void; onSaved: () => void }) {
+  const [novo, setNovo] = useState('')
+  const [edits, setEdits] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function run(fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) {
+    setBusy(true); setErr('')
+    const r = await fn()
+    setBusy(false)
+    if (!r.ok) { setErr(r.error || 'Erro.'); return }
+    after?.(); onSaved()
+  }
+
+  return (
+    <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal" style={{ width: 480 }}>
+        <div className="modal-head"><h3><i className="ti ti-adjustments" /> Personalizar funil</h3><button className="modal-close" onClick={onClose}>×</button></div>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
+          <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>As etapas valem para o funil de toda a rede. Etapas do sistema não podem ser removidas.</div>
+          {etapas.map((et) => (
+            <div key={et.id} style={{ display: 'grid', gridTemplateColumns: '14px 1fr auto', gap: 8, alignItems: 'center' }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: et.cor }} />
+              <input defaultValue={et.nome} onChange={(e) => setEdits((p) => ({ ...p, [et.id]: e.target.value }))}
+                style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+              <span style={{ display: 'flex', gap: 6 }}>
+                <button className="btn" disabled={busy || !((edits[et.id] ?? '').trim()) || edits[et.id] === et.nome} onClick={() => run(() => renomearEtapa(et.id, edits[et.id]))}>Salvar</button>
+                <button className="btn" disabled={busy} title="Remover etapa" onClick={() => { if (confirm('Remover esta etapa do funil?')) run(() => excluirEtapa(et.id)) }}><i className="ti ti-trash" /></button>
+              </span>
+            </div>
+          ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginTop: 6 }}>
+            <input value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Nova etapa…"
+              style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+            <button className="btn btn-primary" disabled={busy || !novo.trim()} onClick={() => run(() => criarEtapa(novo), () => setNovo(''))}><i className="ti ti-plus" /> Adicionar</button>
+          </div>
+        </div>
+        <div className="modal-foot"><button className="btn" onClick={onClose}>Fechar</button></div>
+      </div>
+    </div>
   )
 }
 

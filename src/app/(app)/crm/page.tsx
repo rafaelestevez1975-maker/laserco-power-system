@@ -49,7 +49,7 @@ export default async function CrmPage() {
         <div className="metric-box"><span>Prazo 48h vencido</span><b>{vencidos}</b></div>
       </div>
 
-      <CrmBoard etapas={etapas} leads={leads} unidades={ctx?.unidades ?? []} activeUnitId={activeUnit} />
+      <CrmBoard etapas={etapas} leads={leads} unidades={ctx?.unidades ?? []} activeUnitId={activeUnit} isAdmin={ctx?.isAdmin ?? false} />
     </div>
   )
 }
