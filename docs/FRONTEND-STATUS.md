@@ -96,10 +96,14 @@
 - ⏳ **Falta:** captação multicanal (site/Google/geo), funil real, **disparos WhatsApp que não
   param** + janela de conversas + esquentar lead (EPIC 16).
 
-### SAC (10 telas)  ✅ frontend  **P0**
-- `/sac` · `/sac/{chamados, kanban, triagem, relatorios, pagamentos, atendentes, ranking, importar, config}`
-- ⏳ **Falta:** entrada multicanal + BOT, auto-import por CPF/telefone, cálculo de reembolso,
-  espelho ↔ Financeiro, distribuição entre atendentes, WhatsApp automático (EPIC 15).
+### SAC (10 telas)  ✅ **TODAS funcionais (24/06)**  **P0**
+- ✅ `/sac` (dashboard KPIs+canal) · `/sac/chamados` (busca avançada+filtro atendente+paginação) ·
+  `/sac/kanban` (drag&drop+reembolso) · `/sac/triagem` (chat completo+IA+fila) ·
+  `/sac/atendentes` (equipe+carga+**distribuição automática igualitária**) · `/sac/config` (motivos/tags CRUD) ·
+  `/sac/pagamentos` (reembolsos+baixa, espelho Financeiro) · `/sac/relatorios` (KPIs/breakdowns+período+CSV) ·
+  `/sac/ranking` (por atendente) · `/sac/importar` (planilha xlsx/csv → chamados em lote).
+- Atendente = colaborador = usuário: fonte única `src/lib/pessoas.ts` (ver memory project-laserco-people-model).
+- ⏳ **Falta (P2):** medir tempo de resposta/resolução (colunas nulas hoje); BOT multicanal além do WhatsApp; auto-distribuição por presença/online.
 
 ### Franqueadora / Admin (4 telas)  ✅ frontend
 - `/implantacao` · `/financeiro` · `/juridico` · `/auditoria`
