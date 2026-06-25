@@ -164,7 +164,7 @@ export const MENU: Section[] = [
           { label: 'Triagem WhatsApp', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Triagem WhatsApp', badge: 'NOVO' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos' },
-          { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes' },
+          { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes', badge: 'NOVO' },
           { label: 'Ranking', href: '/sac/ranking', icon: 'ti-trophy', title: 'SAC · Ranking' },
           { label: 'Importar Leads', href: '/sac/importar', icon: 'ti-file-import', title: 'SAC · Importar Leads' },
           { label: 'Configurações', href: '/sac/config', icon: 'ti-settings', title: 'SAC · Configurações' },

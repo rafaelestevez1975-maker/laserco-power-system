@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
+import { listAtendentesSac } from '@/lib/pessoas'
 import { SacFiltros } from '@/components/sac/SacFiltros'
 import { NovoChamado } from '@/components/sac/NovoChamado'
 
@@ -23,10 +24,8 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const sb = await createClient()
   const uniNome = new Map((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
 
-  // Atendentes do SAC (para filtro + coluna)
-  const { data: atRaw } = await sb
-    .from('perfis_usuario').select('id, nome_completo').in('papel', ['sac', 'admin_geral']).eq('ativo', true).order('nome_completo')
-  const atendentes = ((atRaw ?? []) as { id: string; nome_completo: string | null }[]).map((a) => ({ id: a.id, nome: a.nome_completo || 'Atendente' }))
+  // Atendentes do SAC — fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
+  const atendentes = (await listAtendentesSac(sb)).map((a) => ({ id: a.id, nome: a.nome }))
   const atNome = new Map(atendentes.map((a) => [a.id, a.nome]))
 
   const page = Math.max(1, Number(pageRaw) || 1)

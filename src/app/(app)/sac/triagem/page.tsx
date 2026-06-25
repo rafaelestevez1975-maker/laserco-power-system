@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { listAtendentesSac } from '@/lib/pessoas'
 import { TriagemWhatsapp, type Chat, type Msg, type Atendente, type Nota } from '@/components/sac/TriagemWhatsapp'
 
 export default async function SacTriagemPage() {
@@ -23,10 +24,8 @@ export default async function SacTriagemPage() {
     .limit(800)
   const msgs = (msgsRaw ?? []) as Msg[]
 
-  // Atendentes do SAC (para transferência) — papel sac/admin, ativos.
-  const { data: atRaw } = await sb
-    .from('perfis_usuario').select('id, nome_completo').in('papel', ['sac', 'admin_geral']).eq('ativo', true).order('nome_completo')
-  const atendentes = ((atRaw ?? []) as { id: string; nome_completo: string | null }[]).map((a) => ({ id: a.id, nome: a.nome_completo || 'Atendente' })) as Atendente[]
+  // Atendentes do SAC — fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
+  const atendentes = (await listAtendentesSac(sb)).map((a) => ({ id: a.id, nome: a.nome })) as Atendente[]
 
   return (
     <div className="view active">
