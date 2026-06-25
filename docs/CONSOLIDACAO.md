@@ -88,5 +88,32 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 
 ---
 
-## 6. Gaps de completude por tela funcional
-> _Seção alimentada pela auditoria de código (em andamento) + [FRONTEND-STATUS.md](FRONTEND-STATUS.md) §"Mapa por módulo"._
+## 6. Gaps de completude por tela funcional (auditoria 2026-06-24)
+> Auditoria de código + verificação manual. ⚠️ Vários "gaps" apontados pela varredura
+> automática eram **falsos positivos** (a varredura lê trechos): registrados como ✅ já-ok.
+
+### ✅ Já corretos (eram falsos positivos da auditoria)
+- **Canais** — o `setInterval` do QR **já é limpo** no unmount/connect/close (`CanaisManager:28`).
+- **SAC Kanban** — **já tem contador por fase** (`SacKanban:64`) e move otimista + refresh.
+- **Leads-site** — roteamento **já tem dedup** (`jaRoteado`) e é resumível; o roteamento em massa **reporta** ok/pulados.
+- **SAC Triagem** — painel do cliente (auto-import) e sino de notificações **existem** (a varredura não os viu).
+
+### ✅ Corrigidos nesta rodada
+- **Canais** — validação de campo do delay (mín ≥1s, máx ≥ mín) antes de salvar.
+- **Indiques** — regra 3–5 indicados aplicada no server **e** no client (feedback por campo).
+- **CRM** — "Personalizar funil" agora funcional (criar/renomear/remover etapa; admin-only; protege etapas de sistema e com leads). Antes era botão morto.
+- **Leads-site** — mensagem de resultado do roteamento em massa mais honesta.
+
+### ⏳ Pendentes — são **expansões de feature** (não bugs), precisam de decisão/escopo
+| Tela | Falta | Tamanho | Observação |
+|---|---|---|---|
+| Disparos | agendamento, templates salvos, personalização `{nome}` (`/sender/advanced`) | M | depende de canal conectado p/ teste real |
+| Comunicados | **publicar agendados** automaticamente | M | precisa **scheduler** (pg_cron no lkii **ou** Vercel Cron) — decisão de infra |
+| Comunicados | preview antes de publicar; arquivar (soft-delete) | S | — |
+| Financeiro | **Contas a Receber** (hoje só Contas a Pagar) | L | novo módulo de dados + KPIs |
+| RH Recrutamento | WhatsApp de disponibilidade; score de triagem estruturado | M | envio depende de canal conectado |
+| SAC Chamados | filtro por atendente; busca avançada; paginação (limit 60) | S | — |
+| Chamados | classificação de caixa por flag (hoje regex em `de_parte`, funciona p/ valores controlados) | S | robustez, baixa prioridade |
+| RBAC | `crm_etapas` tem RLS `authenticated/ALL` (qualquer logado escreve) — gate é só no app | S | endurecer via migration se necessário |
+
+> **Próximo passo recomendado:** priorizar entre Disparos (M), Comunicados-scheduler (M, infra) e Financeiro-Receber (L) — o cliente decide a ordem.
