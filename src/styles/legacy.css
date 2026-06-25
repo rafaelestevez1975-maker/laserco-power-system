@@ -178,7 +178,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);transition:.15s}
 .btn:hover{background:var(--line)}
 .btn-primary{background:linear-gradient(135deg,var(--brand-500),var(--brand-600));color:#fff;border:none;box-shadow:0 4px 12px rgba(138,42,65,.3)}
-.btn-primary:hover{filter:brightness(1.06)}
+.btn-primary:hover{background:linear-gradient(135deg,var(--brand-500),var(--brand-600));filter:brightness(1.06)}
 .btn-icon{padding:10px 12px}
 .fil-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
 .fil-head{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
