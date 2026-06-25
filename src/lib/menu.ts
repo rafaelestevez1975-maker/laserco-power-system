@@ -166,7 +166,7 @@ export const MENU: Section[] = [
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos', badge: 'NOVO' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes', badge: 'NOVO' },
           { label: 'Ranking', href: '/sac/ranking', icon: 'ti-trophy', title: 'SAC · Ranking', badge: 'NOVO' },
-          { label: 'Importar Leads', href: '/sac/importar', icon: 'ti-file-import', title: 'SAC · Importar Leads' },
+          { label: 'Importar Leads', href: '/sac/importar', icon: 'ti-file-import', title: 'SAC · Importar Leads', badge: 'NOVO' },
           { label: 'Configurações', href: '/sac/config', icon: 'ti-settings', title: 'SAC · Configurações', badge: 'NOVO' },
         ],
       },
