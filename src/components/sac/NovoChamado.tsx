@@ -20,7 +20,14 @@ export function NovoChamado({ unidades, activeUnitId }: { unidades: Unidade[]; a
   const inp: React.CSSProperties = { width: '100%', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit' }
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setErr(''); setSaving(true)
+    e.preventDefault(); setErr('')
+    // validação por campo (cliente) antes de chamar o servidor
+    if (!f.nome_cliente.trim()) { setErr('Informe o nome do cliente.'); return }
+    const email = f.email_cliente.trim()
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr('E-mail inválido.'); return }
+    const cpfDig = f.cpf_cliente.replace(/\D/g, '')
+    if (cpfDig && cpfDig.length !== 11) { setErr('CPF deve ter 11 dígitos.'); return }
+    setSaving(true)
     const res = await criarChamado({ ...f, unidade_id: f.unidade_id || null })
     setSaving(false)
     if (!res.ok) setErr(res.error || 'Erro ao abrir chamado.')
