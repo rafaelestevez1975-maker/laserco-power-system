@@ -42,3 +42,24 @@ export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: bo
   revalidatePath('/financeiro')
   return { ok: true, concluiuChamado }
 }
+
+/** Registra o recebimento de um recebível (tipo='receita'): marca como pago + data. */
+export async function receberLancamento(lancamentoId: string): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+
+  const { data: lf, error: e0 } = await sb.from('lancamentos_financeiros').select('status').eq('id', lancamentoId).single()
+  const l = lf as { status?: string } | null
+  if (e0 || !l) return { ok: false, error: 'Lançamento não encontrado.' }
+  if (l.status === 'pago') return { ok: false, error: 'Este recebível já foi recebido.' }
+
+  const { error } = await sb
+    .from('lancamentos_financeiros')
+    .update({ status: 'pago', data_pagamento: new Date().toISOString().slice(0, 10) })
+    .eq('id', lancamentoId)
+  if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão para registrar recebimento.' : error.message }
+
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
