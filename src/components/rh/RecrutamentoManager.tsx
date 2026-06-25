@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { moverCandidato, iniciarProcesso, atualizarNotas, criarCurriculo, type NovoCurriculo } from '@/app/(app)/rh/recrutamento/actions'
+import { moverCandidato, iniciarProcesso, atualizarNotas, criarCurriculo, avisarDisponibilidade, definirScore, type NovoCurriculo } from '@/app/(app)/rh/recrutamento/actions'
 import { waHref, dataBR } from '@/lib/fmt'
 
 export type Candidato = {
@@ -251,17 +251,46 @@ function CardCand({ c, onIniciar }: { c: Candidato; onIniciar: (id: string) => v
 
 function NotasModal({ candidato, onClose, onSaved }: { candidato: Candidato; onClose: () => void; onSaved: () => void }) {
   const [txt, setTxt] = useState(candidato.notas || '')
+  const [score, setScore] = useState(candidato.score != null ? String(candidato.score) : '')
   const [busy, setBusy] = useState(false)
-  function salvar() { setBusy(true); atualizarNotas(candidato.id, txt).then((r) => { setBusy(false); if (r.ok) onSaved() }) }
+  const [msg, setMsg] = useState('')
+
+  async function salvar() {
+    setBusy(true); setMsg('')
+    const r = await atualizarNotas(candidato.id, txt)
+    const sc = score.trim()
+    if (r.ok && sc !== '' && Number(sc) !== (candidato.score ?? -1)) await definirScore(candidato.id, Number(sc))
+    setBusy(false)
+    if (r.ok) onSaved(); else setMsg(r.error || 'Erro ao salvar.')
+  }
+  async function avisar() {
+    if (!window.confirm('Enviar mensagem de disponibilidade por WhatsApp para este candidato?')) return
+    setBusy(true); setMsg('')
+    const r = await avisarDisponibilidade(candidato.id)
+    setBusy(false)
+    setMsg(r.ok ? '✓ Mensagem enviada por WhatsApp. A nota foi registrada.' : (r.error || 'Erro ao enviar.'))
+  }
+
   return (
     <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal" style={{ width: 520 }}>
         <div className="modal-head"><h3><i className="ti ti-notes" /> {candidato.nome}</h3><button className="modal-close" onClick={onClose}>×</button></div>
         <div className="modal-body" style={{ display: 'block' }}>
-          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 8 }}>{candidato.cargo} · {[candidato.cidade, candidato.estado].filter(Boolean).join('/') || ''} · <EstagioPill e={candidato.estagio} /></div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 10 }}>{candidato.cargo} · {[candidato.cidade, candidato.estado].filter(Boolean).join('/') || ''} · <EstagioPill e={candidato.estagio} /></div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 10, flexWrap: 'wrap' }}>
+            <div className="mf" style={{ maxWidth: 160 }}><label>Nota de triagem (0–100)</label>
+              <input type="number" min={0} max={100} value={score} onChange={(e) => setScore(e.target.value)} placeholder="ex.: 80" />
+            </div>
+            {candidato.telefone && (
+              <button type="button" className="btn" disabled={busy} onClick={avisar} title="Enviar disponibilidade por WhatsApp (precisa de canal conectado)">
+                <i className="ti ti-brand-whatsapp" /> Avisar disponibilidade
+              </button>
+            )}
+          </div>
           <div className="mf"><label>Andamento / notas (espelhado no currículo)</label>
             <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={6} placeholder="Ex.: não está disponível, não quer shopping, mora longe…" />
           </div>
+          {msg && <p style={{ fontSize: 12.5, color: msg.startsWith('✓') ? 'var(--green)' : 'var(--red)', marginTop: 8 }}>{msg}</p>}
         </div>
         <div className="modal-foot"><button className="btn" onClick={onClose}>Fechar</button><button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? 'Salvando…' : 'Salvar'}</button></div>
       </div>

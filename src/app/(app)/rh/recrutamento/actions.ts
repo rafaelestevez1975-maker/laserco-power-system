@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { msgErro as rlsMsg } from '@/lib/sb'
+import { listInstances, sendText } from '@/lib/uazapi'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -88,4 +89,43 @@ export async function criarCurriculo(form: NovoCurriculo): Promise<ActionResult>
   if (error) return { ok: false, error: rlsMsg(error.message, 'cadastrar o currículo') }
   revalidatePath('/rh/recrutamento')
   return { ok: true, id: (ins as { id?: string })?.id }
+}
+
+/** Envia a mensagem de disponibilidade ao candidato pelo WhatsApp (canal conectado)
+ *  e registra na nota. Depende de um número conectado em Canais. */
+export async function avisarDisponibilidade(id: string, mensagem?: string): Promise<ActionResult> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+
+  const { data: c } = await sb.from('candidatos').select('nome, telefone, notas_internas').eq('id', id).single()
+  const cand = c as { nome?: string; telefone?: string | null; notas_internas?: string | null } | null
+  if (!cand) return { ok: false, error: 'Candidato não encontrado.' }
+  if ((cand.telefone || '').replace(/\D/g, '').length < 10) return { ok: false, error: 'Candidato sem telefone válido.' }
+
+  const canal = (await listInstances()).find((i) => /laser/i.test(i.name) && i.status === 'connected')
+  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+
+  const primeiro = (cand.nome || '').trim().split(/\s+/)[0] || 'tudo bem'
+  const texto = mensagem?.trim()
+    || `Olá ${primeiro}! Aqui é do RH da Laser&Co. Surgiu uma oportunidade e gostaríamos de saber se você tem interesse e disponibilidade. Pode nos retornar? 😊`
+  const env = await sendText(canal.token, cand.telefone as string, texto)
+  if (!env.ok) return { ok: false, error: env.error || 'Falha no envio.' }
+
+  const nota = [cand.notas_internas, `• Mensagem de disponibilidade enviada via WhatsApp em ${new Date().toLocaleString('pt-BR')}`].filter(Boolean).join('\n')
+  await sb.from('candidatos').update({ notas_internas: nota }).eq('id', id)
+  revalidatePath('/rh/recrutamento')
+  return { ok: true }
+}
+
+/** Define a nota de triagem (0–100) do candidato (score_triagem_ia). */
+export async function definirScore(id: string, score: number): Promise<ActionResult> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const s = Math.max(0, Math.min(100, Math.round(score || 0)))
+  const { error } = await sb.from('candidatos').update({ score_triagem_ia: s }).eq('id', id)
+  if (error) return { ok: false, error: rlsMsg(error.message, 'salvar a nota de triagem') }
+  revalidatePath('/rh/recrutamento')
+  return { ok: true }
 }
