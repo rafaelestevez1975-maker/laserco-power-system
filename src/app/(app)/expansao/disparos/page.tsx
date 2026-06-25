@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { listInstances, uazapiConfigurado } from '@/lib/uazapi'
+import { listarTemplates } from '@/app/(app)/expansao/disparos/actions'
 import { DisparoComposer, type CanalOpt } from '@/components/disparos/DisparoComposer'
 
 type Binding = { instancia_nome: string; escopo: 'unidade' | 'geral'; unidade_id: string | null; rotulo: string | null; delay_min: number; delay_max: number }
@@ -24,9 +25,11 @@ export default async function DisparosPage() {
     } catch { /* estado vazio no composer */ }
   }
 
+  const templates = await listarTemplates()
+
   return (
     <div className="view active">
-      <DisparoComposer canais={canais} activeUnitId={ctx?.activeUnitId ?? null} />
+      <DisparoComposer canais={canais} activeUnitId={ctx?.activeUnitId ?? null} templates={templates} />
     </div>
   )
 }

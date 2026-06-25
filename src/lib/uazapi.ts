@@ -121,9 +121,11 @@ export async function configurarWebhook(token: string, url: string): Promise<{ o
   return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha ao configurar webhook.' }
 }
 
-export type CampanhaInput = { numbers: string[]; text: string; delayMin: number; delayMax: number; info?: string }
+export type CampanhaInput = { numbers: string[]; text: string; delayMin: number; delayMax: number; info?: string; scheduledFor?: number }
 
-/** Cria uma campanha de envio em massa (UAZAPI gerencia a fila + delay anti-ban). */
+/** Cria uma campanha de envio em massa (UAZAPI gerencia a fila + delay anti-ban).
+ *  scheduledFor: timestamp epoch em MS para agendar (0/ausente = envia agora).
+ *  A mensagem suporta placeholders da UAZAPI, ex.: {{first_name}}, {{name}}. */
 export async function criarCampanhaSimples(token: string, c: CampanhaInput): Promise<{ ok: boolean; id?: string; error?: string }> {
   const { ok, body } = await instPost('/sender/simple', token, {
     numbers: c.numbers.map(normTel),
@@ -131,7 +133,7 @@ export async function criarCampanhaSimples(token: string, c: CampanhaInput): Pro
     text: c.text,
     delayMin: c.delayMin,
     delayMax: c.delayMax,
-    scheduled_for: 0,
+    scheduled_for: c.scheduledFor && c.scheduledFor > 0 ? c.scheduledFor : 0,
     info: c.info ?? 'Campanha',
   })
   if (!ok) return { ok: false, error: (body as { error?: string })?.error || 'Falha ao criar campanha.' }
