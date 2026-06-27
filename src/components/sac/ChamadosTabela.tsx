@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { atualizarChamado } from '@/app/(app)/sac/actions'
+import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { moedaBR } from '@/lib/fmt'
 
 export type ChamadoRow = {
   id: string; numero: number | null; protocolo: string | null; nome_cliente: string | null; telefone_cliente: string | null
@@ -72,8 +74,17 @@ function EditModal({ t, atendentes, motivos, onClose, onSaved }: { t: ChamadoRow
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [ficha, setFicha] = useState<ClienteResumo | null>(null)
+  const [fichaBusy, setFichaBusy] = useState(false)
   const set = (k: keyof typeof f, v: string | boolean) => setF((p) => ({ ...p, [k]: v }))
   const motOpts = [...new Set([t.motivo_label, ...motivos].filter(Boolean))] as string[]
+
+  async function buscarFicha() {
+    setFichaBusy(true)
+    const r = await buscarClientePorContato(f.telefone_cliente, f.cpf_cliente)
+    setFichaBusy(false)
+    setFicha(r)
+  }
 
   async function salvar() {
     if (!f.nome_cliente.trim()) { setErr('Informe o nome do cliente.'); return }
@@ -124,6 +135,29 @@ function EditModal({ t, atendentes, motivos, onClose, onSaved }: { t: ChamadoRow
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={f.multa_aplicada} onChange={(e) => set('multa_aplicada', e.target.checked)} /> Multa aplicada</label>
             <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={f.pago} onChange={(e) => set('pago', e.target.checked)} /> Pagamento/reembolso realizado</label>
+          </div>
+          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <b style={{ fontSize: 13 }}><i className="ti ti-id-badge-2" style={{ color: 'var(--brand-500)' }} /> Ficha do cliente no sistema</b>
+              <button type="button" className="btn" disabled={fichaBusy} onClick={buscarFicha}><i className="ti ti-search" /> {fichaBusy ? 'Buscando…' : 'Buscar contratos, pagamentos e sessões'}</button>
+            </div>
+            {ficha && !ficha.achou && <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 6 }}>Cliente não encontrado pelo CPF/telefone informado (ou sem permissão para ver a ficha).</div>}
+            {ficha?.achou && (
+              <div style={{ marginTop: 8, fontSize: 12.5, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 14px' }}>
+                <span><b>{ficha.nome}</b>{ficha.cidade ? ` · ${ficha.cidade}/${ficha.estado ?? ''}` : ''}</span>
+                <span>{ficha.ativo ? '🟢 Ativo' : '⚪ Inativo'}{ficha.verificado ? ' · verificado' : ''}</span>
+                <span>Agendamentos: <b>{ficha.agendamentos ?? 0}</b></span>
+                <span>Sessões concluídas: <b>{ficha.concluidos ?? 0}</b></span>
+                <span>Total gasto: <b>{moedaBR(ficha.totalGasto)}</b></span>
+                <span>Créditos: <b>{moedaBR(ficha.saldoCreditos)}</b></span>
+                {(ficha.totalGasto ?? 0) > 0 && (
+                  <button type="button" className="btn" style={{ gridColumn: '1 / -1', marginTop: 4 }} onClick={() => set('valor_pago', String(ficha.totalGasto))}>
+                    <i className="ti ti-arrow-down" /> Usar total gasto como “Valor pago” ({moedaBR(ficha.totalGasto)})
+                  </button>
+                )}
+                <div style={{ gridColumn: '1 / -1', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}><i className="ti ti-info-circle" /> O cálculo de reembolso por saldo de sessões é feito no <b>Kanban</b> do chamado (ao mover para “Em pagamento”).</div>
+              </div>
+            )}
           </div>
           <div className="mf"><label>Observações</label><textarea style={{ ...inp, minHeight: 70, resize: 'vertical' }} value={f.observacoes} onChange={(e) => set('observacoes', e.target.value)} /></div>
         </div>
