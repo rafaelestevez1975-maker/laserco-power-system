@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { criarCanal, salvarVinculo, conectarCanal, statusCanal, desconectarCanal, type Escopo } from '@/app/(app)/canais/actions'
+import { criarCanal, salvarVinculo, conectarCanal, statusCanal, desconectarCanal, sincronizarCanal, type Escopo } from '@/app/(app)/canais/actions'
 
 export type Canal = {
   name: string; status: string; owner?: string
@@ -38,12 +38,25 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
       const s = await statusCanal(nome)
       if (s.ok && s.state) {
         setQr((q) => (q ? { ...q, img: s.state!.qrcode ?? q.img, status: s.state!.status } : q))
-        if (s.state.connected) { if (poll.current) clearInterval(poll.current); setQr(null); setMsg(`Canal "${nome}" conectado! ✅`); router.refresh() }
+        if (s.state.connected) {
+          if (poll.current) clearInterval(poll.current); setQr(null)
+          setMsg(`Canal "${nome}" conectado! Sincronizando mensagens…`)
+          // auto-sincroniza o webhook ao conectar → garante que as mensagens caem na Triagem
+          const sy = await sincronizarCanal(nome)
+          setMsg(sy.ok ? `Canal "${nome}" conectado e sincronizado. ✅ As mensagens aparecem na Triagem em tempo real.` : `Canal "${nome}" conectado, mas a sincronização falhou: ${sy.error || ''}`)
+          router.refresh()
+        }
       }
     }, 4000)
   }
   function fecharQr() { if (poll.current) clearInterval(poll.current); setQr(null) }
   async function desconectar(nome: string) { if (!confirm(`Desconectar o canal "${nome}"?`)) return; setBusy(nome); await desconectarCanal(nome); setBusy(null); router.refresh() }
+  async function sincronizar(nome: string) {
+    setBusy(nome); setMsg('')
+    const r = await sincronizarCanal(nome)
+    setBusy(null)
+    setMsg(r.ok ? `Canal "${nome}" sincronizado — as mensagens vão cair na Triagem. ✅` : (r.error || 'Falha ao sincronizar.'))
+  }
 
   function escopoBadge(c: Canal) {
     if (!c.vinculado) return <span style={pill('#FBE9EB', '#D85563')}>sem vínculo</span>
@@ -74,7 +87,10 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
             {c.owner && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>{c.owner}</div>}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {conectado(c.status)
-                ? <button className="btn" disabled={busy === c.name} onClick={() => desconectar(c.name)}><i className="ti ti-plug-off" /> Desconectar</button>
+                ? <>
+                    <button className="btn" disabled={busy === c.name} onClick={() => sincronizar(c.name)} title="Reaplica o webhook — garante que as mensagens recebidas apareçam na Triagem em tempo real"><i className="ti ti-refresh" /> Sincronizar</button>
+                    <button className="btn" disabled={busy === c.name} onClick={() => desconectar(c.name)}><i className="ti ti-plug-off" /> Desconectar</button>
+                  </>
                 : <button className="btn btn-primary" disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
               <button className="btn" onClick={() => setEditar(c)}><i className="ti ti-settings" /> {c.vinculado ? 'Editar' : 'Vincular'}</button>
             </div>

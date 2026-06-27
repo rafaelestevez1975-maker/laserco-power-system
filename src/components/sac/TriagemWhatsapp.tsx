@@ -1,8 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useRef } from 'react'
 import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 
 // ticks de entrega (status da UAZAPI)
@@ -62,6 +61,20 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const fileRef = useRef<HTMLInputElement | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const threadRef = useRef<HTMLDivElement | null>(null)
+
+  // ── Tempo real: re-busca os dados do servidor a cada 3s (soft-refresh preserva a
+  // conversa aberta e o texto digitado). O webhook da UAZAPI já grava as mensagens
+  // recebidas no banco, então elas aparecem sozinhas. Pausa quando a aba está oculta.
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null
+    const start = () => { if (!id) id = setInterval(() => { if (!document.hidden) router.refresh() }, 3000) }
+    const stop = () => { if (id) { clearInterval(id); id = null } }
+    const onVis = () => { if (document.hidden) stop(); else { router.refresh(); start() } }
+    start()
+    document.addEventListener('visibilitychange', onVis)
+    return () => { stop(); document.removeEventListener('visibilitychange', onVis) }
+  }, [router])
 
   async function abrirCliente() {
     const novo = !cliOpen; setCliOpen(novo)
@@ -157,6 +170,14 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const notasSel = notas.filter((n) => n.chat_id === sel)
   const stat = chat?.status || 'aberto'
 
+  // Ao trocar de conversa: vai pro fim. Ao chegar mensagem nova: só rola se já estiver
+  // perto do fim (não atrapalha quem está lendo o histórico mais acima).
+  useEffect(() => { const el = threadRef.current; if (el && sel) el.scrollTop = el.scrollHeight }, [sel])
+  useEffect(() => {
+    const el = threadRef.current; if (!el) return
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 160) el.scrollTop = el.scrollHeight
+  }, [thread.length])
+
   async function addNota() {
     if (!sel || !notaTxt.trim()) return
     setBusy(true)
@@ -182,6 +203,9 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
         <div style={{ padding: 10, borderBottom: '1px solid var(--line)' }}>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔎 Buscar conversa..."
             style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+          <div style={{ fontSize: 10.5, color: 'var(--green)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }} title="As mensagens recebidas/enviadas aparecem automaticamente">
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} /> Tempo real ativo
+          </div>
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {filtrados.length === 0 && <div style={{ padding: 16, color: 'var(--text-3)', fontSize: 13 }}>Nenhuma conversa.</div>}
@@ -247,7 +271,7 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                   : <button className="btn btn-primary" disabled={busy} onClick={abrirChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
               </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div ref={threadRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {thread.length === 0 && <div style={{ margin: 'auto', color: 'var(--text-3)', fontSize: 13 }}>Sem mensagens nesta conversa.</div>}
               {thread.map((m) => {
                 const entrada = isIn(m.direcao)

@@ -105,9 +105,17 @@ export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, 
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
 }
 
-/** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar. */
+/** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar.
+ *  CRÍTICO: a UAZAPI é externa e precisa ALCANÇAR a URL — nunca pode ser localhost.
+ *  Se NEXT_PUBLIC_APP_URL apontar pra localhost (dev), cai pro domínio público. */
+const WEBHOOK_FALLBACK = 'https://laserco-power-system.vercel.app'
 export function urlWebhook(): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://laserco-power-system.vercel.app').replace(/\/$/, '')
+  let base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')
+  if (!base || /\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(base)) {
+    base = (process.env.WEBHOOK_PUBLIC_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+      || WEBHOOK_FALLBACK).replace(/\/$/, '')
+  }
   const secret = process.env.UAZAPI_WEBHOOK_SECRET
   return `${base}/api/webhooks/uazapi${secret ? `?secret=${encodeURIComponent(secret)}` : ''}`
 }
