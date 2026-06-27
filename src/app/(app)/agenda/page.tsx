@@ -1,7 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
+import { temPapel } from '@/lib/rbac'
 import { dataBR } from '@/lib/fmt'
-import { AgendaGrade, type AgGridProps, type Profissional, type Agendamento, type Bloqueio } from '@/components/agenda/AgendaGrade'
+import { AGENDA_GAPS, AGENDA_GAP_PADRAO, calcOcupacao } from '@/lib/agenda'
+import { AgendaGrade, type AgGridProps, type Profissional, type Agendamento, type Bloqueio, type EventoRede } from '@/components/agenda/AgendaGrade'
+
+export const dynamic = 'force-dynamic'
 
 /** "YYYY-MM-DD" do dia atual no fuso BR (sem depender do TZ do servidor). */
 function hojeBR(): string {
@@ -20,14 +24,21 @@ function rangeDoDia(dia: string): { ini: string; fim: string } {
   return { ini: ini.toISOString(), fim: fim.toISOString() }
 }
 
-type SP = { d?: string }
+type SP = { d?: string; gap?: string }
+
+function validGap(g: string | undefined): number {
+  const n = Number(g)
+  return AGENDA_GAPS.includes(n) ? n : AGENDA_GAP_PADRAO
+}
 
 export default async function AgendaPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
   const dia = validDia(sp.d)
+  const gap = validGap(sp.gap)
   const ctx = await getSessionContext()
   const sb = await createClient()
   const unidadeId = ctx?.activeUnitId ?? null
+  const podeGerenciarEventos = temPapel(ctx?.papel, 'gestor', 'operacoes')
   const { ini, fim } = rangeDoDia(dia)
 
   // ── Profissionais = colaboradores ativos da unidade (colunas da grade) ──
@@ -93,6 +104,27 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const servicos = ((servRaw ?? []) as Array<{ id: string; nome: string | null; duracao_min: number | null }>)
     .map((s) => ({ id: s.id, nome: s.nome || 'Serviço', duracao_min: s.duracao_min ?? 10 }))
 
+  // ── Eventos da rede do dia (banda informativa; NÃO bloqueiam horário) ──
+  // Lê de rede_eventos (scripts/migrations/agenda.sql). Falha silenciosa se a tabela não existe.
+  let eventosRede: EventoRede[] = []
+  try {
+    let qEv = sb
+      .from('rede_eventos')
+      .select('id, titulo, tipo, data, hora_inicio, hora_fim, link, audiencia, unidade_id')
+      .eq('data', dia)
+    // eventos da rede inteira (unidade_id null) OU da unidade ativa.
+    if (unidadeId) qEv = qEv.or(`unidade_id.is.null,unidade_id.eq.${unidadeId}`)
+    const { data: evRaw, error: evErr } = await qEv.order('hora_inicio', { ascending: true })
+    if (!evErr) {
+      eventosRede = ((evRaw ?? []) as Array<{ id: string; titulo: string | null; tipo: string | null; hora_inicio: string | null; hora_fim: string | null; link: string | null; audiencia: string[] | null }>)
+        .map((e) => ({ id: e.id, titulo: e.titulo || 'Evento', tipo: e.tipo || 'Evento', horaInicio: e.hora_inicio, horaFim: e.hora_fim, link: e.link, audiencia: e.audiencia ?? [] }))
+    }
+  } catch { /* tabela rede_eventos ausente → banda vazia */ }
+
+  // ── Ocupação da agenda (agOcupRender): nProf × 12h ÷ 30min, +45% faltas ──
+  const agendadosHoje = agendamentos.filter((a) => a.status !== 'cancelado').length
+  const ocupacao = calcOcupacao(profissionais.length, agendadosHoje)
+
   // ── KPIs do dia (sobre os agendamentos carregados). Enum real: aberto | confirmado |
   //    em_atendimento | concluido | cancelado | no_show (no_show = falta). ──
   const naoCancelados = agendamentos.filter((a) => a.status !== 'cancelado')
@@ -116,12 +148,16 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     diaPrev: fmtParam(prev),
     diaNext: fmtParam(next),
     labelDia,
+    gap,
     profissionais,
     agendamentos,
     bloqueios,
     servicos,
+    eventosRede,
+    ocupacao,
     unidadeId,
     podeAgendar: !!unidadeId, // criar exige uma unidade ativa selecionada no topo
+    podeGerenciarEventos,
   }
 
   return (
@@ -143,9 +179,3 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     </div>
   )
 }
-
-// TODO(legado): banda de eventos da rede (renderRede / redeBand / btnEvtRede em buildAgenda)
-//   — não há tabela de eventos da rede no schema lkii. Toggle "Mostrar eventos" omitido.
-// TODO(legado): "Ocupação" (agOcup / agOcupRender em buildAgenda) — barra de ocupação por
-//   profissional acima da grade. Deixado para depois.
-// TODO(legado): seletor de GAP por unidade (uniSetGap) — usamos GAP fixo de 10min (padrão da rede).

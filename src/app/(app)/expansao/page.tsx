@@ -3,8 +3,7 @@ import { getSessionContext } from '@/lib/session'
 import { ExpansaoTabs } from '@/components/expansao/ExpansaoTabs'
 import type { ExpEtapa, ExpLead } from '@/components/expansao/types'
 
-// Origens consideradas "captação automática" (site + geolocalização) no legado buildExpansao.
-const ORIGENS_CAPTACAO = ['site', 'geolocalizado']
+export const dynamic = 'force-dynamic'
 
 export default async function ExpansaoPage() {
   const ctx = await getSessionContext()
@@ -35,7 +34,7 @@ export default async function ExpansaoPage() {
   if (migracaoOk) {
     let q = sb
       .from('crm_leads')
-      .select('id, nome, telefone, email, origem, valor_estimado, etapa_id, status, tipo_lead, temperatura, criado_em')
+      .select('id, nome, telefone, email, origem, valor_estimado, etapa_id, status, tipo_lead, temperatura, empresa, uf, criado_em')
       .eq('pipeline', 'franquia')
       .order('criado_em', { ascending: false })
       .limit(500)
@@ -57,7 +56,6 @@ export default async function ExpansaoPage() {
         unidades={ctx?.unidades ?? []}
         activeUnitId={activeUnit}
         isAdmin={isAdmin}
-        origensCaptacao={ORIGENS_CAPTACAO}
       />
     </div>
   )

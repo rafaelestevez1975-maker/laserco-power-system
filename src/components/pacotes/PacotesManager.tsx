@@ -11,6 +11,12 @@ import {
   type PacoteInput,
   type ItemPacoteInput,
 } from '@/app/(app)/pacotes/actions'
+import {
+  PAGAR_COMISSAO_OPCOES,
+  COBERTURA_OPCOES,
+  type PagarComissao,
+  type CoberturaCreditos,
+} from '@/lib/catalogo'
 
 export type ServicoOpt = { id: string; nome: string; grupo: string | null }
 
@@ -22,9 +28,20 @@ export type PacoteRow = {
   descricao: string | null
   preco: number | null
   validade_dias: number | null
+  cobertura_creditos: string | null
+  desc_max: number | null
+  pagar_comissao: string | null
   ativo: boolean | null
   criado_em: string | null
   itens: ItemComNome[]
+}
+
+/** Badge de timing de comissão — cores do legado (comTag). */
+function ComTag({ v }: { v: string | null }) {
+  const val = v || 'Execução'
+  const bg = val === 'Não pagar' ? '#eeeeee' : val === 'Venda' ? '#E7EEFB' : '#E7F0EC'
+  const c = val === 'Não pagar' ? '#777' : val === 'Venda' ? '#1E3A8A' : '#0F6B3A'
+  return <span className="orig-tag" style={{ background: bg, color: c }}>{val}</span>
 }
 
 type Props = {
@@ -153,8 +170,11 @@ export function PacotesManager(props: Props) {
               <tr>
                 <th>Pacote</th>
                 <th>Composição</th>
+                <th>Cobertura</th>
                 <th className="num-r">Validade</th>
                 <th className="num-r">Preço</th>
+                <th className="num-r">Desc. Máx</th>
+                <th>Pagar comissão</th>
                 <th>Ativo</th>
                 <th></th>
               </tr>
@@ -162,7 +182,7 @@ export function PacotesManager(props: Props) {
             <tbody>
               {pacotes.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum pacote{temFiltro ? ' com esses filtros' : ' cadastrado'}.
                     {podeEscrever && !temFiltro && ' Clique em “Novo pacote” para criar o primeiro.'}
@@ -190,8 +210,11 @@ export function PacotesManager(props: Props) {
                         </>
                       )}
                     </td>
+                    <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 150 }}>{p.cobertura_creditos || 'Qualquer unidade'}</td>
                     <td className="num-r">{p.validade_dias != null ? `${p.validade_dias} dias` : '—'}</td>
                     <td className="num-r"><b>{moedaBR(p.preco)}</b></td>
+                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted">—</span>}</td>
+                    <td><ComTag v={p.pagar_comissao} /></td>
                     <td>{p.ativo ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {podeEscrever && (
@@ -269,8 +292,11 @@ function PacoteForm(props: {
     descricao: row?.descricao ?? '',
     preco: row?.preco != null ? String(row.preco) : '',
     validade_dias: row?.validade_dias != null ? String(row.validade_dias) : '365',
+    cobertura_creditos: (COBERTURA_OPCOES.includes(row?.cobertura_creditos as CoberturaCreditos) ? row!.cobertura_creditos : 'Qualquer unidade') as CoberturaCreditos,
+    desc_max: row?.desc_max != null ? String(row.desc_max) : '',
+    pagar_comissao: (PAGAR_COMISSAO_OPCOES.includes(row?.pagar_comissao as PagarComissao) ? row!.pagar_comissao : 'Execução') as PagarComissao,
   })
-  const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }))
 
   const [itens, setItens] = useState<LinhaItem[]>(
     row && row.itens.length
@@ -312,6 +338,8 @@ function PacoteForm(props: {
     if (!f.preco.trim() || !Number.isFinite(precoNum) || precoNum < 0) { setErr('Informe um preço válido (R$).'); return }
     const valNum = f.validade_dias.trim() === '' ? null : Number(f.validade_dias)
     if (valNum != null && (!Number.isInteger(valNum) || valNum < 0)) { setErr('Validade em dias inválida.'); return }
+    const descNum = f.desc_max.trim() === '' ? 0 : Number(f.desc_max.replace(',', '.'))
+    if (!Number.isFinite(descNum) || descNum < 0 || descNum > 100) { setErr('O desconto máximo deve estar entre 0% e 100%.'); return }
 
     const limpos = itens.filter((l) => l.servico_id)
     if (limpos.length === 0) { setErr('Adicione ao menos um serviço.'); return }
@@ -329,6 +357,9 @@ function PacoteForm(props: {
       descricao: f.descricao || null,
       preco: precoNum,
       validade_dias: valNum,
+      cobertura_creditos: f.cobertura_creditos,
+      desc_max: descNum,
+      pagar_comissao: f.pagar_comissao,
       itens: itensInput,
     }
     setSaving(true)
@@ -357,6 +388,25 @@ function PacoteForm(props: {
           <div className="mf">
             <label>Validade em dias</label>
             <input value={f.validade_dias} onChange={(e) => set('validade_dias', e.target.value)} inputMode="numeric" placeholder="365" />
+          </div>
+          <div className="mf">
+            <label>Cobertura de créditos</label>
+            <select value={f.cobertura_creditos} onChange={(e) => set('cobertura_creditos', e.target.value as CoberturaCreditos)}>
+              {COBERTURA_OPCOES.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div className="mf">
+            <label>Desconto máximo (%)</label>
+            <input value={f.desc_max} onChange={(e) => set('desc_max', e.target.value)} inputMode="decimal" placeholder="0,00" />
+          </div>
+          <div className="mf full" style={{ gridColumn: '1 / -1' }}>
+            <label>Pagar comissão</label>
+            <select value={f.pagar_comissao} onChange={(e) => set('pagar_comissao', e.target.value as PagarComissao)}>
+              {PAGAR_COMISSAO_OPCOES.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>
+              Quando a comissão deste pacote é paga: na <b>venda</b>, na <b>execução</b> das sessões, ou <b>não pagar</b>.
+            </div>
           </div>
           <div className="mf full" style={{ gridColumn: '1 / -1' }}>
             <label>Descrição</label>
@@ -404,7 +454,6 @@ function PacoteForm(props: {
           </div>
         </div>
         {err && <p style={{ color: 'var(--red)', fontSize: 12.5, padding: '0 22px' }}>{err}</p>}
-        {/* TODO(legado: buildPacotes): campos "Pagar comissão" e "Desconto máximo (%)" — sem coluna no schema lkii. */}
         <div className="modal-foot">
           <button type="button" className="btn" onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn btn-primary" disabled={saving || servicos.length === 0}>{saving ? 'Salvando…' : 'Salvar pacote'}</button>

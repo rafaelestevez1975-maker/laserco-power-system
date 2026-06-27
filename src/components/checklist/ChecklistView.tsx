@@ -1,22 +1,24 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { fmtValorInd, corNota, notaGeral, gargalos, type LinhaAvaliacao, type FunilSnapshot } from '@/lib/checklist'
+import { fmtValorInd, corNota, notaGeral, gargalos, type LinhaAvaliacao, type FunilSnapshot, type ChecklistMensal } from '@/lib/checklist'
 import { dataBR } from '@/lib/fmt'
 import { PlanosList, type PlanoRow } from './PlanosList'
 import { PlanoModal, type SugestaoTarefa } from './PlanoModal'
+import { ChecklistMensalView } from './ChecklistMensalView'
 
 type Unidade = { id: string; nome: string }
 type Kpis = { abertos: number; atrasados: number; concluidos: number; total: number }
-type Tab = 'avaliacao' | 'planos'
+type Tab = 'avaliacao' | 'mensal' | 'planos'
 
 export function ChecklistView({
-  linhas, snap, planos, kpis, podeEscrever, unidades, activeUnitId, activeUnitName,
+  linhas, snap, planos, kpis, mensal, podeEscrever, unidades, activeUnitId, activeUnitName,
 }: {
   linhas: LinhaAvaliacao[]
   snap: FunilSnapshot | null
   planos: PlanoRow[]
   kpis: Kpis
+  mensal: ChecklistMensal | null
   podeEscrever: boolean
   unidades: Unidade[]
   activeUnitId: string | null
@@ -80,12 +82,17 @@ export function ChecklistView({
         <div className={`rel-tab ${tab === 'avaliacao' ? 'active' : ''}`} onClick={() => setTab('avaliacao')}>
           <i className="ti ti-gauge" /> Avaliação do funil
         </div>
+        <div className={`rel-tab ${tab === 'mensal' ? 'active' : ''}`} onClick={() => setTab('mensal')}>
+          <i className="ti ti-clipboard-list" /> Mensal · PDCA
+        </div>
         <div className={`rel-tab ${tab === 'planos' ? 'active' : ''}`} onClick={() => setTab('planos')}>
           <i className="ti ti-target-arrow" /> Planos de ação {planos.length > 0 && <span className="wa-pill draft" style={{ marginLeft: 4 }}>{planos.length}</span>}
         </div>
       </div>
 
-      {tab === 'avaliacao' ? (
+      {tab === 'mensal' ? (
+        <ChecklistMensalView mensal={mensal} activeUnitName={activeUnitName} />
+      ) : tab === 'avaliacao' ? (
         <>
           <div className="rel-legend">
             <b>Checklist de Indicadores (funil)</b> · ciclo <b>PDCA</b>: <b>P</b>lanejar ações para subir os indicadores,

@@ -24,9 +24,11 @@ export type ProdutoInput = {
   grupo?: string | null
   descricao?: string | null
   preco_padrao?: number | null
+  desc_max?: number | null // legado PRODUTOS[2] — desconto máximo (%)
   custo?: number | null
   estoque_atual?: number | null
   estoque_minimo?: number | null
+  feedstock?: boolean // legado coluna "Insumo"
   ativo?: boolean
 }
 
@@ -49,6 +51,11 @@ function validar(input: ProdutoInput): string | null {
     return null
   }
 
+  const dm = input.desc_max
+  if (dm != null && (!Number.isFinite(dm) || dm < 0 || dm > 100)) {
+    return 'O desconto máximo deve estar entre 0% e 100%.'
+  }
+
   return (
     checarValor(input.preco_padrao, 'Preço') ||
     checarValor(input.custo, 'Custo') ||
@@ -63,9 +70,11 @@ function payload(input: ProdutoInput) {
     grupo: (input.grupo || '').trim() || null,
     descricao: (input.descricao || '').trim() || null,
     preco_padrao: input.preco_padrao != null ? input.preco_padrao : 0,
+    desc_max: input.desc_max != null ? input.desc_max : 0,
     custo: input.custo != null ? input.custo : null,
     estoque_atual: input.estoque_atual != null ? input.estoque_atual : 0,
     estoque_minimo: input.estoque_minimo != null ? input.estoque_minimo : 0,
+    feedstock: !!input.feedstock,
     ativo: input.ativo !== false,
   }
 }
@@ -127,6 +136,8 @@ export async function toggleProdutoAtivo(id: string, ativo: boolean): Promise<Ac
   return { ok: true }
 }
 
+// "Desc. Máx (%)" (PRODUTOS[2]) e "Insumo" (coluna feedstock) agora persistem (migration
+// catalogo.sql expõe desc_max e garante feedstock).
 // TODO(legado: buildProdutos): movimentação de estoque (entrada/saída com histórico) e
-// consumo automático por serviço (feedstock/default_product no schema). Precisa de tabela de
-// movimentos de estoque ainda inexistente no backend lkii.
+// consumo automático por serviço (default_product no schema). Precisa de tabela de movimentos
+// de estoque ainda inexistente no backend lkii.

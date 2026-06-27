@@ -128,6 +128,7 @@ function Card({ lead }: { lead: ExpLead }) {
           </a>
         )}
       </div>
+      {(lead.empresa || lead.uf) ? <div style={{ fontSize: 11.5, color: 'var(--text-3)', margin: '3px 0' }}>{[lead.empresa, lead.uf].filter(Boolean).join(' · ')}</div> : null}
       {lead.valor_estimado ? <div style={{ fontSize: 11.5, color: 'var(--text-2)', margin: '3px 0' }}>{money(lead.valor_estimado)}</div> : null}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 4 }}>
         {lead.tipo_lead && <span className="os-st" style={{ fontSize: 10.5, background: corTipo(lead.tipo_lead) + '22', color: corTipo(lead.tipo_lead) }}>{lead.tipo_lead}</span>}
@@ -149,7 +150,7 @@ function NovoLeadModal({
   etapas, unidades, activeUnitId, onClose, onSaved,
 }: { etapas: ExpEtapa[]; unidades: ExpUnidade[]; activeUnitId: string | null; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState({
-    nome: '', telefone: '', email: '', origem: 'site', tipo_lead: 'Franquia', temperatura: 'morno',
+    nome: '', telefone: '', email: '', empresa: '', uf: '', origem: 'site', tipo_lead: 'Franquia', temperatura: 'morno',
     valor_estimado: '', unidade_id: activeUnitId || unidades[0]?.id || '', etapa_id: etapas[0]?.id || '',
   })
   const [saving, setSaving] = useState(false)
@@ -159,7 +160,7 @@ function NovoLeadModal({
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr(''); setSaving(true)
     const res = await criarLeadFranquia({
-      nome: f.nome, telefone: f.telefone, email: f.email, origem: f.origem,
+      nome: f.nome, telefone: f.telefone, email: f.email, empresa: f.empresa, uf: f.uf, origem: f.origem,
       tipo_lead: f.tipo_lead, temperatura: f.temperatura,
       valor_estimado: f.valor_estimado ? Number(String(f.valor_estimado).replace(/\./g, '').replace(',', '.')) : null,
       unidade_id: f.unidade_id, etapa_id: f.etapa_id,
@@ -180,6 +181,10 @@ function NovoLeadModal({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={lbl}>Telefone</label><input style={inp} value={f.telefone} onChange={(e) => set('telefone', e.target.value)} placeholder="(11) 99999-9999" /></div>
             <div><label style={lbl}>E-mail</label><input style={inp} value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="email@exemplo.com" /></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+            <div><label style={lbl}>Empresa</label><input style={inp} value={f.empresa} onChange={(e) => set('empresa', e.target.value)} placeholder="Clínica X" /></div>
+            <div><label style={lbl}>UF</label><input style={inp} value={f.uf} maxLength={2} onChange={(e) => set('uf', e.target.value.toUpperCase())} placeholder="SP" /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={lbl}>Tipo de lead</label>

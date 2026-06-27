@@ -9,6 +9,7 @@ export type ClienteRow = {
   telefone: string | null
   cpf: string | null
   email: string | null
+  genero: string | null
   cidade: string | null
   estado: string | null
   saldo_pontos: number | null
@@ -16,6 +17,9 @@ export type ClienteRow = {
   ativo: boolean | null
   verificado: boolean | null
 }
+
+const GENERO_LABEL: Record<string, string> = { female: 'Feminino', male: 'Masculino', other: 'Outro' }
+const generoLabel = (g: string | null) => (g ? (GENERO_LABEL[g] || g) : '')
 
 /** "555199..." → "(51) 99999-9999" (best-effort; mantém o que não bate o padrão). */
 function fmtTel(raw: string | null): string {
@@ -60,16 +64,19 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
               <tr>
                 <th>Nome</th>
                 <th>Telefone</th>
-                <th>CPF</th>
+                <th>E-mail</th>
+                <th>Documento</th>
+                <th>Gênero</th>
                 <th>Cidade / UF</th>
                 <th className="num-r">Pontos / Créditos</th>
-                <th>Status</th>
+                <th>Ativo</th>
+                <th>Verif.</th>
               </tr>
             </thead>
             <tbody>
               {clientes.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum cliente encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -83,7 +90,6 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       <Link href={`/clientes/${c.id}`} className="cli-name" style={{ textDecoration: 'none', color: 'var(--text)' }}>
                         {c.nome || '(sem nome)'}
                       </Link>
-                      {c.verificado && <i className="ti ti-rosette-discount-check" style={{ color: 'var(--green)', marginLeft: 6, verticalAlign: '-2px' }} title="Verificado" />}
                     </td>
                     <td>
                       {fmtTel(c.telefone) || <span className="muted">—</span>}
@@ -93,7 +99,9 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                         </a>
                       )}
                     </td>
+                    <td>{c.email || <span className="muted">—</span>}</td>
                     <td>{fmtCpf(c.cpf) || <span className="muted">—</span>}</td>
+                    <td>{generoLabel(c.genero) || <span className="muted">—</span>}</td>
                     <td>{local || <span className="muted">—</span>}</td>
                     <td className="num-r">
                       <span style={{ fontWeight: 600 }}>{(c.saldo_pontos ?? 0).toLocaleString('pt-BR')} pts</span>
@@ -102,8 +110,13 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                     </td>
                     <td>
                       {c.ativo === false
-                        ? <span className="os-st os-cancelada">Inativo</span>
-                        : <span className="os-st os-fechada">Ativo</span>}
+                        ? <span className="os-st os-cancelada">Não</span>
+                        : <span className="os-st os-fechada">Sim</span>}
+                    </td>
+                    <td>
+                      {c.verificado
+                        ? <span className="os-st os-fechada">Sim</span>
+                        : <span className="os-st os-cancelada">Não</span>}
                     </td>
                   </tr>
                 )

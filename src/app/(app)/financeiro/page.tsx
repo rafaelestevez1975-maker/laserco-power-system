@@ -1,146 +1,106 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
-import { ehAdmin } from '@/lib/rbac'
-import { moedaBR, dataBR } from '@/lib/fmt'
+import { temPapel } from '@/lib/rbac'
+import { FinanceiroTabs } from '@/components/financeiro/FinanceiroTabs'
+import {
+  FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES, FIN_BANCO_DEFAULT,
+  ROYALTY_PCT_DEFAULT, FUNDO_PCT_DEFAULT, VENC_DIA_DEFAULT,
+  calcDiasAtraso,
+} from '@/lib/financeiro'
 
 export const dynamic = 'force-dynamic'
 
-const CAP = 20000 // teto de segurança p/ somatórios
+export type Recebivel = {
+  id: string; unidade_nome: string | null; categoria: string; competencia: string | null
+  bruto: number | null; valor: number | null; vencimento: string | null; status: string
+  dias_atraso: number; boleto: string | null; enviado: boolean; data_pagamento: string | null; jur_id: string | null
+}
+export type ContaPagar = {
+  id: string; categoria: string; descricao: string | null; escopo: string
+  valor: number | null; vencimento: string | null; status: string; prioridade: string
+}
+export type Conciliacao = {
+  id: string; data: string | null; unidade_nome: string | null; adquirente: string | null
+  venda: number | null; taxa_pct: number | null; taxa: number | null; esperado: number | null
+  recebido: number | null; status: string; observacao: string | null
+}
+export type FinConfig = {
+  royalty_pct: number; fundo_pct: number; venc_dia: number
+  banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: { dias: number; acao: string; canal: string }[]
+}
 
-type Lite = { valor: number | null; status: string | null; data_vencimento: string | null }
-type Recent = Lite & { id: string; descricao: string | null; tipo: string | null }
+const ABAS_VALIDAS = ['fluxo', 'dre', 'calc', 'receber', 'pagar', 'conciliacao', 'royalties', 'cobranca', 'config'] as const
 
-/** Fluxo de Caixa da franqueadora — KPIs reais sobre `lancamentos_financeiros`.
- *  Esta página real substitui o clone estático do protótipo (catch-all). */
-export default async function FinanceiroPage() {
+export default async function FinanceiroPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const sp = await searchParams
+  const tabInicial = (ABAS_VALIDAS as readonly string[]).includes(sp.tab || '') ? (sp.tab as string) : 'fluxo'
   const ctx = await getSessionContext()
-  const podeVer = ehAdmin(ctx?.papel) || ['financeiro', 'gestor'].includes(ctx?.papel || '')
+  const sb = await createClient()
+  // Gate de acesso: admin OU perfil financeiro (legado: isAdmin() || USER_ROLE==='Financeiro').
+  const permitido = temPapel(ctx?.papel, 'financeiro', 'gestor')
 
-  if (!podeVer) {
+  if (!permitido) {
     return (
       <div className="view active">
-        <div className="crm-note"><i className="ti ti-lock" /> Acesso restrito. O Financeiro da franqueadora é visível apenas para administradores.</div>
+        <div className="rel-legend" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="ti ti-shield-lock" style={{ fontSize: 18, color: 'var(--brand-600)' }} />
+          <span>Módulo restrito a <b>administradores</b> e ao perfil <b>Financeiro</b>.</span>
+        </div>
       </div>
     )
   }
 
-  const sb = await createClient()
-  const unidadeId = ctx?.activeUnitId ?? null
-  const escopo = ctx?.activeUnitName ?? 'Toda a rede'
   const hojeISO = new Date().toISOString().slice(0, 10)
 
-  const sel = (tipo: 'receita' | 'despesa') => {
-    let q = sb.from('lancamentos_financeiros').select('valor, status, data_vencimento').eq('tipo', tipo).range(0, CAP - 1)
-    if (unidadeId) q = q.eq('unidade_id', unidadeId)
-    return q
+  // ── Feature-detect: a migration cria fin_recebiveis. Se a tabela não existe,
+  //    a query falha → banner de migration + tela em modo vazio. ──
+  let migracaoOk = true
+  let recebiveis: Recebivel[] = []
+  {
+    const { data, error } = await sb
+      .from('fin_recebiveis')
+      .select('id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, dias_atraso, boleto, enviado, data_pagamento, jur_id')
+      .order('vencimento', { ascending: true, nullsFirst: false })
+      .limit(2000)
+    if (error) migracaoOk = false
+    else recebiveis = ((data ?? []) as Recebivel[]).map((r) => ({
+      ...r,
+      // Recalcula dias de atraso em runtime (calcDias) p/ status 'atrasado'.
+      dias_atraso: r.status === 'atrasado' ? (r.dias_atraso || calcDiasAtraso(r.vencimento, hojeISO)) : r.dias_atraso,
+    }))
   }
-  let recentQ = sb
-    .from('lancamentos_financeiros')
-    .select('id, descricao, valor, status, data_vencimento, tipo')
-    .order('data_vencimento', { ascending: false, nullsFirst: false })
-    .range(0, 9)
-  if (unidadeId) recentQ = recentQ.eq('unidade_id', unidadeId)
 
-  const [{ data: recRaw }, { data: despRaw }, { data: recentRaw }] = await Promise.all([sel('receita'), sel('despesa'), recentQ])
-  const receitas = (recRaw ?? []) as Lite[]
-  const despesas = (despRaw ?? []) as Lite[]
-  const recentes = (recentRaw ?? []) as Recent[]
-
-  const somar = (arr: Lite[]) => {
-    let total = 0, pago = 0, emAberto = 0, atrasado = 0
-    for (const r of arr) {
-      const v = r.valor || 0
-      total += v
-      if (r.status === 'pago') pago += v
-      else {
-        emAberto += v
-        if (r.data_vencimento && r.data_vencimento < hojeISO) atrasado += v
-      }
-    }
-    return { total, pago, emAberto, atrasado }
+  let contasPagar: ContaPagar[] = []
+  let conciliacao: Conciliacao[] = []
+  let config: FinConfig | null = null
+  if (migracaoOk) {
+    const [{ data: pagRaw }, { data: concRaw }, { data: cfgRaw }] = await Promise.all([
+      sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade').order('vencimento', { ascending: true, nullsFirst: false }).limit(2000),
+      sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao').order('data', { ascending: true, nullsFirst: false }).limit(1000),
+      sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+    ])
+    contasPagar = (pagRaw ?? []) as ContaPagar[]
+    conciliacao = (concRaw ?? []) as Conciliacao[]
+    config = cfgRaw as FinConfig | null
   }
-  const R = somar(receitas)
-  const D = somar(despesas)
-  const resultadoProjetado = R.total - D.total
-  const semDados = receitas.length === 0 && despesas.length === 0
 
-  const cards: { label: string; valor: number; cor?: string; sub?: string }[] = [
-    { label: 'A receber (em aberto)', valor: R.emAberto, sub: 'Royalties, taxas e aluguéis pendentes' },
-    { label: 'Já recebido', valor: R.pago, cor: '#15803D', sub: 'Lançamentos baixados' },
-    { label: 'Inadimplência', valor: R.atrasado, cor: '#D85563', sub: 'A receber já vencido' },
-    { label: 'A pagar', valor: D.emAberto, cor: '#9A6700', sub: 'Despesas pendentes da rede' },
-    { label: 'Resultado projetado', valor: resultadoProjetado, cor: resultadoProjetado >= 0 ? '#15803D' : '#D85563', sub: 'Entradas − saídas (previsto)' },
-  ]
+  // Config com defaults do legado quando não houver linha salva.
+  const cfg: FinConfig = config ?? {
+    royalty_pct: ROYALTY_PCT_DEFAULT, fundo_pct: FUNDO_PCT_DEFAULT, venc_dia: VENC_DIA_DEFAULT,
+    banco: { ...FIN_BANCO_DEFAULT }, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
+  }
 
   return (
     <div className="view active">
-      <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-businessplan" /> Fluxo de caixa da franqueadora — escopo: <b>{escopo}</b>
-        {!unidadeId && ' (consolidado da rede; selecione uma unidade no topo para filtrar)'}.
-      </div>
-
-      {/* KPIs reais */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14, margin: '0 0 18px' }}>
-        {cards.map((c) => (
-          <div key={c.label} className="metric-box">
-            <span>{c.label}</span>
-            <b style={c.cor ? { color: c.cor } : undefined}>{moedaBR(c.valor)}</b>
-            {c.sub && <small style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.sub}</small>}
-          </div>
-        ))}
-      </div>
-
-      {/* Ações reais (telas funcionais de contas) */}
-      <div className="seg" style={{ marginBottom: 18 }}>
-        <Link href="/contas?aba=receber" className="seg-btn"><i className="ti ti-arrow-down-left" /> Contas a Receber</Link>
-        <Link href="/contas?aba=pagar" className="seg-btn"><i className="ti ti-arrow-up-right" /> Contas a Pagar</Link>
-      </div>
-
-      {/* Últimos lançamentos reais */}
-      <div className="cli-card">
-        <div className="rel-card-h" style={{ cursor: 'default', padding: '12px 16px' }}>
-          <span><i className="ti ti-list" /> Últimos lançamentos</span>
-        </div>
-        <div className="cli-scroll">
-          <table className="cli-table">
-            <thead>
-              <tr><th>Descrição</th><th>Tipo</th><th>Vencimento</th><th className="num-r">Valor</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {recentes.length === 0 && (
-                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
-                  <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
-                  Nenhum lançamento ainda. Use <b>Contas a Receber / Contas a Pagar</b> para lançar (ou importe sua base).
-                </td></tr>
-              )}
-              {recentes.map((r) => {
-                const eff = r.status === 'pago' ? 'pago' : (r.data_vencimento && r.data_vencimento < hojeISO ? 'atrasado' : 'pendente')
-                const pill = eff === 'pago' ? { bg: '#E7F0EC', c: '#15803D', t: 'Pago/Recebido' } : eff === 'atrasado' ? { bg: '#FBE9EB', c: '#D85563', t: 'Atrasado' } : { bg: '#FBEFD9', c: '#9A6700', t: 'Em aberto' }
-                return (
-                  <tr key={r.id}>
-                    <td>{r.descricao || '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
-                    <td>{dataBR(r.data_vencimento)}</td>
-                    <td className="num-r"><b>{moedaBR(r.valor)}</b></td>
-                    <td><span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: pill.bg, color: pill.c }}>{pill.t}</span></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {semDados && (
-        <div className="crm-note" style={{ marginTop: 14 }}>
-          <i className="ti ti-info-circle" /> Os valores estão zerados porque ainda <b>não há lançamentos reais</b> no banco — a base do fluxo de caixa ainda não foi importada. (Os "R$ 24 milhões / Cobrança BEMP" que apareciam antes eram dados <b>fictícios</b> do protótipo, já removidos desta tela.)
-        </div>
-      )}
-
-      <div className="crm-note" style={{ marginTop: 14 }}>
-        <i className="ti ti-tools" /> <b>Em construção</b> (próximas entregas): DRE (loja / franqueadora / consolidado), Conciliação Bancária, Automação de Royalties e Régua de Cobrança automática. Disponíveis no submenu como "em construção".
-      </div>
+      <FinanceiroTabs
+        migracaoOk={migracaoOk}
+        recebiveis={recebiveis}
+        contasPagar={contasPagar}
+        conciliacao={conciliacao}
+        config={cfg}
+        hojeISO={hojeISO}
+        tabInicial={tabInicial as 'fluxo'}
+      />
     </div>
   )
 }

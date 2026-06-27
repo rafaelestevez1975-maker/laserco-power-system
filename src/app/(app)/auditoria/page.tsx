@@ -103,6 +103,22 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   const usuarios = ((usuariosOpcRaw ?? []) as { id: string; nome_completo: string | null }[])
     .map((u) => ({ id: u.id, nome: u.nome_completo || '—' }))
 
+  // ── KPIs (paridade legado buildAuditoria 5788): Eventos / Hoje / Usuários / Política ──
+  const { count: eventosTotal } = await admin.from('audit_log').select('id', { count: 'exact', head: true })
+  const hojeIni = new Date()
+  hojeIni.setHours(0, 0, 0, 0)
+  const { count: eventosHoje } = await admin
+    .from('audit_log')
+    .select('id', { count: 'exact', head: true })
+    .gte('criado_em', hojeIni.toISOString())
+  const totalUsuarios = usuarios.length
+  const kpiCards: [string, string, string][] = [
+    ['Eventos registrados', String(eventosTotal ?? 0), 'ti-history'],
+    ['Hoje', String(eventosHoje ?? 0), 'ti-calendar'],
+    ['Usuários', String(totalUsuarios), 'ti-users'],
+    ['Política', 'Soft-delete', 'ti-shield-check'],
+  ]
+
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const temFiltro = !!(sp.q || sp.acao || sp.usuario || sp.resultado || sp.di || sp.df)
@@ -110,8 +126,24 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-history" /> Trilha de auditoria — registro imutável de ações do sistema
-        (somente leitura).
+        <i className="ti ti-history" /> <b>Tudo é rastreável e nada é apagado.</b> Exclusões não existem no sistema —
+        registros só mudam para <b>Ativo</b> ou <b>Inativo</b>, preservando o histórico. Abaixo, o log imutável de
+        movimentações (somente leitura).
+      </div>
+
+      {/* KPIs de auditoria */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 16 }}>
+        {kpiCards.map(([label, val, icon]) => (
+          <div key={label} className="metric-box" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', color: 'var(--brand-500)', flexShrink: 0 }}>
+              <i className={`ti ${icon}`} style={{ fontSize: 19 }} />
+            </span>
+            <span>
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--text-2)' }}>{label}</span>
+              <b style={{ fontSize: 18 }}>{val}</b>
+            </span>
+          </div>
+        ))}
       </div>
 
       <AuditoriaFiltros

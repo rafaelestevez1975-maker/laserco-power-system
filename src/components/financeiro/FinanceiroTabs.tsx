@@ -1,0 +1,939 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { moedaBR, dataBR } from '@/lib/fmt'
+import {
+  STATUS_PILL, PRIO_PILL, FIN_CATS_REC, finPct, finFranqEmail, proximoPassoRegua,
+  SALDO_INICIAL_FLUXO, SALDO_INICIAL_PROJ, type ReguaPasso,
+} from '@/lib/financeiro'
+import {
+  gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
+  pagarDespesa, definirPrioridade, novaDespesa,
+  gerarCobrancaRoyalties, processarRetornoBancario, rodarReguaAtraso,
+  rodarConciliacao, salvarConfig,
+} from '@/app/(app)/financeiro/actions'
+import type { Recebivel, ContaPagar, Conciliacao, FinConfig } from '@/app/(app)/financeiro/page'
+
+type TabKey = 'fluxo' | 'dre' | 'calc' | 'receber' | 'pagar' | 'conciliacao' | 'royalties' | 'cobranca' | 'config'
+const TABS: { k: TabKey; label: string; icon: string }[] = [
+  { k: 'fluxo', label: 'Fluxo de Caixa', icon: 'ti-cash' },
+  { k: 'dre', label: 'DRE', icon: 'ti-report-money' },
+  { k: 'calc', label: 'Cálculos', icon: 'ti-calculator' },
+  { k: 'receber', label: 'Contas a Receber', icon: 'ti-arrow-down-left' },
+  { k: 'pagar', label: 'Contas a Pagar', icon: 'ti-arrow-up-right' },
+  { k: 'conciliacao', label: 'Conciliação', icon: 'ti-building-bank' },
+  { k: 'royalties', label: 'Royalties', icon: 'ti-robot' },
+  { k: 'cobranca', label: 'Cobrança & Jurídico', icon: 'ti-gavel' },
+  { k: 'config', label: 'Configurações', icon: 'ti-settings' },
+]
+
+const FIN_MESREF = 'Maio/2026'
+
+// helpers de soma
+const sum = <T,>(arr: T[], f: (x: T) => number | null | undefined) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0)
+
+function Pill({ s }: { s: string }) {
+  const p = STATUS_PILL[s] || STATUS_PILL.aberto
+  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
+}
+function PrioPill({ pr }: { pr: string }) {
+  const p = PRIO_PILL[pr] || PRIO_PILL.media
+  return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
+}
+
+export function FinanceiroTabs({ migracaoOk, recebiveis, contasPagar, conciliacao, config, hojeISO, tabInicial = 'fluxo' }: {
+  migracaoOk: boolean
+  recebiveis: Recebivel[]
+  contasPagar: ContaPagar[]
+  conciliacao: Conciliacao[]
+  config: FinConfig
+  hojeISO: string
+  tabInicial?: TabKey
+}) {
+  const [tab, setTab] = useState<TabKey>(tabInicial)
+
+  return (
+    <div>
+      <div className="rel-tabs" style={{ flexWrap: 'wrap' }} id="finTabs">
+        {TABS.map((t) => (
+          <div key={t.k} className={`rel-tab ${t.k === tab ? 'active' : ''}`} onClick={() => setTab(t.k)} style={{ cursor: 'pointer' }}>
+            <i className={`ti ${t.icon}`} /> {t.label}
+          </div>
+        ))}
+      </div>
+
+      {!migracaoOk && (
+        <div className="rel-legend" style={{ background: '#FFF8E1', color: 'var(--text)', border: '1px solid var(--amber)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="ti ti-alert-triangle" style={{ color: 'var(--amber)', fontSize: 18 }} />
+          <span><b>Aplique a migration scripts/migrations/financeiro.sql no lkii</b> para ativar o Financeiro da franqueadora (tabelas <code>fin_recebiveis</code>, <code>fin_contas_pagar</code>, <code>fin_conciliacao</code>, <code>fin_config</code> + seed). Enquanto isso, a tela funciona em modo vazio.</span>
+        </div>
+      )}
+
+      {tab === 'fluxo' && <FluxoTab recebiveis={recebiveis} contasPagar={contasPagar} config={config} />}
+      {tab === 'dre' && <DreTab recebiveis={recebiveis} contasPagar={contasPagar} />}
+      {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
+      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
+      {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
+      {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
+      {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} />}
+      {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
+      {tab === 'config' && <ConfigTab config={config} />}
+    </div>
+  )
+}
+
+// =============================================================================
+// FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
+// =============================================================================
+function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; config: FinConfig }) {
+  const aReceber = sum(recebiveis.filter((r) => r.status === 'aberto'), (r) => r.valor)
+  const recebido = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
+  const atrasado = sum(recebiveis.filter((r) => r.status === 'atrasado'), (r) => r.valor)
+  const aPagar = sum(contasPagar.filter((p) => p.status === 'aberto'), (p) => p.valor)
+  const pago = sum(contasPagar.filter((p) => p.status === 'pago'), (p) => p.valor)
+  const resultado = (aReceber + recebido) - (aPagar + pago)
+  const inadDen = aReceber + recebido + atrasado
+  const inadPct = inadDen > 0 ? (atrasado / inadDen) * 100 : 0
+
+  const kpis = [
+    { ic: 'ti-arrow-down-circle', cor: '#0f6b3a', bg: 'var(--green-bg)', lbl: 'A receber (em aberto)', val: aReceber, sub: 'Royalties, taxas e aluguéis do mês' },
+    { ic: 'ti-circle-check', cor: '#1565C0', bg: '#E3F2FD', lbl: 'Já recebido', val: recebido, sub: 'Boletos baixados no banco' },
+    { ic: 'ti-alert-triangle', cor: 'var(--red)', bg: '#FDECEC', lbl: 'Inadimplência', val: atrasado, sub: finPct(inadPct) + ' do total · régua ativa' },
+    { ic: 'ti-arrow-up-circle', cor: '#B26A00', bg: '#FFF3E0', lbl: 'A pagar', val: aPagar, sub: 'Folha, impostos, fornecedores' },
+    { ic: 'ti-wallet', cor: '#6A1B9A', bg: '#F3E5F5', lbl: 'Resultado projetado', val: resultado, sub: 'Entradas − saídas do mês' },
+  ]
+
+  // série 6 meses (legado: valores mock; mês atual usa os reais)
+  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
+  const ent = [642, 705, 688, 734, (aReceber + recebido + atrasado) / 1000, 812]
+  const sai = [598, 640, 612, 665, (aPagar + pago) / 1000, 690]
+  const max = Math.max(...ent, ...sai) * 1.1 || 1
+  let acc = SALDO_INICIAL_FLUXO / 1000
+  const saldoSerie = meses.map((_m, i) => { acc += ent[i] - sai[i]; return acc })
+
+  // composição dos recebíveis (não pagos, não suspensos) por categoria
+  const naoFechados = recebiveis.filter((r) => r.status !== 'pago' && r.status !== 'suspenso')
+  const totComp = sum(naoFechados, (r) => r.valor) || 1
+  const composicao = FIN_CATS_REC.map((c) => ({ cat: c, v: sum(naoFechados.filter((r) => r.categoria === c), (r) => r.valor) })).filter((x) => x.v > 0)
+
+  return (
+    <div>
+      <div className="rel-legend">Visão consolidada da <b>franqueadora</b> — separada do contas a pagar/receber das unidades. Reúne os recebíveis da rede (royalties, taxas, aluguéis) e as despesas da matriz e das lojas. Competência <b>{FIN_MESREF}</b>.</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
+        {kpis.map((k) => (
+          <div key={k.lbl} className="rel-card" style={{ padding: '15px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, display: 'grid', placeItems: 'center', background: k.bg, color: k.cor }}><i className={`ti ${k.ic}`} /></div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 600 }}>{k.lbl}</div>
+            </div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: k.cor }}>{moedaBR(k.val)}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 14, marginBottom: 6 }}>
+        <div className="rel-card">
+          <div className="set-sec" style={{ marginTop: 0 }}>Fluxo de caixa · 6 meses</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 4px 0' }}>
+            {meses.map((m, i) => (
+              <div key={m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120 }}>
+                  <div title={`Entradas ${moedaBR(ent[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#27AE60', height: Math.max(3, (ent[i] / max) * 120) }} />
+                  <div title={`Saídas ${moedaBR(sai[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#E74C3C', height: Math.max(3, (sai[i] / max) * 120) }} />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{m}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontSize: 11.5, color: 'var(--text-2)' }}>
+            <span><i className="ti ti-square-rounded-filled" style={{ color: '#27AE60' }} /> Entradas</span>
+            <span><i className="ti ti-square-rounded-filled" style={{ color: '#E74C3C' }} /> Saídas</span>
+          </div>
+        </div>
+        <div className="rel-card">
+          <div className="set-sec" style={{ marginTop: 0 }}>Composição dos recebíveis</div>
+          {composicao.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Nenhum recebível em aberto.</div>}
+          {composicao.map((x) => (
+            <div key={x.cat} style={{ marginBottom: 9 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 3 }}><span>{x.cat}</span><b>{moedaBR(x.v)}</b></div>
+              <div style={{ height: 7, background: 'var(--surface-2)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(x.v / totComp) * 100}%`, background: 'linear-gradient(90deg,#27AE60,#2ecc71)' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rel-card">
+        <div className="set-sec" style={{ marginTop: 0 }}>Projeção de caixa (mensal)</div>
+        <div className="cli-scroll">
+          <table className="cli-table">
+            <thead><tr><th>Mês</th><th className="num-r">Entradas</th><th className="num-r">Saídas</th><th className="num-r">Resultado</th><th className="num-r">Saldo acumulado</th></tr></thead>
+            <tbody>
+              {meses.map((m, i) => (
+                <tr key={m}>
+                  <td>{m}/2026</td>
+                  <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(ent[i] * 1000)}</td>
+                  <td className="num-r" style={{ color: 'var(--red)' }}>{moedaBR(sai[i] * 1000)}</td>
+                  <td className="num-r" style={{ fontWeight: 700, color: (ent[i] - sai[i]) >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR((ent[i] - sai[i]) * 1000)}</td>
+                  <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(saldoSerie[i] * 1000)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} />
+    </div>
+  )
+}
+
+// Projeção de caixa próximos N dias (finProxSemanaHTML L5124)
+function ProjecaoCaixa({ recebiveis, contasPagar }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
+  const [dias, setDias] = useState(7)
+  const base = new Date(2026, 5, 13) // data-base 13/06/2026 (legado)
+  const N = dias
+  const lista: Date[] = []
+  for (let k = 1; k <= N; k++) { const d = new Date(base); d.setDate(base.getDate() + k); lista.push(d) }
+  const wd = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const fmt = (d: Date) => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')
+  const isBiz = (d: Date) => d.getDay() >= 1 && d.getDay() <= 5
+  const nBiz = lista.filter(isBiz).length || 1
+  const aReceberOpen = sum(recebiveis.filter((r) => r.status === 'aberto' || r.status === 'atrasado'), (r) => r.valor)
+  const recDiaUtil = aReceberOpen / nBiz
+  const parseV = (iso: string | null) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d.getTime()) ? '' : fmt(d) }
+
+  let saldo = SALDO_INICIAL_PROJ
+  const rows = lista.map((d) => {
+    const tag = fmt(d)
+    const entrada = isBiz(d) ? recDiaUtil : recDiaUtil * 0.15
+    const pagDia = contasPagar.filter((p) => p.status === 'aberto' && parseV(p.vencimento) === tag)
+    const saida = sum(pagDia, (p) => p.valor)
+    const saiAlta = sum(pagDia.filter((p) => p.prioridade === 'alta'), (p) => p.valor)
+    saldo += entrada - saida
+    return { tag, wd: wd[d.getDay()], entrada, saida, saiAlta, saldo, neg: saldo < 0 }
+  })
+  const totEnt = lista.reduce((s, d) => s + (isBiz(d) ? recDiaUtil : recDiaUtil * 0.15), 0)
+  const totSai = sum(contasPagar.filter((p) => p.status === 'aberto' && lista.some((d) => parseV(p.vencimento) === fmt(d))), (p) => p.valor)
+  const presets = [7, 10, 15, 30]
+
+  return (
+    <div className="rel-card" style={{ marginTop: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div className="set-sec" style={{ marginTop: 0, flex: 1 }}><i className="ti ti-calendar-due" /> Projeção de caixa — próximos {N} dias ({fmt(lista[0])} a {fmt(lista[lista.length - 1])})</div>
+        <div style={{ minWidth: 200 }}>
+          <label style={{ fontSize: 11, display: 'block' }}>Período da projeção</label>
+          <select value={presets.includes(N) ? N : 'custom'} onChange={(e) => {
+            if (e.target.value === 'custom') { const n = parseInt(prompt('Projetar o caixa para quantos dias à frente?', '20') || ''); if (n && n >= 1) setDias(Math.min(180, n)) }
+            else setDias(+e.target.value)
+          }} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit' }}>
+            <option value={7}>1 semana (7 dias) — padrão</option>
+            <option value={10}>10 dias</option>
+            <option value={15}>15 dias</option>
+            <option value={30}>30 dias</option>
+            <option value="custom">Personalizar…{!presets.includes(N) ? ` (${N} dias)` : ''}</option>
+          </select>
+        </div>
+      </div>
+      <div className="rel-legend" style={{ marginBottom: 10 }}>Projeção conforme <b>o que temos a receber</b> e a <b>expectativa de recebimento das lojas</b> (recebíveis em aberto diluídos nos dias úteis) versus os <b>pagamentos previstos</b>. A coluna <b>(prio. alta)</b> mostra o mínimo a honrar caso o caixa aperte.</div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+        {[['Entradas previstas', totEnt, '#0f6b3a'], ['Saídas previstas', totSai, 'var(--red)'], ['Resultado da semana', totEnt - totSai, (totEnt - totSai) >= 0 ? '#0f6b3a' : 'var(--red)']].map(([lbl, v, cor]) => (
+          <div key={lbl as string} className="rel-card" style={{ padding: '10px 14px', flex: 1, minWidth: 150 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{lbl as string}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: cor as string }}>{moedaBR(v as number)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Dia</th><th className="num-r">Entradas (a receber + lojas)</th><th className="num-r">Saídas</th><th className="num-r">(prio. alta)</th><th className="num-r">Saldo projetado</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.tag} style={r.neg ? { background: '#FFF7F7' } : undefined}>
+                <td>{r.wd} {r.tag}</td>
+                <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(r.entrada)}</td>
+                <td className="num-r" style={{ color: 'var(--red)' }}>{r.saida ? moedaBR(r.saida) : ''}</td>
+                <td className="num-r" style={{ fontSize: 11, color: 'var(--red)' }}>{r.saiAlta ? moedaBR(r.saiAlta) : ''}</td>
+                <td className="num-r" style={{ fontWeight: 700, color: r.saldo >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR(r.saldo)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// CONTAS A RECEBER (finReceberHTML L5202 + finRecAcoes L5222)
+// =============================================================================
+function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRoyalties: () => void }) {
+  const router = useRouter()
+  const [cat, setCat] = useState('Todas')
+  const [status, setStatus] = useState('Todos')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+
+  const run = async (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
+    setBusy(id); setMsg('')
+    const r = await fn()
+    setBusy(null)
+    if (!r.ok) { setMsg(r.error || 'Erro.'); return }
+    setMsg(okMsg); router.refresh()
+  }
+
+  const cats = ['Todas', ...FIN_CATS_REC]
+  const sts: [string, string][] = [['Todos', 'Todos'], ['aberto', 'Em aberto'], ['atrasado', 'Atrasado'], ['pago', 'Pago'], ['suspenso', 'Suspenso']]
+  const list = recebiveis.filter((r) => (cat === 'Todas' || r.categoria === cat) && (status === 'Todos' || r.status === status))
+  const tot = sum(list, (r) => r.valor)
+  const susp = sum(list.filter((r) => r.status === 'suspenso'), (r) => r.valor)
+
+  return (
+    <div>
+      <div className="rel-legend">Todo recebível das unidades entra aqui, com <b>categorias separadas</b>: Royalties (10% do bruto), Taxa de franquia, Fundo de marketing, Aluguel de máquinas e outros — cadastráveis em Configurações.</div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
+      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span className="flabel">Categoria</span>
+        {cats.map((c) => <div key={c} className={`chip ${c === cat ? 'active' : ''}`} onClick={() => setCat(c)} style={{ cursor: 'pointer' }}>{c}</div>)}
+      </div>
+      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span className="flabel">Status</span>
+        {sts.map((s) => <div key={s[0]} className={`chip ${s[0] === status ? 'active' : ''}`} onClick={() => setStatus(s[0])} style={{ cursor: 'pointer' }}>{s[1]}</div>)}
+      </div>
+      <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total filtrado: <b style={{ color: '#0f6b3a' }}>{moedaBR(tot)}</b> · {list.length} lançamento(s){susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
+        <button className="btn btn-primary" onClick={goRoyalties}><i className="ti ti-robot" /> Gerar cobrança automática</button>
+      </div>
+      <div className="cli-card"><div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Unidade</th><th>Categoria</th><th>Competência</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            {list.length === 0 && <tr><td colSpan={7} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum recebível com esse filtro.</td></tr>}
+            {list.slice(0, 400).map((r) => (
+              <tr key={r.id}>
+                <td><span className="cli-name"><i className="ti ti-building-store" style={{ color: 'var(--brand-500)', marginRight: 6, verticalAlign: -2 }} />{r.unidade_nome || '—'}</span></td>
+                <td>{r.categoria}</td>
+                <td style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{r.competencia}{r.bruto ? <><br />bruto {moedaBR(r.bruto)}</> : null}</td>
+                <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(r.valor)}</td>
+                <td>{dataBR(r.vencimento)}{r.status === 'atrasado' && <span style={{ color: 'var(--red)', fontSize: 11 }}> ({r.dias_atraso}d)</span>}</td>
+                <td><Pill s={r.jur_id ? 'jur' : r.status} /></td>
+                <td style={{ whiteSpace: 'nowrap' }}><RecAcoes r={r} busy={busy} run={run} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  )
+}
+
+function RecAcoes({ r, busy, run }: { r: Recebivel; busy: string | null; run: (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => void }) {
+  const b = busy === r.id
+  if (r.status === 'pago') return <span className="os-link" title={r.boleto ? 'boleto ' + r.boleto.slice(0, 9) : ''}><i className="ti ti-receipt" /> Comprovante</span>
+  if (r.status === 'suspenso') return <span className="os-link" onClick={() => !b && run(r.id, () => suspenderLancamento('receber', r.id), 'Lançamento reativado.')}><i className="ti ti-player-play" /> Reativar</span>
+  const acts: React.ReactNode[] = []
+  if (!r.boleto) acts.push(<span key="ger" className="os-link" onClick={() => !b && run(r.id, () => gerarBoleto(r.id), 'Boleto gerado e enviado por e-mail/WhatsApp ao franqueado.')}><i className="ti ti-file-invoice" /> Gerar boleto</span>)
+  else {
+    acts.push(<VerBoletoLink key="ver" r={r} />)
+    acts.push(<span key="baixa" className="os-link" onClick={() => !b && run(r.id, () => darBaixaRecebivel(r.id), 'Baixa registrada (retorno bancário).')}><i className="ti ti-circle-check" /> Dar baixa</span>)
+  }
+  if (r.status === 'atrasado' && !r.jur_id) acts.push(<span key="jur" className="os-link" style={{ color: 'var(--red)' }} onClick={() => !b && run(r.id, () => escalarJuridico(r.id), 'Caso encaminhado ao Jurídico.')}><i className="ti ti-gavel" /> Jurídico</span>)
+  acts.push(<span key="susp" className="os-link" style={{ color: '#6B5B95' }} onClick={() => !b && run(r.id, () => suspenderLancamento('receber', r.id), 'Marcado como suspenso.')}><i className="ti ti-player-pause" /> Suspender</span>)
+  return <>{acts.map((a, i) => <span key={i}>{i > 0 && ' · '}{a}</span>)}</>
+}
+
+// Ver boleto (finVerBoleto L5230) — exibe boleto simulado
+function VerBoletoLink({ r }: { r: Recebivel }) {
+  return (
+    <span className="os-link" onClick={() => alert(
+      `BOLETO BANCÁRIO (simulado)\n\nBeneficiário: Laser&Co Franqueadora Ltda\nPagador: ${r.unidade_nome || ''}\nReferência: ${r.categoria} · ${r.competencia || ''}\nValor: ${moedaBR(r.valor)}\nVencimento: ${dataBR(r.vencimento)}\n\nLinha digitável:\n${r.boleto}\n\nEnviado para: ${finFranqEmail(r.unidade_nome)}`,
+    )}><i className="ti ti-eye" /> Ver boleto</span>
+  )
+}
+
+// =============================================================================
+// CONTAS A PAGAR (finPagarHTML L5233 + finSetPrio + finSuspender)
+// =============================================================================
+function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: FinConfig }) {
+  const router = useRouter()
+  const [escopo, setEscopo] = useState('Todos')
+  const [prio, setPrio] = useState('Todas')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const [showNova, setShowNova] = useState(false)
+
+  const run = async (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
+    setBusy(id); setMsg('')
+    const r = await fn(); setBusy(null)
+    if (!r.ok) { setMsg(r.error || 'Erro.'); return }
+    setMsg(okMsg); router.refresh()
+  }
+
+  const escs = ['Todos', 'Escritório', 'Rede', 'Lojas']
+  const prChips: [string, string][] = [['Todas', 'Todas'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']]
+  const prRank: Record<string, number> = { alta: 0, media: 1, baixa: 2 }
+  let list = contasPagar.filter((p) =>
+    (escopo === 'Todos' || (escopo === 'Lojas' ? (p.escopo !== 'Escritório' && p.escopo !== 'Rede') : p.escopo === escopo)) &&
+    (prio === 'Todas' || p.prioridade === prio))
+  list = [...list].sort((a, b) => (prRank[a.prioridade] ?? 1) - (prRank[b.prioridade] ?? 1))
+  const tot = sum(list, (p) => p.valor)
+  const aberto = sum(list.filter((p) => p.status === 'aberto'), (p) => p.valor)
+  const susp = sum(list.filter((p) => p.status === 'suspenso'), (p) => p.valor)
+  const ab = contasPagar.filter((p) => p.status === 'aberto')
+  const pAlta = sum(ab.filter((p) => p.prioridade === 'alta'), (p) => p.valor)
+  const pMedia = sum(ab.filter((p) => p.prioridade === 'media'), (p) => p.valor)
+  const pBaixa = sum(ab.filter((p) => p.prioridade === 'baixa'), (p) => p.valor)
+
+  return (
+    <div>
+      <div className="rel-legend">Despesas da rede — vinculadas a cada unidade ou em conjunto (escritório/rede). Cada pagamento tem um <b>nível de prioridade</b> (Alta, Média, Baixa): se o caixa apertar, pague primeiro os de <b>prioridade alta</b>.</div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+        {[['Em aberto · Prioridade ALTA', pAlta, 'var(--red)'], ['Prioridade Média', pMedia, '#B26A00'], ['Prioridade Baixa', pBaixa, '#1565C0']].map(([lbl, v, cor]) => (
+          <div key={lbl as string} className="rel-card" style={{ padding: '10px 14px', flex: 1, minWidth: 140, borderLeft: `3px solid ${cor as string}` }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{lbl as string}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: cor as string }}>{moedaBR(v as number)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span className="flabel">Escopo</span>
+        {escs.map((e) => <div key={e} className={`chip ${e === escopo ? 'active' : ''}`} onClick={() => setEscopo(e)} style={{ cursor: 'pointer' }}>{e}</div>)}
+      </div>
+      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span className="flabel">Prioridade</span>
+        {prChips.map((pr) => <div key={pr[0]} className={`chip ${pr[0] === prio ? 'active' : ''}`} onClick={() => setPrio(pr[0])} style={{ cursor: 'pointer' }}>{pr[1]}</div>)}
+      </div>
+      <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total: <b>{moedaBR(tot)}</b> · Em aberto: <b style={{ color: 'var(--red)' }}>{moedaBR(aberto)}</b>{susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
+        <button className="btn btn-ghost" onClick={() => setShowNova(true)}><i className="ti ti-plus" /> Nova despesa</button>
+      </div>
+      {showNova && <NovaDespesaModal config={config} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
+      <div className="cli-card"><div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Prioridade</th><th>Categoria</th><th>Descrição</th><th>Escopo</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Definir prio.</th><th>Ações</th></tr></thead>
+          <tbody>
+            {list.length === 0 && <tr><td colSpan={9} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhuma despesa com esse filtro.</td></tr>}
+            {list.map((p) => (
+              <tr key={p.id}>
+                <td><PrioPill pr={p.prioridade} /></td>
+                <td>{p.categoria}</td>
+                <td>{p.descricao || ''}</td>
+                <td><span style={{ fontSize: 11.5, padding: '2px 8px', borderRadius: 20, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{p.escopo}</span></td>
+                <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(p.valor)}</td>
+                <td>{dataBR(p.vencimento)}</td>
+                <td><Pill s={p.status} /></td>
+                <td>
+                  <select value={p.prioridade} disabled={busy === p.id} onChange={(e) => run(p.id, () => definirPrioridade(p.id, e.target.value as 'alta' | 'media' | 'baixa'), 'Prioridade atualizada.')}
+                    style={{ border: '1px solid var(--line)', borderRadius: 7, padding: '4px 6px', fontSize: 11.5, fontFamily: 'inherit' }}>
+                    <option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>
+                  </select>
+                </td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {p.status === 'aberto' ? <>
+                    <span className="os-link" onClick={() => busy !== p.id && run(p.id, () => pagarDespesa(p.id), 'Pagamento lançado.')}><i className="ti ti-cash" /> Pagar</span>
+                    {' · '}
+                    <span className="os-link" style={{ color: '#6B5B95' }} onClick={() => busy !== p.id && run(p.id, () => suspenderLancamento('pagar', p.id), 'Marcado como suspenso.')}><i className="ti ti-player-pause" /> Suspender</span>
+                  </> : p.status === 'suspenso' ? (
+                    <span className="os-link" onClick={() => busy !== p.id && run(p.id, () => suspenderLancamento('pagar', p.id), 'Lançamento reativado.')}><i className="ti ti-player-play" /> Reativar</span>
+                  ) : <span className="os-link"><i className="ti ti-receipt" /> Comprovante</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  )
+}
+
+function NovaDespesaModal({ config, onClose, onSaved }: { config: FinConfig; onClose: () => void; onSaved: () => void }) {
+  const [categoria, setCategoria] = useState('Fornecedores')
+  const [descricao, setDescricao] = useState('')
+  const [escopo, setEscopo] = useState('Escritório')
+  const [valor, setValor] = useState('')
+  const [vencimento, setVencimento] = useState('')
+  const [prioridade, setPrioridade] = useState<'alta' | 'media' | 'baixa'>('media')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  const salvar = async () => {
+    setBusy(true); setErr('')
+    const r = await novaDespesa({ categoria, descricao, escopo, valor: Number(valor), vencimento, prioridade })
+    setBusy(false)
+    if (!r.ok) { setErr(r.error || 'Erro ao salvar.'); return }
+    onSaved()
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'grid', placeItems: 'center', zIndex: 50 }}>
+      <div onClick={(e) => e.stopPropagation()} className="rel-card" style={{ width: 'min(480px,92vw)', padding: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <b style={{ fontSize: 15 }}>Nova despesa</b>
+          <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={onClose} />
+        </div>
+        {err && <div style={{ fontSize: 12.5, color: 'var(--red)', marginBottom: 8 }}>{err}</div>}
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Categoria</label><input list="fin-cat-pagar" value={categoria} onChange={(e) => setCategoria(e.target.value)} />
+          <datalist id="fin-cat-pagar">{config.categorias.map((c) => <option key={c} value={c} />)}</datalist>
+        </div>
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div className="mf" style={{ flex: 1 }}><label>Escopo</label><input value={escopo} onChange={(e) => setEscopo(e.target.value)} placeholder="Escritório / Rede / Unidade" /></div>
+          <div className="mf" style={{ flex: 1 }}><label>Prioridade</label>
+            <select value={prioridade} onChange={(e) => setPrioridade(e.target.value as 'alta' | 'media' | 'baixa')}><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <div className="mf" style={{ flex: 1 }}><label>Valor (R$)</label><input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+          <div className="mf" style={{ flex: 1 }}><label>Vencimento</label><input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} /></div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? '…' : <><i className="ti ti-device-floppy" /> Salvar</>}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// CONCILIAÇÃO (finConciliacaoHTML L5322 + finRodarConc)
+// =============================================================================
+function ConciliacaoTab({ conciliacao }: { conciliacao: Conciliacao[] }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const div = conciliacao.filter((c) => c.status === 'divergencia')
+
+  const rodar = async () => {
+    setBusy(true); setMsg('')
+    const r = await rodarConciliacao(); setBusy(false)
+    setMsg(r.ok ? `Conciliação processada · ${r.cruzados ?? 0} lançamentos cruzados.` : (r.error || 'Erro.'))
+    if (r.ok) router.refresh()
+  }
+
+  return (
+    <div>
+      <div className="rel-legend">Conciliação <b>automática</b>: cruza as <b>vendas das lojas</b> com os <b>extratos bancários</b> e as <b>taxas das adquirentes</b> cadastradas. Quando o crédito recebido diverge do esperado, o sistema gera um <b>alerta de inconsistência</b>.</div>
+      <div className="rel-acts" style={{ justifyContent: 'flex-end', marginBottom: 12, display: 'flex' }}>
+        <button className="btn btn-primary" disabled={busy} onClick={rodar}><i className="ti ti-refresh" /> Rodar conciliação automática</button>
+      </div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
+      {conciliacao.length === 0 ? (
+        <div className="rel-card" style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>Sem lançamentos de conciliação. Importe o extrato bancário e rode a conciliação.</div>
+      ) : (
+        <>
+          {div.length ? (
+            <div className="rel-card" style={{ background: '#FDECEC', border: '1px solid #f5c2c2', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <i className="ti ti-alert-triangle" style={{ fontSize: 24, color: 'var(--red)' }} />
+              <div><b style={{ color: 'var(--red)' }}>{div.length} inconsistência(s) detectada(s)</b><div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>O cruzamento entre vendas, extrato bancário e taxas das adquirentes apontou divergências.</div></div>
+            </div>
+          ) : (
+            <div className="rel-card" style={{ background: 'var(--green-bg)', marginBottom: 14 }}><b style={{ color: '#0f6b3a' }}><i className="ti ti-circle-check" /> Sem inconsistências</b> — todas as vendas conciliadas com o extrato.</div>
+          )}
+          <div className="cli-card"><div className="cli-scroll">
+            <table className="cli-table">
+              <thead><tr><th>Data</th><th>Unidade</th><th>Adquirente</th><th className="num-r">Venda</th><th className="num-r">Taxa</th><th className="num-r">Esperado</th><th className="num-r">Extrato</th><th>Status</th><th>Observação</th></tr></thead>
+              <tbody>
+                {conciliacao.map((c) => (
+                  <tr key={c.id} style={c.status === 'divergencia' ? { background: '#FFF7F7' } : undefined}>
+                    <td>{dataBR(c.data)}</td><td>{c.unidade_nome}</td><td>{c.adquirente}</td>
+                    <td className="num-r">{moedaBR(c.venda)}</td>
+                    <td className="num-r" style={{ fontSize: 11.5 }}>{finPct(c.taxa_pct || 0)}<br />{moedaBR(c.taxa)}</td>
+                    <td className="num-r">{moedaBR(c.esperado)}</td>
+                    <td className="num-r">{moedaBR(c.recebido)}</td>
+                    <td>{c.status === 'ok'
+                      ? <span style={{ color: '#0f6b3a', fontWeight: 700, fontSize: 12 }}><i className="ti ti-circle-check" /> OK</span>
+                      : <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 12 }}><i className="ti ti-alert-triangle" /> Divergência</span>}</td>
+                    <td style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{c.observacao}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div></div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// =============================================================================
+// AUTOMAÇÃO DE ROYALTIES (finRoyaltiesHTML L5333)
+// =============================================================================
+function RoyaltiesTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: FinConfig }) {
+  const router = useRouter()
+  const [log, setLog] = useState<string[]>([])
+  const [busy, setBusy] = useState('')
+  const banco = config.banco as { nome?: string; agencia?: string; conta?: string }
+
+  const pend = recebiveis.filter((r) => r.categoria === 'Royalties' && (r.status === 'aberto' || r.status === 'atrasado'))
+  const semBoleto = pend.filter((r) => !r.boleto).length
+  const totRoy = sum(recebiveis.filter((r) => r.categoria === 'Royalties'), (r) => r.valor)
+  const hh = () => { const d = new Date(); return `[${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}] ` }
+  const addLog = (...lines: string[]) => setLog((l) => [...lines.map((x) => hh() + x), ...l].slice(0, 40))
+
+  const gerar = async () => {
+    setBusy('gerar')
+    const r = await gerarCobrancaRoyalties(); setBusy('')
+    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
+    if (!r.geradas) { addLog('Nenhum royalty pendente de boleto.'); return }
+    addLog(`✓ ${r.geradas} boletos gerados no ${banco.nome} — total ${moedaBR(r.total || 0)}`, '✓ Crédito a receber lançado no financeiro da franqueadora', `✓ Enviado por e-mail e WhatsApp aos franqueados (${r.geradas} destinatários)`)
+    router.refresh()
+  }
+  const baixar = async () => {
+    setBusy('baixar')
+    const r = await processarRetornoBancario(); setBusy('')
+    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
+    addLog(`✓ Retorno bancário processado — ${r.baixados || 0} boletos baixados (${moedaBR(r.total || 0)})`)
+    router.refresh()
+  }
+  const regua = async () => {
+    setBusy('regua')
+    const r = await rodarReguaAtraso(config.regua); setBusy('')
+    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
+    addLog(`→ Régua aplicada a ${r.aplicadas || 0} cobrança(s) em atraso · ${r.juridico || 0} escalada(s) ao Jurídico`)
+    router.refresh()
+  }
+
+  const passos = ['Apura 10% do bruto', 'Gera boleto no banco', 'Lança crédito a receber', 'Envia e-mail + WhatsApp', 'Baixa no retorno bancário', 'Atraso → aciona Jurídico']
+
+  return (
+    <div>
+      <div className="rel-legend">Automação de cobrança de <b>royalties</b> — sempre <b>{config.royalty_pct}% do faturamento bruto</b>, com vencimento <b>todo dia {config.venc_dia}</b> do mês seguinte. O sistema gera o boleto, lança o crédito a receber, envia ao franqueado e agenda a baixa no retorno bancário.</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12, marginBottom: 14 }}>
+        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Banco de cobrança</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}><i className="ti ti-building-bank" style={{ color: 'var(--brand-500)' }} /> {banco.nome}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Ag. {banco.agencia} · C/C {banco.conta}</div></div>
+        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{FIN_MESREF}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Vencimento dia {config.venc_dia}</div></div>
+        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Total de royalties</div><div style={{ fontSize: 15, fontWeight: 800, marginTop: 3, color: '#0f6b3a' }}>{moedaBR(totRoy)}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{pend.length} unidade(s) · {semBoleto} sem boleto</div></div>
+      </div>
+      <div className="rel-card" style={{ marginBottom: 4 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Pipeline de automação</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          {passos.map((s, i) => (
+            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--surface-2)', borderRadius: 20, padding: '6px 12px', fontSize: 12 }}>
+              <span style={{ background: 'var(--brand-500)', color: '#fff', width: 18, height: 18, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{i + 1}</span> {s}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" disabled={!!busy} onClick={gerar}><i className="ti ti-robot" /> Gerar cobrança de royalties ({semBoleto})</button>
+          <button className="btn btn-ghost" disabled={!!busy} onClick={baixar}><i className="ti ti-building-bank" /> Processar retorno bancário (baixa)</button>
+          <button className="btn btn-ghost" disabled={!!busy} onClick={regua}><i className="ti ti-clock-exclamation" /> Rodar régua de atraso</button>
+        </div>
+        {log.length > 0 && (
+          <div className="rel-card" style={{ marginTop: 14, background: '#0E1726', color: '#cfe3ff', fontFamily: 'ui-monospace,monospace', fontSize: 12, lineHeight: 1.7, maxHeight: 240, overflow: 'auto' }}>
+            {log.map((l, i) => <div key={i}>{l}</div>)}
+          </div>
+        )}
+      </div>
+      <div className="rel-card" style={{ background: '#FFF8E1', border: '1px solid #f0e0a8', marginTop: 14, display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+        <i className="ti ti-shield-lock" style={{ fontSize: 20, color: '#B26A00' }} />
+        <div style={{ fontSize: 12.5, color: '#6b5800' }}><b>Integração bancária real (produção):</b> a conexão com o banco para registrar boletos e dar baixa é feita por <b>API/Open Finance ou CNAB</b>, com credenciais guardadas em cofre seguro no servidor — <b>nunca</b> no navegador. Este módulo <b>simula</b> o ciclo para validação do fluxo.</div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// COBRANÇA & JURÍDICO (finCobrancaHTML L5387)
+// =============================================================================
+function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: FinConfig }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const atr = recebiveis.filter((r) => r.status === 'atrasado')
+  const totAtr = sum(atr, (r) => r.valor)
+
+  const run = async (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
+    setBusy(id); setMsg('')
+    const r = await fn(); setBusy(null)
+    if (!r.ok) { setMsg(r.error || 'Erro.'); return }
+    setMsg(okMsg); router.refresh()
+  }
+
+  return (
+    <div>
+      <div className="rel-legend">Régua de cobrança automática por atraso. Notificações por <b>sistema, e-mail e WhatsApp</b> do franqueado. A partir de <b>D+10</b>, o caso é encaminhado ao <b>Jurídico</b> conforme a regra cadastrada.</div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
+      <div className="rel-card" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14, background: atr.length ? '#FDECEC' : 'var(--green-bg)' }}>
+        <i className={`ti ti-${atr.length ? 'alert-triangle' : 'circle-check'}`} style={{ fontSize: 24, color: atr.length ? 'var(--red)' : '#0f6b3a' }} />
+        <div><b style={{ color: atr.length ? 'var(--red)' : '#0f6b3a' }}>{atr.length} unidade(s) inadimplente(s) · {moedaBR(totAtr)}</b><div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Régua ativa · escalonamento ao Jurídico automático a partir de D+10</div></div>
+      </div>
+      <div className="cli-card" style={{ marginBottom: 16 }}><div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Unidade / contato</th><th>Categoria</th><th className="num-r">Valor</th><th>Atraso</th><th>Próxima ação</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            {atr.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-3)', padding: 22 }}>Nenhuma cobrança em atraso 🎉</td></tr> : atr.map((r) => {
+              const passo = proximoPassoRegua(r.dias_atraso || 0, config.regua)
+              return (
+                <tr key={r.id}>
+                  <td><span className="cli-name">{r.unidade_nome}</span><br /><span style={{ fontSize: 11, color: 'var(--text-3)' }}>{finFranqEmail(r.unidade_nome)}</span></td>
+                  <td>{r.categoria}</td>
+                  <td className="num-r" style={{ fontWeight: 700, color: 'var(--red)' }}>{moedaBR(r.valor)}</td>
+                  <td style={{ color: 'var(--red)', fontWeight: 700 }}>{r.dias_atraso}d</td>
+                  <td style={{ fontSize: 11.5 }}>{passo.acao}</td>
+                  <td><Pill s={r.jur_id ? 'jur' : 'atrasado'} /></td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <span className="os-link" onClick={() => busy !== r.id && run(r.id, () => notificarCobranca(r.id), 'Notificação enviada por e-mail e WhatsApp ao franqueado.')}><i className="ti ti-mail-forward" /> Notificar</span>
+                    {!r.jur_id && <>{' · '}<span className="os-link" style={{ color: 'var(--brand-600)' }} onClick={() => busy !== r.id && run(r.id, () => escalarJuridico(r.id), 'Caso encaminhado ao Jurídico.')}><i className="ti ti-gavel" /> Jurídico</span></>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div></div>
+      <div className="rel-card">
+        <div className="set-sec" style={{ marginTop: 0 }}>Régua de cobrança (configurável em Configurações)</div>
+        <div className="cli-scroll">
+          <table className="cli-table">
+            <thead><tr><th>Quando</th><th>Ação</th><th>Canal</th></tr></thead>
+            <tbody>
+              {config.regua.map((p, i) => (
+                <tr key={i}><td style={{ fontWeight: 700 }}>{p.dias === 0 ? 'No vencimento' : 'D+' + p.dias}</td><td>{p.acao}</td><td style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{p.canal}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// DRE (finDreHTML L5642 — versão simplificada sobre os dados reais)
+// =============================================================================
+function DreTab({ recebiveis, contasPagar }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
+  // Receita = recebíveis não suspensos; Despesas = contas a pagar não suspensas.
+  const receitaBruta = sum(recebiveis.filter((r) => r.status !== 'suspenso'), (r) => r.valor)
+  const deducoes = 0
+  const receitaLiquida = receitaBruta - deducoes
+  const despesasOp = sum(contasPagar.filter((p) => p.status !== 'suspenso'), (p) => p.valor)
+  const resultado = receitaLiquida - despesasOp
+  const av = (v: number) => receitaBruta > 0 ? finPct((v / receitaBruta) * 100) : '—'
+
+  const linhas: [string, number, boolean][] = [
+    ['Receita bruta da franqueadora', receitaBruta, true],
+    ['(-) Deduções', -deducoes, false],
+    ['= Receita líquida', receitaLiquida, true],
+    ['(-) Despesas operacionais', -despesasOp, false],
+    ['= Resultado do período', resultado, true],
+  ]
+
+  return (
+    <div>
+      <div className="rel-legend">DRE gerencial da <b>franqueadora</b> sobre os recebíveis da rede e as despesas da matriz. Coluna <b>AV%</b> = análise vertical sobre a receita bruta. (As 30 linhas detalhadas e a segmentação por loja/UF do legado entram numa próxima entrega.)</div>
+      <div className="cli-card"><div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Demonstração do resultado</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
+          <tbody>
+            {linhas.map(([lbl, v, bold]) => (
+              <tr key={lbl} style={bold ? { background: 'var(--surface-2)' } : undefined}>
+                <td style={{ fontWeight: bold ? 700 : 400 }}>{lbl}</td>
+                <td className="num-r" style={{ fontWeight: bold ? 700 : 400, color: v < 0 ? 'var(--red)' : undefined }}>{moedaBR(v)}</td>
+                <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(Math.abs(v))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  )
+}
+
+// =============================================================================
+// CÁLCULOS (finCalcHTML L5534 — atualização de débito: correção+multa+juros)
+// =============================================================================
+const CALC_IDX: Record<string, { label: string; acum12m: number }> = {
+  'IGP-M': { label: 'IGP-M', acum12m: 3.89 },
+  'IPCA': { label: 'IPCA', acum12m: 4.27 },
+  'INPC': { label: 'INPC', acum12m: 4.11 },
+  'SELIC': { label: 'SELIC (a.a.)', acum12m: 10.5 },
+  'CDI': { label: 'CDI (a.a.)', acum12m: 10.4 },
+}
+function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: string }) {
+  const [indice, setIndice] = useState('IGP-M')
+  const [multaPct, setMultaPct] = useState(10)
+  const [jurosMesPct, setJurosMesPct] = useState(1)
+  const [dataCalc, setDataCalc] = useState(hojeISO)
+  const [modo, setModo] = useState<'nominal' | 'acrescimos'>('acrescimos')
+
+  // Importa automaticamente recebíveis atrasados (calcOne L5517).
+  const atr = recebiveis.filter((r) => r.status === 'atrasado')
+  const idx = CALC_IDX[indice]
+  const calcOne = (valor: number, dias: number) => {
+    if (modo === 'nominal') return { correcao: 0, multa: 0, juros: 0, total: valor }
+    const correcao = valor * (idx.acum12m / 100) * (dias / 365)
+    const multa = valor * (multaPct / 100)
+    const juros = valor * (jurosMesPct / 100) * (dias / 30)
+    return { correcao, multa, juros, total: valor + correcao + multa + juros }
+  }
+  const linhas = atr.map((r) => ({ r, ...calcOne(Number(r.valor) || 0, r.dias_atraso || 0) }))
+  const totalAtualizado = sum(linhas, (l) => l.total)
+  const totalOriginal = sum(atr, (r) => r.valor)
+
+  return (
+    <div>
+      <div className="rel-legend">Atualização de débitos em atraso: <b>correção monetária</b> por índice oficial + <b>multa {multaPct}%</b> + <b>juros de mora {jurosMesPct}% a.m.</b>. Índices embarcados (IGP-M/IPCA/INPC/SELIC/CDI); em produção atualizáveis pela API SGS do Banco Central.</div>
+      <div className="rel-card" style={{ marginBottom: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Parâmetros</div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div className="mf" style={{ flex: 1, minWidth: 130 }}><label>Índice de correção</label>
+            <select value={indice} onChange={(e) => setIndice(e.target.value)}>{Object.keys(CALC_IDX).map((k) => <option key={k} value={k}>{CALC_IDX[k].label} · {finPct(CALC_IDX[k].acum12m)}</option>)}</select>
+          </div>
+          <div className="mf" style={{ width: 110 }}><label>Multa (%)</label><input type="number" step="0.5" value={multaPct} onChange={(e) => setMultaPct(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf" style={{ width: 130 }}><label>Juros (% a.m.)</label><input type="number" step="0.1" value={jurosMesPct} onChange={(e) => setJurosMesPct(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf" style={{ width: 160 }}><label>Data do cálculo</label><input type="date" value={dataCalc} onChange={(e) => setDataCalc(e.target.value)} /></div>
+          <div className="mf" style={{ width: 150 }}><label>Modo</label>
+            <select value={modo} onChange={(e) => setModo(e.target.value as 'nominal' | 'acrescimos')}><option value="acrescimos">Com acréscimos</option><option value="nominal">Nominal</option></select>
+          </div>
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}><i className="ti ti-info-circle" /> A atualização de índices via API SGS do Banco Central (séries 189/433/188/432/4389) será conectada no servidor — por ora usa-se os valores embarcados acima.</div>
+      </div>
+      <div className="cli-card"><div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Unidade</th><th>Categoria</th><th>Atraso</th><th className="num-r">Original</th><th className="num-r">Correção</th><th className="num-r">Multa</th><th className="num-r">Juros</th><th className="num-r">Atualizado</th></tr></thead>
+          <tbody>
+            {linhas.length === 0 && <tr><td colSpan={8} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum débito em atraso para atualizar.</td></tr>}
+            {linhas.map((l) => (
+              <tr key={l.r.id}>
+                <td>{l.r.unidade_nome}</td><td>{l.r.categoria}</td><td style={{ color: 'var(--red)' }}>{l.r.dias_atraso}d</td>
+                <td className="num-r">{moedaBR(l.r.valor)}</td>
+                <td className="num-r" style={{ fontSize: 11.5 }}>{moedaBR(l.correcao)}</td>
+                <td className="num-r" style={{ fontSize: 11.5 }}>{moedaBR(l.multa)}</td>
+                <td className="num-r" style={{ fontSize: 11.5 }}>{moedaBR(l.juros)}</td>
+                <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(l.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+          {linhas.length > 0 && (
+            <tfoot><tr style={{ background: 'var(--surface-2)' }}><td colSpan={3} style={{ fontWeight: 700 }}>Total</td><td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(totalOriginal)}</td><td colSpan={3} /><td className="num-r" style={{ fontWeight: 800, color: '#0f6b3a' }}>{moedaBR(totalAtualizado)}</td></tr></tfoot>
+          )}
+        </table>
+      </div></div>
+    </div>
+  )
+}
+
+// =============================================================================
+// CONFIGURAÇÕES (finConfigHTML L5401 + finSalvarCfg)
+// =============================================================================
+type AdqRow = { nome: string; deb: number; cred: number; parc: number; pix: number; prazo: number }
+function ConfigTab({ config }: { config: FinConfig }) {
+  const router = useRouter()
+  const [royalty, setRoyalty] = useState(config.royalty_pct)
+  const [fundo, setFundo] = useState(config.fundo_pct)
+  const [vencDia, setVencDia] = useState(config.venc_dia)
+  const [banco, setBanco] = useState(config.banco as Record<string, string | boolean>)
+  const [cats, setCats] = useState<string[]>(config.categorias)
+  const [novaCat, setNovaCat] = useState('')
+  const [adq, setAdq] = useState<AdqRow[]>(config.adquirentes as AdqRow[])
+  const [regua, setRegua] = useState<ReguaPasso[]>(config.regua)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const addCat = () => { const v = novaCat.trim(); if (v && !cats.includes(v)) { setCats([...cats, v]); setNovaCat('') } }
+  const rmCat = (c: string) => { if (c !== 'Royalties') setCats(cats.filter((x) => x !== c)) }
+
+  const salvar = async () => {
+    setBusy(true); setMsg('')
+    const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, banco, adquirentes: adq, categorias: cats, regua })
+    setBusy(false)
+    setMsg(r.ok ? 'Configurações salvas.' : (r.error || 'Erro ao salvar.'))
+    if (r.ok) router.refresh()
+  }
+
+  const setAdqField = (i: number, k: keyof AdqRow, v: string) => setAdq(adq.map((a, j) => j === i ? { ...a, [k]: k === 'nome' ? v : (parseFloat(v) || 0) } : a))
+  const setReguaField = (i: number, k: keyof ReguaPasso, v: string) => setRegua(regua.map((p, j) => j === i ? { ...p, [k]: k === 'dias' ? (parseInt(v) || 0) : v } : p))
+
+  const inputStyle: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 7, padding: '5px 8px', fontSize: 12.5, fontFamily: 'inherit' }
+
+  return (
+    <div>
+      <div className="rel-legend">Parâmetros do financeiro da franqueadora. As credenciais do banco são usadas <b>apenas no servidor seguro</b> em produção — aqui ficam mascaradas.</div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="rel-card">
+          <div className="set-sec" style={{ marginTop: 0 }}>Royalties &amp; cobrança</div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>% de royalties sobre o faturamento bruto</label><input type="number" step="0.5" value={royalty} onChange={(e) => setRoyalty(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>% do fundo de marketing</label><input type="number" step="0.5" value={fundo} onChange={(e) => setFundo(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Dia de vencimento (mês seguinte)</label><input type="number" min={1} max={28} value={vencDia} onChange={(e) => setVencDia(parseInt(e.target.value) || 10)} /></div>
+        </div>
+        <div className="rel-card">
+          <div className="set-sec" style={{ marginTop: 0 }}>Banco de cobrança</div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>Banco</label><input value={String(banco.nome ?? '')} onChange={(e) => setBanco({ ...banco, nome: e.target.value })} /></div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <div className="mf" style={{ flex: 1 }}><label>Agência</label><input value={String(banco.agencia ?? '')} onChange={(e) => setBanco({ ...banco, agencia: e.target.value })} /></div>
+            <div className="mf" style={{ flex: 1 }}><label>Conta</label><input value={String(banco.conta ?? '')} onChange={(e) => setBanco({ ...banco, conta: e.target.value })} /></div>
+          </div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>Convênio / Carteira</label><input value={String(banco.convenio ?? '')} onChange={(e) => setBanco({ ...banco, convenio: e.target.value })} /></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div className="mf" style={{ flex: 1 }}><label>Usuário (API)</label><input value={String(banco.login ?? '')} onChange={(e) => setBanco({ ...banco, login: e.target.value })} /></div>
+            <div className="mf" style={{ flex: 1 }}><label>Senha / Token</label><input type="password" value="••••••••" disabled style={{ background: 'var(--surface-2)', cursor: 'not-allowed' }} /></div>
+          </div>
+          <div style={{ fontSize: 11, color: '#B26A00', marginTop: 7 }}><i className="ti ti-lock" /> Senha/token nunca trafegam pelo navegador — ficam em cofre no servidor (produção).</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!banco.autoBaixa} onChange={(e) => setBanco({ ...banco, autoBaixa: e.target.checked })} /> Baixa automática pelo retorno bancário
+          </label>
+        </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Categorias de recebíveis</div>
+        <div style={{ marginBottom: 8 }}>
+          {cats.map((c) => (
+            <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--surface-2)', borderRadius: 20, padding: '5px 12px', fontSize: 12.5, margin: '0 6px 6px 0' }}>
+              {c} {c !== 'Royalties' && <i className="ti ti-x" style={{ cursor: 'pointer', color: 'var(--text-3)' }} onClick={() => rmCat(c)} />}
+            </span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={novaCat} onChange={(e) => setNovaCat(e.target.value)} placeholder="Nova categoria (ex.: Taxa de tecnologia)" style={{ flex: 1, ...inputStyle, padding: '8px 11px' }} />
+          <button className="btn btn-ghost" onClick={addCat}><i className="ti ti-plus" /> Adicionar</button>
+        </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Taxas das adquirentes (%) — usadas na conciliação</div>
+        <div className="cli-scroll">
+          <table className="cli-table">
+            <thead><tr><th>Adquirente</th><th className="num-r">Débito</th><th className="num-r">Crédito</th><th className="num-r">Parcelado</th><th className="num-r">Pix</th><th className="num-r">Prazo (d)</th></tr></thead>
+            <tbody>
+              {adq.map((a, i) => (
+                <tr key={i}>
+                  <td><input value={a.nome} onChange={(e) => setAdqField(i, 'nome', e.target.value)} style={{ ...inputStyle, width: 90 }} /></td>
+                  {(['deb', 'cred', 'parc', 'pix'] as const).map((k) => <td key={k} className="num-r"><input type="number" step="0.01" value={a[k]} onChange={(e) => setAdqField(i, k, e.target.value)} style={{ ...inputStyle, width: 62, textAlign: 'right' }} /></td>)}
+                  <td className="num-r"><input type="number" value={a.prazo} onChange={(e) => setAdqField(i, 'prazo', e.target.value)} style={{ ...inputStyle, width: 52, textAlign: 'right' }} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Régua de cobrança / jurídico</div>
+        <div className="cli-scroll">
+          <table className="cli-table">
+            <thead><tr><th>Dias após venc.</th><th>Ação</th><th>Canal</th></tr></thead>
+            <tbody>
+              {regua.map((p, i) => (
+                <tr key={i}>
+                  <td><input type="number" value={p.dias} onChange={(e) => setReguaField(i, 'dias', e.target.value)} style={{ ...inputStyle, width: 54, textAlign: 'right' }} /></td>
+                  <td><input value={p.acao} onChange={(e) => setReguaField(i, 'acao', e.target.value)} style={{ ...inputStyle, width: '100%' }} /></td>
+                  <td><input value={p.canal} onChange={(e) => setReguaField(i, 'canal', e.target.value)} style={{ ...inputStyle, width: '100%' }} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rel-acts" style={{ justifyContent: 'flex-end', marginTop: 14, display: 'flex' }}>
+        <button className="btn btn-primary" disabled={busy} onClick={salvar}><i className="ti ti-device-floppy" /> Salvar configurações</button>
+      </div>
+    </div>
+  )
+}

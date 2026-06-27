@@ -35,7 +35,7 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
   // ── Lista paginada server-side ──
   let query = sb
     .from('pacotes')
-    .select('id, nome, descricao, preco, validade_dias, ativo, criado_em', { count: 'exact' })
+    .select('id, nome, descricao, preco, validade_dias, cobertura_creditos, desc_max, pagar_comissao, ativo, criado_em', { count: 'exact' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
   if (ativo === 'sim') query = query.eq('ativo', true)

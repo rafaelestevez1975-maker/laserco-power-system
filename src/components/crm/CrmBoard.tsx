@@ -6,21 +6,41 @@ import {
   DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
 import { criarLead, moverLead, criarEtapa, renomearEtapa, excluirEtapa } from '@/app/(app)/crm/actions'
-import { moedaBR, waHref } from '@/lib/fmt'
+import { moedaBR, waHref, relativo } from '@/lib/fmt'
 
 export type Etapa = { id: string; nome: string; cor: string }
 export type Lead = {
   id: string; nome: string | null; telefone: string | null; origem: string | null
   servico_interesse: string | null; valor_estimado: number | null; etapa_id: string | null; ia_score: number | null
+  temperatura?: string | null; criado_em?: string | null; responsavel_nome?: string | null
 }
 export type Unidade = { id: string; nome: string }
+export type Colaborador = { id: string; nome: string }
 
 const money = moedaBR
-const temp = (s: number | null) => (s == null ? '' : s >= 0.7 ? '🔥' : s >= 0.4 ? '🌤️' : '❄️')
+// Emoji da temperatura: prioriza o campo manual (legado lead.temp); senão deriva do ia_score.
+const TEMP_EMOJI: Record<string, string> = { quente: '🔥', morno: '🌤️', frio: '❄️', ardente: '🔥', gelado: '❄️' }
+function tempEmoji(l: Lead): string {
+  if (l.temperatura && TEMP_EMOJI[l.temperatura]) return TEMP_EMOJI[l.temperatura]
+  const s = l.ia_score
+  return s == null ? '' : s >= 0.7 ? '🔥' : s >= 0.4 ? '🌤️' : '❄️'
+}
+
+// SLA 48h (legado leadCard ~4051): horas desde criado_em.
+function slaHoras(l: Lead): number | null {
+  if (!l.criado_em) return null
+  return Math.floor((Date.now() - new Date(l.criado_em).getTime()) / 3600e3)
+}
+// Iniciais do responsável p/ o mini-avatar (legado l.resp).
+function iniciais(nome: string | null | undefined): string {
+  const p = (nome || '').trim().split(/\s+/).filter(Boolean)
+  if (!p.length) return '—'
+  return ((p[0][0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
+}
 
 export function CrmBoard({
-  etapas, leads: leadsProp, unidades, activeUnitId, isAdmin,
-}: { etapas: Etapa[]; leads: Lead[]; unidades: Unidade[]; activeUnitId: string | null; isAdmin: boolean }) {
+  etapas, leads: leadsProp, unidades, colaboradores, activeUnitId, isAdmin,
+}: { etapas: Etapa[]; leads: Lead[]; unidades: Unidade[]; colaboradores: Colaborador[]; activeUnitId: string | null; isAdmin: boolean }) {
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>(leadsProp)
   const [search, setSearch] = useState('')
@@ -67,7 +87,7 @@ export function CrmBoard({
 
       {modal && (
         <NovoLeadModal
-          etapas={etapas} unidades={unidades} activeUnitId={activeUnitId}
+          etapas={etapas} unidades={unidades} colaboradores={colaboradores} activeUnitId={activeUnitId}
           onClose={() => setModal(false)}
           onSaved={() => { setModal(false); router.refresh() }}
         />
@@ -135,30 +155,70 @@ function Column({ etapa, leads }: { etapa: Etapa; leads: Lead[] }) {
       <div className="kan-sum">{money(soma)} no estágio</div>
       <div ref={setNodeRef} className="kan-body" style={isOver ? { outline: '2px dashed var(--brand-400)', outlineOffset: -4, borderRadius: 8 } : undefined}>
         {leads.length === 0 && <div style={{ padding: 10, fontSize: 12, color: 'var(--text-3)' }}>Sem leads</div>}
-        {leads.map((l) => <Card key={l.id} lead={l} />)}
+        {leads.map((l) => <Card key={l.id} lead={l} etapaNome={etapa.nome} />)}
       </div>
     </div>
   )
 }
 
-function Card({ lead }: { lead: Lead }) {
+// Detecta a etapa de fechamento (ganho/perdido) p/ não mostrar SLA (legado: stage!=='ganho'/'perdido').
+function ehFechamento(nome: string): boolean {
+  return /ganho|perdido|fechad|convert/i.test(nome)
+}
+
+function Card({ lead, etapaNome }: { lead: Lead; etapaNome: string }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id })
   const wa = waHref(lead.telefone)
   const style: React.CSSProperties = {
     transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
     opacity: isDragging ? 0.5 : 1, cursor: 'grab',
   }
+
+  // Tags especiais derivadas da origem/serviço (legado leadCard 4048-4050).
+  const origem = lead.origem || ''
+  const disparo = /disparo|whatsapp/i.test(origem)
+  const tardia = /venda tardia|tardia/i.test(origem) || /tardia|5 dias/i.test(lead.servico_interesse || '')
+  const fechamento = ehFechamento(etapaNome)
+  const slaH = fechamento ? null : slaHoras(lead)
+  const over = slaH != null && slaH > 48
+
+  const origemTag = disparo ? (
+    <span className="orig-tag" style={{ fontSize: 10, background: '#E7F9EE', color: '#1a8a4f' }}><i className="ti ti-brand-whatsapp" style={{ fontSize: 11, verticalAlign: -1 }} /> Disparo</span>
+  ) : tardia ? (
+    <span className="orig-tag" style={{ fontSize: 10, background: 'var(--gold-soft)', color: 'var(--gold-600)' }}><i className="ti ti-clock-hour-9" style={{ fontSize: 11, verticalAlign: -1 }} /> Venda Tardia</span>
+  ) : origem ? (
+    <span className="orig-tag" style={{ fontSize: 10 }}>{origem}</span>
+  ) : null
+
+  const cardStyle: React.CSSProperties = { ...style }
+  if (over) cardStyle.borderColor = 'var(--red)'
+  else if (disparo) cardStyle.borderLeft = '3px solid #1a8a4f'
+  else if (tardia) cardStyle.borderLeft = '3px solid var(--gold-500)'
+
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="lead-card">
+    <div ref={setNodeRef} style={cardStyle} {...listeners} {...attributes} className="lead-card">
       <div className="lc-top">
         <span className="lc-name">{lead.nome || 'Lead'}</span>
-        <span className="lc-temp">{temp(lead.ia_score)}</span>
+        <span className="lc-temp" title={lead.temperatura || ''}>{tempEmoji(lead)}</span>
       </div>
       {lead.servico_interesse && <div className="lc-serv">{lead.servico_interesse}</div>}
+
+      {slaH != null && (
+        <div style={{ margin: '6px 0' }}>
+          {slaH > 48 ? (
+            <span className="sla-badge over"><i className="ti ti-alarm" style={{ fontSize: 11 }} /> Prazo 48h vencido</span>
+          ) : slaH > 24 ? (
+            <span className="sla-badge warn"><i className="ti ti-clock" style={{ fontSize: 11 }} /> {48 - slaH}h p/ vencer</span>
+          ) : (
+            <span className="sla-badge ok"><i className="ti ti-clock-check" style={{ fontSize: 11 }} /> no prazo</span>
+          )}
+        </div>
+      )}
+
       <div className="lc-meta">
         <span className="lc-val">{lead.valor_estimado ? money(lead.valor_estimado) : ''}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          {lead.origem && <span className="orig-tag" style={{ fontSize: 10 }}>{lead.origem}</span>}
+          {origemTag}
           {wa && (
             <a href={wa} target="_blank" rel="noopener" className="wa-link" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
               <i className="ti ti-brand-whatsapp wa" />
@@ -166,15 +226,37 @@ function Card({ lead }: { lead: Lead }) {
           )}
         </span>
       </div>
+
+      <div className="lead-tags" style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginTop: 7 }}>
+        <span className="lead-tag" style={{ background: 'var(--surface)', color: 'var(--text-3)', border: '1px solid var(--line)', fontSize: 10, padding: '1px 6px', borderRadius: 6 }}>
+          <i className="ti ti-clock" style={{ fontSize: 10, verticalAlign: -1 }} /> {relativo(lead.criado_em) || 'agora'}
+        </span>
+        <span className="mini" title={lead.responsavel_nome || ''} style={{ width: 21, height: 21, fontSize: 9, marginLeft: 'auto', display: 'grid', placeItems: 'center', borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700 }}>
+          {iniciais(lead.responsavel_nome)}
+        </span>
+      </div>
     </div>
   )
 }
 
+// Origens visíveis do legado (lead modal HTML 2899) — value mapeado p/ o CHECK no server.
+const ORIGENS_UI: { value: string; label: string }[] = [
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'google', label: 'Google' },
+  { value: 'indicacao', label: 'Indicação' },
+  { value: 'geolocalizado', label: 'Geolocalização' },
+  { value: 'parcerias', label: 'Parcerias' },
+  { value: 'loja física', label: 'Loja física' },
+  { value: 'outros', label: 'Outros' },
+]
+
 function NovoLeadModal({
-  etapas, unidades, activeUnitId, onClose, onSaved,
-}: { etapas: Etapa[]; unidades: Unidade[]; activeUnitId: string | null; onClose: () => void; onSaved: () => void }) {
+  etapas, unidades, colaboradores, activeUnitId, onClose, onSaved,
+}: { etapas: Etapa[]; unidades: Unidade[]; colaboradores: Colaborador[]; activeUnitId: string | null; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState({
-    nome: '', telefone: '', origem: 'manual', servico_interesse: '', valor_estimado: '',
+    nome: '', telefone: '', origem: 'instagram', servico_interesse: '', valor_estimado: '',
+    responsavel_id: '', temperatura: 'morno',
     unidade_id: activeUnitId || unidades[0]?.id || '',
     etapa_id: etapas[0]?.id || '',
   })
@@ -188,6 +270,7 @@ function NovoLeadModal({
       nome: f.nome, telefone: f.telefone, origem: f.origem, servico_interesse: f.servico_interesse,
       valor_estimado: f.valor_estimado ? Number(String(f.valor_estimado).replace(/\./g, '').replace(',', '.')) : null,
       unidade_id: f.unidade_id, etapa_id: f.etapa_id,
+      responsavel_id: f.responsavel_id || null, temperatura: f.temperatura || null,
     })
     setSaving(false)
     if (!res.ok) setErr(res.error || 'Erro ao salvar.')
@@ -209,18 +292,27 @@ function NovoLeadModal({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Origem</label>
               <select style={inp} value={f.origem} onChange={(e) => set('origem', e.target.value)}>
-                <option value="manual">Manual</option>
-                <option value="formulario">Formulário</option>
-                <option value="instagram">Instagram</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="indicacao">Indicação</option>
-                <option value="google">Google</option>
-                <option value="outros">Outros</option>
+                {ORIGENS_UI.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Etapa</label>
               <select style={inp} value={f.etapa_id} onChange={(e) => set('etapa_id', e.target.value)}>
                 {etapas.map((et) => <option key={et.id} value={et.id}>{et.nome}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Responsável</label>
+              <select style={inp} value={f.responsavel_id} onChange={(e) => set('responsavel_id', e.target.value)}>
+                <option value="">— eu mesmo —</option>
+                {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Temperatura</label>
+              <select style={inp} value={f.temperatura} onChange={(e) => set('temperatura', e.target.value)}>
+                <option value="quente">🔥 Quente</option>
+                <option value="morno">🌤️ Morno</option>
+                <option value="frio">❄️ Frio</option>
               </select>
             </div>
           </div>

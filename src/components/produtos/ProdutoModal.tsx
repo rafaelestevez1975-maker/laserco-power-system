@@ -10,9 +10,11 @@ type FormState = {
   grupo: string
   descricao: string
   preco_padrao: string
+  desc_max: string
   custo: string
   estoque_atual: string
   estoque_minimo: string
+  feedstock: boolean
   ativo: boolean
 }
 
@@ -22,9 +24,11 @@ function rowToForm(row?: ProdutoRow): FormState {
     grupo: row?.grupo ?? '',
     descricao: row?.descricao ?? '',
     preco_padrao: row?.preco_padrao != null ? String(row.preco_padrao) : '',
+    desc_max: row?.desc_max != null ? String(row.desc_max) : '',
     custo: row?.custo != null ? String(row.custo) : '',
     estoque_atual: row?.estoque_atual != null ? String(row.estoque_atual) : '',
     estoque_minimo: row?.estoque_minimo != null ? String(row.estoque_minimo) : '',
+    feedstock: row?.feedstock ?? false,
     ativo: row?.ativo !== false,
   }
 }
@@ -64,6 +68,8 @@ export function ProdutoModal({
     if (nome.length < 2) return 'Nome muito curto.'
     const preco = parseNum(f.preco_padrao)
     if (preco != null && (!Number.isFinite(preco) || preco < 0)) return 'Preço inválido.'
+    const dm = parseNum(f.desc_max)
+    if (dm != null && (!Number.isFinite(dm) || dm < 0 || dm > 100)) return 'O desconto máximo deve estar entre 0% e 100%.'
     const custo = parseNum(f.custo)
     if (custo != null && (!Number.isFinite(custo) || custo < 0)) return 'Custo inválido.'
     const ea = parseInt0(f.estoque_atual)
@@ -85,9 +91,11 @@ export function ProdutoModal({
       grupo: f.grupo.trim() || null,
       descricao: f.descricao.trim() || null,
       preco_padrao: parseNum(f.preco_padrao) ?? 0,
+      desc_max: parseNum(f.desc_max) ?? 0,
       custo: parseNum(f.custo),
       estoque_atual: parseInt0(f.estoque_atual) ?? 0,
       estoque_minimo: parseInt0(f.estoque_minimo) ?? 0,
+      feedstock: f.feedstock,
       ativo: f.ativo,
     }
 
@@ -139,6 +147,11 @@ export function ProdutoModal({
           </div>
 
           <div>
+            <label style={lbl}>Desc. Máx (%)</label>
+            <input style={inp} value={f.desc_max} onChange={(e) => set('desc_max', e.target.value)} inputMode="decimal" placeholder="0,00" title="Desconto máximo permitido neste produto" />
+          </div>
+
+          <div>
             <label style={lbl}>Estoque atual</label>
             <input style={inp} value={f.estoque_atual} onChange={(e) => set('estoque_atual', e.target.value)} inputMode="numeric" placeholder="0" />
           </div>
@@ -152,6 +165,12 @@ export function ProdutoModal({
             <textarea style={{ ...inp, minHeight: 60, resize: 'vertical' }} value={f.descricao} onChange={(e) => set('descricao', e.target.value)} />
           </div>
 
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+              <input type="checkbox" checked={f.feedstock} onChange={(e) => set('feedstock', e.target.checked)} style={{ width: 'auto' }} />
+              Insumo
+            </label>
+          </div>
           <div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
               <input type="checkbox" checked={f.ativo} onChange={(e) => set('ativo', e.target.checked)} style={{ width: 'auto' }} />

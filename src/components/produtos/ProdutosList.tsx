@@ -13,9 +13,11 @@ export type ProdutoRow = {
   grupo: string | null
   descricao: string | null
   preco_padrao: number | null
+  desc_max: number | null
   custo: number | null
   estoque_atual: number | null
   estoque_minimo: number | null
+  feedstock: boolean | null
   ativo: boolean | null
 }
 
@@ -65,8 +67,10 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
                 <th>Produto</th>
                 <th>Grupo</th>
                 <th className="num-r">Preço</th>
+                <th className="num-r">Desc. Máx</th>
                 <th className="num-r">Custo</th>
                 <th className="num-r">Estoque</th>
+                <th>Insumo</th>
                 <th>Status</th>
                 {podeEscrever && <th></th>}
               </tr>
@@ -74,7 +78,7 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
             <tbody>
               {produtos.length === 0 && (
                 <tr>
-                  <td colSpan={podeEscrever ? 7 : 6} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={podeEscrever ? 9 : 8} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum produto encontrado para os filtros selecionados.
                   </td>
@@ -91,6 +95,7 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
                     </td>
                     <td>{p.grupo ? <span className="orig-tag">{p.grupo}</span> : <span className="muted">—</span>}</td>
                     <td className="num-r"><b>{moedaBR(p.preco_padrao)}</b></td>
+                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted">—</span>}</td>
                     <td className="num-r">{p.custo != null ? moedaBR(p.custo) : <span className="muted">—</span>}</td>
                     <td className="num-r">
                       {(p.estoque_atual ?? 0).toLocaleString('pt-BR')}
@@ -100,6 +105,7 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
                         </span>
                       )}
                     </td>
+                    <td>{p.feedstock ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                     <td>{inativo ? <span className="os-st os-cancelada">Inativo</span> : <span className="os-st os-fechada">Ativo</span>}</td>
                     {podeEscrever && (
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>

@@ -175,7 +175,7 @@ async function registrarAuditoria(
  */
 export async function aplicarPreset(
   cargoId: string,
-  preset: 'leitura_total' | 'limpar',
+  preset: 'leitura_total' | 'marcar_tudo' | 'limpar',
   escopo: Escopo = 'unidade',
 ): Promise<ActionResult & { gravadas?: number; removidas?: number }> {
   const { op, error } = await gateAdmin()
@@ -196,25 +196,354 @@ export async function aplicarPreset(
     return { ok: true, removidas: count ?? 0 }
   }
 
-  // leitura_total: concede 'ler' no escopo informado em todos os recursos
   if (!(ESCOPOS as readonly string[]).includes(escopo)) return { ok: false, error: 'Escopo inválido.' }
-  const { data: lerPerms } = await admin.from('permissoes').select('id').eq('acao_id', 'ler').eq('escopo', escopo)
-  const ids = ((lerPerms ?? []) as { id: string }[]).map((p) => p.id)
-  if (ids.length === 0) return { ok: false, error: 'Sem permissões de leitura no schema.' }
+
+  // Seleciona as permissões a conceder:
+  //  • leitura_total → só a ação 'ler' no escopo informado (legado: "Leitura total").
+  //  • marcar_tudo   → TODAS as ações de cada par recurso/ação no escopo informado,
+  //                    caindo para o MAIOR escopo disponível ≤ o pedido (cobre os 281
+  //                    checkboxes do legado "Marcar todas", L7289).
+  let ids: string[] = []
+  if (preset === 'leitura_total') {
+    const { data: lerPerms } = await admin.from('permissoes').select('id').eq('acao_id', 'ler').eq('escopo', escopo)
+    ids = ((lerPerms ?? []) as { id: string }[]).map((p) => p.id)
+  } else {
+    // marcar_tudo: pega TODAS as permissões e, para cada (recurso,ação), escolhe o
+    // escopo disponível mais próximo (≤ escopo pedido), igual à seleção do grid.
+    const ORDEM: Record<string, number> = { proprio: 1, unidade: 2, empresa: 3, global: 4 }
+    const teto = ORDEM[escopo] ?? 2
+    const { data: allPerms } = await admin.from('permissoes').select('id, recurso_id, acao_id, escopo')
+    const perms = (allPerms ?? []) as { id: string; recurso_id: string; acao_id: string; escopo: string }[]
+    const melhor = new Map<string, { id: string; rank: number }>()
+    for (const p of perms) {
+      const rank = ORDEM[p.escopo] ?? 0
+      if (rank > teto) continue // não concede escopo acima do pedido
+      const k = `${p.recurso_id}|${p.acao_id}`
+      const atual = melhor.get(k)
+      if (!atual || rank > atual.rank) melhor.set(k, { id: p.id, rank })
+    }
+    ids = [...melhor.values()].map((m) => m.id)
+  }
+  if (ids.length === 0) return { ok: false, error: 'Sem permissões correspondentes no schema.' }
+
+  // "Marcar todas" deve resultar exatamente no conjunto escolhido: limpamos antes
+  // para não deixar escopos antigos de outras seleções no cargo.
+  if (preset === 'marcar_tudo') {
+    await admin.from('cargo_permissoes').delete().eq('cargo_id', cargoId)
+  }
+
   const rows = ids.map((permissao_id) => ({ cargo_id: cargoId, permissao_id }))
   const { error: eIns, count } = await admin
     .from('cargo_permissoes')
     .upsert(rows, { onConflict: 'cargo_id,permissao_id', ignoreDuplicates: true, count: 'exact' })
   if (eIns) return { ok: false, error: `Falha ao aplicar preset: ${eIns.message}` }
-  await registrarAuditoria(op.userId, cargo, { preset: `leitura_total:${escopo}`, gravadas: count ?? ids.length })
+  await registrarAuditoria(op.userId, cargo, { preset: `${preset}:${escopo}`, gravadas: count ?? ids.length })
   revalidatePath('/perfis'); revalidatePath(`/perfis/${cargoId}`)
   return { ok: true, gravadas: count ?? ids.length }
 }
 
-// TODO(legado: buildPerfis) — criar/editar cargo (nome, slug, descrição), ativar/inativar
-//   e excluir cargo. O legado (PERFIS[]) era 100% mock; aqui priorizamos o editor de
-//   permissões que PERSISTE. CRUD de cargos exige cuidar de empresa_id/is_sistema e de
-//   não orfanar usuario_cargos; deixado para a próxima onda.
-// TODO(legado: buildPerfis) — atribuir/remover cargo de usuário (usuario_cargos) com
-//   empresa_id/unidade_id/expira_em. Hoje só leitura da contagem por cargo.
+// ────────────────────────────────────────────────────────────────────────────
+//  CRUD de cargos (perfis de acesso) — paridade com o legado buildPerfis/perfisRows
+//  (legacy/index.html L7178-7293). O legado era 100% mock; aqui PERSISTE de verdade.
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Gera um slug seguro a partir do nome (ascii, minúsculas, _). Prefixo da empresa
+ *  para não colidir com os cargos do sistema (super_admin, gerente, …). */
+function gerarSlug(nome: string, prefixo: string): string {
+  const base = (nome || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48)
+  return `${prefixo}${base || 'perfil'}`
+}
+
+/** Resolve a empresa do operador via usuario_cargos (1ª empresa vinculada).
+ *  Fallback: a única empresa do tenant (modelo lkii tem 1 empresa raiz). */
+async function resolverEmpresaDoOperador(admin: ReturnType<typeof adminClient>, userId: string): Promise<string | null> {
+  const { data: uc } = await admin
+    .from('usuario_cargos')
+    .select('empresa_id')
+    .eq('perfil_id', userId)
+    .not('empresa_id', 'is', null)
+    .limit(1)
+  const emp = ((uc ?? []) as { empresa_id: string | null }[])[0]?.empresa_id
+  if (emp) return emp
+  const { data: empresas } = await admin.from('empresas').select('id').limit(1)
+  return ((empresas ?? []) as { id: string }[])[0]?.id ?? null
+}
+
+/**
+ * Cria um novo perfil de acesso (cargo) da empresa. Legado: btnNovoPerfil →
+ * openPerfilEditor('') (L7286/7278). Insere em cargos com slug gerado, is_sistema=false,
+ * ativo=true, sem orfanar usuario_cargos (nada a vincular ainda). Retorna o id criado.
+ */
+export async function criarCargo(input: {
+  nome: string
+  descricao?: string
+  ativo?: boolean
+  batePonto?: boolean
+}): Promise<ActionResult & { id?: string }> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+
+  const nome = (input?.nome || '').trim()
+  if (nome.length < 2) return { ok: false, error: 'Informe o nome do perfil (mín. 2 caracteres).' }
+  if (nome.length > 80) return { ok: false, error: 'Nome do perfil muito longo (máx. 80).' }
+
+  const admin = adminClient()
+  const empresaId = await resolverEmpresaDoOperador(admin, op.userId)
+  if (!empresaId) return { ok: false, error: 'Não foi possível identificar a empresa para criar o perfil.' }
+
+  // slug único: se colidir, sufixa com número.
+  const prefixo = 'emp_'
+  let slug = gerarSlug(nome, prefixo)
+  const { data: existentes } = await admin.from('cargos').select('slug').like('slug', `${slug}%`)
+  const usados = new Set(((existentes ?? []) as { slug: string }[]).map((r) => r.slug))
+  if (usados.has(slug)) {
+    let n = 2
+    while (usados.has(`${slug}_${n}`)) n++
+    slug = `${slug}_${n}`
+  }
+
+  const { data: inserted, error: eIns } = await admin
+    .from('cargos')
+    .insert({
+      empresa_id: empresaId,
+      nome,
+      slug,
+      descricao: (input?.descricao || '').trim() || null,
+      is_sistema: false,
+      ativo: input?.ativo === false ? false : true,
+      bate_ponto: input?.batePonto === false ? false : true,
+      criado_por: op.userId,
+    })
+    .select('id, nome, slug')
+    .maybeSingle()
+  if (eIns) return { ok: false, error: `Falha ao criar perfil: ${eIns.message}` }
+  const novo = inserted as { id: string; nome: string; slug: string } | null
+  if (!novo) return { ok: false, error: 'Perfil não foi criado.' }
+
+  await registrarAuditoria(op.userId, novo, { acao: 'criar', nome, slug })
+  revalidatePath('/perfis')
+  return { ok: true, id: novo.id }
+}
+
+/**
+ * Edita os dados básicos de um cargo. Legado: card "Dados do perfil" (input permNome +
+ * select Ativo) — L7274/HTML 1736-1741. UPDATE em cargos (nome, descrição, ativo, bate_ponto).
+ * Não permite editar o Super Admin (âncora do RBAC).
+ */
+export async function atualizarCargo(
+  cargoId: string,
+  input: { nome?: string; descricao?: string; ativo?: boolean; batePonto?: boolean },
+): Promise<ActionResult> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!cargoId) return { ok: false, error: 'Cargo inválido.' }
+
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id, nome, slug, is_sistema').eq('id', cargoId).maybeSingle()
+  const cargo = cargoRow as { id: string; nome: string; slug: string; is_sistema: boolean } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+  if (cargo.slug === 'super_admin') return { ok: false, error: 'O cargo Super Admin é protegido e não pode ser editado.' }
+
+  const patch: Record<string, unknown> = {}
+  if (input.nome !== undefined) {
+    const nome = input.nome.trim()
+    if (nome.length < 2) return { ok: false, error: 'Informe o nome do perfil (mín. 2 caracteres).' }
+    if (nome.length > 80) return { ok: false, error: 'Nome do perfil muito longo (máx. 80).' }
+    patch.nome = nome
+  }
+  if (input.descricao !== undefined) patch.descricao = input.descricao.trim() || null
+  if (input.ativo !== undefined) patch.ativo = !!input.ativo
+  if (input.batePonto !== undefined) patch.bate_ponto = !!input.batePonto
+  if (Object.keys(patch).length === 0) return { ok: false, error: 'Nada para atualizar.' }
+
+  const { error: eUpd } = await admin.from('cargos').update(patch).eq('id', cargoId)
+  if (eUpd) return { ok: false, error: `Falha ao atualizar perfil: ${eUpd.message}` }
+
+  await registrarAuditoria(op.userId, cargo, { acao: 'editar', ...patch })
+  revalidatePath('/perfis')
+  revalidatePath(`/perfis/${cargoId}`)
+  return { ok: true }
+}
+
+/**
+ * Ativa/inativa um cargo. Legado: ação de linha "Inativar"/"Ativar" (perfil-toggle,
+ * L7205-7208). UPDATE cargos.ativo. Não mexe nos vínculos de usuário.
+ */
+export async function alternarAtivoCargo(cargoId: string): Promise<ActionResult & { ativo?: boolean }> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!cargoId) return { ok: false, error: 'Cargo inválido.' }
+
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id, nome, slug, ativo').eq('id', cargoId).maybeSingle()
+  const cargo = cargoRow as { id: string; nome: string; slug: string; ativo: boolean } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+  if (cargo.slug === 'super_admin') return { ok: false, error: 'O cargo Super Admin é protegido.' }
+
+  const novo = !(cargo.ativo !== false) // se ativo→inativa; se inativo→ativa
+  const { error: eUpd } = await admin.from('cargos').update({ ativo: novo }).eq('id', cargoId)
+  if (eUpd) return { ok: false, error: `Falha ao alternar status: ${eUpd.message}` }
+
+  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativar' : 'inativar' })
+  revalidatePath('/perfis')
+  revalidatePath(`/perfis/${cargoId}`)
+  return { ok: true, ativo: novo }
+}
+
+/**
+ * Alterna a flag "Bate ponto" do cargo. Legado: perfTogglePonto (L7213) — auditLog + toast.
+ * Persiste cargos.bate_ponto (coluna nova, ver scripts/migrations/rbac.sql).
+ */
+export async function alternarBatePonto(cargoId: string): Promise<ActionResult & { batePonto?: boolean }> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!cargoId) return { ok: false, error: 'Cargo inválido.' }
+
+  const admin = adminClient()
+  const { data: cargoRow, error: eSel } = await admin.from('cargos').select('id, nome, slug, bate_ponto').eq('id', cargoId).maybeSingle()
+  if (eSel && /bate_ponto/.test(eSel.message)) {
+    return { ok: false, error: 'Aplique a migration scripts/migrations/rbac.sql no lkii (coluna bate_ponto ausente).' }
+  }
+  const cargo = cargoRow as { id: string; nome: string; slug: string; bate_ponto: boolean } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+
+  const novo = !(cargo.bate_ponto !== false)
+  const { error: eUpd } = await admin.from('cargos').update({ bate_ponto: novo }).eq('id', cargoId)
+  if (eUpd) {
+    if (/bate_ponto/.test(eUpd.message)) return { ok: false, error: 'Aplique a migration scripts/migrations/rbac.sql no lkii (coluna bate_ponto ausente).' }
+    return { ok: false, error: `Falha ao alternar bate-ponto: ${eUpd.message}` }
+  }
+
+  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativou bate-ponto' : 'desativou bate-ponto' })
+  revalidatePath('/perfis')
+  return { ok: true, batePonto: novo }
+}
+
+/**
+ * Exclui um perfil de acesso. Legado: perfDel (L7214) — confirm + auditLog + toast.
+ * Valida ausência de usuario_cargos vinculados (não orfana usuários). As cargo_permissoes
+ * caem em cascata (FK on delete cascade). Não exclui cargos do sistema.
+ */
+export async function excluirCargo(cargoId: string): Promise<ActionResult> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!cargoId) return { ok: false, error: 'Cargo inválido.' }
+
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id, nome, slug, is_sistema').eq('id', cargoId).maybeSingle()
+  const cargo = cargoRow as { id: string; nome: string; slug: string; is_sistema: boolean } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+  if (cargo.slug === 'super_admin') return { ok: false, error: 'O cargo Super Admin é protegido e não pode ser excluído.' }
+  if (cargo.is_sistema) return { ok: false, error: 'Cargos do sistema não podem ser excluídos. Inative-o se necessário.' }
+
+  // Não orfanar: bloqueia se houver usuários vinculados.
+  const { count: vinculos } = await admin
+    .from('usuario_cargos')
+    .select('id', { count: 'exact', head: true })
+    .eq('cargo_id', cargoId)
+  if ((vinculos ?? 0) > 0) {
+    return { ok: false, error: `Há ${vinculos} usuário(s) com este perfil. Remova os vínculos antes de excluir.` }
+  }
+
+  // Remove as permissões do cargo (se não houver cascade no schema) e o cargo.
+  await admin.from('cargo_permissoes').delete().eq('cargo_id', cargoId)
+  const { error: eDel } = await admin.from('cargos').delete().eq('id', cargoId)
+  if (eDel) return { ok: false, error: `Falha ao excluir perfil: ${eDel.message}` }
+
+  await registrarAuditoria(op.userId, cargo, { acao: 'excluir' })
+  revalidatePath('/perfis')
+  return { ok: true }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+//  Vínculo usuário ↔ cargo (usuario_cargos) — atribuir / remover
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Atribui um cargo a um usuário (usuario_cargos). empresa_id resolvido do cargo;
+ *  unidade/expiração opcionais. Idempotente (upsert por perfil+cargo). */
+export async function atribuirCargoUsuario(input: {
+  cargoId: string
+  perfilId: string
+  unidadeId?: string | null
+  expiraEm?: string | null
+}): Promise<ActionResult> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!input?.cargoId || !input?.perfilId) return { ok: false, error: 'Informe usuário e perfil.' }
+
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id, nome, slug, empresa_id').eq('id', input.cargoId).maybeSingle()
+  const cargo = cargoRow as { id: string; nome: string; slug: string; empresa_id: string | null } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+
+  // Confere usuário existe.
+  const { data: perfil } = await admin.from('perfis_usuario').select('id, nome_completo').eq('id', input.perfilId).maybeSingle()
+  if (!perfil) return { ok: false, error: 'Usuário não encontrado.' }
+
+  const empresaId = cargo.empresa_id ?? (await resolverEmpresaDoOperador(admin, op.userId))
+  if (!empresaId) return { ok: false, error: 'Não foi possível identificar a empresa do vínculo.' }
+
+  // Já existe vínculo (mesmo perfil+cargo)? Reativa em vez de duplicar.
+  const { data: existRow } = await admin
+    .from('usuario_cargos')
+    .select('id')
+    .eq('perfil_id', input.perfilId)
+    .eq('cargo_id', input.cargoId)
+    .maybeSingle()
+  const exist = existRow as { id: string } | null
+
+  if (exist) {
+    const { error: eUpd } = await admin
+      .from('usuario_cargos')
+      .update({ ativo: true, unidade_id: input.unidadeId ?? null, expira_em: input.expiraEm ?? null })
+      .eq('id', exist.id)
+    if (eUpd) return { ok: false, error: `Falha ao reativar vínculo: ${eUpd.message}` }
+  } else {
+    const { error: eIns } = await admin.from('usuario_cargos').insert({
+      perfil_id: input.perfilId,
+      cargo_id: input.cargoId,
+      empresa_id: empresaId,
+      unidade_id: input.unidadeId ?? null,
+      ativo: true,
+      atribuido_por: op.userId,
+      expira_em: input.expiraEm ?? null,
+    })
+    if (eIns) return { ok: false, error: `Falha ao atribuir perfil: ${eIns.message}` }
+  }
+
+  await registrarAuditoria(op.userId, cargo, { acao: 'atribuir cargo', perfil_id: input.perfilId })
+  revalidatePath('/perfis')
+  revalidatePath(`/perfis/${input.cargoId}`)
+  return { ok: true }
+}
+
+/** Remove o vínculo usuário↔cargo (usuario_cargos). */
+export async function removerCargoUsuario(input: { cargoId: string; perfilId: string }): Promise<ActionResult> {
+  const { op, error } = await gateAdmin()
+  if (!op) return { ok: false, error }
+  if (!input?.cargoId || !input?.perfilId) return { ok: false, error: 'Vínculo inválido.' }
+
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id, nome, slug').eq('id', input.cargoId).maybeSingle()
+  const cargo = cargoRow as { id: string; nome: string; slug: string } | null
+  if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
+
+  const { error: eDel } = await admin
+    .from('usuario_cargos')
+    .delete()
+    .eq('perfil_id', input.perfilId)
+    .eq('cargo_id', input.cargoId)
+  if (eDel) return { ok: false, error: `Falha ao remover vínculo: ${eDel.message}` }
+
+  await registrarAuditoria(op.userId, cargo, { acao: 'remover cargo', perfil_id: input.perfilId })
+  revalidatePath('/perfis')
+  revalidatePath(`/perfis/${input.cargoId}`)
+  return { ok: true }
+}
+
 // TODO(legado: buildPerfis) — exportar a matriz de permissões (Excel/CSV) do cargo.

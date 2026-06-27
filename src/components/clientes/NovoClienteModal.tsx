@@ -8,6 +8,12 @@ type Unidade = { id: string; nome: string }
 
 const GENEROS: [string, string][] = [['', 'Selecione...'], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
 
+// "Onde nos conheceu?" — 9 opções do legado (cliModal, legacy 2724-2737).
+const CANAIS = [
+  'Indicação de amigo', 'Instagram', 'Facebook', 'Google / Busca', 'Site da rede',
+  'Landing Page', 'WhatsApp', 'Passei em frente à loja', 'Outro',
+]
+
 export function NovoClienteModal({
   unidades, unidadeSugerida, isAdmin, activeUnitId,
 }: { unidades: Unidade[]; unidadeSugerida: string | null; isAdmin: boolean; activeUnitId: string | null }) {
@@ -19,7 +25,7 @@ export function NovoClienteModal({
   const [precisaForcar, setPrecisaForcar] = useState(false)
   const [f, setF] = useState<NovoClienteInput>({
     nome: '', telefone: '', email: '', cpf: '', genero: '', data_nascimento: '',
-    cidade: '', estado: '', observacoes: '', unidade_origem_id: unidadeSugerida,
+    canal_origem: '', cidade: '', estado: '', observacoes: '', unidade_origem_id: unidadeSugerida,
   })
 
   const set = (k: keyof NovoClienteInput, v: string) => {
@@ -41,6 +47,7 @@ export function NovoClienteModal({
     const nome = (f.nome || '').trim()
     if (!nome) return 'Informe o nome do cliente.'
     if (nome.length < 2) return 'Nome muito curto.'
+    if (!(f.canal_origem || '').trim()) return 'Informe onde o cliente nos conheceu.'
     const email = (f.email || '').trim()
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return 'E-mail inválido.'
     const cpf = (f.cpf || '').replace(/\D/g, '')
@@ -60,6 +67,13 @@ export function NovoClienteModal({
     if (!precisaForcar) {
       const dup = await checarDuplicado({ cpf: f.cpf, telefone: f.telefone, nome: f.nome, unidade_origem_id: f.unidade_origem_id })
       if (dup.ok && dup.duplicado) {
+        const cpfInfo = (f.cpf || '').replace(/\D/g, '')
+        // Legado (cliSalvarNovo, 3066-3067): dup de NOME sem CPF é BLOQUEIO, não permite forçar.
+        if (dup.duplicado.criterio === 'nome' && cpfInfo.length !== 11) {
+          setErr(`Já existe cliente com este nome ("${dup.duplicado.nome}"). Informe um documento (CPF) para distinguir — ou trata-se de duplicidade.`)
+          setSaving(false)
+          return
+        }
         const rotulo = dup.duplicado.criterio === 'cpf' ? 'CPF' : dup.duplicado.criterio === 'telefone' ? 'telefone' : 'nome'
         setAviso(`Já existe cliente com o mesmo ${rotulo}: "${dup.duplicado.nome}". Clique em "Cadastrar mesmo assim" para confirmar.`)
         setPrecisaForcar(true)
@@ -87,12 +101,22 @@ export function NovoClienteModal({
           onClick={fechar}
         >
           <form onSubmit={submit} onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, padding: 22, background: '#fff', borderRadius: 14, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 18px 50px rgba(0,0,0,.25)' }}>
-            <h3 style={{ fontSize: 18, marginBottom: 14, fontWeight: 700 }}>Novo cliente</h3>
+            <h3 style={{ fontSize: 18, marginBottom: 12, fontWeight: 700 }}>Novo cliente</h3>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 9, padding: '9px 11px', fontSize: 12, color: 'var(--text-2)', marginBottom: 14 }}>
+              <i className="ti ti-info-circle" style={{ color: 'var(--brand-500)', marginTop: 1 }} />
+              <span>Cadastros feitos pelo <b>site da rede</b>, <b>landing pages</b> ou <b>manualmente na loja</b> caem automaticamente nesta mesma lista. Campos com <span style={{ color: 'var(--red)' }}>*</span> são obrigatórios.</span>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Nome <span style={{ color: 'var(--red)' }}>*</span></label><input style={inp} value={f.nome} onChange={(e) => set('nome', e.target.value)} autoFocus /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Nome completo <span style={{ color: 'var(--red)' }}>*</span></label><input style={inp} value={f.nome} onChange={(e) => set('nome', e.target.value)} autoFocus /></div>
               <div><label style={lbl}>CPF</label><input style={inp} value={f.cpf} onChange={(e) => set('cpf', e.target.value)} placeholder="000.000.000-00" inputMode="numeric" /></div>
               <div><label style={lbl}>Telefone</label><input style={inp} value={f.telefone} onChange={(e) => set('telefone', e.target.value)} placeholder="(00) 90000-0000" inputMode="tel" /></div>
               <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>E-mail</label><input style={inp} value={f.email} onChange={(e) => set('email', e.target.value)} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Onde nos conheceu? <span style={{ color: 'var(--red)' }}>*</span></label>
+                <select style={inp} value={f.canal_origem ?? ''} onChange={(e) => set('canal_origem', e.target.value)}>
+                  <option value="">Selecione...</option>
+                  {CANAIS.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
               <div><label style={lbl}>Gênero</label>
                 <select style={inp} value={f.genero} onChange={(e) => set('genero', e.target.value)}>
                   {GENEROS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}

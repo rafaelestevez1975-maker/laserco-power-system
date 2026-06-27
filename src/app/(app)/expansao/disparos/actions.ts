@@ -2,11 +2,46 @@
 
 import { revalidatePath } from 'next/cache'
 import { getSessionContext } from '@/lib/session'
-import { requireOperador, msgErro } from '@/lib/sb'
+import { requireOperador, msgErro, scopeUnidade } from '@/lib/sb'
 import { listInstances, criarCampanhaSimples } from '@/lib/uazapi'
 import type { ActionResult } from '@/lib/types'
+import type { ExpLista, ExpDisparo } from '@/components/expansao/types'
 
 export type Template = { id: string; nome: string; texto: string }
+
+/**
+ * "Listas disponíveis" para disparo (legado expDisparos / EXP_LISTS 8545), porém
+ * derivadas de DADOS REAIS do lkii em vez de mock:
+ *   - Base de clientes (ativos da unidade ativa / rede)
+ *   - Clientes inativos (ativo=false)
+ *   - Leads de captação de franquia (pipeline='franquia', origem geo/site)
+ * Cada lista vira público de uma campanha. O histórico ainda não é persistido
+ * (não há tabela de campanhas), então vem vazio até a integração de histórico.
+ */
+export async function dadosDisparos(activeUnitId: string | null): Promise<{ listas: ExpLista[]; historico: ExpDisparo[] }> {
+  const { op } = await requireOperador()
+  if (!op) return { listas: [], historico: [] }
+
+  // count head:true → só o total, sem trazer linhas. Clientes escopam por unidade_origem_id.
+  const cBase = scopeUnidade(op.sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', true), activeUnitId, 'unidade_origem_id')
+  const cInativos = scopeUnidade(op.sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', false), activeUnitId, 'unidade_origem_id')
+  const cCaptacao = scopeUnidade(
+    op.sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'franquia').in('origem', ['geolocalizado', 'site']),
+    activeUnitId,
+  )
+
+  const [base, inativos, captacao] = await Promise.all([cBase, cInativos, cCaptacao])
+
+  const listas: ExpLista[] = [
+    { nome: 'Base de clientes do sistema', qtd: base.error ? 0 : (base.count ?? 0), fonte: 'Sistema' },
+    { nome: 'Clientes inativos', qtd: inativos.error ? 0 : (inativos.count ?? 0), fonte: 'Sistema' },
+    { nome: 'Leads de captação (Geo + Site)', qtd: captacao.error ? 0 : (captacao.count ?? 0), fonte: 'Captação' },
+  ]
+
+  // Histórico real ainda não persistido (sem tabela de campanhas no lkii).
+  const historico: ExpDisparo[] = []
+  return { listas, historico }
+}
 
 /** Dispara (ou agenda) uma campanha de WhatsApp por um canal conectado (envio em massa via UAZAPI).
  *  agendarISO (opcional) = data/hora local do input datetime-local; vazio = envia agora.
