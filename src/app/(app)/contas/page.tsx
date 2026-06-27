@@ -45,7 +45,7 @@ function aplicarFiltros<
 
 export default async function ContasPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const aba: Aba = sp.aba === 'receber' ? 'receber' : 'pagar'
+  const aba: Aba = sp.aba === 'pagar' ? 'pagar' : 'receber' // default Receber (não há despesas lançadas ainda)
   const tipo: 'receita' | 'despesa' = aba === 'receber' ? 'receita' : 'despesa'
 
   const ctx = await getSessionContext()

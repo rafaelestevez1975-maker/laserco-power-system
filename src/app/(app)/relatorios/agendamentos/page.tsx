@@ -16,7 +16,9 @@ const STATUS: { val: string; label: string; icon: string; cls: string }[] = [
   { val: 'concluido', label: 'Concluídos', icon: 'ti-circle-check', cls: 'os-fechada' },
   { val: 'confirmado', label: 'Confirmados', icon: 'ti-calendar-check', cls: 'os-aberta' },
   { val: 'aberto', label: 'Abertos', icon: 'ti-calendar', cls: 'os-aberta' },
+  { val: 'em_atendimento', label: 'Em atendimento', icon: 'ti-progress', cls: 'os-aberta' },
   { val: 'cancelado', label: 'Cancelados', icon: 'ti-calendar-x', cls: 'os-cancelada' },
+  { val: 'no_show', label: 'No-show', icon: 'ti-user-x', cls: 'os-cancelada' },
 ]
 
 /** Conta agendamentos (head:true → só count) aplicando filtros. */

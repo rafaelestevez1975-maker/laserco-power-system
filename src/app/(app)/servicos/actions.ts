@@ -55,7 +55,7 @@ function payload(input: ServicoInput) {
     nome: (input.nome || '').trim(),
     grupo: (input.grupo || '').trim() || null,
     descricao: (input.descricao || '').trim() || null,
-    duracao_min: input.duracao_min != null ? input.duracao_min : null,
+    duracao_min: input.duracao_min != null ? input.duracao_min : 30, // NOT NULL no banco (default 30)
     preco_padrao: input.preco_padrao != null ? input.preco_padrao : 0,
     comissionavel: !!input.comissionavel,
     dynamic_price: !!input.dynamic_price,

@@ -43,14 +43,14 @@ export const FUNIL_INDS: IndicadorDef[] = [
   },
   {
     k: 'ticket_medio', lab: 'Ticket médio', meta: 1000, suf: ' R$', inv: false, peso: 1,
-    categoria: 'ticket',
+    categoria: 'ticket_medio',
     act: 'Estimular upgrade de pacote e combos; revisar mix de serviços.',
   },
 ]
 
 /** Categorias válidas de tarefa (enum observado em plano_acao_tarefas.categoria). */
 export const CATEGORIAS_TAREFA = [
-  'captacao', 'comparecimento', 'conversao', 'ticket', 'retencao', 'operacional', 'geral',
+  'agendamento', 'captacao', 'comparecimento', 'conversao', 'ticket_medio', 'retencao', 'geral',
 ] as const
 export type CategoriaTarefa = (typeof CATEGORIAS_TAREFA)[number]
 

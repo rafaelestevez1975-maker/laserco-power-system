@@ -17,7 +17,7 @@ type SP = {
 }
 
 // Papéis que podem cadastrar/inativar (gate de UI; o servidor revalida).
-const PAPEIS_ESCRITA = ['admin_geral', 'gerente', 'recepcao', 'colaborador']
+const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à RLS de escrita de clientes
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams

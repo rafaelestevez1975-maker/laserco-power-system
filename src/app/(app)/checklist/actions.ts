@@ -26,7 +26,7 @@ function podeEscrever(papel: string | null | undefined): boolean {
 }
 
 // Status válidos observados/aceitos no backend (planos_acao.status).
-const STATUS_VALIDOS = ['ativo', 'concluido', 'arquivado'] as const
+const STATUS_VALIDOS = ['ativo', 'concluido', 'expirado', 'cancelado'] as const
 const PRIORIDADES = ['baixa', 'media', 'alta'] as const
 
 export type TarefaInput = {
@@ -108,7 +108,7 @@ export async function criarPlano(input: PlanoInput): Promise<ActionResult> {
     descricao: (t.descricao || '').trim() || null,
     categoria: t.categoria && CATEGORIAS_TAREFA.includes(t.categoria as (typeof CATEGORIAS_TAREFA)[number]) ? t.categoria : 'geral',
     ordem: i + 1,
-    prazo_dias: t.prazo_dias != null ? t.prazo_dias : null,
+    prazo_dias: t.prazo_dias != null ? t.prazo_dias : 7, // NOT NULL no banco (default 7)
   }))
 
   const { error: eTar } = await op.sb.from('plano_acao_tarefas').insert(rows)

@@ -27,7 +27,7 @@ export async function buscarClientes(termo: string, unidadeId: string | null): P
     .eq('ativo', true)
     .order('nome', { ascending: true })
     .limit(20)
-  if (unidadeId) q = q.eq('unidade_origem_id', unidadeId)
+  // NÃO filtrar por unidade: a base de clientes é compartilhada e unidade_origem_id é NULL em 100% dos registros.
 
   const safe = t.replace(/[,()*%]/g, ' ').trim()
   if (!safe) return []

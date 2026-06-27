@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
+import { adminClient } from '@/lib/supabase/admin'
 import { ehAdmin } from '@/lib/rbac'
 
 export type ActionResult = { ok: boolean; error?: string }
@@ -37,11 +38,13 @@ export async function salvarDadosUnidade(input: DadosUnidadeInput): Promise<Acti
   const estado = (input.estado || '').trim().toUpperCase()
   if (estado && estado.length !== 2) return { ok: false, error: 'UF deve ter 2 letras (ex.: SP).' }
 
-  // A unidade precisa estar visível pela RLS (escopo do usuário).
+  // A unidade precisa estar visível pela RLS (escopo do usuário) — confere ANTES de gravar.
   const { data: alvo } = await op.sb.from('unidades').select('id').eq('id', input.id).maybeSingle()
   if (!alvo) return { ok: false, error: 'Unidade não encontrada ou fora do seu acesso.' }
 
-  const { error: e } = await op.sb
+  // RLS de unidades só deixa admin escrever; após o gate de papel + a confirmação de visibilidade,
+  // gravamos via service-role escopado ao id já validado.
+  const { error: e } = await adminClient()
     .from('unidades')
     .update({
       nome,

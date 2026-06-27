@@ -8,7 +8,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 // Papéis que podem cadastrar/inativar cliente (admin sempre passa via temPapel/ehAdmin).
 // Mantém o gate explícito mesmo com a RLS atrás como 2ª linha de defesa.
-const PAPEIS_ESCRITA = ['admin_geral', 'gerente', 'recepcao', 'colaborador']
+const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à RLS clientes_ins/upd (tem_acesso_cliente_final AND papel<>gestor)
 
 function podeEscrever(papel: string | null | undefined): boolean {
   return ehAdmin(papel) || (!!papel && PAPEIS_ESCRITA.includes(papel))

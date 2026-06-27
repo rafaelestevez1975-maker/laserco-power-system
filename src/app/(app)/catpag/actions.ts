@@ -41,8 +41,9 @@ export async function criarCategoria(input: NovaCategoriaInput): Promise<ActionR
   const nome = (input.nome || '').trim()
   if (!nome) return { ok: false, error: 'Informe o nome da categoria.' }
   if (nome.length > 120) return { ok: false, error: 'Nome muito longo (máx. 120).' }
-  const codigo = (input.codigo || '').trim() || null
-  if (codigo && !/^[0-9.]+$/.test(codigo)) return { ok: false, error: 'Código deve conter apenas números e pontos (ex.: 4.8).' }
+  const codigo = (input.codigo || '').trim()
+  if (!codigo) return { ok: false, error: 'Informe o código da categoria (ex.: 4.8).' } // codigo é NOT NULL no banco
+  if (!/^[0-9.]+$/.test(codigo)) return { ok: false, error: 'Código deve conter apenas números e pontos (ex.: 4.8).' }
 
   // Se houver pai, ele precisa existir, ser do mesmo tipo e (idealmente) ser um grupo.
   let empresa_id: string | null = null
@@ -74,7 +75,7 @@ export async function criarCategoria(input: NovaCategoriaInput): Promise<ActionR
     })
     .select('id')
     .single()
-  if (e) return { ok: false, error: msgErro(e.message, 'criar categoria') }
+  if (e) return { ok: false, error: /duplicate|23505|unique/i.test(e.message) ? 'Já existe uma categoria com esse código.' : msgErro(e.message, 'criar categoria') }
 
   revalidatePath(rotaDe(input.tipo))
   return { ok: true, id: (ins as { id?: string } | null)?.id }
@@ -98,8 +99,9 @@ export async function editarCategoria(input: EditarCategoriaInput): Promise<Acti
   const nome = (input.nome || '').trim()
   if (!nome) return { ok: false, error: 'Informe o nome da categoria.' }
   if (nome.length > 120) return { ok: false, error: 'Nome muito longo (máx. 120).' }
-  const codigo = (input.codigo || '').trim() || null
-  if (codigo && !/^[0-9.]+$/.test(codigo)) return { ok: false, error: 'Código deve conter apenas números e pontos.' }
+  const codigo = (input.codigo || '').trim()
+  if (!codigo) return { ok: false, error: 'Informe o código da categoria.' } // codigo é NOT NULL no banco
+  if (!/^[0-9.]+$/.test(codigo)) return { ok: false, error: 'Código deve conter apenas números e pontos.' }
 
   const { data: catRaw } = await op.sb
     .from('plano_contas')
@@ -115,7 +117,7 @@ export async function editarCategoria(input: EditarCategoriaInput): Promise<Acti
     .update({ nome, codigo, aceita_lancamentos: !!input.aceita_lancamentos })
     .eq('id', input.id)
     .eq('is_sistema', false) // trava extra: nunca toca em sistema
-  if (e) return { ok: false, error: msgErro(e.message, 'editar categoria') }
+  if (e) return { ok: false, error: /duplicate|23505|unique/i.test(e.message) ? 'Já existe uma categoria com esse código.' : msgErro(e.message, 'editar categoria') }
 
   revalidatePath(rotaDe(input.tipo))
   return { ok: true }

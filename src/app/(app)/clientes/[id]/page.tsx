@@ -5,7 +5,7 @@ import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
 import { ClienteFicha, type ClienteFull, type AgendamentoRow } from '@/components/clientes/ClienteFicha'
 
-const PAPEIS_ESCRITA = ['admin_geral', 'gerente', 'recepcao', 'colaborador']
+const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à RLS de escrita de clientes
 
 export default async function ClienteFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

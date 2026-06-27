@@ -84,7 +84,8 @@ function validar(input: ColaboradorInput, exigirCpf = true): string | null {
   if (nasc && !/^\d{4}-\d{2}-\d{2}$/.test(nasc)) return 'Data de nascimento inválida.'
 
   const adm = (input.data_admissao || '').trim()
-  if (adm && !/^\d{4}-\d{2}-\d{2}$/.test(adm)) return 'Data de admissão inválida.'
+  if (!adm) return 'Informe a data de admissão.' // data_admissao é NOT NULL no banco
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(adm)) return 'Data de admissão inválida.'
 
   const regime = (input.regime || '').trim()
   if (regime && !REGIMES.includes(regime as Regime)) return 'Regime inválido.'
@@ -93,12 +94,8 @@ function validar(input: ColaboradorInput, exigirCpf = true): string | null {
   if (tipo && !TIPOS.includes(tipo as Tipo)) return 'Tipo inválido.'
 
   const cargo = (input.cargo || '').trim()
-  // cargo é enum no banco — só valida contra a lista conhecida quando preenchido;
-  // se vier um valor fora da lista (cargo legado do banco na edição), deixamos o
-  // servidor do Postgres rejeitar com mensagem clara, em vez de bloquear aqui.
-  if (cargo && !CARGOS.includes(cargo as Cargo)) {
-    // não bloqueia — pode ser um cargo válido não mapeado (ver TODO cargoEnumCompleto)
-  }
+  if (!cargo) return 'Selecione o cargo do colaborador.' // cargo é enum NOT NULL no banco
+  if (!CARGOS.includes(cargo as Cargo)) return 'Cargo inválido.'
 
   return null
 }
@@ -127,8 +124,8 @@ function montarPayload(input: ColaboradorInput) {
     agencia: (input.agencia || '').trim() || null,
     conta: (input.conta || '').trim() || null,
     pix: (input.pix || '').trim() || null,
-    jornada_semanal_horas: parseIntOrNull(input.jornada_semanal_horas),
-    jornada_diaria_horas: parseIntOrNull(input.jornada_diaria_horas),
+    jornada_semanal_horas: parseIntOrNull(input.jornada_semanal_horas) ?? 44, // NOT NULL (default 44)
+    jornada_diaria_horas: parseIntOrNull(input.jornada_diaria_horas) ?? 8, // NOT NULL (default 8)
     home_office_autorizado: !!input.home_office_autorizado,
     endereco_residencial: (input.endereco_residencial || '').trim() || null,
   }
@@ -148,9 +145,9 @@ export async function checarCpfDuplicado(
   const d = dig(cpf)
   if (!d) return { ok: true, duplicado: null }
 
-  let q = op.sb.from('colaboradores').select('id, nome').eq('cpf', d).limit(1)
-  q = scopeUnidade(q, unidadeId, 'unidade_id')
-  const { data } = await q.maybeSingle()
+  // CPF é UNIQUE GLOBAL no banco (colaboradores_cpf_key) — checa duplicidade sem escopo de unidade.
+  void unidadeId
+  const { data } = await op.sb.from('colaboradores').select('id, nome').eq('cpf', d).limit(1).maybeSingle()
   const row = (data as { id: string; nome: string } | null) ?? null
   if (row && row.id !== ignorarId) return { ok: true, duplicado: row }
   return { ok: true, duplicado: null }

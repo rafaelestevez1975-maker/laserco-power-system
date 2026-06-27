@@ -307,7 +307,7 @@ export async function registrarPagamento(input: PagamentoInput, activeUnitId: st
   const { error: e } = await op.sb.from('os_pagamentos').insert({
     os_id: input.osId,
     data_pagamento: new Date().toISOString().slice(0, 10),
-    tipo: 'recebimento',
+    tipo: 'pagamento', // CHECK os_pagamentos_tipo só aceita pagamento|parcela_recorrente|mensalidade
     metodo: input.metodo,
     parcelas_total: parcelas,
     parcela_atual: 1,

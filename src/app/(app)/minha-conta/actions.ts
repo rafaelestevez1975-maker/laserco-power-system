@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
+import { adminClient } from '@/lib/supabase/admin'
 
 export type ActionResult = { ok: boolean; error?: string }
 
@@ -27,7 +28,8 @@ export async function salvarMinhaConta(input: MinhaContaInput): Promise<ActionRe
     if (dig.length < 10 || dig.length > 13) return { ok: false, error: 'Telefone inválido (use DDD + número).' }
   }
 
-  const { error: e } = await op.sb
+  // RLS de perfis_usuario só deixa admin escrever; usamos service-role ESCOPADO ao próprio id (vindo do auth, não do input).
+  const { error: e } = await adminClient()
     .from('perfis_usuario')
     .update({ nome_completo: nome, telefone: tel || null, atualizado_em: new Date().toISOString() })
     .eq('id', op.userId) // escopo ao próprio usuário
