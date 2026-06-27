@@ -8,9 +8,9 @@ import { DashFiltros } from '@/components/dashboards/DashFiltros'
 import { resolveDashRange } from '@/components/dashboards/dashPeriodo'
 import {
   pullLancamentos, somaLanc, somaRealizado, somaPorChave,
-  faturamentoMesAnterior, ultimosMeses, rotuloMes, type LancMin,
+  faturamentoMesAnterior, ultimosMeses, rotuloMes,
 } from '@/components/dashboards/agg'
-import { calcRoyalties, type Royalties } from '@/lib/dashboards'
+import { calcRoyalties, ROYALTY_VENC_DIA, type Royalties } from '@/lib/dashboards'
 
 export const dynamic = 'force-dynamic'
 
@@ -153,7 +153,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
               <b style={{ color: '#B26A00' }}>Royalties a pagar (automático) — {moedaBR(royalties.valor)}</b>
               <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
                 {royalties.pct}% sobre o faturamento do <b>mês anterior</b> ({moedaBR(royalties.faturamentoMesAnterior)}) · vencimento{' '}
-                <b>dia {10}</b> ({royalties.venc}). Lançado automaticamente no fluxo de caixa desta <b>unidade franqueada</b>.
+                <b>dia {ROYALTY_VENC_DIA}</b> ({royalties.venc}). Lançado automaticamente no fluxo de caixa desta <b>unidade franqueada</b>.
               </div>
             </div>
           </div>

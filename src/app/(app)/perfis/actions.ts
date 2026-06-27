@@ -328,11 +328,11 @@ export async function criarCargo(input: {
     if (r.error && /bate_ponto/.test(r.error.message)) {
       const r2 = await admin.from('cargos').insert(baseRow).select('id, nome, slug').maybeSingle()
       if (r2.error) return { ok: false, error: `Falha ao criar perfil: ${r2.error.message}` }
-      inserted = r2.data as typeof inserted
+      inserted = r2.data as unknown as typeof inserted
     } else if (r.error) {
       return { ok: false, error: `Falha ao criar perfil: ${r.error.message}` }
     } else {
-      inserted = r.data as typeof inserted
+      inserted = r.data as unknown as typeof inserted
     }
   }
   const novo = inserted

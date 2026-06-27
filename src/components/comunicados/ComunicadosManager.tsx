@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { criarComunicado, marcarCiente, definirStatusComunicado, relatorioLeitura, type ComunicadoForm, type LeitorRow } from '@/app/(app)/comunicados/actions'
+import { criarComunicado, marcarCiente, definirStatusComunicado, rosterLeitura, type ComunicadoForm, type RosterRow } from '@/app/(app)/comunicados/actions'
 
 export type Comunicado = {
   id: string; titulo: string; mensagem: string
@@ -82,7 +82,8 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
   const [tab, setTab] = useState<'Todos' | 'Publicados' | 'Agendados' | 'Encerrados'>('Todos')
   const [msg, setMsg] = useState('')
   const [novo, setNovo] = useState(false)
-  const [report, setReport] = useState<{ com: Comunicado; leitores: LeitorRow[] | null } | null>(null)
+  const [report, setReport] = useState<{ com: Comunicado; roster: RosterRow[] | null } | null>(null)
+  const [simular, setSimular] = useState<Comunicado | null>(null)
   const cienteSet = useMemo(() => new Set(myCiente), [myCiente])
 
   const base = useMemo(() => comunicados.filter((c) =>
@@ -121,12 +122,20 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
     })
   }
   function abrirReport(com: Comunicado) {
-    setReport({ com, leitores: null })
-    startTransition(async () => { const r = await relatorioLeitura(com.id); setReport({ com, leitores: r.ok ? r.leitores ?? [] : [] }) })
+    setReport({ com, roster: null })
+    startTransition(async () => { const r = await rosterLeitura(com.id); setReport({ com, roster: r.ok ? r.roster ?? [] : [] }) })
   }
   function mudarStatus(id: string, status: 'publicado' | 'encerrado') {
     startTransition(async () => { const r = await definirStatusComunicado(id, status); if (r.ok) router.refresh(); else setMsg(r.error || 'Erro.') })
   }
+  function copiarLink(id: string) {
+    const url = `${window.location.origin}/comunicados#${id}`
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => setMsg('Link público do comunicado copiado.'), () => setMsg(url))
+    else setMsg(url)
+  }
+
+  // Relatório de leitura como TELA dedicada (legado comReportRender 6476-6489).
+  if (report) return <ComReport com={report.com} roster={report.roster} onBack={() => setReport(null)} />
 
   return (
     <>
@@ -170,7 +179,14 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
 
       <div className="rel-acts" style={{ justifyContent: 'space-between', margin: '-4px 0 14px' }}>
         <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{msg}</span>
-        {isAdmin && <button className="btn btn-primary" onClick={() => setNovo(true)}><i className="ti ti-plus" /> Novo comunicado</button>}
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-ghost" onClick={() => setSimular(list[0] ?? base[0] ?? comunicados[0] ?? null)} disabled={comunicados.length === 0}>
+              <i className="ti ti-eye" /> Pré-visualizar como o colaborador vê (1º acesso)
+            </button>
+            <button className="btn btn-primary" onClick={() => setNovo(true)}><i className="ti ti-plus" /> Novo comunicado</button>
+          </div>
+        )}
       </div>
 
       <div className="dash-grid" style={{ marginBottom: 16 }}>
@@ -205,6 +221,7 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
                   <td><span className={`wa-pill ${ST_PILL[c.status] || 'draft'}`}>{ST_LABEL[c.status]}</span></td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <span className="os-link" onClick={() => abrirReport(c)}>Visualizar</span>
+                    {isAdmin && <> · <span className="os-link" onClick={() => setSimular(c)}>Gerenciar</span> · <span className="os-link" onClick={() => copiarLink(c.id)}>Link</span></>}
                     {isAdmin && c.status === 'publicado' && <> · <span className="os-link" onClick={() => mudarStatus(c.id, 'encerrado')}>Encerrar</span></>}
                     {isAdmin && c.status === 'encerrado' && <> · <span className="os-link" onClick={() => mudarStatus(c.id, 'publicado')}>Reabrir</span></>}
                   </td>
@@ -216,7 +233,7 @@ export function ComunicadosManager({ comunicados, myCiente, isAdmin, nome }: { c
       </div></div>
 
       {novo && <NovoComunicado onClose={() => setNovo(false)} onSaved={() => { setNovo(false); router.refresh() }} />}
-      {report && <ReportModal data={report} onClose={() => setReport(null)} />}
+      {simular && <PreviewModal com={simular} onClose={() => setSimular(null)} />}
     </>
   )
 }
@@ -253,7 +270,7 @@ function NovoComunicado({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           </div>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}><input type="checkbox" checked={f.leitura_obrigatoria} onChange={(e) => setF({ ...f, leitura_obrigatoria: e.target.checked })} /> Leitura obrigatória (ciente)</label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}><input type="checkbox" checked={f.enviar_email} onChange={(e) => setF({ ...f, enviar_email: e.target.checked })} /> Enviar por e-mail</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}><input type="checkbox" checked={f.enviar_email} onChange={(e) => setF({ ...f, enviar_email: e.target.checked })} /> Enviar também por WhatsApp</label>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Publicação</label><select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value as ComunicadoForm['status'] })}><option value="publicado">Publicar agora</option><option value="agendado">Agendar</option><option value="rascunho">Salvar rascunho</option></select></div>
@@ -266,26 +283,121 @@ function NovoComunicado({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   )
 }
 
-function ReportModal({ data, onClose }: { data: { com: Comunicado; leitores: LeitorRow[] | null }; onClose: () => void }) {
-  const { com, leitores } = data
+const ST_REPORT_PILL: Record<string, string> = { publicado: 'ok', agendado: 'pend', encerrado: 'done', rascunho: 'draft' }
+
+/** Relatório de leitura como TELA dedicada (legado comReportRender 6476-6489):
+ *  cabeçalho do comunicado, 4 KPIs, gráfico Cientes×Pendentes, chips Todos/Cientes/Pendentes,
+ *  lista de quem leu E quem está pendente, e botão Exportar (CSV). */
+function ComReport({ com, roster, onBack }: { com: Comunicado; roster: RosterRow[] | null; onBack: () => void }) {
+  const [filtro, setFiltro] = useState<'Todos' | 'Cientes' | 'Pendentes'>('Todos')
+  // KPIs reais (a partir do roster quando disponível; senão dos agregados do card).
+  const cientes = roster ? roster.filter((p) => p.lido).length : com.lidos
+  const dest = roster ? roster.length : com.dest
+  const pend = Math.max(0, dest - cientes)
+  const taxa = pct(cientes, dest)
+  const lista = (roster ?? []).filter((p) => filtro === 'Todos' || (filtro === 'Cientes' ? p.lido : !p.lido))
+
+  function exportarCSV() {
+    const linhas = [['Colaborador', 'Unidade', 'Status', 'Ciente em']]
+    for (const p of lista) linhas.push([p.nome, p.unidade ?? '', p.lido ? 'Ciente' : 'Pendente', p.lido_em ? new Date(p.lido_em).toLocaleString('pt-BR') : ''])
+    const csv = '﻿' + linhas.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = `comunicado-${com.id.slice(0, 6)}.csv`
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
+  }
+
+  return (
+    <>
+      <div style={{ marginBottom: 12 }}><span className="os-link" onClick={onBack}><i className="ti ti-arrow-left" /> Voltar aos comunicados</span></div>
+      <div className="rel-card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+          {com.prioridade !== 'normal' && <span className="evt-type"><i className={`ti ${PRIO_ICON[com.prioridade]}`} /> {PRIO_LABEL[com.prioridade]}</span>}
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}><i className="ti ti-send" /> Enviado em <b>{dataBR(com.quando)}</b> · por {com.autor}</span>
+          <span className={`wa-pill ${ST_REPORT_PILL[com.status] || 'draft'}`}>{ST_LABEL[com.status]}</span>
+          {com.email && <span style={{ fontSize: 11.5, color: 'var(--green)' }}><i className="ti ti-brand-whatsapp" /> também por WhatsApp</span>}
+          {com.obrigatorio && <span className="wa-pill pend" style={{ marginLeft: 'auto' }}>leitura obrigatória (1×)</span>}
+        </div>
+        <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{com.titulo}</h3>
+        <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{com.mensagem}</p>
+        <div className="evt-audis" style={{ marginTop: 12 }}>Direcionado a: {com.audiencia.map((a) => <span className="evt-audi-tag" key={a}>{a}</span>)}</div>
+      </div>
+
+      <Kpis items={[
+        ['Destinatários', String(dest), 'ti-users'],
+        ['Cientes (leram)', String(cientes), 'ti-checks'],
+        ['Pendentes', String(pend), 'ti-clock'],
+        ['Taxa de leitura', taxa + '%', 'ti-percentage'],
+      ]} />
+
+      <div className="dash-grid" style={{ marginBottom: 16 }}>
+        <div className="dash-w"><h4><i className="ti ti-chart-pie" /> Leitura do comunicado</h4><BarChart rows={[['Cientes', cientes], ['Pendentes', pend]]} /></div>
+      </div>
+
+      <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '16px 0 8px' }}>
+        <div className="set-sec" style={{ margin: 0 }}>Quem leu e quando</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="dash-filter" style={{ margin: 0 }}>
+            {(['Todos', 'Cientes', 'Pendentes'] as const).map((t) => (
+              <div key={t} className={`chip ${t === filtro ? 'active' : ''}`} onClick={() => setFiltro(t)}>{t}</div>
+            ))}
+          </div>
+          <button className="btn btn-ghost" disabled={!roster} onClick={exportarCSV}><i className="ti ti-download" /> Exportar</button>
+        </div>
+      </div>
+
+      <div className="cli-card"><div className="cli-scroll" style={{ maxHeight: 420 }}>
+        <table className="cli-table">
+          <thead><tr><th>Colaborador</th><th>Unidade</th><th>Status</th><th>Ciente em</th></tr></thead>
+          <tbody>
+            {roster === null && <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: 24 }}>Carregando relatório…</td></tr>}
+            {roster && lista.length === 0 && <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: 24 }}>Nenhum destinatário neste filtro.</td></tr>}
+            {lista.map((p, i) => (
+              <tr key={i}>
+                <td><span className="cli-name">{p.nome}</span></td>
+                <td><span style={{ fontSize: 11.5, color: 'var(--text-2)' }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)', verticalAlign: -2 }} /> {p.unidade ?? ''}</span></td>
+                <td>{p.lido ? <span className="wa-pill ok">Ciente</span> : <span className="wa-pill pend">Pendente</span>}</td>
+                <td>{p.lido_em ? new Date(p.lido_em).toLocaleString('pt-BR') : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div></div>
+    </>
+  )
+}
+
+/** Prévia "como o colaborador vê no 1º acesso" (legado comSimular 6503-6510): replica o
+ *  gate de leitura obrigatória (#comReadMod) com checkbox 'Li e compreendi' que habilita o botão. */
+function PreviewModal({ com, onClose }: { com: Comunicado; onClose: () => void }) {
+  const [li, setLi] = useState(false)
+  const [cor, icone, label] = ((): [string, string, string] => {
+    if (com.prioridade === 'importante') return ['var(--amber)', 'ti-alert-triangle', 'Importante']
+    if (com.prioridade === 'urgente') return ['var(--red)', 'ti-urgent', 'Urgente']
+    return ['var(--blue)', 'ti-info-circle', 'Normal']
+  })()
   return (
     <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal">
-        <div className="modal-head"><h3><i className="ti ti-eye" /> {com.titulo}</h3><button className="modal-close" onClick={onClose}>×</button></div>
-        <div className="modal-body" style={{ display: 'block' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 8 }}>{com.mensagem}</div>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Leitura: {com.lidos} de {com.dest} ({pct(com.lidos, com.dest)}%)</div>
-          {leitores === null && <div className="muted">Carregando relatório…</div>}
-          {leitores && leitores.length === 0 && <div className="muted">Ninguém deu “ciente” ainda.</div>}
-          {leitores && leitores.length > 0 && (
-            <div className="cli-scroll" style={{ maxHeight: 320 }}>
-              <table className="cli-table"><thead><tr><th>Nome</th><th>Unidade</th><th>Leu em</th></tr></thead>
-                <tbody>{leitores.map((l, i) => <tr key={i}><td>{l.nome}</td><td>{l.unidade ?? ''}</td><td>{new Date(l.lido_em).toLocaleString('pt-BR')}</td></tr>)}</tbody>
-              </table>
-            </div>
-          )}
+      <div className="modal" style={{ width: 560 }}>
+        <div className="modal-head" style={{ background: 'linear-gradient(135deg,var(--brand-600),var(--brand-400))', color: '#fff' }}>
+          <h3 style={{ color: '#fff' }}><i className="ti ti-speakerphone" style={{ color: '#fff' }} /> Comunicado oficial · leitura obrigatória</h3>
+          <button className="modal-close" style={{ color: '#fff' }} onClick={onClose}>×</button>
         </div>
-        <div className="modal-foot"><button className="btn btn-primary" onClick={onClose}>Fechar</button></div>
+        <div className="modal-body" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10, flexWrap: 'wrap' }}>
+            <span className="evt-type" style={{ background: `${cor}22`, color: cor }}><i className={`ti ${icone}`} /> {label}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{dataBR(com.quando)} · {com.autor}</span>
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{com.titulo}</h3>
+          <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{com.mensagem}</p>
+          <div style={{ marginTop: 12, fontSize: 11.5, color: 'var(--text-3)' }}>Direcionado a: {com.audiencia.join(' · ')}</div>
+        </div>
+        <div className="modal-foot" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={li} onChange={(e) => setLi(e.target.checked)} /> Li e compreendi o comunicado
+          </label>
+          <button className="btn btn-primary" disabled={!li} onClick={onClose}><i className="ti ti-check" /> Ciente  entrar no sistema</button>
+        </div>
       </div>
     </div>
   )

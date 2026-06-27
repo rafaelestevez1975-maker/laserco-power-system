@@ -31,7 +31,7 @@ export default async function IndiquesPage() {
     if (activeUnit) pq = pq.eq('unidade_id', activeUnit)
     const { data: pcfg, error: ePcfg } = await pq.order('atualizado_em', { ascending: false }).limit(1).maybeSingle()
     if (ePcfg && /indique_config|relation|does not exist/i.test(ePcfg.message)) migrationPendente = true
-    else if (pcfg) premio = pcfg as typeof premio
+    else if (pcfg) premio = pcfg as unknown as typeof premio
   }
 
   // Último sorteio do mês (indique_sorteios) — tolerante à migration não aplicada.
@@ -41,7 +41,7 @@ export default async function IndiquesPage() {
     if (activeUnit) sq = sq.eq('unidade_id', activeUnit)
     const { data: sor, error: eSor } = await sq.order('sorteado_em', { ascending: false }).limit(1).maybeSingle()
     if (eSor && /indique_sorteios|relation|does not exist/i.test(eSor.message)) migrationPendente = true
-    else if (sor) ultimoSorteio = sor as typeof ultimoSorteio
+    else if (sor) ultimoSorteio = sor as unknown as typeof ultimoSorteio
   }
 
   return (

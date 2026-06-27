@@ -85,7 +85,7 @@ export default async function ColaboradoresPage({ searchParams }: { searchParams
     data = r2.data
     count = r2.count
   }
-  const colaboradores = (data ?? []) as ColaboradorRow[]
+  const colaboradores = (data ?? []) as unknown as ColaboradorRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const temFiltro = !!(q || regime || cargo || area || status !== 'ativo')

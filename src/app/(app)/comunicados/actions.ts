@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { msgErro as rlsMsg } from '@/lib/sb'
 
 export type ComunicadoForm = {
@@ -106,6 +107,45 @@ export async function relatorioLeitura(comunicadoId: string): Promise<{ ok: bool
     return { nome: perfilNome || '', unidade: uniNome ?? null, lido_em: r.lido_em as string }
   })
   return { ok: true, leitores }
+}
+
+export type RosterRow = { nome: string; unidade: string | null; lido: boolean; lido_em: string | null }
+/** Roster completo do comunicado: TODOS os destinatários ativos com status Ciente/Pendente
+ *  e a data do ciente (espelha comRoster/comReportRender do legado 6461-6488). Só admin. */
+export async function rosterLeitura(comunicadoId: string): Promise<{ ok: boolean; error?: string; roster?: RosterRow[] }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { data: perfil } = await sb.from('perfis_usuario').select('papel').eq('id', user.id).single()
+  if ((perfil as { papel?: string } | null)?.papel !== 'admin_geral') return { ok: false, error: 'Apenas administradores.' }
+
+  const admin = adminClient()
+  // Pool de destinatários = perfis ativos (mesma base de total_destinatarios em criarComunicado).
+  const { data: pessoas, error: ePessoas } = await admin
+    .from('perfis_usuario')
+    .select('id, nome_completo, unidades(nome)')
+    .eq('ativo', true)
+    .order('nome_completo', { ascending: true })
+  if (ePessoas) return { ok: false, error: ePessoas.message }
+
+  // Quem deu ciente (com a data) neste comunicado.
+  const { data: lidasRaw } = await admin
+    .from('comunicado_leituras')
+    .select('perfil_id, lido_em')
+    .eq('comunicado_id', comunicadoId)
+  const lidasMap: Record<string, string | null> = {}
+  for (const r of (lidasRaw ?? []) as { perfil_id: string; lido_em: string | null }[]) lidasMap[r.perfil_id] = r.lido_em
+
+  const roster: RosterRow[] = ((pessoas ?? []) as Array<Record<string, unknown>>).map((p) => {
+    const un = p.unidades as { nome?: string } | { nome?: string }[] | null
+    const uniNome = Array.isArray(un) ? un[0]?.nome : un?.nome
+    const id = p.id as string
+    const lido = Object.prototype.hasOwnProperty.call(lidasMap, id)
+    return { nome: (p.nome_completo as string) || '', unidade: uniNome ?? null, lido, lido_em: lido ? lidasMap[id] : null }
+  })
+  // Cientes primeiro, depois pendentes (ordenação amigável para a tela).
+  roster.sort((a, b) => (a.lido === b.lido ? 0 : a.lido ? -1 : 1))
+  return { ok: true, roster }
 }
 
 /** Encerra (ou reabre) um comunicado  admin. */

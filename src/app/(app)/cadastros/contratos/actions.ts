@@ -108,7 +108,7 @@ export async function criarContrato(input: ContratoInput): Promise<ActionResult>
   if (v) return { ok: false, error: v }
 
   const payload = await montarPayload(input)
-  if ('erro' in payload) return { ok: false, error: payload.erro }
+  if ('erro' in payload) return { ok: false, error: payload.erro as string }
 
   const empresa_id = await resolverEmpresaId(op)
   const { data, error: e } = await op.sb
@@ -133,7 +133,7 @@ export async function salvarContrato(id: string, input: ContratoInput): Promise<
   if (v) return { ok: false, error: v }
 
   const payload = await montarPayload(input)
-  if ('erro' in payload) return { ok: false, error: payload.erro }
+  if ('erro' in payload) return { ok: false, error: payload.erro as string }
 
   const { error: e } = await op.sb.from('contratos_modelo').update(payload).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'salvar modelo de contrato') }
