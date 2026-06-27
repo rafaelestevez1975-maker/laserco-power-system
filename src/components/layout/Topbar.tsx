@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { titleFor } from '@/lib/menu'
 import { NotificacoesSino } from './NotificacoesSino'
@@ -17,6 +17,7 @@ export function Topbar({
   onOpenMenu: () => void
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { icon, title } = titleFor(pathname)
   const [userOpen, setUserOpen] = useState(false)
   const [unitOpen, setUnitOpen] = useState(false)
@@ -81,7 +82,7 @@ export function Topbar({
       <NotificacoesSino />
 
       <div className="top-pop">
-        <button className="btn-venda"><i className="ti ti-shopping-cart-plus" /> Nova Venda</button>
+        <button className="btn-venda" onClick={() => router.push('/pdv')} title="Abrir o PDV / Nova Venda"><i className="ti ti-shopping-cart-plus" /> Nova Venda</button>
       </div>
 
       <div className="user" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setUserOpen((v) => !v)}>
