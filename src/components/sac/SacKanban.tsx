@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { moverTicketFase } from '@/app/(app)/sac/kanban/actions'
 import { solicitarReembolso, criarAcordo } from '@/app/(app)/sac/actions'
+import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 import { moedaBR } from '@/lib/fmt'
 
 export type Ticket = {
@@ -113,6 +114,18 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
   const nP = Math.min(24, Math.max(1, Number(nParc) || 1))
   const valorParcela = Math.round((vAc / nP) * 100) / 100
 
+  const [ficha, setFicha] = useState<ClienteResumo | null>(null)
+  const [buscandoFicha, setBuscandoFicha] = useState(false)
+  const sessRestantes = ficha?.achou ? Math.max(0, (ficha.agendamentos ?? 0) - (ficha.concluidos ?? 0)) : 0
+  const valorSessao = ficha?.achou && (ficha.agendamentos ?? 0) > 0 ? Math.round(((ficha.totalGasto ?? 0) / (ficha.agendamentos ?? 1)) * 100) / 100 : 0
+
+  async function buscarFicha() {
+    setBuscandoFicha(true)
+    const r = await buscarClientePorContato(t.telefone_cliente, t.cpf_cliente)
+    setBuscandoFicha(false)
+    setFicha(r)
+  }
+
   async function lancar() {
     setMsg(''); setSaving(true)
     const res = await solicitarReembolso(t.id, reembolso, pctMulta)
@@ -159,6 +172,29 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
         {row('Devolução', money(t.valor_devolucao))}
         {row('Aberto em', t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR') : null)}
         {t.observacoes && <div style={{ marginTop: 10 }}><div style={{ color: 'var(--text-2)', fontSize: 12, marginBottom: 3 }}>Observações</div><div style={{ fontSize: 13, background: 'var(--surface-2)', padding: 10, borderRadius: 8 }}>{t.observacoes}</div></div>}
+
+        <div style={{ marginTop: 12 }}>
+          <button className="btn" disabled={buscandoFicha} onClick={buscarFicha}><i className="ti ti-id-badge-2" /> {buscandoFicha ? 'Buscando…' : 'Buscar ficha do cliente'}</button>
+          {ficha && !ficha.achou && <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 6 }}>Cliente não localizado no cadastro (CPF/telefone) ou sem permissão.</p>}
+          {ficha?.achou && (
+            <div style={{ marginTop: 8, padding: 10, background: 'var(--surface-2)', borderRadius: 8, fontSize: 12.5 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>{ficha.nome}{ficha.ativo ? ' · ativo' : ''}{ficha.cidade ? ` · ${ficha.cidade}/${ficha.estado ?? ''}` : ''}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 4 }}>
+                <span>Agendamentos: <b>{ficha.agendamentos}</b></span>
+                <span>Sessões feitas: <b>{ficha.concluidos}</b></span>
+                <span>Sessões restantes: <b>{sessRestantes}</b></span>
+                <span>Total gasto: <b>{money(ficha.totalGasto ?? 0)}</b></span>
+                <span>Créditos: <b>{money(ficha.saldoCreditos ?? 0)}</b></span>
+                <span>Valor/sessão: <b>{money(valorSessao)}</b></span>
+              </div>
+              {sessRestantes > 0 && valorSessao > 0 && (
+                <button className="btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => { setModo('vista'); setValorPago(String(Math.round(valorSessao * sessRestantes * 100) / 100)) }}>
+                  <i className="ti ti-calculator" /> Usar base por sessão: {sessRestantes}× {money(valorSessao)} = {money(valorSessao * sessRestantes)}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: '2px solid var(--line)' }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}><i className="ti ti-cash" /> Reembolso / Acordo</div>
