@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { listAtendentesSac } from '@/lib/pessoas'
+import { rangePeriodo } from '@/lib/periodo'
 import { SacFiltros } from '@/components/sac/SacFiltros'
 import { NovoChamado } from '@/components/sac/NovoChamado'
 
@@ -18,26 +19,7 @@ const prioPill = (p: string | null) =>
 const fasePill = (f: string | null) =>
   f === 'Concluído' ? pill('#E7F0EC', '#15803D') : f === 'Em pagamento' ? pill('#FBEFD9', '#9A6700') : f === 'Contato com cliente' ? pill('#E6F0FB', '#3D7FD1') : pill('#F7E7EB', '#8A2A41')
 
-/** Replica o sacRange do legado: presets de período → intervalo [ini, fim) sobre criado_em. */
-function rangePeriodo(periodo: string | undefined, di?: string, df?: string): { ini: string | null; fim: string | null } {
-  const now = new Date()
-  const dia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  let ini: Date | null = null, fim: Date | null = null
-  switch (periodo) {
-    case 'hoje': ini = dia(now); break
-    case 'ontem': ini = new Date(dia(now).getTime() - 864e5); fim = dia(now); break
-    case 'semana': ini = new Date(dia(now).getTime() - 7 * 864e5); break
-    case 'mes': ini = new Date(now.getFullYear(), now.getMonth(), 1); break
-    case 'mes_passado': ini = new Date(now.getFullYear(), now.getMonth() - 1, 1); fim = new Date(now.getFullYear(), now.getMonth(), 1); break
-    case 'custom':
-      if (di) ini = new Date(di)
-      if (df) { const d = new Date(df); fim = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) }
-      break
-  }
-  return { ini: ini && !isNaN(ini.getTime()) ? ini.toISOString() : null, fim: fim && !isNaN(fim.getTime()) ? fim.toISOString() : null }
-}
-
-type SP = { canal?: string; fase?: string; q?: string; atendente?: string; motivo?: string; unidade?: string; periodo?: string; di?: string; df?: string; page?: string }
+type SP ={ canal?: string; fase?: string; q?: string; atendente?: string; motivo?: string; unidade?: string; periodo?: string; di?: string; df?: string; page?: string }
 
 export default async function SacChamadosPage({ searchParams }: { searchParams: Promise<SP> }) {
   const spv = await searchParams

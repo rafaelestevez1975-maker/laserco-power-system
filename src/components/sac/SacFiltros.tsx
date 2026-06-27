@@ -1,13 +1,10 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
+import { PERIODOS } from '@/lib/periodo'
 
 const CANAIS = ['Reclame Aqui', 'Blip', 'WhatsApp', 'Sults', 'Procon', 'Instagram', 'Manual', 'E-mail']
 const FASES = ['Novo', 'Contato com cliente', 'Em pagamento', 'Concluído']
-const PERIODOS: [string, string][] = [
-  ['', 'Qualquer período'], ['hoje', 'Hoje'], ['ontem', 'Ontem'], ['semana', 'Última semana'],
-  ['mes', 'Mês atual'], ['mes_passado', 'Mês passado'], ['custom', 'Período…'],
-]
 
 export function SacFiltros({ atendentes = [], motivos = [], unidades = [] }: {
   atendentes?: { id: string; nome: string }[]; motivos?: string[]; unidades?: { id: string; nome: string }[]
