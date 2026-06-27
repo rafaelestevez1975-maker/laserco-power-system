@@ -16,7 +16,8 @@ export type NovoChamadoInput = {
 }
 
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
-const PRIORIDADES = ['baixa', 'media']
+const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
+const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 
 /** Abre um chamado no SAC (cria sac_tickets). Respeita RLS/permissão de escrita. */
 export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boolean; error?: string }> {
@@ -61,6 +62,38 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
   revalidatePath('/sac/chamados')
   revalidatePath('/sac/kanban')
   revalidatePath('/sac')
+  return { ok: true }
+}
+
+export type EditChamadoInput = {
+  nome_cliente?: string; telefone_cliente?: string; email_cliente?: string; cpf_cliente?: string
+  motivo_label?: string; prioridade?: string; fase?: string; atribuido_para?: string | null; observacoes?: string
+}
+
+/** Edita um chamado existente (campos parciais). Valida prioridade/fase contra os CHECKs. */
+export async function atualizarChamado(id: string, dados: EditChamadoInput): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  if (dados.nome_cliente !== undefined && !dados.nome_cliente.trim()) return { ok: false, error: 'O nome do cliente não pode ficar vazio.' }
+  if (dados.prioridade && !PRIORIDADES.includes(dados.prioridade)) return { ok: false, error: 'Prioridade inválida.' }
+  if (dados.fase && !FASES.includes(dados.fase)) return { ok: false, error: 'Fase inválida.' }
+
+  const patch: Record<string, unknown> = {}
+  if (dados.nome_cliente !== undefined) patch.nome_cliente = dados.nome_cliente.trim()
+  if (dados.telefone_cliente !== undefined) patch.telefone_cliente = dados.telefone_cliente.trim() || null
+  if (dados.email_cliente !== undefined) patch.email_cliente = dados.email_cliente.trim() || null
+  if (dados.cpf_cliente !== undefined) patch.cpf_cliente = dados.cpf_cliente.replace(/\D/g, '') || null
+  if (dados.motivo_label !== undefined) patch.motivo_label = dados.motivo_label.trim() || null
+  if (dados.prioridade) patch.prioridade = dados.prioridade
+  if (dados.fase) patch.fase = dados.fase
+  if (dados.atribuido_para !== undefined) patch.atribuido_para = dados.atribuido_para || null
+  if (dados.observacoes !== undefined) patch.observacoes = dados.observacoes.trim() || null
+  if (Object.keys(patch).length === 0) return { ok: true }
+
+  const { error } = await sb.from('sac_tickets').update(patch).eq('id', id)
+  if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Você não tem permissão para editar chamados.' : error.message }
+  revalidatePath('/sac/chamados'); revalidatePath('/sac/kanban'); revalidatePath('/sac')
   return { ok: true }
 }
 
