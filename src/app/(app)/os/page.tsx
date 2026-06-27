@@ -23,19 +23,27 @@ type SP = {
 
 const STATUS_FILTRO = ['aberta', 'fechada', 'cancelada'] as const
 
-/** Aplica filtros comuns (unidade, status, cliente, colaborador, origem, período de criação). */
-function aplicarFiltros<
-  Q extends { eq(c: string, v: unknown): Q; gte(c: string, v: unknown): Q; lte(c: string, v: unknown): Q },
->(q: Q, unidadeId: string | null, sp: SP): Q {
-  let out = q
+/** Builder mínimo usado pelos filtros — evita a explosão de tipos do PostgREST (TS2589). */
+type FiltroQuery = {
+  eq(c: string, v: unknown): FiltroQuery
+  gte(c: string, v: unknown): FiltroQuery
+  lte(c: string, v: unknown): FiltroQuery
+}
+
+/**
+ * Aplica filtros comuns (unidade, status, cliente, colaborador, origem, período de criação).
+ * `incluiStatus=false` omite o filtro de status (usado nos KPIs por status).
+ */
+function aplicarFiltros<Q extends FiltroQuery>(q: Q, unidadeId: string | null, sp: SP, incluiStatus = true): Q {
+  let out: FiltroQuery = q
   if (unidadeId) out = out.eq('unidade_id', unidadeId)
-  if (sp.status && (STATUS_FILTRO as readonly string[]).includes(sp.status)) out = out.eq('status', sp.status)
+  if (incluiStatus && sp.status && (STATUS_FILTRO as readonly string[]).includes(sp.status)) out = out.eq('status', sp.status)
   if (sp.cliente) out = out.eq('cliente_id', sp.cliente)
   if (sp.colaborador) out = out.eq('criado_por', sp.colaborador)
   if (sp.origem) out = out.eq('origem', sp.origem)
   if (sp.di) out = out.gte('criado_em', `${sp.di}T00:00:00`)
   if (sp.df) out = out.lte('criado_em', `${sp.df}T23:59:59`)
-  return out
+  return out as Q
 }
 
 export default async function OsPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -49,28 +57,21 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
   const from = (page - 1) * PAGE_SIZE
 
   // ── KPIs reais por status (head:true → só count), respeitando filtros ATIVOS exceto o próprio status ──
-  const kpiBase = () => aplicarFiltros(sb.from('os').select('id', { count: 'exact', head: true }), unidadeId, { ...sp, status: undefined })
+  // O builder do PostgREST é tipado de forma recursiva; tratamos como FiltroQuery (que devolve
+  // uma Promise ao await) para não estourar a profundidade de instanciação do TS (TS2589).
+  type CountResult = { count: number | null }
+  const kpiBase = (): FiltroQuery =>
+    aplicarFiltros(sb.from('os').select('id', { count: 'exact', head: true }) as unknown as FiltroQuery, unidadeId, sp, false)
   const [abertasRes, fechadasRes, canceladasRes] = await Promise.all([
-    kpiBase().eq('status', 'aberta'),
-    kpiBase().eq('status', 'fechada'),
-    kpiBase().eq('status', 'cancelada'),
+    kpiBase().eq('status', 'aberta') as unknown as PromiseLike<CountResult>,
+    kpiBase().eq('status', 'fechada') as unknown as PromiseLike<CountResult>,
+    kpiBase().eq('status', 'cancelada') as unknown as PromiseLike<CountResult>,
   ])
   const kpiAbertas = abertasRes.count ?? 0
   const kpiFechadas = fechadasRes.count ?? 0
   const kpiCanceladas = canceladasRes.count ?? 0
 
   // ── Lista paginada server-side (embed do cliente p/ nome) ──
-  let listQ = sb
-    .from('os')
-    .select(
-      'id, numero, status, origem, total, valor_pago, valor_pendente, desconto_total, observacao, criado_em, fechada_em, cancelada_em, cliente_id, criado_por, cliente:clientes(nome), responsavel:perfis_usuario!os_criado_por_fkey(nome_completo)',
-      { count: 'exact' },
-    )
-    .order('criado_em', { ascending: false, nullsFirst: false })
-    .range(from, from + PAGE_SIZE - 1)
-  listQ = aplicarFiltros(listQ, unidadeId, sp)
-  const { data: rowsRaw, count } = await listQ
-
   type Raw = {
     id: string
     numero: number | null
@@ -89,6 +90,19 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
     cliente?: { nome: string | null } | { nome: string | null }[] | null
     responsavel?: { nome_completo: string | null } | { nome_completo: string | null }[] | null
   }
+
+  const listQ = sb
+    .from('os')
+    .select(
+      'id, numero, status, origem, total, valor_pago, valor_pendente, desconto_total, observacao, criado_em, fechada_em, cancelada_em, cliente_id, criado_por, cliente:clientes(nome), responsavel:perfis_usuario!os_criado_por_fkey(nome_completo)',
+      { count: 'exact' },
+    )
+    .order('criado_em', { ascending: false, nullsFirst: false })
+    .range(from, from + PAGE_SIZE - 1)
+  // Filtramos pelo tipo leve (FiltroQuery) e tratamos o await como o shape esperado — evita TS2589.
+  const listFiltrada = aplicarFiltros(listQ as unknown as FiltroQuery, unidadeId, sp) as unknown as PromiseLike<{ data: Raw[] | null; count: number | null }>
+  const { data: rowsRaw, count } = await listFiltrada
+
   const rows: OsRow[] = ((rowsRaw ?? []) as Raw[]).map((r) => ({
     id: r.id,
     numero: r.numero,
