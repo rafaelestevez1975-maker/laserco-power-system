@@ -170,7 +170,7 @@ export const MENU: Section[] = [
           { label: 'Configurações', href: '/sac/config', icon: 'ti-settings', title: 'SAC · Configurações', badge: 'NOVO' },
         ],
       },
-      { label: 'Financeiro Franqueadora', href: '/financeiro', icon: 'ti-businessplan', badge: 'NOVO', perm: 'financeiro.' },
+      { label: 'Financeiro Franqueadora', href: '/financeiro', icon: 'ti-businessplan', perm: 'financeiro.' },
       { label: 'Jurídico', href: '/juridico', icon: 'ti-gavel', badge: 'ADMIN', admin: true },
       { label: 'Auditoria', href: '/auditoria', icon: 'ti-history', badge: 'ADMIN', perm: 'sistema.audit' },
     ],
