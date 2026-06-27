@@ -65,7 +65,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   return (
     <div className="view active">
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-        <NovoChamado unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
+        <NovoChamado unidades={ctx?.unidades ?? []} atendentes={atendentes} activeUnitId={ctx?.activeUnitId ?? null} />
       </div>
       <SacFiltros atendentes={atendentes} motivos={motivos} unidades={unidadesFiltro} />
 

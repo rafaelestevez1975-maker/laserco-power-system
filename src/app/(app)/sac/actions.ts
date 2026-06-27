@@ -15,12 +15,28 @@ export type NovoChamadoInput = {
   unidade_id?: string | null
   motivo_label?: string
   prioridade?: string
+  fase?: string
+  atribuido_para?: string | null
+  area_reclamada?: string
+  valor_pago?: number | string | null
+  valor_devolucao?: number | string | null
+  multa_aplicada?: boolean
+  pago?: boolean
   observacoes?: string
 }
 
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
 const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
+
+/** Converte "1.234,56" / "1234.56" / number em número (ou null). */
+function parseNum(v: number | string | null | undefined): number | null {
+  if (v == null || v === '') return null
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null
+  const t = v.trim().replace(/[R$\s]/g, '')
+  const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t)
+  return Number.isFinite(n) ? n : null
+}
 
 /** Abre um chamado no SAC (cria sac_tickets). Respeita RLS/permissão de escrita. */
 export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boolean; error?: string }> {
@@ -31,6 +47,7 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
 
   const canal = CANAIS.includes(input.canal) ? input.canal : 'Manual'
   const prioridade = PRIORIDADES.includes(input.prioridade || '') ? input.prioridade : 'media'
+  const fase = FASES.includes(input.fase || '') ? input.fase! : 'Novo'
 
   // empresa_id: da unidade escolhida, senão da empresa única
   let empresa_id: string | undefined
@@ -55,7 +72,13 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
     canal,
     status: 'aberto',
     prioridade,
-    fase: 'Novo',
+    fase,
+    atribuido_para: input.atribuido_para || null,
+    area_reclamada: input.area_reclamada?.trim() || null,
+    valor_pago: parseNum(input.valor_pago),
+    valor_devolucao: parseNum(input.valor_devolucao),
+    multa_aplicada: !!input.multa_aplicada,
+    pago: !!input.pago,
     observacoes: input.observacoes?.trim() || null,
   })
 
