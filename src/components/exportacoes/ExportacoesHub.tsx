@@ -8,10 +8,10 @@ import {
   exportAgendamentos,
   exportColaboradores,
   exportChamados,
-  EXPORT_LIMIT,
   type ExportResult,
   type DatasetKey,
 } from '@/app/(app)/exportacoes/actions'
+import { EXPORT_LIMIT } from '@/lib/exportacoes'
 
 type Dataset = {
   key: DatasetKey

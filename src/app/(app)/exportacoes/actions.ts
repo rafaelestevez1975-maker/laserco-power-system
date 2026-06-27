@@ -3,9 +3,7 @@
 import { requireOperador, msgErro } from '@/lib/sb'
 import { getSessionContext } from '@/lib/session'
 import { siteClient } from '@/lib/supabase/site'
-
-/** Limite duro de linhas por exportação (escopado por unidade ativa). */
-export const EXPORT_LIMIT = 5000
+import { EXPORT_LIMIT } from '@/lib/exportacoes'
 
 /** Resultado padrão das ações de leitura: ok + linhas OU erro. */
 export type ExportResult = { ok: true; rows: Record<string, string>[]; cols: string[]; truncado: boolean } | { ok: false; error: string }
