@@ -113,7 +113,7 @@ ON CONFLICT (id) DO UPDATE
 -- ----------------------------------------------------------------------------
 WITH base AS (
   SELECT
-    (SELECT id FROM empresas ORDER BY criado_em NULLS LAST LIMIT 1)  AS empresa_id,
+    (SELECT id FROM empresas LIMIT 1)  AS empresa_id,
     (SELECT id FROM unidades WHERE ativa = true ORDER BY nome LIMIT 1) AS unidade_id
 )
 INSERT INTO crm_leads

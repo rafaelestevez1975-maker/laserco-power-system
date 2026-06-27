@@ -80,9 +80,9 @@ export async function criarEtapa(nome: string): Promise<ActionResult> {
   if (!ehAdmin(op.papel)) return { ok: false, error: SEM_PERM_FUNIL }
   const n = nome.trim()
   if (!n) return { ok: false, error: 'Informe o nome da etapa.' }
-  const { data: maxRow } = await op.sb.from('crm_etapas').select('ordem').order('ordem', { ascending: false }).limit(1).maybeSingle()
+  const { data: maxRow } = await op.sb.from('crm_etapas').select('ordem').eq('pipeline', 'cliente').order('ordem', { ascending: false }).limit(1).maybeSingle()
   const ordem = (((maxRow as { ordem?: number } | null)?.ordem) ?? 0) + 1
-  const { error: e } = await op.sb.from('crm_etapas').insert({ nome: n, ordem, cor: '#8A2A41', is_sistema: false, ativo: true })
+  const { error: e } = await op.sb.from('crm_etapas').insert({ nome: n, ordem, cor: '#8A2A41', is_sistema: false, ativo: true, pipeline: 'cliente' })
   if (e) return { ok: false, error: msgErro(e.message, 'criar etapa') }
   revalidatePath('/crm')
   return { ok: true }

@@ -10,13 +10,15 @@ export default async function CrmPage() {
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
 
+  // pipeline='cliente' separa o CRM de clientes do funil de Expansão (franquia) — migration 050
   const { data: etapasRaw } = await sb
-    .from('crm_etapas').select('id, nome, ordem, cor').eq('ativo', true).order('ordem', { ascending: true })
+    .from('crm_etapas').select('id, nome, ordem, cor').eq('ativo', true).eq('pipeline', 'cliente').order('ordem', { ascending: true })
   const etapas = (etapasRaw ?? []) as Etapa[]
 
   let q = sb
     .from('crm_leads')
     .select('id, nome, telefone, origem, servico_interesse, valor_estimado, etapa_id, status, ia_score, criado_em')
+    .eq('pipeline', 'cliente')
     .order('criado_em', { ascending: false }).limit(500)
   if (activeUnit) q = q.eq('unidade_id', activeUnit)
   const { data: leadsRaw } = await q
