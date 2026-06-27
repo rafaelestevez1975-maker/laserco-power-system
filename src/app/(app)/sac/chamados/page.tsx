@@ -32,7 +32,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
 
   let query = sb
     .from('sac_tickets')
-    .select('id, numero, protocolo, nome_cliente, telefone_cliente, email_cliente, cpf_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado, atribuido_para, observacoes', { count: 'exact' })
+    .select('id, numero, protocolo, nome_cliente, telefone_cliente, email_cliente, cpf_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado, atribuido_para, observacoes, area_reclamada, valor_pago, valor_devolucao, multa_aplicada, pago', { count: 'exact' })
     .order('criado_em', { ascending: false })
     .range(from, from + PAGE_SIZE - 1)
   if (canal) query = query.eq('canal', canal)
@@ -65,7 +65,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   return (
     <div className="view active">
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-        <NovoChamado unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
+        <NovoChamado unidades={ctx?.unidades ?? []} atendentes={atendentes} activeUnitId={ctx?.activeUnitId ?? null} />
       </div>
       <SacFiltros atendentes={atendentes} motivos={motivos} unidades={unidadesFiltro} />
 

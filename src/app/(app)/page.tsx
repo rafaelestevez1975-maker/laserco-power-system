@@ -1,8 +1,9 @@
-import { getSnapshot } from '@/lib/snapshots'
-import { Placeholder } from '@/components/ui/Placeholder'
+import { DashboardUnidade } from '@/components/agenda/DashboardUnidade'
 
-export default function HomePage() {
-  const html = getSnapshot('/')
-  if (!html) return <Placeholder title="Dashboard" />
-  return <div className="view active" dangerouslySetInnerHTML={{ __html: html }} />
+export const dynamic = 'force-dynamic'
+
+/** Dashboard da unidade (rota /). Server Component real sobre dados do lkii
+ *  (substitui o clone estático getSnapshot('/')). Paridade: view-dashboard do legado. */
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ per?: string; di?: string; df?: string }> }) {
+  return <DashboardUnidade searchParams={await searchParams} />
 }

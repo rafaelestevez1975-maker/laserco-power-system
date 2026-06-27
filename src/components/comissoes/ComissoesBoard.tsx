@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  COM_CATS_SEED,
   CARGO_LABEL,
+  CARGO_TO_CAT_NOME,
   META_UNIDADE,
   SESSAO_TICKET,
   PERIODO_LBL,
@@ -11,25 +12,45 @@ import {
   type ComCat,
   type SimColaborador,
 } from './comissoes-data'
+import { salvarMatriz } from '@/app/(app)/cadastros/comissoes/actions'
 
 /**
  * Matriz de comissões (grade categorias × faixas) + Simulador de premiação em tempo real.
  * Fiel a buildComissoes do legado: Parte 1 (adicional por dezena sobre a premiação base) +
- * Parte 2 (bônus de fechamento do mês). Tudo client-side — não há tabela para persistir.
- * //TODO(needs-table: matriz_comissoes) — botão "Salvar matriz" mostra aviso honesto.
+ * Parte 2 (bônus de fechamento do mês). A matriz PERSISTE em matriz_comissoes
+ * (action salvarMatriz). Quando a tabela ainda não foi aplicada (`matrizDoBanco=false`),
+ * usamos o SEED e mostramos banner pedindo a migration.
  */
 export function ComissoesBoard({
+  matriz,
+  matrizDoBanco,
   colaboradores,
   unidades,
   podeEditar,
 }: {
+  matriz: ComCat[]
+  matrizDoBanco: boolean
   colaboradores: SimColaborador[]
   unidades: { id: string; nome: string }[]
   podeEditar: boolean
 }) {
-  // Estado da matriz (cópia editável do seed). Sem persistência (needs-table).
-  const [cats, setCats] = useState<ComCat[]>(() => COM_CATS_SEED.map((c) => structuredClone(c)))
+  const router = useRouter()
+  // Estado da matriz (cópia editável do que veio do banco — ou seed se a tabela está vazia).
+  const [cats, setCats] = useState<ComCat[]>(() => matriz.map((c) => structuredClone(c)))
   const [divisor, setDivisor] = useState<number>(3) // 1=mês, 2=quinzena, 3=dezena (legado default 3)
+  // Salvar matriz
+  const [salvando, setSalvando] = useState(false)
+  const [erroSalvar, setErroSalvar] = useState('')
+  const [okSalvar, setOkSalvar] = useState('')
+
+  async function salvar() {
+    setErroSalvar(''); setOkSalvar(''); setSalvando(true)
+    const res = await salvarMatriz(cats)
+    setSalvando(false)
+    if (!res.ok) { setErroSalvar(res.error || 'Erro ao salvar a matriz.'); return }
+    setOkSalvar('Matriz salva.')
+    router.refresh()
+  }
 
   // Simulador
   const [catIdx, setCatIdx] = useState<number>(3) // legado default '3' (Consultoras)
@@ -72,12 +93,18 @@ export function ComissoesBoard({
     if (catIdx >= cats.length - 1) setCatIdx(Math.max(0, cats.length - 2))
   }
 
-  // Quando escolhe um colaborador real, pré-seleciona categoria (por cargo) e unidade.
+  // Quando escolhe um colaborador real, pré-seleciona categoria e unidade (legado simPickColab).
+  // Casa primeiro por cargo do enum; senão pelo NOME da categoria mapeado (cobre SAC,
+  // Proprietário e Profissional, que não têm cargo de matriz dedicado).
   function pickColab(nome: string) {
     setColabFiltro(nome)
     const hit = colaboradores.find((c) => c.nome === nome)
     if (!hit) return
-    const ci = cats.findIndex((c) => c.cargo && c.cargo === hit.cargo)
+    let ci = hit.cargo ? cats.findIndex((c) => c.cargo && c.cargo === hit.cargo) : -1
+    if (ci < 0 && hit.cargo) {
+      const alvo = CARGO_TO_CAT_NOME[hit.cargo]
+      if (alvo) ci = cats.findIndex((c) => c.nome === alvo)
+    }
     if (ci >= 0) setCatIdx(ci)
     if (hit.unidadeNome && unidades.some((u) => u.nome === hit.unidadeNome)) setUniNome(hit.unidadeNome)
   }
@@ -144,17 +171,28 @@ export function ComissoesBoard({
         <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 10 }}>{periodoNote[divisor]}</p>
       </div>
 
-      {/* Aviso de persistência (needs-table) */}
-      <div className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 14px', padding: '10px 14px', background: '#FFF7E6', border: '1px solid #F0D89A' }}>
-        <i className="ti ti-info-circle" style={{ color: 'var(--amber)', fontSize: 18 }} />
-        <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-          A matriz abaixo é um <b>modelo padrão da rede</b>. Edições recalculam o simulador na hora, mas <b>ainda não há tabela no backend</b> para salvá-las de forma permanente.
-        </span>
-      </div>
+      {/* Banner de empty-state (migration não aplicada) */}
+      {!matrizDoBanco && (
+        <div className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 14px', padding: '10px 14px', background: '#FFF7E6', border: '1px solid #F0D89A' }}>
+          <i className="ti ti-info-circle" style={{ color: 'var(--amber)', fontSize: 18 }} />
+          <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+            Exibindo a <b>matriz padrão da rede</b> (modelo). Para salvar edições de forma permanente, aplique a migration <code>scripts/migrations/comissoes.sql</code> no lkii.
+          </span>
+        </div>
+      )}
 
-      <div className="mod-actions" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      {/* Feedback do salvar */}
+      {okSalvar && <p style={{ color: '#15803D', background: '#E7F0EC', borderRadius: 8, padding: '8px 11px', fontSize: 12.5, marginBottom: 10 }}><i className="ti ti-check" /> {okSalvar}</p>}
+      {erroSalvar && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}><i className="ti ti-alert-triangle" /> {erroSalvar}</p>}
+
+      <div className="mod-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 10 }}>
         {podeEditar && (
-          <button className="btn btn-primary" onClick={novaCategoria}><i className="ti ti-plus" /> Nova categoria</button>
+          <>
+            <button className="btn" onClick={novaCategoria}><i className="ti ti-plus" /> Nova categoria</button>
+            <button className="btn btn-primary" onClick={salvar} disabled={salvando || !matrizDoBanco} title={matrizDoBanco ? 'Salvar a matriz' : 'Aplique a migration scripts/migrations/comissoes.sql para habilitar a persistência'}>
+              <i className="ti ti-device-floppy" /> {salvando ? 'Salvando…' : 'Salvar matriz'}
+            </button>
+          </>
         )}
       </div>
 

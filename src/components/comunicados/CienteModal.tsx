@@ -19,16 +19,19 @@ export function CienteModal({ comunicados }: { comunicados: PendenteCom[] }) {
   const [i, setI] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  // Checkbox obrigatório 'Li e compreendi' (legado #comReadMod 2635-2636): mantém o botão DESABILITADO até marcar.
+  const [li, setLi] = useState(false)
   const atual = comunicados[i]
   if (!atual) return null
   const [cor, icone, label] = PRIO[atual.prioridade] ?? PRIO.normal
 
   function ciente() {
+    if (!li) return
     setBusy(true); setErr('')
     marcarCiente(atual.id).then((r) => {
       setBusy(false)
       if (!r.ok) { setErr(r.error || 'Erro ao registrar o ciente.'); return }
-      if (i + 1 < comunicados.length) setI(i + 1)
+      if (i + 1 < comunicados.length) { setI(i + 1); setLi(false) }
       else router.refresh()
     })
   }
@@ -50,9 +53,12 @@ export function CienteModal({ comunicados }: { comunicados: PendenteCom[] }) {
           <div style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{atual.mensagem}</div>
           {err && <div style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 10 }}>{err}</div>}
         </div>
-        <div className="modal-foot">
-          <button className="btn btn-primary" disabled={busy} onClick={ciente}>
-            {busy ? '…' : <><i className="ti ti-check" /> Li e estou ciente</>}
+        <div className="modal-foot" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={li} onChange={(e) => setLi(e.target.checked)} /> Li e compreendi o comunicado
+          </label>
+          <button className="btn btn-primary" disabled={busy || !li} onClick={ciente}>
+            {busy ? '…' : <><i className="ti ti-check" /> Ciente  entrar no sistema</>}
           </button>
         </div>
       </div>

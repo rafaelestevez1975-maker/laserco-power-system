@@ -13,14 +13,36 @@ export type NovoChamadoInput = {
   email_cliente?: string
   canal: string
   unidade_id?: string | null
+  tipo?: string
+  data_reclamacao?: string
   motivo_label?: string
   prioridade?: string
+  fase?: string
+  atribuido_para?: string | null
+  area_reclamada?: string
+  valor_pago?: number | string | null
+  valor_devolucao?: number | string | null
+  multa_aplicada?: boolean
+  pago?: boolean
   observacoes?: string
 }
 
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
 const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
+// Legado: tipo da unidade (Franquia/Própria) e data da reclamação (sacForm 9243/9246).
+// sac_tickets não tem colunas próprias para isso → registramos no prefixo de observações
+// (mesmo padrão da importação, que grava "Reclamação: <data>").
+const TIPOS = ['Franquia', 'Própria']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
+
+/** Converte "1.234,56" / "1234.56" / number em número (ou null). */
+function parseNum(v: number | string | null | undefined): number | null {
+  if (v == null || v === '') return null
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null
+  const t = v.trim().replace(/[R$\s]/g, '')
+  const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t)
+  return Number.isFinite(n) ? n : null
+}
 
 /** Abre um chamado no SAC (cria sac_tickets). Respeita RLS/permissão de escrita. */
 export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boolean; error?: string }> {
@@ -31,6 +53,7 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
 
   const canal = CANAIS.includes(input.canal) ? input.canal : 'Manual'
   const prioridade = PRIORIDADES.includes(input.prioridade || '') ? input.prioridade : 'media'
+  const fase = FASES.includes(input.fase || '') ? input.fase! : 'Novo'
 
   // empresa_id: da unidade escolhida, senão da empresa única
   let empresa_id: string | undefined
@@ -42,6 +65,12 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
     empresa_id = (emp as { id?: string } | null)?.id
   }
   if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
+
+  // Tipo e data da reclamação não têm coluna própria → vão no prefixo das observações.
+  const tipo = TIPOS.includes((input.tipo || '').trim()) ? (input.tipo || '').trim() : ''
+  const dataRecl = (input.data_reclamacao || '').trim()
+  const prefixo = [tipo ? `Tipo: ${tipo}` : '', dataRecl ? `Reclamação: ${dataRecl}` : ''].filter(Boolean).join(' · ')
+  const observacoes = [prefixo, input.observacoes?.trim() || ''].filter(Boolean).join(' · ') || null
 
   const { error } = await sb.from('sac_tickets').insert({
     empresa_id,
@@ -55,8 +84,14 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
     canal,
     status: 'aberto',
     prioridade,
-    fase: 'Novo',
-    observacoes: input.observacoes?.trim() || null,
+    fase,
+    atribuido_para: input.atribuido_para || null,
+    area_reclamada: input.area_reclamada?.trim() || null,
+    valor_pago: parseNum(input.valor_pago),
+    valor_devolucao: parseNum(input.valor_devolucao),
+    multa_aplicada: !!input.multa_aplicada,
+    pago: !!input.pago,
+    observacoes,
   })
 
   if (error) {
@@ -71,6 +106,8 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
 export type EditChamadoInput = {
   nome_cliente?: string; telefone_cliente?: string; email_cliente?: string; cpf_cliente?: string
   motivo_label?: string; prioridade?: string; fase?: string; atribuido_para?: string | null; observacoes?: string
+  area_reclamada?: string; valor_pago?: number | string | null; valor_devolucao?: number | string | null
+  multa_aplicada?: boolean; pago?: boolean
 }
 
 /** Edita um chamado existente (campos parciais). Valida prioridade/fase contra os CHECKs. */
@@ -92,6 +129,11 @@ export async function atualizarChamado(id: string, dados: EditChamadoInput): Pro
   if (dados.fase) patch.fase = dados.fase
   if (dados.atribuido_para !== undefined) patch.atribuido_para = dados.atribuido_para || null
   if (dados.observacoes !== undefined) patch.observacoes = dados.observacoes.trim() || null
+  if (dados.area_reclamada !== undefined) patch.area_reclamada = dados.area_reclamada.trim() || null
+  if (dados.valor_pago !== undefined) patch.valor_pago = parseNum(dados.valor_pago)
+  if (dados.valor_devolucao !== undefined) patch.valor_devolucao = parseNum(dados.valor_devolucao)
+  if (dados.multa_aplicada !== undefined) patch.multa_aplicada = !!dados.multa_aplicada
+  if (dados.pago !== undefined) patch.pago = !!dados.pago
   if (Object.keys(patch).length === 0) return { ok: true }
 
   const { error } = await sb.from('sac_tickets').update(patch).eq('id', id)
@@ -209,6 +251,48 @@ export async function criarAcordo(ticketId: string, valorTotal: number, nParcela
 
   await sb.from('sac_tickets').update({ fase: 'Em pagamento', valor_devolucao: valorTotal }).eq('id', ticketId)
   revalidatePath('/sac/pagamentos'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac')
+  return { ok: true }
+}
+
+export type AcordoAvulsoInput = { cliente: string; unidade_id?: string | null; valorTotal: number; nParcelas: number; data1: string; observacao?: string }
+
+/** Cria um acordo AVULSO (sem chamado vinculado) direto na aba Pagamentos.
+ *  Mesma regra de parcelamento e do dia 15; entra como 'aguardando_ok'. */
+export async function criarAcordoAvulso(input: AcordoAvulsoInput): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const cliente = (input.cliente || '').trim()
+  if (!cliente) return { ok: false, error: 'Informe o cliente.' }
+  if (!(input.valorTotal > 0)) return { ok: false, error: 'Valor total deve ser maior que zero.' }
+  const n = Math.round(input.nParcelas)
+  if (!(n >= 1 && n <= 24)) return { ok: false, error: 'Número de parcelas deve ser de 1 a 24.' }
+  const d1 = new Date(input.data1)
+  if (isNaN(d1.getTime())) return { ok: false, error: 'Data do 1º pagamento inválida.' }
+  if (!primeiroPagamentoValido(input.data1)) return { ok: false, error: MSG_DIA15 }
+
+  const empresa_id = await resolverEmpresa(sb, null, input.unidade_id ?? null)
+  if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
+
+  const { data: ac, error: ea } = await sb.from('sac_acordos').insert({
+    ticket_id: null, empresa_id, unidade_id: input.unidade_id ?? null,
+    cliente, valor_total: input.valorTotal, n_parcelas: n,
+    status: 'aguardando_ok', observacao: input.observacao?.trim() || null, criado_por: user.id,
+  }).select('id').single()
+  if (ea) return { ok: false, error: msgErro(ea.message, 'criar acordo') }
+  const acordoId = (ac as { id: string }).id
+
+  const base = Math.floor((input.valorTotal / n) * 100) / 100
+  const parcelas = Array.from({ length: n }, (_, i) => ({
+    acordo_id: acordoId, n: i + 1,
+    vencimento: addMonths(d1, i).toISOString().slice(0, 10),
+    valor: i === n - 1 ? Math.round((input.valorTotal - base * (n - 1)) * 100) / 100 : base,
+    pago: false,
+  }))
+  const { error: ep } = await sb.from('sac_parcelas').insert(parcelas)
+  if (ep) return { ok: false, error: ep.message }
+
+  revalidatePath('/sac/pagamentos')
   return { ok: true }
 }
 

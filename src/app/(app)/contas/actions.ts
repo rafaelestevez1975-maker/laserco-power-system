@@ -24,6 +24,7 @@ export type NovoLancamentoInput = {
   data_competencia?: string | null
   status?: 'pago' | 'pendente'
   forma_pagamento?: string | null
+  fornecedor?: string | null // legado: campo "Fornecedor" (view-contas)
   observacao?: string | null
   unidade_id: string | null // unidade ativa (escopo)
 }
@@ -78,6 +79,7 @@ export async function novoLancamento(input: NovoLancamentoInput): Promise<Action
     data_pagamento: status === 'pago' ? hoje : null,
     status,
     forma_pagamento: input.forma_pagamento?.trim() || null,
+    fornecedor: input.fornecedor?.trim() || null,
     observacao: input.observacao?.trim() || null,
     origem: 'manual',
     criado_por: op.userId,
@@ -122,6 +124,7 @@ export type EditarLancamentoInput = {
   categoria_id: string
   data_vencimento: string
   forma_pagamento?: string | null
+  fornecedor?: string | null
   observacao?: string | null
   tipo: 'receita' | 'despesa'
 }
@@ -158,6 +161,7 @@ export async function editarLancamento(input: EditarLancamentoInput): Promise<Ac
       categoria_id: input.categoria_id,
       data_vencimento: input.data_vencimento,
       forma_pagamento: input.forma_pagamento?.trim() || null,
+      fornecedor: input.fornecedor?.trim() || null,
       observacao: input.observacao?.trim() || null,
     })
     .eq('id', input.id)
@@ -167,10 +171,5 @@ export async function editarLancamento(input: EditarLancamentoInput): Promise<Ac
   return { ok: true }
 }
 
-// TODO(legado): buildContas — exportar (Excel/CSV) das contas filtradas
-//   (botão "Exportar" do view-contas, legacy/index.html linha 1951). Deixado como
-//   TODO: gerar planilha server-side a partir do mesmo filtro da listagem.
 // TODO(legado): buildContas — importação de lançamentos via Excel (Import Excel).
 //   Requer parse de planilha + de-para de categorias; deixado para depois.
-// TODO(legado): buildContas — filtro/coluna "Fornecedor" (view-contas tem campo
-//   Fornecedor). Não há tabela de fornecedores no schema atual; pendente de modelagem.

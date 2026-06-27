@@ -132,6 +132,9 @@ export function CategoriasManager({ tipo, rows, podeGerir }: Props) {
                   <td colSpan={5} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhuma categoria {verInativas ? '' : 'ativa '}cadastrada.
+                    <div style={{ fontSize: 12, marginTop: 8 }}>
+                      Aplique a migration <code>scripts/migrations/categorias.sql</code> no lkii para semear os grupos e itens do legado{podeGerir ? ', ou crie a primeira pelo botão acima' : ''}.
+                    </div>
                   </td>
                 </tr>
               )}

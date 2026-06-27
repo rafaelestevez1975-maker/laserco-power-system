@@ -18,7 +18,7 @@
 --   'franquia'. Assim o app filtra etapas e leads por pipeline.
 --
 -- O QUE ESTA MIGRATION APLICA
---   1. crm_leads.pipeline (default 'cliente') + tipo_lead + temperatura.
+--   1. crm_leads.pipeline (default 'cliente') + tipo_lead + temperatura + empresa + uf.
 --   2. crm_etapas.pipeline (default 'cliente').
 --   3. Estende o CHECK de crm_leads.origem com 'geolocalizado' e 'site'
 --      (origens de captação da Expansão), de forma idempotente.
@@ -44,9 +44,15 @@ ALTER TABLE crm_leads
 -- valores aceitos: 'cliente' | 'franquia'
 
 ALTER TABLE crm_leads
-  ADD COLUMN IF NOT EXISTS tipo_lead text;        -- Ultracell | Quanta | Franquia
+  ADD COLUMN IF NOT EXISTS tipo_lead text;        -- Ultracell | Quanta | Franquia | Ultracell Pro | Quanta Light
 ALTER TABLE crm_leads
-  ADD COLUMN IF NOT EXISTS temperatura text;       -- frio | morno | quente
+  ADD COLUMN IF NOT EXISTS temperatura text;       -- gelado | frio | morno | quente | ardente
+
+-- Campos do legado exibidos no Dashboard/Kanban/Captação (empresa do candidato e UF).
+ALTER TABLE crm_leads
+  ADD COLUMN IF NOT EXISTS empresa text;           -- "Clínica X" (empresa de origem do candidato)
+ALTER TABLE crm_leads
+  ADD COLUMN IF NOT EXISTS uf text;                -- UF do candidato (SP, RS, ...)
 
 -- CHECK do discriminador (idempotente)
 ALTER TABLE crm_leads DROP CONSTRAINT IF EXISTS crm_leads_pipeline_check;
@@ -54,11 +60,12 @@ ALTER TABLE crm_leads
   ADD CONSTRAINT crm_leads_pipeline_check
   CHECK (pipeline IN ('cliente', 'franquia'));
 
--- CHECK de temperatura (aceita NULL — leads de cliente não usam)
+-- CHECK de temperatura (aceita NULL — leads de cliente não usam).
+-- Legado EXP_TEMPS (8539): 5 níveis (gelado/frio/morno/quente/ardente).
 ALTER TABLE crm_leads DROP CONSTRAINT IF EXISTS crm_leads_temperatura_check;
 ALTER TABLE crm_leads
   ADD CONSTRAINT crm_leads_temperatura_check
-  CHECK (temperatura IS NULL OR temperatura IN ('frio', 'morno', 'quente'));
+  CHECK (temperatura IS NULL OR temperatura IN ('gelado', 'frio', 'morno', 'quente', 'ardente'));
 
 -- Índice parcial para a leitura quente do app (só pega leads de franquia por unidade)
 CREATE INDEX IF NOT EXISTS idx_crm_leads_franquia
@@ -118,20 +125,20 @@ WITH base AS (
 )
 INSERT INTO crm_leads
   (id, empresa_id, unidade_id, etapa_id, responsavel_id, nome, email, telefone,
-   origem, servico_interesse, valor_estimado, status, pipeline, tipo_lead, temperatura)
+   origem, servico_interesse, valor_estimado, status, pipeline, tipo_lead, temperatura, empresa, uf)
 SELECT v.id, base.empresa_id, base.unidade_id, v.etapa_id, NULL,
        v.nome, v.email, v.telefone, v.origem, v.servico_interesse,
-       v.valor_estimado, 'ativo', 'franquia', v.tipo_lead, v.temperatura
+       v.valor_estimado, 'ativo', 'franquia', v.tipo_lead, v.temperatura, v.empresa, v.uf
 FROM base, (VALUES
-  ('50000002-0000-0000-0000-000000000001'::uuid, '50000001-0000-0000-0000-000000000001'::uuid, 'Mariana Castro',   'mariana.castro@email.com',  '11991234501', 'site',          'Franquia',  120000, 'Franquia',  'quente'),
-  ('50000002-0000-0000-0000-000000000002'::uuid, '50000001-0000-0000-0000-000000000001'::uuid, 'Eduardo Lemos',    'eduardo.lemos@email.com',   '21992234502', 'geolocalizado','Ultracell',  85000, 'Ultracell', 'morno'),
-  ('50000002-0000-0000-0000-000000000003'::uuid, '50000001-0000-0000-0000-000000000002'::uuid, 'Patrícia Nunes',   'patricia.nunes@email.com',  '31993234503', 'instagram',    'Quanta',     95000, 'Quanta',    'morno'),
-  ('50000002-0000-0000-0000-000000000004'::uuid, '50000001-0000-0000-0000-000000000003'::uuid, 'Rafael Andrade',   'rafael.andrade@email.com',  '41994234504', 'indicacao',    'Franquia',  150000, 'Franquia',  'quente'),
-  ('50000002-0000-0000-0000-000000000005'::uuid, '50000001-0000-0000-0000-000000000002'::uuid, 'Camila Ferreira',  'camila.ferreira@email.com', '51995234505', 'google',       'Ultracell',  78000, 'Ultracell', 'frio'),
-  ('50000002-0000-0000-0000-000000000006'::uuid, '50000001-0000-0000-0000-000000000004'::uuid, 'Bruno Tavares',    'bruno.tavares@email.com',   '71996234506', 'site',         'Franquia',  130000, 'Franquia',  'quente'),
-  ('50000002-0000-0000-0000-000000000007'::uuid, '50000001-0000-0000-0000-000000000005'::uuid, 'Juliana Prado',    'juliana.prado@email.com',   '81997234507', 'whatsapp',     'Quanta',    102000, 'Quanta',    'quente'),
-  ('50000002-0000-0000-0000-000000000008'::uuid, '50000001-0000-0000-0000-000000000006'::uuid, 'Henrique Sales',   'henrique.sales@email.com',  '85998234508', 'geolocalizado','Ultracell',  70000, 'Ultracell', 'frio')
-) AS v(id, etapa_id, nome, email, telefone, origem, servico_interesse, valor_estimado, tipo_lead, temperatura)
+  ('50000002-0000-0000-0000-000000000001'::uuid, '50000001-0000-0000-0000-000000000001'::uuid, 'Mariana Castro',   'mariana.castro@email.com',  '11991234501', 'site',          'Franquia',     120000, 'Franquia',      'quente',  'Clínica Castro',   'SP'),
+  ('50000002-0000-0000-0000-000000000002'::uuid, '50000001-0000-0000-0000-000000000001'::uuid, 'Eduardo Lemos',    'eduardo.lemos@email.com',   '21992234502', 'geolocalizado','Ultracell',     85000, 'Ultracell',     'morno',   'Clínica Lemos',    'RJ'),
+  ('50000002-0000-0000-0000-000000000003'::uuid, '50000001-0000-0000-0000-000000000002'::uuid, 'Patrícia Nunes',   'patricia.nunes@email.com',  '31993234503', 'instagram',    'Quanta',        95000, 'Quanta',        'morno',   'Clínica Nunes',    'MG'),
+  ('50000002-0000-0000-0000-000000000004'::uuid, '50000001-0000-0000-0000-000000000003'::uuid, 'Rafael Andrade',   'rafael.andrade@email.com',  '41994234504', 'indicacao',    'Franquia',     150000, 'Franquia',      'ardente', 'Clínica Andrade',  'PR'),
+  ('50000002-0000-0000-0000-000000000005'::uuid, '50000001-0000-0000-0000-000000000002'::uuid, 'Camila Ferreira',  'camila.ferreira@email.com', '51995234505', 'google',       'Ultracell Pro', 78000, 'Ultracell Pro', 'frio',    'Clínica Ferreira', 'RS'),
+  ('50000002-0000-0000-0000-000000000006'::uuid, '50000001-0000-0000-0000-000000000004'::uuid, 'Bruno Tavares',    'bruno.tavares@email.com',   '71996234506', 'site',         'Franquia',     130000, 'Franquia',      'quente',  'Clínica Tavares',  'BA'),
+  ('50000002-0000-0000-0000-000000000007'::uuid, '50000001-0000-0000-0000-000000000005'::uuid, 'Juliana Prado',    'juliana.prado@email.com',   '81997234507', 'whatsapp',     'Quanta Light', 102000, 'Quanta Light',  'quente',  'Clínica Prado',    'PE'),
+  ('50000002-0000-0000-0000-000000000008'::uuid, '50000001-0000-0000-0000-000000000006'::uuid, 'Henrique Sales',   'henrique.sales@email.com',  '85998234508', 'geolocalizado','Ultracell',     70000, 'Ultracell',     'gelado',  'Clínica Sales',    'CE')
+) AS v(id, etapa_id, nome, email, telefone, origem, servico_interesse, valor_estimado, tipo_lead, temperatura, empresa, uf)
 WHERE base.empresa_id IS NOT NULL AND base.unidade_id IS NOT NULL
 ON CONFLICT (id) DO NOTHING;
 
@@ -144,6 +151,8 @@ COMMIT;
 --   ALTER TABLE crm_leads  DROP COLUMN IF EXISTS pipeline;
 --   ALTER TABLE crm_leads  DROP COLUMN IF EXISTS tipo_lead;
 --   ALTER TABLE crm_leads  DROP COLUMN IF EXISTS temperatura;
+--   ALTER TABLE crm_leads  DROP COLUMN IF EXISTS empresa;
+--   ALTER TABLE crm_leads  DROP COLUMN IF EXISTS uf;
 --   ALTER TABLE crm_etapas DROP COLUMN IF EXISTS pipeline;
 --   (e restaurar o CHECK original de origem sem 'geolocalizado'/'site')
 -- =============================================================================

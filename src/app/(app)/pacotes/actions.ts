@@ -3,6 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+import {
+  PAGAR_COMISSAO_OPCOES,
+  COBERTURA_OPCOES,
+  type PagarComissao,
+  type CoberturaCreditos,
+} from '@/lib/catalogo'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -22,6 +28,9 @@ export type PacoteInput = {
   descricao?: string | null
   preco: number | null
   validade_dias: number | null
+  cobertura_creditos?: CoberturaCreditos // legado PACOTES[1]
+  desc_max?: number | null // legado PACOTES[4] — desconto máximo (%)
+  pagar_comissao?: PagarComissao // legado PACOTES[5]
   itens: ItemPacoteInput[]
 }
 
@@ -74,7 +83,26 @@ function validarCampos(input: PacoteInput): string | null {
     const v = Number(input.validade_dias)
     if (!Number.isInteger(v) || v < 0) return 'Validade em dias inválida.'
   }
+  if (input.desc_max != null) {
+    const d = Number(input.desc_max)
+    if (!Number.isFinite(d) || d < 0 || d > 100) return 'O desconto máximo deve estar entre 0% e 100%.'
+  }
+  if (input.cobertura_creditos != null && !COBERTURA_OPCOES.includes(input.cobertura_creditos)) {
+    return 'Cobertura de créditos inválida.'
+  }
+  if (input.pagar_comissao != null && !PAGAR_COMISSAO_OPCOES.includes(input.pagar_comissao)) {
+    return 'Opção de "Pagar comissão" inválida.'
+  }
   return null
+}
+
+/** Campos novos do legado normalizados para o insert/update (defaults seguros). */
+function extras(input: PacoteInput) {
+  return {
+    cobertura_creditos: input.cobertura_creditos ?? 'Qualquer unidade',
+    desc_max: input.desc_max != null ? Number(input.desc_max) : 0,
+    pagar_comissao: input.pagar_comissao ?? 'Execução',
+  }
 }
 
 /** Cria um pacote + a composição de serviços (pacote_itens). RBAC + validação por campo. */
@@ -98,6 +126,7 @@ export async function criarPacote(input: PacoteInput): Promise<ActionResult> {
       descricao: (input.descricao || '').trim() || null,
       preco: Number(input.preco),
       validade_dias: input.validade_dias != null ? Number(input.validade_dias) : null,
+      ...extras(input),
       ativo: true,
     })
     .select('id')
@@ -136,6 +165,7 @@ export async function editarPacote(id: string, input: PacoteInput): Promise<Acti
       descricao: (input.descricao || '').trim() || null,
       preco: Number(input.preco),
       validade_dias: input.validade_dias != null ? Number(input.validade_dias) : null,
+      ...extras(input),
     })
     .eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'editar pacote') }
@@ -164,9 +194,6 @@ export async function togglePacoteAtivo(id: string, ativo: boolean): Promise<Act
   return { ok: true }
 }
 
-// TODO(legado: buildPacotes): coluna "Pagar comissão" (Venda/Execução/Não pagar) — legacy ~4108,
-//   campo pf_com. Não há coluna de comissão em `pacotes` no schema lkii; pendente de migração
-//   (ex.: pacotes.comissao_timing). Marcado para não perder o requisito do legado.
-// TODO(legado: buildPacotes): "Desconto máximo (%)" (campo pf_desc) e "Cobertura de créditos"
-//   (Qualquer unidade / Unidade que realiza a venda) — sem coluna no schema; pendente de migração.
-//   Descontos são de outro agente; aqui fica só registrado.
+// "Pagar comissão" (PACOTES[5]), "Desconto máximo (%)" (PACOTES[4]) e "Cobertura de créditos"
+// (PACOTES[1]) agora persistem em pacotes.pagar_comissao / pacotes.desc_max /
+// pacotes.cobertura_creditos (migration catalogo.sql).

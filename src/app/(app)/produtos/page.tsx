@@ -53,7 +53,7 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
   // ── Lista paginada server-side ──
   let query = sb
     .from('produtos')
-    .select('id, nome, grupo, descricao, preco_padrao, custo, estoque_atual, estoque_minimo, ativo', { count: 'exact' })
+    .select('id, nome, grupo, descricao, preco_padrao, desc_max, custo, estoque_atual, estoque_minimo, feedstock, ativo', { count: 'exact' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 

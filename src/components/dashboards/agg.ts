@@ -59,15 +59,21 @@ function ymd(d: Date): string {
 }
 
 /** Linha mínima de lançamento (só colunas baratas). */
-export type LancMin = { valor: number | null; categoria_id: string | null; data_competencia: string | null }
+export type LancMin = {
+  valor: number | null
+  categoria_id: string | null
+  data_competencia: string | null
+  status?: string | null
+  forma_pagamento?: string | null
+}
 
 const SUM_CAP = 20000
 const PAGE = 1000
 
 /**
- * Pagina lançamentos (só valor/categoria/data) com filtros — usado p/ somar receita
- * por categoria e por mês. 12.9k linhas no total; com filtro de período fica enxuto.
- * Caps em SUM_CAP p/ não estourar caso o período não seja informado.
+ * Pagina lançamentos (valor/categoria/data + status + forma de pagamento) com filtros —
+ * usado p/ somar receita/despesa por categoria, mês, status (previsto×realizado) e forma.
+ * 12.9k linhas no total; com filtro de período fica enxuto. Caps em SUM_CAP.
  */
 export async function pullLancamentos(
   sb: SB,
@@ -82,7 +88,7 @@ export async function pullLancamentos(
   for (;;) {
     let q = sb
       .from('lancamentos_financeiros')
-      .select('valor, categoria_id, data_competencia')
+      .select('valor, categoria_id, data_competencia, status, forma_pagamento')
       .eq('tipo', tipo)
     if (unidadeId) q = q.eq('unidade_id', unidadeId)
     if (iniYmd) q = q.gte('data_competencia', iniYmd)
@@ -98,4 +104,83 @@ export async function pullLancamentos(
     }
   }
   return { rows: out, capped }
+}
+
+/** Soma valor das linhas. */
+export function somaLanc(rows: LancMin[]): number {
+  return rows.reduce((a, r) => a + (r.valor || 0), 0)
+}
+
+/** Soma só as linhas com status 'pago' (realizado). As demais = previsto/em aberto. */
+export function somaRealizado(rows: LancMin[]): number {
+  return rows.reduce((a, r) => a + (r.status === 'pago' ? r.valor || 0 : 0), 0)
+}
+
+/** Agrupa valor por uma chave string (ex.: categoria_id, forma_pagamento), descartando nulos. */
+export function somaPorChave(rows: LancMin[], chave: (r: LancMin) => string | null | undefined): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const r of rows) {
+    const k = chave(r)
+    if (!k) continue
+    m.set(k, (m.get(k) || 0) + (r.valor || 0))
+  }
+  return m
+}
+
+/** Agregado por serviço: faturamento + sessões (qtd) — para o ranking do gerencial. */
+export type ServAgg = { nome: string; faturamento: number; sessoes: number }
+
+/**
+ * Agrega faturamento e sessões por serviço a partir de os_servicos (filtrado pelos os_ids
+ * já escopados por unidade/período). Embute servicos(nome). Paginação enxuta (in os_id),
+ * sem nunca puxar a tabela inteira. Réplica real do SERV_FULL ilustrativo do legado.
+ */
+export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAgg[]> {
+  if (osIds.length === 0) return []
+  const acc = new Map<string, { faturamento: number; sessoes: number }>()
+  // Processa em lotes de até 800 os_ids (limite seguro p/ filtro IN).
+  for (let i = 0; i < osIds.length; i += 800) {
+    const chunk = osIds.slice(i, i + 800)
+    let from = 0
+    for (;;) {
+      const { data } = await sb
+        .from('os_servicos')
+        .select('servico_id, quantidade, preco_total, total, servicos(nome)')
+        .in('os_id', chunk)
+        .range(from, from + PAGE - 1)
+      const batch = (data ?? []) as Array<{
+        servico_id: string | null
+        quantidade: number | null
+        preco_total: number | null
+        total: number | null
+        servicos: { nome: string | null } | { nome: string | null }[] | null
+      }>
+      for (const r of batch) {
+        const emb = Array.isArray(r.servicos) ? r.servicos[0] : r.servicos
+        const nome = emb?.nome || (r.servico_id ? 'Serviço ' + r.servico_id.slice(0, 6) : 'Sem serviço')
+        const fat = Number(r.total ?? r.preco_total) || 0
+        const sess = Number(r.quantidade) || 1
+        const cur = acc.get(nome) || { faturamento: 0, sessoes: 0 }
+        cur.faturamento += fat
+        cur.sessoes += sess
+        acc.set(nome, cur)
+      }
+      if (batch.length < PAGE) break
+      from += PAGE
+    }
+  }
+  return [...acc.entries()].map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.faturamento - a.faturamento)
+}
+
+/**
+ * Faturamento (receita) realizado do MÊS ANTERIOR de uma unidade — base p/ royalties.
+ * Conta só `status='pago'` (faturamento de fato), via paginação enxuta do mês anterior.
+ */
+export async function faturamentoMesAnterior(sb: SB, unidadeId: string | null, hoje: Date = new Date()): Promise<number> {
+  const ini = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  const iniYmd = `${ini.getFullYear()}-${String(ini.getMonth() + 1).padStart(2, '0')}-01`
+  const fimYmd = `${fim.getFullYear()}-${String(fim.getMonth() + 1).padStart(2, '0')}-01`
+  const { rows } = await pullLancamentos(sb, 'receita', unidadeId, iniYmd, fimYmd)
+  return somaRealizado(rows)
 }

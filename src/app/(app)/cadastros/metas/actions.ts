@@ -158,4 +158,7 @@ export async function excluirMeta(id: string): Promise<ActionResult> {
 // TODO(needs-table: metas_unidade) — metas de unidade (venda mín. R$100k, agendamentos,
 // clientes novos, indicações) com regras automáticas de reajuste do legado (3º mês = média
 // dos 2 anteriores; novembro +40%; dezembro = patamar de outubro). Sem tabela própria no
-// backend, o painel da unidade é um SIMULADOR (não persiste). buildMetas/updateMetas.
+// backend, o painel da unidade é um SIMULADOR (não persiste) — igual ao legado, cujo botão
+// mSalvar também só exibe "Metas salvas e publicadas no Dashboard" sem persistir.
+// A meta diária de indicações já foi alinhada à base 30 do legado (indMetaSync): meta diária
+// = ceil(meta/30) e projeção = realizado/diaAtual*30 (componente MetasUnidadeSimulador).

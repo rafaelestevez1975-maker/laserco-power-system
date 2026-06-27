@@ -48,30 +48,44 @@ export default async function ColaboradoresPage({ searchParams }: { searchParams
   const kpiInativos = inativosRes.count ?? 0
 
   // ── Lista paginada server-side ──
-  let query = sb
-    .from('colaboradores')
-    .select('id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao', { count: 'exact' })
-    .order('nome', { ascending: true })
-    .range(from, from + PAGE_SIZE - 1)
+  // Colunas exibe_agenda/ultimo_acesso vêm de scripts/migrations/comissoes.sql; se a
+  // migration não foi aplicada o select falha → cai num select sem essas colunas (degrade).
+  const COLS_FULL = 'id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao, exibe_agenda, ultimo_acesso'
+  const COLS_BASE = 'id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao'
 
-  if (activeUnit) query = query.eq('unidade_id', activeUnit)
-  if (status === 'ativo') query = query.eq('status', 'ativo')
-  else if (status === 'inativo') query = query.eq('status', 'inativo')
-  if (regime === 'clt' || regime === 'pj') query = query.eq('regime', regime)
-  if (cargo) query = query.eq('cargo', cargo)
-  if (area) query = query.ilike('area', `%${area}%`)
-  if (q) {
-    const qs = q.replace(/[,()*]/g, ' ').trim()
-    if (qs) {
-      const d = qs.replace(/\D/g, '')
-      const ors = [`nome.ilike.%${qs}%`, `email.ilike.%${qs}%`, `cargo.ilike.%${qs}%`]
-      if (d) { ors.push(`cpf.ilike.%${d}%`, `telefone.ilike.%${d}%`) }
-      query = query.or(ors.join(','))
+  // Monta um SELECT (com os mesmos filtros) para uma dada lista de colunas.
+  const montarConsulta = (cols: string) => {
+    let qy = sb
+      .from('colaboradores')
+      .select(cols, { count: 'exact' })
+      .order('nome', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (activeUnit) qy = qy.eq('unidade_id', activeUnit)
+    if (status === 'ativo') qy = qy.eq('status', 'ativo')
+    else if (status === 'inativo') qy = qy.eq('status', 'inativo')
+    if (regime === 'clt' || regime === 'pj') qy = qy.eq('regime', regime)
+    if (cargo) qy = qy.eq('cargo', cargo)
+    if (area) qy = qy.ilike('area', `%${area}%`)
+    if (q) {
+      const qs = q.replace(/[,()*]/g, ' ').trim()
+      if (qs) {
+        const d = qs.replace(/\D/g, '')
+        const ors = [`nome.ilike.%${qs}%`, `email.ilike.%${qs}%`, `cargo.ilike.%${qs}%`]
+        if (d) { ors.push(`cpf.ilike.%${d}%`, `telefone.ilike.%${d}%`) }
+        qy = qy.or(ors.join(','))
+      }
     }
+    return qy
   }
 
-  const { data, count } = await query
-  const colaboradores = (data ?? []) as ColaboradorRow[]
+  // Migration pendente? O select com as colunas novas falha → refaz sem elas (degrade).
+  let { data, count } = await montarConsulta(COLS_FULL)
+  if (!data && count == null) {
+    const r2 = await montarConsulta(COLS_BASE)
+    data = r2.data
+    count = r2.count
+  }
+  const colaboradores = (data ?? []) as unknown as ColaboradorRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const temFiltro = !!(q || regime || cargo || area || status !== 'ativo')
@@ -112,6 +126,14 @@ export default async function ColaboradoresPage({ searchParams }: { searchParams
         ))}
       </div>
 
+      {/* Regra de inatividade automática (legado crm-note ~2079) */}
+      <div className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 14px', padding: '10px 14px', background: '#FFF7E6', border: '1px solid #F0D89A' }}>
+        <i className="ti ti-clock-shield" style={{ color: 'var(--amber)', fontSize: 18, flexShrink: 0 }} />
+        <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+          <b>Regra de inatividade automática:</b> todo usuário que não acessar o sistema por mais de <b>15</b> dias é <b>inativado automaticamente</b>. A reativação registra novo acesso e é rastreada na Auditoria.
+        </span>
+      </div>
+
       <ColaboradoresFiltros areas={areas} />
 
       <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 8px' }}>
@@ -119,7 +141,7 @@ export default async function ColaboradoresPage({ searchParams }: { searchParams
         {activeUnit ? ` · ${ctx?.activeUnitName}` : ' · todas as unidades'}
       </div>
 
-      <ColaboradoresList colaboradores={colaboradores} page={page} totalPages={totalPages} basePath="/colaboradores" searchParams={sp} />
+      <ColaboradoresList colaboradores={colaboradores} page={page} totalPages={totalPages} basePath="/colaboradores" searchParams={sp} podeEscrever={podeEscrever} />
     </div>
   )
 }

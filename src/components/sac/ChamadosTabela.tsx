@@ -3,16 +3,22 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { atualizarChamado } from '@/app/(app)/sac/actions'
+import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { moedaBR } from '@/lib/fmt'
 
 export type ChamadoRow = {
   id: string; numero: number | null; protocolo: string | null; nome_cliente: string | null; telefone_cliente: string | null
   email_cliente: string | null; cpf_cliente: string | null; canal: string | null; unidade_id: string | null
   motivo_label: string | null; prioridade: string | null; fase: string | null; sla_violado: boolean | null
   atribuido_para: string | null; observacoes: string | null
+  area_reclamada?: string | null; valor_pago?: number | null; valor_devolucao?: number | null
+  multa_aplicada?: boolean | null; pago?: boolean | null
 }
 type Atend = { id: string; nome: string }
 
-const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
+const PRIORIDADES: { k: string; l: string }[] = [
+  { k: 'baixa', l: 'Baixa' }, { k: 'media', l: 'Média' }, { k: 'alta', l: 'Alta' }, { k: 'urgente', l: 'Crítica' },
+]
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 const cap = (s: string | null) => (s || '').replace(/^\w/, (c) => c.toUpperCase())
 const pill = (bg: string, color: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color })
@@ -63,11 +69,22 @@ function EditModal({ t, atendentes, motivos, onClose, onSaved }: { t: ChamadoRow
   const [f, setF] = useState({
     nome_cliente: t.nome_cliente || '', telefone_cliente: t.telefone_cliente || '', email_cliente: t.email_cliente || '', cpf_cliente: t.cpf_cliente || '',
     motivo_label: t.motivo_label || '', prioridade: t.prioridade || 'media', fase: t.fase || 'Novo', atribuido_para: t.atribuido_para || '', observacoes: t.observacoes || '',
+    area_reclamada: t.area_reclamada || '', valor_pago: t.valor_pago != null ? String(t.valor_pago) : '', valor_devolucao: t.valor_devolucao != null ? String(t.valor_devolucao) : '',
+    multa_aplicada: !!t.multa_aplicada, pago: !!t.pago,
   })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
+  const [ficha, setFicha] = useState<ClienteResumo | null>(null)
+  const [fichaBusy, setFichaBusy] = useState(false)
+  const set = (k: keyof typeof f, v: string | boolean) => setF((p) => ({ ...p, [k]: v }))
   const motOpts = [...new Set([t.motivo_label, ...motivos].filter(Boolean))] as string[]
+
+  async function buscarFicha() {
+    setFichaBusy(true)
+    const r = await buscarClientePorContato(f.telefone_cliente, f.cpf_cliente)
+    setFichaBusy(false)
+    setFicha(r)
+  }
 
   async function salvar() {
     if (!f.nome_cliente.trim()) { setErr('Informe o nome do cliente.'); return }
@@ -99,7 +116,7 @@ function EditModal({ t, atendentes, motivos, onClose, onSaved }: { t: ChamadoRow
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Prioridade</label>
-              <select style={inp} value={f.prioridade} onChange={(e) => set('prioridade', e.target.value)}>{PRIORIDADES.map((p) => <option key={p} value={p}>{cap(p)}</option>)}</select>
+              <select style={inp} value={f.prioridade} onChange={(e) => set('prioridade', e.target.value)}>{PRIORIDADES.map((p) => <option key={p.k} value={p.k}>{p.l}</option>)}</select>
             </div>
             <div className="mf"><label>Fase</label>
               <select style={inp} value={f.fase} onChange={(e) => set('fase', e.target.value)}>{FASES.map((x) => <option key={x} value={x}>{x}</option>)}</select>
@@ -109,6 +126,38 @@ function EditModal({ t, atendentes, motivos, onClose, onSaved }: { t: ChamadoRow
                 <option value="">Sem atendente</option>{atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
               </select>
             </div>
+          </div>
+          <div className="mf"><label>Serviço / pacote reclamado</label><input style={inp} value={f.area_reclamada} onChange={(e) => set('area_reclamada', e.target.value)} placeholder="Ex.: Pacote axila + virilha" /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="mf"><label>Valor pago (R$)</label><input style={inp} inputMode="decimal" value={f.valor_pago} onChange={(e) => set('valor_pago', e.target.value)} placeholder="0,00" /></div>
+            <div className="mf"><label>Reembolso solicitado (R$)</label><input style={inp} inputMode="decimal" value={f.valor_devolucao} onChange={(e) => set('valor_devolucao', e.target.value)} placeholder="0,00" /></div>
+          </div>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={f.multa_aplicada} onChange={(e) => set('multa_aplicada', e.target.checked)} /> Multa aplicada</label>
+            <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={f.pago} onChange={(e) => set('pago', e.target.checked)} /> Pagamento/reembolso realizado</label>
+          </div>
+          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <b style={{ fontSize: 13 }}><i className="ti ti-id-badge-2" style={{ color: 'var(--brand-500)' }} /> Ficha do cliente no sistema</b>
+              <button type="button" className="btn" disabled={fichaBusy} onClick={buscarFicha}><i className="ti ti-search" /> {fichaBusy ? 'Buscando…' : 'Buscar contratos, pagamentos e sessões'}</button>
+            </div>
+            {ficha && !ficha.achou && <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 6 }}>Cliente não encontrado pelo CPF/telefone informado (ou sem permissão para ver a ficha).</div>}
+            {ficha?.achou && (
+              <div style={{ marginTop: 8, fontSize: 12.5, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 14px' }}>
+                <span><b>{ficha.nome}</b>{ficha.cidade ? ` · ${ficha.cidade}/${ficha.estado ?? ''}` : ''}</span>
+                <span>{ficha.ativo ? '🟢 Ativo' : '⚪ Inativo'}{ficha.verificado ? ' · verificado' : ''}</span>
+                <span>Agendamentos: <b>{ficha.agendamentos ?? 0}</b></span>
+                <span>Sessões concluídas: <b>{ficha.concluidos ?? 0}</b></span>
+                <span>Total gasto: <b>{moedaBR(ficha.totalGasto)}</b></span>
+                <span>Créditos: <b>{moedaBR(ficha.saldoCreditos)}</b></span>
+                {(ficha.totalGasto ?? 0) > 0 && (
+                  <button type="button" className="btn" style={{ gridColumn: '1 / -1', marginTop: 4 }} onClick={() => set('valor_pago', String(ficha.totalGasto))}>
+                    <i className="ti ti-arrow-down" /> Usar total gasto como “Valor pago” ({moedaBR(ficha.totalGasto)})
+                  </button>
+                )}
+                <div style={{ gridColumn: '1 / -1', fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}><i className="ti ti-info-circle" /> O cálculo de reembolso por saldo de sessões é feito no <b>Kanban</b> do chamado (ao mover para “Em pagamento”).</div>
+              </div>
+            )}
           </div>
           <div className="mf"><label>Observações</label><textarea style={{ ...inp, minHeight: 70, resize: 'vertical' }} value={f.observacoes} onChange={(e) => set('observacoes', e.target.value)} /></div>
         </div>

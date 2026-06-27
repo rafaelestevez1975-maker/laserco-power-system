@@ -97,6 +97,22 @@ export async function statusCanal(nome: string): Promise<{ ok: boolean; state?: 
   return { ok: true, state: await getStatus(token) }
 }
 
+/** Reaplica o webhook do canal apontando pra produção — garante que TODA mensagem
+ *  recebida caia na Triagem (sincronização). Idempotente: a UAZAPI casa pelo URL,
+ *  então pode ser chamado quantas vezes quiser sem duplicar. Usado no auto-pós-conexão
+ *  e no botão "Sincronizar". Retorna se está conectado e a URL aplicada. */
+export async function sincronizarCanal(nome: string): Promise<{ ok: boolean; error?: string; conectado?: boolean }> {
+  const ctx = await getSessionContext()
+  if (!ctx) return { ok: false, error: 'Sessão expirada.' }
+  const token = await tokenPorNome(nome)
+  if (!token) return { ok: false, error: 'Canal não encontrado.' }
+  const wh = await configurarWebhook(token, urlWebhook())
+  const st = await getStatus(token).catch(() => null)
+  revalidatePath('/canais')
+  if (!wh.ok) return { ok: false, error: wh.error || 'Falha ao sincronizar (webhook).', conectado: st?.connected }
+  return { ok: true, conectado: st?.connected }
+}
+
 export async function desconectarCanal(nome: string): Promise<{ ok: boolean; error?: string }> {
   const ctx = await getSessionContext()
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }

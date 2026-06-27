@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
-import { ClienteFicha, type ClienteFull, type AgendamentoRow } from '@/components/clientes/ClienteFicha'
+import { ClienteFicha, type ClienteFull, type AgendamentoRow, type OSRow } from '@/components/clientes/ClienteFicha'
+
+export const dynamic = 'force-dynamic'
 
 const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à RLS de escrita de clientes
 
@@ -64,6 +66,28 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
     unidadeOrigemNome = (u as { nome: string | null } | null)?.nome ?? null
   }
 
+  // Ordens de Serviço do cliente (aba OS + base p/ contratos emitidos via OS)
+  const { data: osRaw } = await sb
+    .from('os')
+    .select('id, numero, status, origem, total, observacao, criado_em, fechada_em')
+    .eq('cliente_id', id)
+    .order('criado_em', { ascending: false, nullsFirst: false })
+    .limit(100)
+  type RawOS = { id: string; numero: number | null; status: string | null; origem: string | null; total: number | null; observacao: string | null; criado_em: string | null; fechada_em: string | null }
+  const ordens: OSRow[] = ((osRaw ?? []) as RawOS[]).map((o) => ({
+    id: o.id, numero: o.numero, status: o.status, origem: o.origem,
+    total: o.total, observacao: o.observacao, criado_em: o.criado_em, fechada_em: o.fechada_em,
+  }))
+
+  // Contagem de cadastros com o MESMO nome (badge de duplicidade na ficha)
+  let duplicados = 0
+  if (cliente.nome) {
+    let dq = sb.from('clientes').select('id', { count: 'exact', head: true }).ilike('nome', cliente.nome.trim())
+    if (cliente.unidade_origem_id) dq = dq.eq('unidade_origem_id', cliente.unidade_origem_id)
+    const { count } = await dq
+    duplicados = count ?? 0
+  }
+
   return (
     <div className="view active">
       <Link href="/clientes" className="doc-back" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: 'var(--text-2)', fontSize: 13, marginBottom: 8 }}>
@@ -72,6 +96,8 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
       <ClienteFicha
         cliente={cliente}
         agendamentos={agendamentos}
+        ordens={ordens}
+        duplicados={duplicados}
         unidadeOrigemNome={unidadeOrigemNome}
         podeEscrever={podeEscrever}
       />

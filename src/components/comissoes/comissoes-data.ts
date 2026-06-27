@@ -1,27 +1,18 @@
 /**
  * Matriz de comissões — fiel ao legado buildComissoes / COM_CATS (legacy/index.html ~7324..7460).
  *
- * ⚠️ NÃO HÁ TABELA DE MATRIZ no backend lkii (introspecção: 404 em comissoes/matriz_comissoes).
- * Por isso a matriz é um SEED de constantes (igual ao legado, que vivia 100% em memória/localStorage)
- * e o simulador roda inteiramente no cliente. A persistência da matriz fica marcada como
- * //TODO(needs-table: matriz_comissoes) — não temos acesso de migration para criar a tabela.
+ * A matriz agora PERSISTE na tabela matriz_comissoes (scripts/migrations/comissoes.sql).
+ * Este arquivo guarda o SEED de fallback (igual ao legado) usado APENAS quando a tabela
+ * ainda não foi aplicada/está vazia — nesse caso o board mostra banner de empty-state.
  *
- * Cada categoria mapeia (por nome) a um cargo do enum `cargo_colaborador`
+ * Cada categoria mapeia (por nome/cargo) a um cargo do enum `cargo_colaborador`
  * (gerente | subgerente | consultora_vendas | aplicadora) quando aplicável — usado pelo
  * simulador para pré-selecionar a categoria ao escolher um colaborador real.
  */
 
-export type ComBaseItem = { on: boolean; pct: number }
-export type ComCat = {
-  nome: string
-  /** cargo do backend correspondente (para o simulador casar colaborador → categoria). */
-  cargo?: string
-  base: { individual: ComBaseItem; loja: ComBaseItem; sessao: ComBaseItem }
-  /** Parte 1 · adicional por dezena (sobre a premiação base). */
-  tiers: { t80: number; t100: number; t120: number; t130: number }
-  /** Parte 2 · adicional no fechamento do mês (sobre o valor final da unidade). */
-  fech: { f100: number; f120: number; f130: number }
-}
+import type { ComCat } from '@/lib/comissoes'
+
+export type { ComBaseItem, ComCat } from '@/lib/comissoes'
 
 /** Ticket médio de uma sessão executada (legado SESSAO_TICKET). */
 export const SESSAO_TICKET = 250
@@ -37,15 +28,36 @@ export const COM_CATS_SEED: ComCat[] = [
   { nome: 'Sub Gerente', cargo: 'subgerente', base: { individual: { on: true, pct: 1.5 }, loja: { on: true, pct: 1 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 8, t100: 20, t120: 40, t130: 55 }, fech: { f100: 0.8, f120: 1.5, f130: 2.5 } },
   { nome: 'Profissional da Saúde', cargo: 'aplicadora', base: { individual: { on: false, pct: 0 }, loja: { on: false, pct: 0 }, sessao: { on: true, pct: 5 } }, tiers: { t80: 5, t100: 15, t120: 30, t130: 40 }, fech: { f100: 0.5, f120: 1, f130: 1.5 } },
   { nome: 'Consultoras de Vendas', cargo: 'consultora_vendas', base: { individual: { on: true, pct: 3 }, loja: { on: true, pct: 1 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 10, t100: 25, t120: 50, t130: 65 }, fech: { f100: 1, f120: 2, f130: 3 } },
-  { nome: 'Atendente (SAC)', base: { individual: { on: true, pct: 2 }, loja: { on: false, pct: 0 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 10, t100: 25, t120: 50, t130: 65 }, fech: { f100: 0.5, f120: 1, f130: 1.5 } },
+  { nome: 'Atendente (SAC)', cargo: null, base: { individual: { on: true, pct: 2 }, loja: { on: false, pct: 0 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 10, t100: 25, t120: 50, t130: 65 }, fech: { f100: 0.5, f120: 1, f130: 1.5 } },
 ]
 
-/** Rótulo amigável do cargo do backend → exibido no simulador. */
+/**
+ * Rótulo amigável do cargo do backend → exibido no simulador. Inclui os cargos
+ * ampliados (SAC, Proprietário, Profissional) do legado para a pré-seleção casar.
+ */
 export const CARGO_LABEL: Record<string, string> = {
   gerente: 'Gerente',
   subgerente: 'Sub Gerente',
   consultora_vendas: 'Consultoras de Vendas',
   aplicadora: 'Profissional da Saúde',
+  profissional: 'Profissional da Saúde',
+  sac: 'Atendente (SAC)',
+  proprietario: 'Gerente',
+}
+
+/**
+ * Mapa cargo do colaborador → NOME da categoria da matriz (legado simPickColab,
+ * que casa por catNome). Cargos não-mapeáveis a um cargo de matriz (SAC,
+ * Proprietário, Profissional) caem aqui por NOME para pré-selecionar a categoria.
+ */
+export const CARGO_TO_CAT_NOME: Record<string, string> = {
+  gerente: 'Gerente',
+  subgerente: 'Sub Gerente',
+  consultora_vendas: 'Consultoras de Vendas',
+  aplicadora: 'Profissional da Saúde',
+  profissional: 'Profissional da Saúde',
+  sac: 'Atendente (SAC)',
+  proprietario: 'Gerente',
 }
 
 export const money = (v: number) => 'R$ ' + Math.round(v).toLocaleString('pt-BR')

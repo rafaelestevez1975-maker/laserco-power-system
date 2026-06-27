@@ -4,6 +4,9 @@ import { ehAdmin } from '@/lib/rbac'
 import { ClientesFiltros } from '@/components/clientes/ClientesFiltros'
 import { ClientesList, type ClienteRow } from '@/components/clientes/ClientesList'
 import { NovoClienteModal } from '@/components/clientes/NovoClienteModal'
+import { ImportarClientesModal } from '@/components/clientes/ImportarClientesModal'
+
+export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
@@ -11,8 +14,10 @@ type SP = {
   q?: string
   ativo?: string // 'sim' | 'nao' | '' (todos)
   verificado?: string // 'sim' | 'nao' | ''
+  genero?: string // 'female' | 'male' | 'other' | ''
   cidade?: string
   estado?: string
+  unidade?: string // id de unidade (admin filtra entre todas)
   page?: string
 }
 
@@ -21,11 +26,15 @@ const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, ativo = 'sim', verificado, cidade, estado, page: pageRaw } = sp
+  const { q, ativo = 'sim', verificado, genero, cidade, estado, unidade, page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
+  const isAdmin = ctx?.isAdmin ?? false
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
+
+  // Unidade efetiva do filtro: admin pode escolher uma unidade no filtro; do contrário usa a ativa.
+  const unidadeFiltro = (isAdmin && unidade) ? unidade : activeUnit
 
   const page = Math.max(1, Number(pageRaw) || 1)
   const from = (page - 1) * PAGE_SIZE
@@ -33,7 +42,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   // ── KPIs reais (head:true → só count, sem puxar linhas) ──
   const scoped = (cols: string) => {
     let qy = sb.from('clientes').select(cols, { count: 'exact', head: true })
-    if (activeUnit) qy = qy.eq('unidade_origem_id', activeUnit)
+    if (unidadeFiltro) qy = qy.eq('unidade_origem_id', unidadeFiltro)
     return qy
   }
   const inicioMes = (() => {
@@ -55,15 +64,16 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   // ── Lista paginada server-side ──
   let query = sb
     .from('clientes')
-    .select('id, nome, telefone, cpf, email, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'exact' })
+    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'exact' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
-  if (activeUnit) query = query.eq('unidade_origem_id', activeUnit)
+  if (unidadeFiltro) query = query.eq('unidade_origem_id', unidadeFiltro)
   if (ativo === 'sim') query = query.eq('ativo', true)
   else if (ativo === 'nao') query = query.eq('ativo', false)
   if (verificado === 'sim') query = query.eq('verificado', true)
   else if (verificado === 'nao') query = query.eq('verificado', false)
+  if (genero && ['female', 'male', 'other'].includes(genero)) query = query.eq('genero', genero)
   if (cidade) query = query.ilike('cidade', `%${cidade}%`)
   if (estado) query = query.ilike('estado', `%${estado}%`)
   if (q) {
@@ -80,20 +90,18 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const clientes = (data ?? []) as ClienteRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(q || verificado || cidade || estado || ativo !== 'sim')
+  const temFiltro = !!(q || verificado || genero || cidade || estado || (isAdmin && unidade) || ativo !== 'sim')
 
   // unidade padrão sugerida no modal de novo cliente
   const unidadeSugerida = activeUnit ?? (ctx?.unidades?.[0]?.id ?? null)
+  const unidadesLista = ctx?.unidades ?? []
 
   return (
     <div className="view active">
       <div className="mod-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 10 }}>
-        {/* TODO(legado): Importar clientes CSV/XLSX (buildClientes / impDoImport, legacy 3241-3324) */}
-        <button className="btn" disabled title="Importação de planilha — em desenvolvimento">
-          <i className="ti ti-file-import" /> Importar
-        </button>
+        {podeEscrever && <ImportarClientesModal unidades={unidadesLista} unidadeSugerida={unidadeSugerida} />}
         {podeEscrever && (
-          <NovoClienteModal unidades={ctx?.unidades ?? []} unidadeSugerida={unidadeSugerida} isAdmin={ctx?.isAdmin ?? false} activeUnitId={activeUnit} />
+          <NovoClienteModal unidades={unidadesLista} unidadeSugerida={unidadeSugerida} isAdmin={isAdmin} activeUnitId={activeUnit} />
         )}
       </div>
 
@@ -117,11 +125,13 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
         ))}
       </div>
 
-      <ClientesFiltros />
+      <ClientesFiltros unidades={isAdmin ? unidadesLista : []} />
 
       <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 8px' }}>
         <i className="ti ti-filter" /> {total.toLocaleString('pt-BR')} cliente(s){temFiltro ? ' (filtrado)' : ''} · página {page} de {totalPages.toLocaleString('pt-BR')}
-        {activeUnit ? ` · ${ctx?.activeUnitName}` : ' · todas as unidades'}
+        {unidadeFiltro
+          ? ` · ${(isAdmin && unidade ? unidadesLista.find((u) => u.id === unidade)?.nome : ctx?.activeUnitName) ?? ''}`
+          : ' · todas as unidades'}
       </div>
 
       <ClientesList clientes={clientes} page={page} totalPages={totalPages} basePath="/clientes" searchParams={sp} />

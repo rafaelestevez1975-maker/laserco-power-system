@@ -13,6 +13,14 @@ export type Chamado = {
 
 const PERIODOS = ['Hoje', 'Ontem', 'Semana passada', 'Últimos 30 dias', 'Mês atual', 'Mês passado', 'Este ano', 'Período…']
 const PARTES = ['Comercial', 'Marketing', 'Financeiro', 'Operações', 'SAC', 'Expansão', 'RH', 'Área Técnica']
+// CHAM_PARTIES (legado 6303): 8 departamentos + 3 entradas 'Franqueado · <unidade>'.
+// Admin pode abrir chamado em nome de um franqueado e cair em "Recebidos".
+const FRANQUEADOS = [
+  'Franqueado · Florianópolis - Centro',
+  'Franqueado · São Paulo - Vila Olímpia',
+  'Franqueado · Porto Alegre - Iguatemi',
+]
+const CHAM_PARTIES = [...PARTES, ...FRANQUEADOS]
 const ETIQUETAS = ['Solicitação', 'Suporte', 'Financeiro', 'Implantação', 'Projeto', 'Expansão']
 const DEPTS = ['Todos', ...PARTES]
 const TAGS_FILTRO = ['Todos', ...ETIQUETAS]
@@ -20,15 +28,27 @@ const PRIO_LABEL: Record<string, string> = { normal: 'Normal', importante: 'Impo
 const PRIO_ICON: Record<string, string> = { normal: 'ti-info-circle', importante: 'ti-alert-triangle', urgente: 'ti-urgent' }
 const PRIO_COR: Record<string, string> = { normal: 'var(--blue)', importante: 'var(--amber)', urgente: 'var(--red)' }
 
-const SLA_HORAS = 48
-// SLA = 48 horas corridas a partir da abertura (conta fim de semana).
-function prazoSLA(abertoISO: string, horas = SLA_HORAS): Date {
-  return new Date(new Date(abertoISO).getTime() + horas * 3600 * 1000)
+// SLA = 2 DIAS ÚTEIS a partir da abertura, pulando sábado/domingo (legado _addDiasUteis/_ehDiaUtil 6326-6327).
+function ehDiaUtil(d: Date) { const w = d.getDay(); return w !== 0 && w !== 6 }
+function addDiasUteis(d: Date, n: number): Date {
+  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  let a = 0
+  while (a < n) { r.setDate(r.getDate() + 1); if (ehDiaUtil(r)) a++ }
+  return r
 }
-function fmtBR(d: Date) { return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }
+// Limite = abertura + 2 dias úteis (legado _chamLimite 6329).
+function prazoSLA(abertoISO: string): Date {
+  const d = new Date(abertoISO)
+  return addDiasUteis(d, 2)
+}
+function fmtBR(d: Date) { return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear() }
+// Atraso = hoje (00:00) > limite (23:59:59), em dia útil (legado _chamAtrasado 6330).
 function estaAtrasado(abertoISO: string, fin: boolean) {
   if (fin) return false
-  return new Date() > prazoSLA(abertoISO)
+  const lim = prazoSLA(abertoISO)
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const l = new Date(lim); l.setHours(23, 59, 59, 999)
+  return t > l
 }
 function dentroPeriodo(iso: string, per: string): boolean {
   if (!per || per.startsWith('Período')) return true
@@ -105,14 +125,14 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
       <div className="rel-legend">
         Solicitações <b>entre departamentos da franqueadora</b> e <b>entre franqueados e os departamentos</b>, nos dois sentidos. Filtre por
         <b> período</b>, <b>situação</b> (ativos/finalizados), <b>assunto</b> e <b>departamento</b>. Cada chamado deve ser resolvido em
-        <b> até 48 horas</b> a partir da abertura  passou disso, entra em <b>atraso</b> e a data-limite aparece no chamado.
+        <b> 2 dias úteis</b>, contados a partir do primeiro dia útil seguinte à abertura  a data-limite aparece no chamado.
       </div>
 
       <Kpis items={[
         ['Chamados ativos', String(ativos), 'ti-ticket'],
         ['Finalizados', String(finz), 'ti-checks'],
         ['Atrasados (ativos)', String(atrasados), 'ti-alert-triangle'],
-        ['Prazo SLA', '48 horas', 'ti-clock'],
+        ['Prazo SLA', '2 dias úteis', 'ti-clock'],
       ]} />
 
       <div className="rel-acts" style={{ justifyContent: 'space-between', margin: '-4px 0 14px' }}>
@@ -158,7 +178,7 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
         </table>
       </div></div>
 
-      {novo && <NovoChamado origemFranqueado={origemFranqueado} onClose={() => setNovo(false)} onSaved={(b) => { setNovo(false); setBox(b); router.refresh() }} onError={setMsg} />}
+      {novo && <NovoChamado isAdmin={isAdmin} origemFranqueado={origemFranqueado} onClose={() => setNovo(false)} onSaved={(b) => { setNovo(false); setBox(b); router.refresh() }} onError={setMsg} />}
     </>
   )
 }
@@ -213,7 +233,7 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
         <h3 style={{ fontSize: 17, fontWeight: 700 }}>{chamado.assunto}</h3>
         <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>{chamado.de} <i className="ti ti-arrow-right" /> {chamado.para} · responsável: {resp === '' ? <span className="muted">a atribuir</span> : <b>{resp}</b>} · aberto {new Date(chamado.abertoEm).toLocaleString('pt-BR')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-clock" /> Prazo de resolução (SLA 48h): <b>{lim}</b>{!fin && atrasado && <span className="wa-pill" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginLeft: 6 }}>atrasado</span>}</span>
+          <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-clock" /> Prazo de resolução (SLA 2 dias úteis): <b>{lim}</b>{!fin && atrasado && <span className="wa-pill" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginLeft: 6 }}>atrasado</span>}</span>
           {isAdmin && !fin && <button className="btn" disabled={busy} onClick={assumir}><i className="ti ti-user-check" /> Assumir</button>}
           <button className="btn btn-primary" disabled={busy} onClick={toggleFin}>{fin ? <><i className="ti ti-rotate" /> Reabrir chamado</> : <><i className="ti ti-flag-check" /> Finalizar chamado</>}</button>
         </div>
@@ -240,8 +260,10 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
   )
 }
 
-function NovoChamado({ onClose, onSaved, onError, origemFranqueado }: { onClose: () => void; onSaved: (box: 'recebidos' | 'enviados') => void; onError: (m: string) => void; origemFranqueado: string | null }) {
-  const [f, setF] = useState<ChamadoForm>({ assunto: '', etiqueta: 'Solicitação', de_parte: origemFranqueado || PARTES[0], para_parte: 'Financeiro', prioridade: 'normal', descricao: '' })
+function NovoChamado({ onClose, onSaved, onError, origemFranqueado, isAdmin }: { onClose: () => void; onSaved: (box: 'recebidos' | 'enviados') => void; onError: (m: string) => void; origemFranqueado: string | null; isAdmin: boolean }) {
+  // Admin escolhe "De" entre os 11 (CHAM_PARTIES, com 3 'Franqueado · <unidade>'); franqueado fica preso à sua unidade.
+  const opcoesDe = isAdmin ? CHAM_PARTIES : PARTES
+  const [f, setF] = useState<ChamadoForm>({ assunto: '', etiqueta: 'Solicitação', de_parte: origemFranqueado || (isAdmin ? FRANQUEADOS[0] : PARTES[0]), para_parte: 'Financeiro', prioridade: 'normal', descricao: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   function salvar() {
@@ -263,12 +285,12 @@ function NovoChamado({ onClose, onSaved, onError, origemFranqueado }: { onClose:
           {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
           <div className="mf"><label>Assunto</label><input value={f.assunto} onChange={(e) => setF({ ...f, assunto: e.target.value })} placeholder="Resumo da solicitação" /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="mf"><label>De</label>
+            <div className="mf"><label>De (solicitante)</label>
               {origemFranqueado
                 ? <input value={origemFranqueado} disabled title="Sua unidade  definido pelo seu acesso" />
-                : <select value={f.de_parte} onChange={(e) => setF({ ...f, de_parte: e.target.value })}>{PARTES.map((p) => <option key={p}>{p}</option>)}</select>}
+                : <select value={f.de_parte} onChange={(e) => setF({ ...f, de_parte: e.target.value })}>{opcoesDe.map((p) => <option key={p}>{p}</option>)}</select>}
             </div>
-            <div className="mf"><label>Para</label><select value={f.para_parte} onChange={(e) => setF({ ...f, para_parte: e.target.value })}>{PARTES.map((p) => <option key={p}>{p}</option>)}</select></div>
+            <div className="mf"><label>Para</label><select value={f.para_parte} onChange={(e) => setF({ ...f, para_parte: e.target.value })}>{(isAdmin ? CHAM_PARTIES : PARTES).map((p) => <option key={p}>{p}</option>)}</select></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Assunto (etiqueta)</label><select value={f.etiqueta} onChange={(e) => setF({ ...f, etiqueta: e.target.value })}>{ETIQUETAS.map((p) => <option key={p}>{p}</option>)}</select></div>

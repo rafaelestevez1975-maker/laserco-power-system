@@ -2,22 +2,24 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
 import { ComissoesBoard } from '@/components/comissoes/ComissoesBoard'
-import type { SimColaborador } from '@/components/comissoes/comissoes-data'
+import { COM_CATS_SEED, type SimColaborador } from '@/components/comissoes/comissoes-data'
+import { rowToCat, MATRIZ_COLS, type ComCat, type MatrizRow } from '@/lib/comissoes'
 
 export const dynamic = 'force-dynamic'
 
-// Quem pode EDITAR a matriz (gestores/admin). Demais só visualizam + simulam.
+// Quem pode EDITAR/SALVAR a matriz (gestores/admin). Demais só visualizam + simulam.
 const PAPEIS_ESCRITA = ['gestor']
 
 /**
  * Matriz de comissões — grade categorias × faixas + simulador em tempo real.
  *
- * Backend lkii NÃO possui tabela de matriz de comissões (introspecção: 404 em
- * comissoes/matriz_comissoes). A matriz é um SEED fiel ao legado (COM_CATS) e o simulador
- * roda 100% no cliente. Persistência da matriz = //TODO(needs-table: matriz_comissoes).
+ * A matriz agora PERSISTE na tabela matriz_comissoes (scripts/migrations/comissoes.sql).
+ * A page carrega as categorias do banco (por empresa) e o board permite editar e
+ * SALVAR (action salvarMatriz). Se a tabela não existir/estiver vazia, cai no SEED
+ * fiel ao legado (COM_CATS) e o board mostra o banner de empty-state pedindo a migration.
  *
- * O que É real: a lista de colaboradores e unidades (alimenta o filtro do simulador,
- * mapeando cargo→categoria — ex.: cargo 'consultora_vendas' → "Consultoras de Vendas").
+ * O que mais é real: a lista de colaboradores e unidades (alimenta o filtro do
+ * simulador, mapeando cargo→categoria — ex.: 'consultora_vendas' → "Consultoras de Vendas").
  */
 export default async function ComissoesPage() {
   const ctx = await getSessionContext()
@@ -27,6 +29,18 @@ export default async function ComissoesPage() {
   // Unidades visíveis (RLS via sessão).
   const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
   const mapaUni = new Map(unidades.map((u) => [u.id, u.nome]))
+
+  // ── Matriz persistida (matriz_comissoes). Fallback: SEED quando a tabela não existe/vazia. ──
+  let matriz: ComCat[] = COM_CATS_SEED
+  let matrizDoBanco = false
+  const { data: matrizRaw, error: matrizErr } = await sb
+    .from('matriz_comissoes')
+    .select(MATRIZ_COLS)
+    .order('ordem', { ascending: true })
+  if (!matrizErr && Array.isArray(matrizRaw) && matrizRaw.length > 0) {
+    matriz = (matrizRaw as MatrizRow[]).map(rowToCat)
+    matrizDoBanco = true
+  }
 
   // Colaboradores ativos (multitenant: escopo na unidade ativa quando houver).
   let q = sb
@@ -47,12 +61,13 @@ export default async function ComissoesPage() {
 
   return (
     <div className="view active">
-      <ComissoesBoard colaboradores={colaboradores} unidades={unidades} podeEditar={podeEditar} />
+      <ComissoesBoard
+        matriz={matriz}
+        matrizDoBanco={matrizDoBanco}
+        colaboradores={colaboradores}
+        unidades={unidades}
+        podeEditar={podeEditar}
+      />
     </div>
   )
 }
-
-// TODO(needs-table: matriz_comissoes) — persistir a matriz (categorias × faixas/base/fechamento)
-// por empresa/unidade. Sem acesso de migration, a matriz é seed em memória (fiel ao legado).
-// TODO(legado: buildComissoes) — vincular a matriz salva ao cálculo real de premiação por
-// período (Saque) e ao roster premRoster do legado; depende da tabela acima.

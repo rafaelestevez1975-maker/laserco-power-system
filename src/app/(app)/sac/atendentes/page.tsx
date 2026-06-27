@@ -31,10 +31,15 @@ export default async function SacAtendentesPage() {
   ])
 
   const podeDistribuir = !!(ctx?.isAdmin || ctx?.papel === 'sac' || ctx?.papel === 'gestor')
+  const podeCriar = !!ctx?.isAdmin // criar login de atendente é só do admin
+  const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
 
   return (
     <div className="view active">
-      <AtendentesManager atendentes={rows} filaConversas={filaConversas ?? 0} filaTickets={filaTickets ?? 0} podeDistribuir={podeDistribuir} />
+      <AtendentesManager
+        atendentes={rows} filaConversas={filaConversas ?? 0} filaTickets={filaTickets ?? 0}
+        podeDistribuir={podeDistribuir} podeCriar={podeCriar} unidades={unidades}
+      />
     </div>
   )
 }

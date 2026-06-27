@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
 import { scopeUnidade } from '@/lib/sb'
-import { avaliarFunil, type FunilSnapshot } from '@/lib/checklist'
+import { avaliarFunil, montarChecklistMensal, type FunilSnapshot, type MediasRede } from '@/lib/checklist'
 import { ChecklistView } from '@/components/checklist/ChecklistView'
 import type { PlanoRow, TarefaRow } from '@/components/checklist/PlanosList'
 
@@ -35,6 +35,36 @@ export default async function ChecklistPage() {
   const { data: snapData } = await snapQuery
   const snap = ((snapData ?? [])[0] as FunilSnapshot | undefined) ?? null
   const linhas = avaliarFunil(snap)
+
+  // ── 1b) Médias da REDE (todas as unidades visíveis) — usadas no checklist mensal SULTS ──
+  // Pega o último snapshot de cada unidade e tira a média (legacy chkAvg).
+  const { data: redeData } = await sb
+    .from('kpis_unidade_snapshot')
+    .select('unidade_id, agendamentos_total, taxa_comparecimento, taxa_conversao, ticket_medio, data_referencia')
+    .order('data_referencia', { ascending: false })
+    .limit(500)
+  const ultimoPorUnidade = new Map<string, { ag: number; comp: number; conv: number; ticket: number }>()
+  for (const r of (redeData ?? []) as Array<{ unidade_id: string; agendamentos_total: number | null; taxa_comparecimento: number | null; taxa_conversao: number | null; ticket_medio: number | null }>) {
+    if (!ultimoPorUnidade.has(r.unidade_id)) {
+      ultimoPorUnidade.set(r.unidade_id, {
+        ag: r.agendamentos_total ?? 0,
+        comp: r.taxa_comparecimento ?? 0,
+        conv: r.taxa_conversao ?? 0,
+        ticket: r.ticket_medio ?? 0,
+      })
+    }
+  }
+  const rede = [...ultimoPorUnidade.values()]
+  const n = Math.max(1, rede.length)
+  const mediasRede: MediasRede = {
+    ag: rede.reduce((a, u) => a + u.ag, 0) / n,
+    comp: rede.reduce((a, u) => a + u.comp, 0) / n,
+    conv: rede.reduce((a, u) => a + u.conv, 0) / n,
+    ticket: rede.reduce((a, u) => a + u.ticket, 0) / n,
+  }
+  // Checklist mensal SULTS (6 seções, ~26 questões, pontuação 340) — só faz sentido
+  // com snapshot da unidade ativa. Sem snapshot, a aba mostra empty-state.
+  const mensal = snap ? montarChecklistMensal(snap, mediasRede) : null
 
   // ── 2) Planos de ação (planos_acao) + tarefas (plano_acao_tarefas) ──
   let planosQuery = sb
@@ -97,6 +127,7 @@ export default async function ChecklistPage() {
       snap={snap}
       planos={planos}
       kpis={kpis}
+      mensal={mensal}
       podeEscrever={podeEscrever}
       unidades={unidadesParaCriar}
       activeUnitId={activeUnitId}

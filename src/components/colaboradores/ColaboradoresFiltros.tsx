@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CARGO_LABELS } from './labels'
+import { PERFIL_LABELS } from './labels'
 
 export function ColaboradoresFiltros({ areas }: { areas: string[] }) {
   const router = useRouter()
@@ -40,8 +40,8 @@ export function ColaboradoresFiltros({ areas }: { areas: string[] }) {
         <option value="pj">PJ</option>
       </select>
       <select value={sp.get('cargo') ?? ''} onChange={(e) => setParams({ cargo: e.target.value })} style={selSt}>
-        <option value="">Cargo (todos)</option>
-        {Object.entries(CARGO_LABELS).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+        <option value="">Perfil de acesso (todos)</option>
+        {Object.entries(PERFIL_LABELS).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
       </select>
       {areas.length > 0 && (
         <select value={sp.get('area') ?? ''} onChange={(e) => setParams({ area: e.target.value })} style={selSt}>

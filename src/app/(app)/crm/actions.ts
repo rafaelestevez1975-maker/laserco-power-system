@@ -15,6 +15,31 @@ export type NovoLeadInput = {
   valor_estimado?: number | null
   unidade_id: string
   etapa_id: string
+  responsavel_id?: string | null
+  temperatura?: string | null
+}
+
+// Constraints reais (migration 015 + 050): origem e temperatura têm CHECK fixo.
+const ORIGENS = ['manual', 'formulario', 'instagram', 'whatsapp', 'indicacao', 'google', 'outros', 'geolocalizado', 'site']
+const TEMPS = ['gelado', 'frio', 'morno', 'quente', 'ardente']
+
+/**
+ * Mapeia as 8 origens visíveis do legado (lead modal HTML 2899) para os valores
+ * aceitos pelo CHECK do banco. Facebook/Parcerias/Loja física não têm valor
+ * próprio no CHECK → caem em 'outros' (preserva a intenção do cliente).
+ */
+const ORIGEM_LEGADO: Record<string, string> = {
+  instagram: 'instagram', facebook: 'outros', google: 'google',
+  indicacao: 'indicacao', 'indicação': 'indicacao',
+  geolocalizacao: 'geolocalizado', 'geolocalização': 'geolocalizado', geolocalizado: 'geolocalizado',
+  parcerias: 'outros', 'loja física': 'outros', 'loja fisica': 'outros',
+  whatsapp: 'whatsapp', formulario: 'formulario', 'formulário': 'formulario',
+  site: 'site', manual: 'manual', outros: 'outros',
+}
+function mapOrigem(raw?: string): string {
+  const k = (raw || '').toLowerCase().trim()
+  if (ORIGENS.includes(k)) return k
+  return ORIGEM_LEGADO[k] ?? 'manual'
 }
 
 /** Cria um lead no CRM (respeita RLS/permissão de escrita do usuário). */
@@ -32,20 +57,21 @@ export async function criarLead(input: NovoLeadInput): Promise<ActionResult> {
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
   if (!empresa_id) return { ok: false, error: 'Unidade sem empresa vinculada.' }
 
-  // Constraints reais (migration 015): origem e status têm CHECK fixo.
-  const ORIGENS = ['manual', 'formulario', 'instagram', 'whatsapp', 'indicacao', 'google', 'outros']
-  const origem = ORIGENS.includes((input.origem || '').toLowerCase()) ? input.origem!.toLowerCase() : 'manual'
+  const origem = mapOrigem(input.origem)
+  const temp = (input.temperatura || '').toLowerCase()
+  const temperatura = TEMPS.includes(temp) ? temp : null
 
   const { error } = await sb.from('crm_leads').insert({
     empresa_id,
     unidade_id: input.unidade_id,
     etapa_id: input.etapa_id,
-    responsavel_id: user.id,
+    responsavel_id: input.responsavel_id || user.id,
     nome: input.nome.trim(),
     telefone: input.telefone?.trim() || null,
     origem,
     servico_interesse: input.servico_interesse?.trim() || null,
     valor_estimado: input.valor_estimado ?? null,
+    temperatura,
     status: 'ativo',
   })
 

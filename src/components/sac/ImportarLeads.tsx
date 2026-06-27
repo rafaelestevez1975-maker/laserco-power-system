@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { importarTickets, type LinhaImport } from '@/app/(app)/sac/importar/actions'
 
 type Unidade = { id: string; nome: string }
-type Mapeamento = { nome: string; telefone: string; email: string; cpf: string; motivo: string; obs: string }
+type Mapeamento = { nome: string; telefone: string; email: string; cpf: string; motivo: string; obs: string; valor_pago: string; valor_devolucao: string; data: string }
 
 const CANAIS = ['Reclame Aqui', 'Procon', 'Sults', 'Blip', 'WhatsApp', 'E-mail', 'Instagram', 'Telefone', 'Manual', 'Formulário']
 const CAMPOS: { key: keyof Mapeamento; label: string; req?: boolean }[] = [
@@ -14,6 +14,9 @@ const CAMPOS: { key: keyof Mapeamento; label: string; req?: boolean }[] = [
   { key: 'email', label: 'E-mail' },
   { key: 'cpf', label: 'CPF' },
   { key: 'motivo', label: 'Motivo / assunto' },
+  { key: 'valor_pago', label: 'Valor pago (R$)' },
+  { key: 'valor_devolucao', label: 'Reembolso solicitado (R$)' },
+  { key: 'data', label: 'Data da reclamação' },
   { key: 'obs', label: 'Observação / relato' },
 ]
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
@@ -27,6 +30,9 @@ function autoMap(headers: string[]): Mapeamento {
     email: find('email', 'e-mail'),
     cpf: find('cpf', 'documento'),
     motivo: find('motivo', 'assunto', 'titulo', 'reclamacao', 'problema'),
+    valor_pago: find('valor pago', 'valorpago', 'vlr pago', 'valor'),
+    valor_devolucao: find('reembolso', 'devolu', 'restitu', 'solicitado'),
+    data: find('data', 'abertura'),
     obs: find('observ', 'descricao', 'mensagem', 'detalhe', 'relato'),
   }
 }
@@ -62,8 +68,8 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
   async function baixarModelo() {
     const XLSX = await import('xlsx')
     const ws = XLSX.utils.aoa_to_sheet([
-      ['Nome', 'Telefone', 'Email', 'CPF', 'Motivo', 'Observação'],
-      ['Maria Silva', '11999990000', 'maria@email.com', '12345678900', 'Reclamação de atendimento', 'Cliente pede retorno'],
+      ['Nome', 'Telefone', 'Email', 'CPF', 'Motivo', 'Valor Pago', 'Reembolso Solicitado', 'Data', 'Observação'],
+      ['Maria Silva', '11999990000', 'maria@email.com', '12345678900', 'Reclamação de atendimento', '1200,00', '600,00', '10/05/2026', 'Cliente pede retorno'],
     ])
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Modelo')
@@ -72,7 +78,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
 
   const val = (r: Record<string, unknown>, col: string) => (col ? String(r[col] ?? '').trim() : '')
   const linhas: LinhaImport[] = map
-    ? rows.map((r) => ({ nome: val(r, map.nome), telefone: val(r, map.telefone), email: val(r, map.email), cpf: val(r, map.cpf), motivo: val(r, map.motivo), obs: val(r, map.obs) }))
+    ? rows.map((r) => ({ nome: val(r, map.nome), telefone: val(r, map.telefone), email: val(r, map.email), cpf: val(r, map.cpf), motivo: val(r, map.motivo), valor_pago: val(r, map.valor_pago), valor_devolucao: val(r, map.valor_devolucao), data: val(r, map.data), obs: val(r, map.obs) }))
     : []
   const validas = linhas.filter((l) => l.nome)
 

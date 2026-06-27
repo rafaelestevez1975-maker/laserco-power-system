@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { listInstances, sendText, sendMedia } from '@/lib/uazapi'
+import { reHostMidia } from '@/lib/sac-midia'
 
 type Perfil = { nome_completo?: string; papel?: string; unidade_id?: string | null }
 async function operador(sb: Awaited<ReturnType<typeof createClient>>) {
@@ -64,11 +65,15 @@ export async function enviarMidia(chatId: string, m: { tipo: 'image' | 'audio' |
   const env = await sendMedia(canal.token, c.telefone, m.tipo, m.file, { caption: m.caption, docName: m.nomeArquivo })
   if (!env.ok) return { ok: false, error: env.error || 'Falha no envio da mídia.' }
 
+  // Guarda a mídia ENVIADA num bucket público p/ exibir de volta no chat (a UAZAPI
+  // nem sempre devolve URL pública) — usa a fileURL da UAZAPI se houver, senão o arquivo local.
+  const midiaUrl = await reHostMidia(env.fileURL || m.file, { mime: m.mimetype, prefixo: 'enviadas' })
+
   const agora = new Date().toISOString()
   const previewTxt = m.caption || ({ image: '📷 Imagem', audio: '🎤 Áudio', ptt: '🎤 Áudio', video: '🎬 Vídeo', document: '📎 Documento' }[m.tipo] || '📩 Mídia')
   await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chatId, direcao: 'saida', autor: nome, enviada_por: user.id, tipo: m.tipo === 'ptt' ? 'audio' : m.tipo,
-    texto: m.caption || null, midia_url: env.fileURL || null, midia_mimetype: m.mimetype || null, midia_nome: m.nomeArquivo || null, status: 'sent', criado_em: agora,
+    texto: m.caption || null, midia_url: midiaUrl, midia_mimetype: m.mimetype || null, midia_nome: m.nomeArquivo || null, status: 'sent', criado_em: agora,
   })
   const patch: Record<string, unknown> = { ultima_msg: previewTxt.slice(0, 120), ultima_msg_tipo: m.tipo === 'ptt' ? 'audio' : m.tipo, ultima_msg_em: agora, bot_ativo: false }
   if (!c.atendente_id) patch.atendente_id = user.id

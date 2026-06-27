@@ -15,12 +15,28 @@ export type Cargo = (typeof CARGOS)[number]
 export type Regime = (typeof REGIMES)[number]
 export type Tipo = (typeof TIPOS)[number]
 
+// Cargos confirmados por probe (aceitos no insert do enum cargo_colaborador).
 export const CARGO_LABELS: Record<string, string> = {
   gerente: 'Gerente',
   subgerente: 'Subgerente',
   consultora_vendas: 'Consultora de Vendas',
   aplicadora: 'Aplicadora',
 }
+
+// Perfis de acesso do legado (view-colaboradores filtros ~2085). Inclui os perfis
+// que não são cargos do enum (Profissional/SAC/Proprietário). Usado SÓ para exibir
+// rótulo e para o filtro "Perfil de acesso" da lista — NÃO é validado no insert
+// (o enum cargo_colaborador só aceita os 4 de CARGO_LABELS). Cargo vindo do banco
+// fora do enum continua sendo exibido por aqui.
+export const PERFIL_LABELS: Record<string, string> = {
+  ...CARGO_LABELS,
+  profissional: 'Profissional',
+  sac: 'SAC',
+  proprietario: 'Proprietário',
+}
+
+// Mapeia o cargo do enum → perfil de acesso amigável do legado, quando difere.
+export const perfilLabel = (c: string | null | undefined) => (c ? PERFIL_LABELS[c] ?? c : '—')
 
 export const REGIME_LABELS: Record<string, string> = {
   clt: 'CLT',

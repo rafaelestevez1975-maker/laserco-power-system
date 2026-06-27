@@ -13,15 +13,23 @@ export default async function ColaboradorFichaPage({ params }: { params: Promise
   const sb = await createClient()
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
 
-  // Colaborador (a RLS garante o escopo; se a unidade ativa não bate, vem null)
-  const { data: row } = await sb
-    .from('colaboradores')
-    .select('id, unidade_id, perfil_id, nome, cpf, rg, data_nascimento, email, telefone, cargo, departamento, area, regime, tipo, data_admissao, data_demissao, status, salario_bruto, salario_liquido, banco, agencia, conta, pix, jornada_semanal_horas, jornada_diaria_horas, home_office_autorizado, endereco_residencial, criado_em')
-    .eq('id', id)
-    .maybeSingle()
+  // Colaborador (a RLS garante o escopo; se a unidade ativa não bate, vem null).
+  // Colunas de comissoes.sql (exibe_agenda, comissao_pct, etc.) → degrade se a migration
+  // não foi aplicada (select sem elas).
+  const COLS_BASE = 'id, unidade_id, perfil_id, nome, cpf, rg, data_nascimento, email, telefone, cargo, departamento, area, regime, tipo, data_admissao, data_demissao, status, salario_bruto, salario_liquido, banco, agencia, conta, pix, jornada_semanal_horas, jornada_diaria_horas, home_office_autorizado, endereco_residencial, criado_em'
+  const COLS_FULL = `${COLS_BASE}, exibe_agenda, disponivel_online, comissao_pct, ordem_app, forcar_troca_senha, ultimo_acesso`
+  const full = await sb.from('colaboradores').select(COLS_FULL).eq('id', id).maybeSingle()
+  let row = full.data as Record<string, unknown> | null
+  if (!row) {
+    const r2 = await sb.from('colaboradores').select(COLS_BASE).eq('id', id).maybeSingle()
+    row = r2.data as Record<string, unknown> | null
+  }
 
   const colaborador = row as ColaboradorFull | null
   if (!colaborador) notFound()
+
+  // Migration aplicada? (controla a habilitação dos campos das novas abas)
+  const migracaoAplicada = !!row && 'comissao_pct' in (row as Record<string, unknown>)
 
   // nome da unidade de lotação (para exibição)
   let unidadeNome: string | null = null
@@ -39,6 +47,7 @@ export default async function ColaboradorFichaPage({ params }: { params: Promise
         colaborador={colaborador}
         unidadeNome={unidadeNome}
         podeEscrever={podeEscrever}
+        migracaoAplicada={migracaoAplicada}
       />
     </div>
   )

@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { waHref, digitos, dataBR } from '@/lib/fmt'
-import { cargoLabel, regimeLabel } from './labels'
+import { perfilLabel, regimeLabel } from './labels'
+import { reativarColaborador } from '@/app/(app)/colaboradores/actions'
 
 export type ColaboradorRow = {
   id: string
@@ -17,6 +20,18 @@ export type ColaboradorRow = {
   tipo: string | null
   status: string | null
   data_admissao: string | null
+  exibe_agenda?: boolean | null
+  ultimo_acesso?: string | null
+}
+
+const INATIVIDADE_DIAS = 15
+
+/** Dias desde o último acesso (null → não computa). */
+function diasSemAcesso(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return null
+  return Math.floor((Date.now() - d.getTime()) / 86400000)
 }
 
 /** "555199..." → "(51) 99999-9999" (best-effort). */
@@ -40,9 +55,22 @@ type Props = {
   totalPages: number
   basePath: string
   searchParams: Record<string, string | undefined>
+  podeEscrever?: boolean
 }
 
-export function ColaboradoresList({ colaboradores, page, totalPages, basePath, searchParams }: Props) {
+export function ColaboradoresList({ colaboradores, page, totalPages, basePath, searchParams, podeEscrever = false }: Props) {
+  const router = useRouter()
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [erro, setErro] = useState('')
+
+  async function reativar(id: string) {
+    setErro(''); setBusyId(id)
+    const res = await reativarColaborador(id)
+    setBusyId(null)
+    if (!res.ok) { setErro(res.error || 'Erro ao reativar.'); return }
+    router.refresh()
+  }
+
   const urlComPagina = (p: number) => {
     const sp = new URLSearchParams()
     for (const [k, v] of Object.entries(searchParams)) {
@@ -55,24 +83,27 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
 
   return (
     <>
+      {erro && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 8 }}><i className="ti ti-alert-triangle" /> {erro}</p>}
       <div className="cli-card">
         <div className="cli-scroll">
           <table className="cli-table">
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Cargo</th>
+                <th>Perfil de acesso</th>
                 <th>Área / Depto</th>
                 <th>Regime</th>
                 <th>Telefone</th>
-                <th>Admissão</th>
+                <th>Último acesso</th>
+                <th>Exibe na agenda</th>
                 <th>Status</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
               {colaboradores.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum colaborador encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -82,6 +113,9 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                 const local = [c.area, c.departamento].filter(Boolean).join(' / ')
                 const inativo = c.status === 'inativo'
                 const iniciais = (c.nome || '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+                const dias = diasSemAcesso(c.ultimo_acesso)
+                const alerta = !inativo && dias != null && dias >= INATIVIDADE_DIAS - 5
+                const corDias = inativo ? 'var(--red)' : alerta ? 'var(--amber)' : 'var(--text-3)'
                 return (
                   <tr key={c.id} style={{ opacity: inativo ? 0.6 : 1 }}>
                     <td>
@@ -90,7 +124,7 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                         {c.nome || '(sem nome)'}
                       </Link>
                     </td>
-                    <td><span className="orig-tag">{cargoLabel(c.cargo)}</span></td>
+                    <td><span className="orig-tag">{perfilLabel(c.cargo)}</span></td>
                     <td>{local || <span className="muted">—</span>}</td>
                     <td>{regimeLabel(c.regime)}</td>
                     <td>
@@ -101,11 +135,34 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                         </a>
                       )}
                     </td>
-                    <td>{dataBR(c.data_admissao) || <span className="muted">—</span>}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {c.ultimo_acesso
+                        ? <>{dataBR(c.ultimo_acesso)} <span style={{ fontSize: 11, color: corDias }}>· {dias}d</span></>
+                        : <span className="muted">—</span>}
+                    </td>
+                    <td>
+                      {c.exibe_agenda == null
+                        ? <span className="muted">—</span>
+                        : c.exibe_agenda
+                          ? <span className="pill-yes">Sim</span>
+                          : <span className="pill-no">Não</span>}
+                    </td>
                     <td>
                       {inativo
                         ? <span className="os-st os-cancelada">Inativo</span>
                         : <span className="os-st os-fechada">Ativo</span>}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <Link href={`/colaboradores/${c.id}`} className="os-link" style={{ textDecoration: 'none' }}><i className="ti ti-edit" /> Abrir</Link>
+                      {inativo && podeEscrever && (
+                        <button
+                          onClick={() => reativar(c.id)}
+                          disabled={busyId === c.id}
+                          style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', marginLeft: 12, fontSize: 13, padding: 0 }}
+                        >
+                          <i className="ti ti-rotate-clockwise" /> {busyId === c.id ? 'Reativando…' : 'Reativar'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )

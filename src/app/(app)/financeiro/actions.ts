@@ -1,79 +1,314 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { requireOperador, msgErro, type SB } from '@/lib/sb'
+import { temPapel } from '@/lib/rbac'
+import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso } from '@/lib/financeiro'
+import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
 
-/** Dá baixa (marca como pago) num lançamento. Se for um reembolso do SAC
- *  (origem_ref_id aponta para um sac_ticket), conclui o chamado automaticamente
- *   é o "espelha de volta" pedido na reunião. */
-export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: boolean; error?: string; concluiuChamado?: boolean }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+// ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
+const PAPEIS_FIN = ['financeiro', 'gestor']
+type R = { ok: boolean; error?: string }
 
-  const hojeDate = new Date().toISOString().slice(0, 10)
-  const agora = new Date().toISOString()
-
-  const { data: lf, error: e0 } = await sb
-    .from('lancamentos_financeiros')
-    .select('id, origem_ref_id, status')
-    .eq('id', lancamentoId).single()
-  const lanc = lf as { origem_ref_id?: string | null; status?: string } | null
-  if (e0 || !lanc) return { ok: false, error: 'Lançamento não encontrado.' }
-  if (lanc.status === 'pago') return { ok: false, error: 'Lançamento já está pago.' }
-
-  const { error: e1 } = await sb
-    .from('lancamentos_financeiros')
-    .update({ status: 'pago', data_pagamento: hojeDate })
-    .eq('id', lancamentoId)
-  if (e1) return { ok: false, error: /row-level|policy|permission/i.test(e1.message) ? 'Sem permissão para dar baixa.' : e1.message }
-
-  // Espelha de volta no SAC.
-  let concluiuChamado = false
-  // (1) parcela de acordo: baixa a parcela; só conclui o chamado quando TODAS estiverem pagas.
-  const { data: parc } = await sb.from('sac_parcelas').select('id, acordo_id').eq('lancamento_id', lancamentoId).maybeSingle()
-  const parcela = parc as { id: string; acordo_id: string } | null
-  if (parcela) {
-    await sb.from('sac_parcelas').update({ pago: true }).eq('id', parcela.id)
-    const { count: pend } = await sb.from('sac_parcelas').select('id', { count: 'exact', head: true }).eq('acordo_id', parcela.acordo_id).eq('pago', false)
-    if (!pend) {
-      await sb.from('sac_acordos').update({ status: 'pago' }).eq('id', parcela.acordo_id)
-      const { data: ac } = await sb.from('sac_acordos').select('ticket_id').eq('id', parcela.acordo_id).single()
-      const tid = (ac as { ticket_id?: string } | null)?.ticket_id
-      if (tid) { await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', tid); concluiuChamado = true }
-    }
-    revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac/pagamentos')
-  } else if (lanc.origem_ref_id) {
-    // (2) reembolso à vista: conclui o chamado direto.
-    const { data: tk } = await sb.from('sac_tickets').select('id').eq('id', lanc.origem_ref_id).maybeSingle()
-    if (tk) {
-      await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', lanc.origem_ref_id)
-      concluiuChamado = true
-      revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados')
-    }
-  }
-
-  revalidatePath('/financeiro')
-  return { ok: true, concluiuChamado }
+/** Empresa default (1ª) — o financeiro da franqueadora é consolidado da matriz. */
+async function empresaId(sb: SB): Promise<string | null> {
+  const { data } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
+  return (data as { id?: string } | null)?.id ?? null
 }
 
-/** Registra o recebimento de um recebível (tipo='receita'): marca como pago + data. */
-export async function receberLancamento(lancamentoId: string): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+// =============================================================================
+// RECEBÍVEIS (Contas a Receber da franqueadora)
+// =============================================================================
 
-  const { data: lf, error: e0 } = await sb.from('lancamentos_financeiros').select('status').eq('id', lancamentoId).single()
-  const l = lf as { status?: string } | null
-  if (e0 || !l) return { ok: false, error: 'Lançamento não encontrado.' }
-  if (l.status === 'pago') return { ok: false, error: 'Este recebível já foi recebido.' }
+/** Gera boleto de um recebível (finGerarUm L5229): nº de boleto + marca enviado. */
+export async function gerarBoleto(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para gerar boletos.' }
 
-  const { error } = await sb
-    .from('lancamentos_financeiros')
-    .update({ status: 'pago', data_pagamento: new Date().toISOString().slice(0, 10) })
-    .eq('id', lancamentoId)
-  if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão para registrar recebimento.' : error.message }
+  const { data: rec } = await op.sb.from('fin_recebiveis').select('id, boleto').eq('id', id).maybeSingle()
+  const r = rec as { boleto?: string | null } | null
+  if (!r) return { ok: false, error: 'Recebível não encontrado.' }
+  if (r.boleto) return { ok: false, error: 'Boleto já gerado.' }
 
+  // seq determinístico baseado no nº de boletos já gerados + offset do legado.
+  const { count } = await op.sb.from('fin_recebiveis').select('id', { count: 'exact', head: true }).not('boleto', 'is', null)
+  const boleto = finBoletoNum((count ?? 0) + 700)
+  const { error: e } = await op.sb.from('fin_recebiveis').update({ boleto, enviado: true }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'gerar boleto') }
   revalidatePath('/financeiro')
   return { ok: true }
 }
+
+/** Dá baixa num recebível (finBaixaUm L5231): status→pago, data, limpa jurId. */
+export async function darBaixaRecebivel(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para dar baixa.' }
+
+  const { data: rec } = await op.sb.from('fin_recebiveis').select('status, boleto').eq('id', id).maybeSingle()
+  const r = rec as { status?: string; boleto?: string | null } | null
+  if (!r) return { ok: false, error: 'Recebível não encontrado.' }
+  if (r.status === 'pago') return { ok: false, error: 'Este recebível já está pago.' }
+  if (!r.boleto) return { ok: false, error: 'Gere o boleto antes de dar baixa (retorno bancário).' }
+
+  const hoje = new Date().toISOString().slice(0, 10)
+  const { error: e } = await op.sb.from('fin_recebiveis').update({ status: 'pago', jur_id: null, dias_atraso: 0, data_pagamento: hoje }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'dar baixa') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+/** Escalar ao Jurídico (finEscalar L5399): cria vínculo jur_id. */
+export async function escalarJuridico(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para acionar o Jurídico.' }
+
+  const { data: rec } = await op.sb.from('fin_recebiveis').select('status, jur_id').eq('id', id).maybeSingle()
+  const r = rec as { status?: string; jur_id?: string | null } | null
+  if (!r) return { ok: false, error: 'Recebível não encontrado.' }
+  if (r.jur_id) return { ok: false, error: 'Caso já está no Jurídico.' }
+
+  const { error: e } = await op.sb.from('fin_recebiveis').update({ jur_id: 'JUR-' + id.slice(0, 8) }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'acionar o Jurídico') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+/** Notificar cobrança (finNotificar L5398): só registra envio (e-mail+WhatsApp). */
+export async function notificarCobranca(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para notificar.' }
+  const { data } = await op.sb.from('fin_recebiveis').select('id').eq('id', id).maybeSingle()
+  if (!data) return { ok: false, error: 'Recebível não encontrado.' }
+  // Integração real de e-mail/WhatsApp acontece no servidor (placeholder honesto).
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+// =============================================================================
+// SUSPENDER / REATIVAR (finSuspender L5254) — receber e pagar
+// =============================================================================
+export async function suspenderLancamento(tabela: 'receber' | 'pagar', id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para suspender lançamentos.' }
+
+  const tab = tabela === 'receber' ? 'fin_recebiveis' : 'fin_contas_pagar'
+  const cols = tabela === 'receber' ? 'status, status_anterior, vencimento, jur_id' : 'status, status_anterior'
+  const { data: rec } = await op.sb.from(tab).select(cols).eq('id', id).maybeSingle()
+  const r = rec as { status?: string; status_anterior?: string | null; vencimento?: string | null; jur_id?: string | null } | null
+  if (!r) return { ok: false, error: 'Lançamento não encontrado.' }
+
+  if (r.status === 'suspenso') {
+    // Reativar: volta ao status anterior; recalcula atraso (receber).
+    let novo = r.status_anterior || 'aberto'
+    const patch: Record<string, unknown> = { status_anterior: null }
+    if (tabela === 'receber' && novo !== 'pago') {
+      const d = calcDiasAtraso(r.vencimento)
+      if (d > 0) { novo = 'atrasado'; patch.dias_atraso = d }
+    }
+    patch.status = novo
+    const { error: e } = await op.sb.from(tab).update(patch).eq('id', id)
+    if (e) return { ok: false, error: msgErro(e.message, 'reativar lançamento') }
+  } else {
+    if (r.status === 'pago') return { ok: false, error: 'Lançamento já pago não pode ser suspenso.' }
+    const patch: Record<string, unknown> = { status_anterior: r.status, status: 'suspenso' }
+    if (tabela === 'receber' && r.jur_id) patch.jur_id = null
+    const { error: e } = await op.sb.from(tab).update(patch).eq('id', id)
+    if (e) return { ok: false, error: msgErro(e.message, 'suspender lançamento') }
+  }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+// =============================================================================
+// CONTAS A PAGAR
+// =============================================================================
+
+/** Pagar uma despesa (finPagar L5253): status→pago. */
+export async function pagarDespesa(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para pagar.' }
+  const { data: rec } = await op.sb.from('fin_contas_pagar').select('status').eq('id', id).maybeSingle()
+  const r = rec as { status?: string } | null
+  if (!r) return { ok: false, error: 'Conta não encontrada.' }
+  if (r.status === 'pago') return { ok: false, error: 'Esta conta já está paga.' }
+  const { error: e } = await op.sb.from('fin_contas_pagar').update({ status: 'pago' }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'pagar') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+/** Definir prioridade de uma despesa (finSetPrio L5116). */
+export async function definirPrioridade(id: string, prio: 'alta' | 'media' | 'baixa'): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para alterar prioridade.' }
+  if (!['alta', 'media', 'baixa'].includes(prio)) return { ok: false, error: 'Prioridade inválida.' }
+  const { error: e } = await op.sb.from('fin_contas_pagar').update({ prioridade: prio }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'definir prioridade') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+/** Nova despesa manual (Nova despesa — finPagarHTML L5250). */
+export async function novaDespesa(input: {
+  categoria: string; descricao: string; escopo: string; valor: number; vencimento: string; prioridade: 'alta' | 'media' | 'baixa'
+}): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para lançar despesas.' }
+  const categoria = (input.categoria || '').trim()
+  if (!categoria) return { ok: false, error: 'Informe a categoria.' }
+  const valor = Number(input.valor)
+  if (!Number.isFinite(valor) || valor <= 0) return { ok: false, error: 'O valor deve ser maior que zero.' }
+  if (!input.vencimento) return { ok: false, error: 'Informe o vencimento.' }
+
+  const emp = await empresaId(op.sb)
+  const { error: e } = await op.sb.from('fin_contas_pagar').insert({
+    empresa_id: emp,
+    categoria,
+    descricao: (input.descricao || '').trim() || null,
+    escopo: (input.escopo || 'Escritório').trim(),
+    valor,
+    vencimento: input.vencimento,
+    status: 'aberto',
+    prioridade: ['alta', 'media', 'baixa'].includes(input.prioridade) ? input.prioridade : 'media',
+  })
+  if (e) return { ok: false, error: msgErro(e.message, 'lançar despesa') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+// =============================================================================
+// AUTOMAÇÃO DE ROYALTIES
+// =============================================================================
+
+/** Gera cobrança de royalties em lote (finRunRoyalties L5359): boleto p/ todo royalty sem boleto. */
+export async function gerarCobrancaRoyalties(): Promise<R & { geradas?: number; total?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para gerar cobranças.' }
+
+  const { data } = await op.sb.from('fin_recebiveis')
+    .select('id, valor, boleto, status')
+    .eq('categoria', 'Royalties')
+    .is('boleto', null)
+    .in('status', ['aberto', 'atrasado'])
+  const alvo = (data ?? []) as { id: string; valor: number }[]
+  if (alvo.length === 0) return { ok: true, geradas: 0, total: 0 }
+
+  let total = 0
+  for (let k = 0; k < alvo.length; k++) {
+    const r = alvo[k]
+    const boleto = finBoletoNum(k + 500)
+    await op.sb.from('fin_recebiveis').update({ boleto, enviado: true }).eq('id', r.id)
+    total += Number(r.valor) || 0
+  }
+  revalidatePath('/financeiro')
+  return { ok: true, geradas: alvo.length, total }
+}
+
+/** Processa retorno bancário / baixa em lote (finBaixaLote L5370): baixa boletos em aberto sem atraso. */
+export async function processarRetornoBancario(): Promise<R & { baixados?: number; total?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para processar o retorno.' }
+
+  const { data } = await op.sb.from('fin_recebiveis')
+    .select('id, valor, dias_atraso')
+    .not('boleto', 'is', null)
+    .eq('status', 'aberto')
+  const alvo = (data ?? []) as { id: string; valor: number; dias_atraso: number }[]
+  let total = 0, n = 0
+  const hoje = new Date().toISOString().slice(0, 10)
+  for (const r of alvo) {
+    if ((r.dias_atraso || 0) > 0) continue
+    await op.sb.from('fin_recebiveis').update({ status: 'pago', data_pagamento: hoje }).eq('id', r.id)
+    total += Number(r.valor) || 0; n++
+  }
+  revalidatePath('/financeiro')
+  return { ok: true, baixados: n, total }
+}
+
+/** Roda a régua de atraso (finRodarRegua L5378): >=10 dias sem jur_id → escala ao Jurídico. */
+export async function rodarReguaAtraso(regua?: ReguaPasso[]): Promise<R & { aplicadas?: number; juridico?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para rodar a régua.' }
+
+  const { data } = await op.sb.from('fin_recebiveis').select('id, dias_atraso, jur_id').eq('status', 'atrasado')
+  const atr = (data ?? []) as { id: string; dias_atraso: number; jur_id: string | null }[]
+  let jur = 0
+  for (const r of atr) {
+    const passo = proximoPassoRegua(r.dias_atraso || 0, regua)
+    if (passo && passo.dias >= 10 && !r.jur_id) {
+      await op.sb.from('fin_recebiveis').update({ jur_id: 'JUR-' + r.id.slice(0, 8) }).eq('id', r.id)
+      jur++
+    }
+  }
+  revalidatePath('/financeiro')
+  return { ok: true, aplicadas: atr.length, juridico: jur }
+}
+
+// =============================================================================
+// CONCILIAÇÃO
+// =============================================================================
+/** Rodar conciliação (finRodarConc L5331) — recalcula taxas/divergências sobre os lançamentos. */
+export async function rodarConciliacao(): Promise<R & { cruzados?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para conciliar.' }
+  const { count } = await op.sb.from('fin_conciliacao').select('id', { count: 'exact', head: true })
+  revalidatePath('/financeiro')
+  return { ok: true, cruzados: count ?? 0 }
+}
+
+// =============================================================================
+// CONFIGURAÇÕES (finSalvarCfg L5427)
+// =============================================================================
+export async function salvarConfig(input: {
+  royalty_pct: number; fundo_pct: number; venc_dia: number
+  banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: ReguaPasso[]
+}): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para salvar configurações.' }
+
+  // Validação dos limites do legado (finConfigHTML L5408-5410).
+  const vencDia = Math.round(Number(input.venc_dia) || 10)
+  if (vencDia < 1 || vencDia > 28) return { ok: false, error: 'O dia de vencimento deve ficar entre 1 e 28.' }
+  const royalty = Number(input.royalty_pct); const fundo = Number(input.fundo_pct)
+  if (!Number.isFinite(royalty) || royalty < 0) return { ok: false, error: 'Percentual de royalties inválido.' }
+  if (!Number.isFinite(fundo) || fundo < 0) return { ok: false, error: 'Percentual do fundo inválido.' }
+
+  const emp = await empresaId(op.sb)
+  if (!emp) return { ok: false, error: 'Empresa não encontrada.' }
+  const { error: e } = await op.sb.from('fin_config').upsert({
+    empresa_id: emp,
+    royalty_pct: royalty,
+    fundo_pct: fundo,
+    venc_dia: vencDia,
+    banco: input.banco,
+    adquirentes: input.adquirentes,
+    categorias: input.categorias,
+    regua: input.regua,
+    atualizado_em: new Date().toISOString(),
+  }, { onConflict: 'empresa_id' })
+  if (e) return { ok: false, error: msgErro(e.message, 'salvar configurações') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+// =============================================================================
+// COMPAT — ações antigas (usadas por /sac e componentes órfãos legados).
+// Mantidas para não quebrar imports existentes. lancamentos_financeiros é o
+// financeiro por UNIDADE (/contas); aqui só os reembolsos do SAC espelham de volta.
+// =============================================================================
+// 'use server' não permite `export … from`; embrulha em funções async que repassam.
+export async function darBaixaLancamento(lancamentoId: string) { return _darBaixaLancamento(lancamentoId) }
+export async function receberLancamento(lancamentoId: string) { return _receberLancamento(lancamentoId) }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { criarServico, salvarServico, type ServicoInput } from '@/app/(app)/servicos/actions'
+import { PAGAR_COMISSAO_OPCOES, type PagarComissao } from '@/lib/catalogo'
 import type { ServicoRow } from './ServicosList'
 
 type FormState = {
@@ -11,6 +12,8 @@ type FormState = {
   descricao: string
   duracao_min: string
   preco_padrao: string
+  desc_max: string
+  pagar_comissao: PagarComissao
   comissionavel: boolean
   dynamic_price: boolean
   ativo: boolean
@@ -23,6 +26,8 @@ function rowToForm(row?: ServicoRow): FormState {
     descricao: row?.descricao ?? '',
     duracao_min: row?.duracao_min != null ? String(row.duracao_min) : '',
     preco_padrao: row?.preco_padrao != null ? String(row.preco_padrao) : '',
+    desc_max: row?.desc_max != null ? String(row.desc_max) : '',
+    pagar_comissao: (PAGAR_COMISSAO_OPCOES.includes(row?.pagar_comissao as PagarComissao) ? row!.pagar_comissao : 'Execução') as PagarComissao,
     comissionavel: row?.comissionavel ?? false,
     dynamic_price: row?.dynamic_price ?? false,
     ativo: row?.ativo !== false,
@@ -67,6 +72,11 @@ export function ServicoModal({
       if (d < 0) return 'A duração não pode ser negativa.'
       if (d > 1440) return 'Duração muito longa (máx. 24h).'
     }
+    const dm = parseNum(f.desc_max)
+    if (dm != null) {
+      if (!Number.isFinite(dm)) return 'Desconto máximo inválido.'
+      if (dm < 0 || dm > 100) return 'O desconto máximo deve estar entre 0% e 100%.'
+    }
     return null
   }
 
@@ -83,6 +93,8 @@ export function ServicoModal({
       descricao: f.descricao.trim() || null,
       duracao_min: f.duracao_min.trim() ? Number(f.duracao_min) : null,
       preco_padrao: parseNum(f.preco_padrao) ?? 0,
+      desc_max: parseNum(f.desc_max) ?? 0,
+      pagar_comissao: f.pagar_comissao,
       comissionavel: f.comissionavel,
       dynamic_price: f.dynamic_price,
       ativo: f.ativo,
@@ -134,6 +146,18 @@ export function ServicoModal({
           <div>
             <label style={lbl}>Preço padrão (R$)</label>
             <input style={inp} value={f.preco_padrao} onChange={(e) => set('preco_padrao', e.target.value)} inputMode="decimal" placeholder="0,00" />
+          </div>
+
+          <div>
+            <label style={lbl}>Desc. Máx (%)</label>
+            <input style={inp} value={f.desc_max} onChange={(e) => set('desc_max', e.target.value)} inputMode="decimal" placeholder="0,00" title="Desconto máximo permitido neste serviço (teto do PDV/parcerias)" />
+          </div>
+
+          <div>
+            <label style={lbl}>Pagar comissão</label>
+            <select style={inp} value={f.pagar_comissao} onChange={(e) => set('pagar_comissao', e.target.value as PagarComissao)}>
+              {PAGAR_COMISSAO_OPCOES.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>

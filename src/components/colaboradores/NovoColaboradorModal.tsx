@@ -145,8 +145,9 @@ export function NovoColaboradorModal({
                   <input type="checkbox" id="ho-novo" checked={!!f.home_office_autorizado} onChange={(e) => set('home_office_autorizado', e.target.checked)} />
                   <label htmlFor="ho-novo" style={{ ...lbl, cursor: 'pointer' }}>Home office autorizado</label>
                 </div>
-                {/* TODO(legado: buildServicosExecutados): "Serviços que o colaborador executa"
-                    + % comissão padrão — tabela de junção colaborador_servicos não existe no schema lkii. */}
+                <div style={{ gridColumn: '1 / -1', fontSize: 11.5, color: 'var(--text-3)' }}>
+                  <i className="ti ti-calendar" /> Após salvar, configure a <b>agenda</b>, a <b>% de comissão padrão</b> e os <b>serviços executados</b> nas abas da ficha do colaborador.
+                </div>
               </div>
             )}
 

@@ -68,10 +68,32 @@ export async function toggleTag(id: string, ativo: boolean): Promise<ActionResul
 // no jsonb `pesos`; a coluna `premios` (modelo antigo de texto) deixa de ser usada.
 export async function salvarPremiacaoConfig(prem: PremMonetaria): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
-  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id').limit(1).maybeSingle()
-  const eid = (cfg as { empresa_id?: string } | null)?.empresa_id
+  // Preserva o slaHoras já gravado no jsonb `pesos` (não faz parte do form de premiação).
+  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id, pesos').limit(1).maybeSingle()
+  const c = cfg as { empresa_id?: string; pesos?: Record<string, unknown> } | null
+  const eid = c?.empresa_id
   if (!eid) return { ok: false, error: 'Configuração de premiação não encontrada.' }
-  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos: prem, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
+  const slaHoras = c?.pesos?.slaHoras
+  const pesos = slaHoras != null ? { ...prem, slaHoras } : { ...prem }
+  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
   if (e) return { ok: false, error: msgErro(e.message, 'salvar premiação') }
   revalidatePath('/sac/ranking'); return { ok: true }
+}
+
+// ─── SLA de atendimento (horas) — paridade com o legado (SAC_CFG.slaHoras=48, index.html 9149) ───
+// Guardado no jsonb `pesos` da sac_premiacao_config (campo flexível já existente) para
+// não exigir nova coluna. Usado para marcar "Em atraso" quando o prazo de resolução estoura.
+// (O default `SLA_HORAS_DEFAULT` fica em @/lib/sac-config — arquivos 'use server' só exportam funções.)
+export async function salvarSlaHoras(horas: number): Promise<ActionResult> {
+  const { sb, error } = await guard(); if (!sb) return { ok: false, error }
+  const h = Math.round(Number(horas))
+  if (!(h >= 1 && h <= 1000)) return { ok: false, error: 'Informe um prazo de SLA entre 1 e 1000 horas.' }
+  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id, pesos').limit(1).maybeSingle()
+  const c = cfg as { empresa_id?: string; pesos?: Record<string, unknown> } | null
+  const eid = c?.empresa_id
+  if (!eid) return { ok: false, error: 'Configuração do SAC não encontrada.' }
+  const pesos = { ...(c?.pesos ?? {}), slaHoras: h }
+  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
+  if (e) return { ok: false, error: msgErro(e.message, 'salvar SLA') }
+  revalidatePath('/sac/config'); return { ok: true }
 }

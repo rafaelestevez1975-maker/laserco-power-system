@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+import { PAGAR_COMISSAO_OPCOES, type PagarComissao } from '@/lib/catalogo'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -24,6 +25,8 @@ export type ServicoInput = {
   descricao?: string | null
   duracao_min?: number | null
   preco_padrao?: number | null
+  desc_max?: number | null // legado SERVICOS[2] — desconto máximo (%)
+  pagar_comissao?: PagarComissao // legado SERVICOS[7]
   comissionavel?: boolean
   dynamic_price?: boolean
   ativo?: boolean
@@ -46,6 +49,14 @@ function validar(input: ServicoInput): string | null {
     if (dur < 0) return 'A duração não pode ser negativa.'
     if (dur > 1440) return 'Duração muito longa (máx. 24h).'
   }
+  const dm = input.desc_max
+  if (dm != null) {
+    if (!Number.isFinite(dm)) return 'Desconto máximo inválido.'
+    if (dm < 0 || dm > 100) return 'O desconto máximo deve estar entre 0% e 100%.'
+  }
+  if (input.pagar_comissao != null && !PAGAR_COMISSAO_OPCOES.includes(input.pagar_comissao)) {
+    return 'Opção de "Pagar comissão" inválida.'
+  }
   return null
 }
 
@@ -57,6 +68,8 @@ function payload(input: ServicoInput) {
     descricao: (input.descricao || '').trim() || null,
     duracao_min: input.duracao_min != null ? input.duracao_min : 30, // NOT NULL no banco (default 30)
     preco_padrao: input.preco_padrao != null ? input.preco_padrao : 0,
+    desc_max: input.desc_max != null ? input.desc_max : 0,
+    pagar_comissao: input.pagar_comissao ?? 'Execução', // legado normaliza vazio → 'Execução'
     comissionavel: !!input.comissionavel,
     dynamic_price: !!input.dynamic_price,
     ativo: input.ativo !== false,
@@ -146,9 +159,7 @@ export async function renomearGrupo(de: string, para: string): Promise<ActionRes
   return { ok: true }
 }
 
-// TODO(legado: buildPacotes): composição de pacotes (PACOTES no legacy ~4108) — vínculo
-// serviço↔sessões, validade em dias e desconto. Precisa de tabela de pacotes + itens (não
-// existe ainda no backend lkii). Rota /pacotes é outro módulo.
-// TODO(legado: buildServicos): timing de comissão (Venda/Execução/Não pagar — coluna comTag
-// no legacy) e "preço por unidade" (dynamic_price já existe como flag; a matriz de preços por
-// unidade depende de tabela própria ainda inexistente).
+// "Pagar comissão" (timing Venda/Execução/Não pagar — comTag do legado) e "Desc. Máx (%)"
+// agora persistem nas colunas servicos.pagar_comissao / servicos.desc_max (migration catalogo.sql).
+// Pendente ainda: "preço por unidade" (matriz de preços por unidade) — depende de tabela própria
+// inexistente no backend lkii; dynamic_price segue como flag.

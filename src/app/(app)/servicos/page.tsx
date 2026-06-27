@@ -62,7 +62,7 @@ export default async function ServicosPage({ searchParams }: { searchParams: Pro
   // ── Lista paginada server-side ──
   let query = sb
     .from('servicos')
-    .select('id, nome, grupo, descricao, duracao_min, preco_padrao, comissionavel, dynamic_price, ativo', { count: 'exact' })
+    .select('id, nome, grupo, descricao, duracao_min, preco_padrao, desc_max, pagar_comissao, comissionavel, dynamic_price, ativo', { count: 'exact' })
     .order('grupo', { ascending: true, nullsFirst: false })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)

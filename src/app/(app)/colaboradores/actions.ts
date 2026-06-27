@@ -62,6 +62,13 @@ export type ColaboradorInput = {
   home_office_autorizado?: boolean
   endereco_residencial?: string
   unidade_id?: string | null
+  // Aba "Agenda & Serviços" (legado colabtab-agenda)
+  exibe_agenda?: boolean
+  disponivel_online?: boolean
+  comissao_pct?: string
+  ordem_app?: string
+  // Aba "Acesso ao sistema" (legado colabtab-acesso)
+  forcar_troca_senha?: boolean
 }
 
 /** Validação compartilhada (criar/editar). Retorna mensagem de erro por campo, ou null. */
@@ -100,8 +107,8 @@ function validar(input: ColaboradorInput, exigirCpf = true): string | null {
   return null
 }
 
-/** Monta o payload de colunas a partir do input (campos null quando vazios). */
-function montarPayload(input: ColaboradorInput) {
+/** Colunas-base (sempre existem no schema lkii). */
+function montarPayloadBase(input: ColaboradorInput) {
   const cargo = (input.cargo || '').trim()
   const regime = (input.regime || '').trim()
   const tipo = (input.tipo || '').trim()
@@ -129,6 +136,27 @@ function montarPayload(input: ColaboradorInput) {
     home_office_autorizado: !!input.home_office_autorizado,
     endereco_residencial: (input.endereco_residencial || '').trim() || null,
   }
+}
+
+/** Colunas das abas novas (scripts/migrations/comissoes.sql) — só existem pós-migration. */
+function montarPayloadExt(input: ColaboradorInput) {
+  return {
+    exibe_agenda: input.exibe_agenda === undefined ? true : !!input.exibe_agenda,
+    disponivel_online: input.disponivel_online === undefined ? true : !!input.disponivel_online,
+    comissao_pct: parseMoeda(input.comissao_pct) ?? 0,
+    ordem_app: parseIntOrNull(input.ordem_app) ?? 1,
+    forcar_troca_senha: !!input.forcar_troca_senha,
+  }
+}
+
+/** Payload completo (base + extensão). */
+function montarPayload(input: ColaboradorInput) {
+  return { ...montarPayloadBase(input), ...montarPayloadExt(input) }
+}
+
+/** Erro "coluna inexistente" (migration comissoes.sql ainda não aplicada). */
+function ehColunaInexistente(msg: string | undefined): boolean {
+  return /column .* does not exist|could not find the .* column|schema cache/i.test(msg || '')
 }
 
 /**
@@ -177,12 +205,17 @@ export async function criarColaborador(input: ColaboradorInput, forcar = false):
     }
   }
 
-  const payload = montarPayload(input)
-  const { data, error: e } = await op.sb
+  const base = { ...montarPayloadBase(input), unidade_id: uni, status: 'ativo' as const }
+  let { data, error: e } = await op.sb
     .from('colaboradores')
-    .insert({ ...payload, unidade_id: uni, status: 'ativo' })
+    .insert({ ...base, ...montarPayloadExt(input) })
     .select('id')
     .single()
+  // Migration comissoes.sql pendente? Reinsere só com as colunas-base.
+  if (e && ehColunaInexistente(e.message)) {
+    const r = await op.sb.from('colaboradores').insert(base).select('id').single()
+    data = r.data; e = r.error
+  }
 
   if (e) return { ok: false, error: msgErro(e.message, 'cadastrar colaborador') }
   revalidatePath('/colaboradores')
@@ -200,8 +233,12 @@ export async function salvarColaborador(id: string, input: ColaboradorInput): Pr
   const v = validar(input, true)
   if (v) return { ok: false, error: v }
 
-  const payload = montarPayload(input)
-  const { error: e } = await op.sb.from('colaboradores').update(payload).eq('id', id)
+  let { error: e } = await op.sb.from('colaboradores').update(montarPayload(input)).eq('id', id)
+  // Migration comissoes.sql pendente? Atualiza só com as colunas-base.
+  if (e && ehColunaInexistente(e.message)) {
+    const r = await op.sb.from('colaboradores').update(montarPayloadBase(input)).eq('id', id)
+    e = r.error
+  }
   if (e) return { ok: false, error: msgErro(e.message, 'salvar colaborador') }
   revalidatePath('/colaboradores')
   revalidatePath(`/colaboradores/${id}`)
@@ -243,15 +280,60 @@ export async function reativarColaborador(id: string): Promise<ActionResult> {
   return { ok: true }
 }
 
-// TODO(legado: buildInatividadeAuto): inativação automática de colaboradores com
-// >15 dias sem acesso ao sistema (legacy aplicarRegraInatividade / INATIVIDADE_DIAS,
-// index.html ~7045). Precisa de coluna de "último acesso" (não existe em colaboradores)
-// + job agendado (pg_cron) — fica como ação futura.
+// ── Serviços que o colaborador executa (legado colabServRender, ~7120) ──
+// Junção colaborador_servicos (scripts/migrations/comissoes.sql).
 
-// TODO(legado: buildServicosExecutados): bloco "Serviços que o colaborador executa"
-// (legacy colabServRender / colabServGroups, index.html ~7110). A tabela de junção
-// colaborador_servicos NÃO existe no schema lkii — exige migration. O bloco profissional
-// (cargo/comissão/serviços) fica como leitura informativa por enquanto.
+export type ServicoOpcao = { id: string; nome: string; grupo: string }
 
-// TODO(legado: buildComissao): % de comissão padrão por colaborador (legacy aba Agenda).
-// Não há coluna de comissão em colaboradores nem tabela comissoes — exige migration.
+/** Lista os serviços ativos (para os checkboxes por grupo) + ids já vinculados ao colaborador. */
+export async function carregarServicosColaborador(
+  colaboradorId: string,
+): Promise<{ ok: true; servicos: ServicoOpcao[]; selecionados: string[]; tabelaPronta: boolean } | { ok: false; error: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error: error! }
+
+  const { data: servRaw } = await op.sb
+    .from('servicos')
+    .select('id, nome, grupo')
+    .eq('ativo', true)
+    .order('grupo', { ascending: true })
+    .order('nome', { ascending: true })
+    .limit(1000)
+  const servicos = ((servRaw ?? []) as { id: string; nome: string | null; grupo: string | null }[]).map((s) => ({
+    id: s.id, nome: s.nome || '(sem nome)', grupo: s.grupo || 'Outros',
+  }))
+
+  // A tabela de junção pode não existir ainda (migration pendente) → degrade graciosamente.
+  const { data: linkRaw, error: linkErr } = await op.sb
+    .from('colaborador_servicos')
+    .select('servico_id')
+    .eq('colaborador_id', colaboradorId)
+  if (linkErr) return { ok: true, servicos, selecionados: [], tabelaPronta: false }
+  const selecionados = ((linkRaw ?? []) as { servico_id: string }[]).map((r) => r.servico_id)
+  return { ok: true, servicos, selecionados, tabelaPronta: true }
+}
+
+/** Substitui o conjunto de serviços executados pelo colaborador (delete + insert). */
+export async function salvarServicosColaborador(colaboradorId: string, servicoIds: string[]): Promise<ActionResult> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeEscrever(op.papel)) return { ok: false, error: 'Você não tem permissão para editar serviços do colaborador.' }
+  if (!colaboradorId) return { ok: false, error: 'Colaborador inválido.' }
+
+  const ids = [...new Set((servicoIds || []).filter(Boolean))]
+  const { error: delErr } = await op.sb.from('colaborador_servicos').delete().eq('colaborador_id', colaboradorId)
+  if (delErr) return { ok: false, error: msgErro(delErr.message, 'salvar serviços do colaborador') }
+  if (ids.length) {
+    const rows = ids.map((servico_id) => ({ colaborador_id: colaboradorId, servico_id }))
+    const { error: insErr } = await op.sb.from('colaborador_servicos').insert(rows)
+    if (insErr) return { ok: false, error: msgErro(insErr.message, 'salvar serviços do colaborador') }
+  }
+  revalidatePath(`/colaboradores/${colaboradorId}`)
+  return { ok: true }
+}
+
+// TODO(legado: buildInatividadeAuto): a regra de inatividade automática (>15 dias sem
+// acesso, legacy aplicarRegraInatividade / INATIVIDADE_DIAS) usa a coluna
+// colaboradores.ultimo_acesso (criada em scripts/migrations/comissoes.sql). A inativação
+// em lote ainda depende de job agendado (pg_cron) — fica como ação futura; a lista já
+// exibe os dias sem acesso e destaca o alerta de +15d.

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { PagamentosSac, type Reembolso } from '@/components/sac/PagamentosSac'
 import { AcordosSac, type Acordo, type Parcela } from '@/components/sac/AcordosSac'
+import { NovoAcordo } from '@/components/sac/NovoAcordo'
 
 export default async function SacPagamentosPage() {
   const ctx = await getSessionContext()
@@ -34,6 +35,7 @@ export default async function SacPagamentosPage() {
 
   return (
     <div className="view active">
+      {podeValidar && <NovoAcordo unidades={ctx?.unidades ?? []} />}
       <AcordosSac acordos={acordos} podeValidar={podeValidar} />
       <PagamentosSac itens={itens} podeBaixar={podeBaixar} />
     </div>

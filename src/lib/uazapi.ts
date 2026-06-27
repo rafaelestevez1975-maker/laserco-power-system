@@ -90,24 +90,72 @@ export function normTel(raw: string): string {
   return d.startsWith('55') ? d : '55' + d
 }
 
+type ErroEnvioBody = {
+  error?: string; message?: string; provider_code?: number; error_key?: string
+  provider_message_ptbr?: string; message_ptbr?: string
+  details?: { reachout_timelock?: { until?: string } }
+}
+const dataBR = (iso?: string | null): string => {
+  if (!iso) return ''
+  const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR')
+}
+
+/** Traduz erros de envio da UAZAPI/WhatsApp para algo claro pro atendente. */
+export function traduzErroEnvio(body: unknown, fallback = 'Falha no envio.'): string {
+  const b = (body || {}) as ErroEnvioBody
+  const raw = String(b.error || b.message || '').toLowerCase()
+  const reachout = b.provider_code === 463 || b.error_key === 'WHATSAPP_REACHOUT_TIMELOCK'
+    || /\b463\b|reachout|temporary restriction|starting new conversation|under a temporary/.test(raw)
+  if (reachout) {
+    const ate = dataBR(b.details?.reachout_timelock?.until)
+    return `O WhatsApp colocou este número sob restrição temporária${ate ? ` (até ${ate})` : ''} para INICIAR conversas novas pelo aparelho conectado ao sistema (dispositivo vinculado). É proteção anti-spam de número recém-ativado — pelo CELULAR principal funciona normal. Para iniciar conversas pelo sistema: use um número já estabelecido ou aguarde liberar. Responder logo que o cliente te escreve tende a funcionar.`
+  }
+  if (/not.*on.*whatsapp|invalid.*number|no.*account|exists.*false/.test(raw)) return 'Esse número não tem WhatsApp ativo.'
+  if (/disconnect|not connected|no instance|instance.*not/.test(raw)) return 'A conexão do canal caiu. Reconecte o número em Canais.'
+  if (/rate|too many|limit/.test(raw)) return 'Muitos envios em sequência — aguarde alguns segundos e tente de novo.'
+  return b.message_ptbr || b.provider_message_ptbr || b.error || fallback
+}
+
+export type LimiteEnvio = { podeIniciar: boolean; restritoAte?: string | null; motivo?: string }
+/** Saúde de envio do número: o WhatsApp permite INICIAR conversas novas por este
+ *  dispositivo vinculado? (reachout timelock de número novo). null = não foi possível checar. */
+export async function limitesEnvio(token: string): Promise<LimiteEnvio | null> {
+  const { ok, body } = await instGet('/instance/wa_messages_limits', token)
+  if (!ok || !body) return null
+  const b = body as { can_send_new_messages?: boolean; reachout_timelock?: { until?: string }; provider_message_ptbr?: string }
+  return {
+    podeIniciar: b.can_send_new_messages !== false,
+    restritoAte: b.reachout_timelock?.until ?? null,
+    motivo: b.provider_message_ptbr,
+  }
+}
+
 /** Envia texto por uma instância (token da instância)  base para os disparos. */
 export async function sendText(token: string, numero: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const { ok, body } = await instPost('/send/text', token, { number: normTel(numero), text: texto })
-  return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha no envio.' }
+  return ok ? { ok: true } : { ok: false, error: traduzErroEnvio(body) }
 }
 
 export type MidiaTipo = 'image' | 'video' | 'audio' | 'ptt' | 'document' | 'sticker'
 /** Envia mídia por uma instância (token). `file` = URL pública OU base64 (data URI ou puro). */
 export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, file: string, opts: { caption?: string; docName?: string } = {}): Promise<{ ok: boolean; error?: string; fileURL?: string }> {
   const { ok, body } = await instPost('/send/media', token, { number: normTel(numero), type: tipo, file, ...opts })
-  if (!ok) return { ok: false, error: (body as { error?: string })?.error || 'Falha no envio de mídia.' }
+  if (!ok) return { ok: false, error: traduzErroEnvio(body, 'Falha no envio de mídia.') }
   const b = body as { fileURL?: string; message?: { fileURL?: string } }
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
 }
 
-/** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar. */
+/** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar.
+ *  CRÍTICO: a UAZAPI é externa e precisa ALCANÇAR a URL — nunca pode ser localhost.
+ *  Se NEXT_PUBLIC_APP_URL apontar pra localhost (dev), cai pro domínio público. */
+const WEBHOOK_FALLBACK = 'https://laserco-power-system.vercel.app'
 export function urlWebhook(): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || 'https://laserco-power-system.vercel.app').replace(/\/$/, '')
+  let base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')
+  if (!base || /\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(base)) {
+    base = (process.env.WEBHOOK_PUBLIC_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+      || WEBHOOK_FALLBACK).replace(/\/$/, '')
+  }
   const secret = process.env.UAZAPI_WEBHOOK_SECRET
   return `${base}/api/webhooks/uazapi${secret ? `?secret=${encodeURIComponent(secret)}` : ''}`
 }
