@@ -59,6 +59,17 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
     }
   }
 
+  async function baixarModelo() {
+    const XLSX = await import('xlsx')
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Nome', 'Telefone', 'Email', 'CPF', 'Motivo', 'Observação'],
+      ['Maria Silva', '11999990000', 'maria@email.com', '12345678900', 'Reclamação de atendimento', 'Cliente pede retorno'],
+    ])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Modelo')
+    XLSX.writeFile(wb, 'modelo-importacao-sac.xlsx')
+  }
+
   const val = (r: Record<string, unknown>, col: string) => (col ? String(r[col] ?? '').trim() : '')
   const linhas: LinhaImport[] = map
     ? rows.map((r) => ({ nome: val(r, map.nome), telefone: val(r, map.telefone), email: val(r, map.email), cpf: val(r, map.cpf), motivo: val(r, map.motivo), obs: val(r, map.obs) }))
@@ -88,6 +99,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
           <i className="ti ti-upload" /> Escolher arquivo (.xlsx / .csv)
           <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
+        <button type="button" className="btn" onClick={baixarModelo}><i className="ti ti-download" /> Baixar modelo</button>
         {fileName && <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{fileName} · {rows.length} linha(s)</span>}
       </div>
 

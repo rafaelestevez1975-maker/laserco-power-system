@@ -18,18 +18,48 @@ const prioPill = (p: string | null) =>
 const fasePill = (f: string | null) =>
   f === 'Concluído' ? pill('#E7F0EC', '#15803D') : f === 'Em pagamento' ? pill('#FBEFD9', '#9A6700') : f === 'Contato com cliente' ? pill('#E6F0FB', '#3D7FD1') : pill('#F7E7EB', '#8A2A41')
 
-export default async function SacChamadosPage({ searchParams }: { searchParams: Promise<{ canal?: string; fase?: string; q?: string; atendente?: string; page?: string }> }) {
-  const { canal, fase, q, atendente, page: pageRaw } = await searchParams
+/** Replica o sacRange do legado: presets de período → intervalo [ini, fim) sobre criado_em. */
+function rangePeriodo(periodo: string | undefined, di?: string, df?: string): { ini: string | null; fim: string | null } {
+  const now = new Date()
+  const dia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  let ini: Date | null = null, fim: Date | null = null
+  switch (periodo) {
+    case 'hoje': ini = dia(now); break
+    case 'ontem': ini = new Date(dia(now).getTime() - 864e5); fim = dia(now); break
+    case 'semana': ini = new Date(dia(now).getTime() - 7 * 864e5); break
+    case 'mes': ini = new Date(now.getFullYear(), now.getMonth(), 1); break
+    case 'mes_passado': ini = new Date(now.getFullYear(), now.getMonth() - 1, 1); fim = new Date(now.getFullYear(), now.getMonth(), 1); break
+    case 'custom':
+      if (di) ini = new Date(di)
+      if (df) { const d = new Date(df); fim = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) }
+      break
+  }
+  return { ini: ini && !isNaN(ini.getTime()) ? ini.toISOString() : null, fim: fim && !isNaN(fim.getTime()) ? fim.toISOString() : null }
+}
+
+type SP = { canal?: string; fase?: string; q?: string; atendente?: string; motivo?: string; unidade?: string; periodo?: string; di?: string; df?: string; page?: string }
+
+export default async function SacChamadosPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const spv = await searchParams
+  const { canal, fase, q, atendente, motivo, unidade, periodo, di, df, page: pageRaw } = spv
   const ctx = await getSessionContext()
   const sb = await createClient()
   const uniNome = new Map((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
 
-  // Atendentes do SAC — fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
-  const atendentes = (await listAtendentesSac(sb)).map((a) => ({ id: a.id, nome: a.nome }))
+  // Atendentes (fonte única) + Motivos (sac_motivos) para os filtros
+  const [atendentesFull, { data: motivosRaw }] = await Promise.all([
+    listAtendentesSac(sb),
+    sb.from('sac_motivos').select('label').eq('ativo', true).order('ordem', { ascending: true }),
+  ])
+  const atendentes = atendentesFull.map((a) => ({ id: a.id, nome: a.nome }))
   const atNome = new Map(atendentes.map((a) => [a.id, a.nome]))
+  const motivos = ((motivosRaw ?? []) as { label: string }[]).map((m) => m.label)
+  // Filtro de unidade só faz sentido p/ quem vê várias (admin sem unidade ativa travada)
+  const unidadesFiltro = ctx?.activeUnitId ? [] : (ctx?.unidades ?? [])
 
   const page = Math.max(1, Number(pageRaw) || 1)
   const from = (page - 1) * PAGE_SIZE
+  const { ini, fim } = rangePeriodo(periodo, di, df)
 
   let query = sb
     .from('sac_tickets')
@@ -39,8 +69,11 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   if (canal) query = query.eq('canal', canal)
   if (fase) query = query.eq('fase', fase)
   if (atendente) query = query.eq('atribuido_para', atendente)
+  if (motivo) query = query.eq('motivo_label', motivo)
+  if (unidade && !ctx?.activeUnitId) query = query.eq('unidade_id', unidade)
+  if (ini) query = query.gte('criado_em', ini)
+  if (fim) query = query.lt('criado_em', fim)
   if (q) {
-    // busca avançada: cliente OU protocolo OU CPF OU telefone (sanitiza chars que quebram o or())
     const qs = q.replace(/[,()*]/g, ' ').trim()
     if (qs) query = query.or(`nome_cliente.ilike.%${qs}%,protocolo.ilike.%${qs}%,cpf_cliente.ilike.%${qs}%,telefone_cliente.ilike.%${qs}%`)
   }
@@ -50,14 +83,11 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const tickets = (data ?? []) as Ticket[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(canal || fase || q || atendente)
+  const temFiltro = !!(canal || fase || q || atendente || motivo || unidade || periodo)
 
   const urlComPagina = (p: number) => {
     const sp = new URLSearchParams()
-    if (canal) sp.set('canal', canal)
-    if (fase) sp.set('fase', fase)
-    if (q) sp.set('q', q)
-    if (atendente) sp.set('atendente', atendente)
+    for (const [k, v] of Object.entries({ canal, fase, q, atendente, motivo, unidade, periodo, di, df })) if (v) sp.set(k, v)
     if (p > 1) sp.set('page', String(p))
     const s = sp.toString()
     return `/sac/chamados${s ? `?${s}` : ''}`
@@ -68,7 +98,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <NovoChamado unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
       </div>
-      <SacFiltros atendentes={atendentes} />
+      <SacFiltros atendentes={atendentes} motivos={motivos} unidades={unidadesFiltro} />
 
       <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 8px' }}>
         <i className="ti ti-filter" /> {total} chamado(s){temFiltro ? ' (filtrado)' : ''} · página {page} de {totalPages}
