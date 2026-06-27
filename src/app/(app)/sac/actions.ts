@@ -94,6 +94,8 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
 export type EditChamadoInput = {
   nome_cliente?: string; telefone_cliente?: string; email_cliente?: string; cpf_cliente?: string
   motivo_label?: string; prioridade?: string; fase?: string; atribuido_para?: string | null; observacoes?: string
+  area_reclamada?: string; valor_pago?: number | string | null; valor_devolucao?: number | string | null
+  multa_aplicada?: boolean; pago?: boolean
 }
 
 /** Edita um chamado existente (campos parciais). Valida prioridade/fase contra os CHECKs. */
@@ -115,6 +117,11 @@ export async function atualizarChamado(id: string, dados: EditChamadoInput): Pro
   if (dados.fase) patch.fase = dados.fase
   if (dados.atribuido_para !== undefined) patch.atribuido_para = dados.atribuido_para || null
   if (dados.observacoes !== undefined) patch.observacoes = dados.observacoes.trim() || null
+  if (dados.area_reclamada !== undefined) patch.area_reclamada = dados.area_reclamada.trim() || null
+  if (dados.valor_pago !== undefined) patch.valor_pago = parseNum(dados.valor_pago)
+  if (dados.valor_devolucao !== undefined) patch.valor_devolucao = parseNum(dados.valor_devolucao)
+  if (dados.multa_aplicada !== undefined) patch.multa_aplicada = !!dados.multa_aplicada
+  if (dados.pago !== undefined) patch.pago = !!dados.pago
   if (Object.keys(patch).length === 0) return { ok: true }
 
   const { error } = await sb.from('sac_tickets').update(patch).eq('id', id)
