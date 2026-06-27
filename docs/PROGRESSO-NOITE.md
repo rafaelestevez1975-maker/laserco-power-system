@@ -49,3 +49,13 @@ Auditoria exaustiva das 1.086 features → `TODO-LEGADO-COMPLETO.md`. Placar ini
 
 ### 03:30 — Onda 3 iniciada 🔧
 Workflow `construir-modulos-onda3` (foco em tabelas com dado real): Unidades(82)+Minha Unidade+Minha Conta · OS (Ordens de Serviço) · Checklist-PDCA (planos_acao real) · Metas+Comissões(simulador) · Dashboards (financeiro/gerencial/funil sobre agregados reais).
+
+### ~05:55 — ESTADO ATUAL (loop pausado a pedido do usuário "STOP and wait")
+Resumo real (o git é a fonte da verdade; este log estava desatualizado):
+- ✅ **Ondas 1-3 commitadas** → **61 rotas funcionais** (eram ~13 no início). `tsc` + `next build` limpos.
+- ✅ **Migration 050 (Expansão) APLICADA** no lkii (commit `7189030`) + CRM passou a filtrar `pipeline=cliente`. (A credencial/aplicação aconteceu via turno autônomo/usuário — não está mais bloqueada.)
+- ✅ **20 bugs de runtime corrigidos** (commit `2f83781`: CHECK/NOT NULL/RLS reais dos módulos novos).
+- ✅ **Relatório de evolução 48h** para o cliente (commit `f3e02f8`).
+- ✅ **TODO de PARIDADE documentado** (commit `dff588e`): `TODO-PARIDADE-LEGADO.md`, **600 gaps** (🔴208 alta · 🟡198 média · ⚪194 baixa) — o que ainda não está igual ao legado, por módulo.
+- ⏸️ **Onda 4 NÃO lançada** — aguardando OK do usuário (ele pediu "stop and wait"). Próximo passo natural = implementar os 208 gaps de prioridade alta + módulos clone restantes.
+- Pendências reais que dependem do cliente: regras do **Saque**; backend fiscal de **NFS-e** (sem tabela no lkii); módulos de conteúdo sem tabela (Marketing/Disco/Universidade/Jurídico/Implantação/App-Cliente) precisam de migrations.
