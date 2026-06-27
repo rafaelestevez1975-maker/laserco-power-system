@@ -14,11 +14,12 @@
 - O "TODO de 600 gaps" está **desatualizado** (gerado antes de várias implementações).
 - O que falta de verdade: **ligar telas clone que já têm tabela** (sem migration) + **poucos módulos sem tabela** (com migration aditiva).
 
-## 🏗️ Ondas (atualizo conforme avança)
-- [ ] **Onda A (rodando):** Marketing · Ponto Digital · Desempenho · Jurídico — têm tabela real, sem migration.
-- [ ] **Onda B:** demais clone com tabela (Folha/Benefícios, Férias/Ausências, Regras da Rede, App do Cliente, etc.).
-- [ ] **Onda C (com migration aditiva):** Universidade (cursos/aulas), Notas Fiscais (NFS-e), Disco Virtual (arquivos), e o que mais faltar tabela.
-- [ ] **Onda D:** varredura final de paridade tela-a-tela contra o legado + fix de bugs.
+## 🏗️ Ondas
+- [x] **Onda A:** Marketing · Ponto Digital · Desempenho · Jurídico — construídos (workflow), funcionais sobre tabela real.
+- [x] **DB (minha alçada):** apliquei TODAS as migrations aditivas pendentes no lkii via Management API — **152 → 182 tabelas**. Destravou: Financeiro real (fin_*), Jurídico, Marketing/Disco/Universidade (mkt_/disco_/uni_), Anamnese, Automações, Implantação, NFS-e, eventos da Agenda, Indiques (sorteio/prêmio), Categorias/Contratos, Comissões (matriz_comissoes), e **RH completo** (ponto_config, folha_pagamento, solicitacoes_ferias, atestados). Também adicionei 'recepcao' e 'gerente' ao enum papel_usuario (faltavam).
+- [x] **Onda C (UIs pela outra sessão):** Universidade, Disco, Notas (NFS-e), Implantação, Automações, Anamnese, App do Cliente, Ajuda — já têm página.
+- [ ] **Onda B (resta):** rh/folha, rh/ferias, rh/regras, rh/ponto (re-export), exportacoes — ainda clone (agora com tabela).
+- [ ] **Onda D:** varredura final + 3 erros TS residuais (indiques:57, perfis:343, ponto/page:93 — build não trava por causa do ignoreBuildErrors; limpar depois).
 
 ## ⚠️ Dependem de você / de credencial externa (não dá pra "funcionar" 100% sem isso)
 - **Boletos no banco** (emissão/baixa) e **conciliação bancária real**: exigem convênio/API do banco.
