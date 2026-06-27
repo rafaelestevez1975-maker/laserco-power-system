@@ -12,12 +12,19 @@ type SP = {
   aba?: string // 'pagar' (despesa) | 'receber' (receita)
   status?: string // pago | pendente | atrasado
   categoria?: string // plano_contas.id
+  unidade?: string // '' (todas) | 'franqueadora' (rede, unidade_id null) | <uuid da loja>
   di?: string // data_vencimento >=
   df?: string // data_vencimento <=
   page?: string
 }
 
 type Aba = 'pagar' | 'receber'
+
+/** Escopo de unidade do "nosso × franquia":
+ *  - eq  = uma loja específica (ou a unidade ativa do topo)
+ *  - null = lançamentos da Franqueadora/rede (sem unidade_id)
+ *  - all = todas (rede + lojas) */
+type UnitScope = { mode: 'eq' | 'null' | 'all'; id?: string }
 
 /** Aplica os filtros comuns (tipo, unidade, status, categoria, vencimento) numa query. */
 function aplicarFiltros<
@@ -28,9 +35,10 @@ function aplicarFiltros<
     lt(c: string, v: unknown): Q
     is(c: string, v: unknown): Q
   },
->(q: Q, tipo: 'receita' | 'despesa', unidadeId: string | null, status: string | undefined, categoria: string | undefined, di: string | undefined, df: string | undefined, hojeISO: string): Q {
+>(q: Q, tipo: 'receita' | 'despesa', unit: UnitScope, status: string | undefined, categoria: string | undefined, di: string | undefined, df: string | undefined, hojeISO: string): Q {
   let out = q.eq('tipo', tipo)
-  if (unidadeId) out = out.eq('unidade_id', unidadeId)
+  if (unit.mode === 'eq' && unit.id) out = out.eq('unidade_id', unit.id)
+  else if (unit.mode === 'null') out = out.is('unidade_id', null)
   if (categoria) out = out.eq('categoria_id', categoria)
   if (di) out = out.gte('data_vencimento', di)
   if (df) out = out.lte('data_vencimento', df)
@@ -53,6 +61,21 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   const unidadeId = ctx?.activeUnitId ?? null
   const podeEscrever = ehAdmin(ctx?.papel) || ['financeiro', 'gestor'].includes(ctx?.papel || '')
 
+  // ── "Nosso × franquia": resolve o escopo de unidade ──
+  // Se há unidade ativa no topo, ela manda. Senão (Todas), vale o filtro da tela.
+  const unidades = ctx?.unidades ?? []
+  const uniNome: Record<string, string> = Object.fromEntries(unidades.map((u) => [u.id, u.nome]))
+  const upFiltro = unidadeId ? '' : (sp.unidade ?? '')
+  const unitScope: UnitScope = unidadeId
+    ? { mode: 'eq', id: unidadeId }
+    : upFiltro === 'franqueadora'
+      ? { mode: 'null' }
+      : upFiltro
+        ? { mode: 'eq', id: upFiltro }
+        : { mode: 'all' }
+  // Mostra coluna/filtro de unidade só quando não há uma unidade fixada no topo.
+  const mostrarUnidade = !unidadeId
+
   const hojeISO = new Date().toISOString().slice(0, 10)
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
@@ -70,14 +93,15 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   // ── Página de lançamentos (server-side .range + count exato) ──
   let listQ = sb
     .from('lancamentos_financeiros')
-    .select('id, descricao, valor, status, data_vencimento, data_pagamento, categoria_id, forma_pagamento, observacao, tipo', { count: 'exact' })
+    .select('id, descricao, valor, status, data_vencimento, data_pagamento, categoria_id, unidade_id, forma_pagamento, observacao, tipo', { count: 'exact' })
     .order('data_vencimento', { ascending: false, nullsFirst: false })
     .range(from, from + PAGE_SIZE - 1)
-  listQ = aplicarFiltros(listQ, tipo, unidadeId, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
+  listQ = aplicarFiltros(listQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
   const { data: rowsRaw, count } = await listQ
   const rows: LancRow[] = ((rowsRaw ?? []) as LancRow[]).map((r) => ({
     ...r,
     categoria: r.categoria_id ? catNome[r.categoria_id] ?? '' : '',
+    unidade: r.unidade_id ? (uniNome[r.unidade_id] ?? 'Loja') : 'Franqueadora / rede',
     // status derivado para exibição: pendente + vencido => "atrasado"
     statusEfetivo:
       r.status === 'pago'
@@ -95,7 +119,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
     .from('lancamentos_financeiros')
     .select('valor, status, data_vencimento')
     .range(0, KPI_CAP - 1)
-  kpiQ = aplicarFiltros(kpiQ, tipo, unidadeId, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
+  kpiQ = aplicarFiltros(kpiQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
   const { data: kpiRaw } = await kpiQ
   const kpiRows = (kpiRaw ?? []) as { valor: number | null; status: string | null; data_vencimento: string | null }[]
 
@@ -122,7 +146,9 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
       podeEscrever={podeEscrever}
       activeUnitId={unidadeId}
       activeUnitName={ctx?.activeUnitName ?? 'Todas as unidades'}
-      filtros={{ status: sp.status ?? '', categoria: sp.categoria ?? '', di: sp.di ?? '', df: sp.df ?? '' }}
+      unidades={unidades}
+      mostrarUnidade={mostrarUnidade}
+      filtros={{ status: sp.status ?? '', categoria: sp.categoria ?? '', unidade: upFiltro, di: sp.di ?? '', df: sp.df ?? '' }}
       kpis={{ previsto, realizado, emAberto, atrasado }}
       page={page}
       totalPages={totalPages}

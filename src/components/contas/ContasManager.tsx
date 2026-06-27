@@ -29,10 +29,12 @@ export type LancRow = {
   data_vencimento: string | null
   data_pagamento: string | null
   categoria_id: string | null
+  unidade_id?: string | null
   forma_pagamento: string | null
   observacao: string | null
   tipo: string | null
   categoria?: string
+  unidade?: string
   statusEfetivo?: 'pago' | 'pendente' | 'atrasado'
 }
 
@@ -46,7 +48,9 @@ type Props = {
   podeEscrever: boolean
   activeUnitId: string | null
   activeUnitName: string
-  filtros: { status: string; categoria: string; di: string; df: string }
+  unidades: { id: string; nome: string }[]
+  mostrarUnidade: boolean
+  filtros: { status: string; categoria: string; unidade: string; di: string; df: string }
   kpis: { previsto: number; realizado: number; emAberto: number; atrasado: number }
   page: number
   totalPages: number
@@ -68,7 +72,7 @@ function rotuloCat(c: Categoria): string {
 }
 
 export function ContasManager(props: Props) {
-  const { aba, tipo, rows, categorias, podeEscrever, activeUnitId, activeUnitName, filtros, kpis, page, totalPages, total, kpiCapped } = props
+  const { aba, tipo, rows, categorias, podeEscrever, activeUnitId, activeUnitName, unidades, mostrarUnidade, filtros, kpis, page, totalPages, total, kpiCapped } = props
   const router = useRouter()
 
   const [busy, setBusy] = useState<string | null>(null)
@@ -88,6 +92,7 @@ export function ContasManager(props: Props) {
     p.set('aba', aba)
     if (filtros.status) p.set('status', filtros.status)
     if (filtros.categoria) p.set('categoria', filtros.categoria)
+    if (filtros.unidade) p.set('unidade', filtros.unidade)
     if (filtros.di) p.set('di', filtros.di)
     if (filtros.df) p.set('df', filtros.df)
     for (const [k, v] of Object.entries(extra)) {
@@ -112,7 +117,7 @@ export function ContasManager(props: Props) {
     }
   }
 
-  const temFiltro = !!(filtros.status || filtros.categoria || filtros.di || filtros.df)
+  const temFiltro = !!(filtros.status || filtros.categoria || filtros.unidade || filtros.di || filtros.df)
 
   return (
     <div className="view active">
@@ -192,6 +197,18 @@ export function ContasManager(props: Props) {
               ))}
             </select>
           </div>
+          {mostrarUnidade && (
+            <div className="field">
+              <label>Unidade (nosso × franquia)</label>
+              <select name="unidade" defaultValue={filtros.unidade}>
+                <option value="">Todas (rede + lojas)</option>
+                <option value="franqueadora">Franqueadora / rede (nosso)</option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nome}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label>Vencimento de</label>
             <input type="date" name="di" defaultValue={filtros.di} />
@@ -229,6 +246,7 @@ export function ContasManager(props: Props) {
               <tr>
                 <th>Descrição</th>
                 <th>Categoria</th>
+                {mostrarUnidade && <th>Unidade</th>}
                 <th>Vencimento</th>
                 <th className="num-r">Valor</th>
                 <th>Status</th>
@@ -238,7 +256,7 @@ export function ContasManager(props: Props) {
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={mostrarUnidade ? 7 : 6} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum lançamento {ehReceber ? 'a receber' : 'a pagar'}
                     {temFiltro ? ' com esses filtros' : ' nesta unidade'}.
@@ -252,6 +270,11 @@ export function ContasManager(props: Props) {
                   <tr key={r.id}>
                     <td>{r.descricao || '—'}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.categoria || '—'}</td>
+                    {mostrarUnidade && (
+                      <td style={{ fontSize: 12, color: r.unidade_id ? 'var(--text-2)' : 'var(--brand-600)', fontWeight: r.unidade_id ? 400 : 600 }}>
+                        {r.unidade || '—'}
+                      </td>
+                    )}
                     <td>{dataBR(r.data_vencimento)}</td>
                     <td className="num-r"><b>{moedaBR(r.valor)}</b></td>
                     <td>
