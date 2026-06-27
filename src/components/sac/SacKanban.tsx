@@ -18,6 +18,9 @@ export type Ticket = {
 const FASES: { nome: string; cor: string }[] = [
   { nome: 'Novo', cor: '#8A2A41' },
   { nome: 'Contato com cliente', cor: '#3D7FD1' },
+  { nome: 'Contato com unidade', cor: '#2563EB' },
+  { nome: 'Aguardando cliente', cor: '#9A6700' },
+  { nome: 'Aguardando retorno interno', cor: '#64748B' },
   { nome: 'Em pagamento', cor: '#E0922A' },
   { nome: 'Concluído', cor: '#1F9D6B' },
 ]

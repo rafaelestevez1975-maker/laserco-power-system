@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-const FASES = ['Novo', 'Contato com cliente', 'Em pagamento', 'Concluído']
+const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 
 /** Move um ticket do SAC para outra fase (Novo → Contato → Em pagamento → Concluído). */
 export async function moverTicketFase(ticketId: string, fase: string): Promise<{ ok: boolean; error?: string }> {
