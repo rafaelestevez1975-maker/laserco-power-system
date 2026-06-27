@@ -242,6 +242,48 @@ export async function criarAcordo(ticketId: string, valorTotal: number, nParcela
   return { ok: true }
 }
 
+export type AcordoAvulsoInput = { cliente: string; unidade_id?: string | null; valorTotal: number; nParcelas: number; data1: string; observacao?: string }
+
+/** Cria um acordo AVULSO (sem chamado vinculado) direto na aba Pagamentos.
+ *  Mesma regra de parcelamento e do dia 15; entra como 'aguardando_ok'. */
+export async function criarAcordoAvulso(input: AcordoAvulsoInput): Promise<{ ok: boolean; error?: string }> {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const cliente = (input.cliente || '').trim()
+  if (!cliente) return { ok: false, error: 'Informe o cliente.' }
+  if (!(input.valorTotal > 0)) return { ok: false, error: 'Valor total deve ser maior que zero.' }
+  const n = Math.round(input.nParcelas)
+  if (!(n >= 1 && n <= 24)) return { ok: false, error: 'Número de parcelas deve ser de 1 a 24.' }
+  const d1 = new Date(input.data1)
+  if (isNaN(d1.getTime())) return { ok: false, error: 'Data do 1º pagamento inválida.' }
+  if (!primeiroPagamentoValido(input.data1)) return { ok: false, error: MSG_DIA15 }
+
+  const empresa_id = await resolverEmpresa(sb, null, input.unidade_id ?? null)
+  if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
+
+  const { data: ac, error: ea } = await sb.from('sac_acordos').insert({
+    ticket_id: null, empresa_id, unidade_id: input.unidade_id ?? null,
+    cliente, valor_total: input.valorTotal, n_parcelas: n,
+    status: 'aguardando_ok', observacao: input.observacao?.trim() || null, criado_por: user.id,
+  }).select('id').single()
+  if (ea) return { ok: false, error: msgErro(ea.message, 'criar acordo') }
+  const acordoId = (ac as { id: string }).id
+
+  const base = Math.floor((input.valorTotal / n) * 100) / 100
+  const parcelas = Array.from({ length: n }, (_, i) => ({
+    acordo_id: acordoId, n: i + 1,
+    vencimento: addMonths(d1, i).toISOString().slice(0, 10),
+    valor: i === n - 1 ? Math.round((input.valorTotal - base * (n - 1)) * 100) / 100 : base,
+    pago: false,
+  }))
+  const { error: ep } = await sb.from('sac_parcelas').insert(parcelas)
+  if (ep) return { ok: false, error: ep.message }
+
+  revalidatePath('/sac/pagamentos')
+  return { ok: true }
+}
+
 /** Validação do gestor: gera as parcelas como lançamentos em Contas a Pagar (espelho parcelado). */
 export async function validarAcordo(acordoId: string): Promise<{ ok: boolean; error?: string }> {
   const { op, error } = await requireOperador()
