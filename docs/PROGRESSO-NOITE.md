@@ -41,5 +41,11 @@ Auditoria exaustiva das 1.086 features → `TODO-LEGADO-COMPLETO.md`. Placar ini
 - TODOs adiados (marcados `//TODO(legado)`): import CSV clientes, abas OS/Contratos/Acompanhamento da ficha, eventos da rede/recorrência na agenda, export/import das contas, conversas/disparos próprios e CRUD de tipos na Expansão.
 - ⚠️ Estado da base: agendamentos sem cliente_id/profissional_id vinculados; lancamentos todos receita+pago (aba Pagar nasce vazia). Não é bug — é dado; empty-states cobrem.
 
-### 02:35 — Onda 2 iniciada 🔧
-Workflow `construir-modulos-onda2`: Serviços+Produtos · Pacotes+Planos · Colaboradores · Perfis+RBAC(editor que persiste cargo_permissoes) · Categorias+Descontos+Auditoria · Relatórios (faturamento/agendamentos/clientes sobre dado real).
+### 02:35 → 03:30 — Onda 2 CONCLUÍDA e VERIFICADA ✅ (commit `aca1940`)
+6 módulos. **`tsc` 0 erros + `next build` EXIT 0.** Total: **47 rotas funcionais**.
+- **Serviços** (148 reais) + **Produtos** · **Pacotes** + **Planos** · **Colaboradores** · **Perfis/RBAC** (editor que persiste `cargo_permissoes`: 34 cargos, 1176 permissões — só admin_geral) · **Categorias** (plano_contas 26 reais) + **Descontos** + **Auditoria** (audit_log) · **Relatórios** reais (faturamento/financeiro 12.9k, agendamentos 136k, clientes 347k).
+- 🔧 **Correção de reachability** (não deixar passar): o menu mantém caminhos do protótipo (`/cadastros/perfis`, `/cadastros/categorias-pagar`...) mas módulos foram construídos flat (`/perfis`, `/catpag`...). Criei **pontes** re-export em `/cadastros/{planos,perfis,categorias-pagar,categorias-receber,parcerias}` para o menu chegar à tela real. (Aprendizado aplicado às próximas ondas: construir no caminho do menu.)
+- ⚠️ Dado: lancamentos só receita+pago (DRE = receita-only por ora); produtos/pacotes/planos/metas tabelas vazias (CRUD funciona, nascem sem dado).
+
+### 03:30 — Onda 3 iniciada 🔧
+Workflow `construir-modulos-onda3` (foco em tabelas com dado real): Unidades(82)+Minha Unidade+Minha Conta · OS (Ordens de Serviço) · Checklist-PDCA (planos_acao real) · Metas+Comissões(simulador) · Dashboards (financeiro/gerencial/funil sobre agregados reais).
