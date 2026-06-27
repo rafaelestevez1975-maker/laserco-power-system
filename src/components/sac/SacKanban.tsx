@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { moverTicketFase } from '@/app/(app)/sac/kanban/actions'
-import { solicitarReembolso } from '@/app/(app)/sac/actions'
+import { solicitarReembolso, criarAcordo } from '@/app/(app)/sac/actions'
 import { moedaBR } from '@/lib/fmt'
 
 export type Ticket = {
@@ -102,12 +102,31 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
   const pctMulta = isentar ? 0 : Number(multa) || 0
   const reembolso = Math.max(0, Math.round(vp * (1 - pctMulta / 100) * 100) / 100)
 
+  const [modo, setModo] = useState<'vista' | 'parcelado'>('vista')
+  const [vAcordo, setVAcordo] = useState('')
+  const [nParc, setNParc] = useState('3')
+  const [data1, setData1] = useState('')
+  const vAc = Number(String(vAcordo).replace(/\./g, '').replace(',', '.')) || 0
+  const nP = Math.min(24, Math.max(1, Number(nParc) || 1))
+  const valorParcela = Math.round((vAc / nP) * 100) / 100
+
   async function lancar() {
     setMsg(''); setSaving(true)
     const res = await solicitarReembolso(t.id, reembolso, pctMulta)
     setSaving(false)
     if (!res.ok) setMsg(res.error || 'Erro ao lançar.')
     else { setMsg('Reembolso lançado no Financeiro (Contas a Pagar) e chamado movido para "Em pagamento".'); router.refresh() }
+  }
+
+  async function criarAc() {
+    setMsg('')
+    if (!(vAc > 0)) { setMsg('Informe o valor total do acordo.'); return }
+    if (!data1) { setMsg('Informe a data do 1º pagamento.'); return }
+    setSaving(true)
+    const res = await criarAcordo(t.id, vAc, nP, data1)
+    setSaving(false)
+    if (!res.ok) setMsg(res.error || 'Erro ao criar acordo.')
+    else { setMsg('Acordo criado (aguardando OK do gestor). Acompanhe em SAC · Pagamentos.'); router.refresh() }
   }
 
   const row = (label: string, val: React.ReactNode) => val ? (
@@ -140,29 +159,66 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
 
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: '2px solid var(--line)' }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}><i className="ti ti-cash" /> Reembolso / Acordo</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Valor pago (R$)</label>
-              <input value={valorPago} onChange={(e) => setValorPago(e.target.value)} placeholder="0,00"
-                style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Multa (%)</label>
-              <input value={multa} onChange={(e) => setMulta(e.target.value)} disabled={isentar}
-                style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, opacity: isentar ? 0.5 : 1 }} />
-            </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <button className={`btn ${modo === 'vista' ? 'btn-primary' : ''}`} onClick={() => { setModo('vista'); setMsg('') }}>À vista</button>
+            <button className={`btn ${modo === 'parcelado' ? 'btn-primary' : ''}`} onClick={() => { setModo('parcelado'); setMsg('') }}>Acordo parcelado</button>
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, margin: '8px 0' }}>
-            <input type="checkbox" checked={isentar} onChange={(e) => setIsentar(e.target.checked)} /> Isentar multa (rescisão por nossa culpa)
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '8px 12px', borderRadius: 8 }}>
-            <span style={{ fontSize: 13 }}>Reembolso ao cliente</span>
-            <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(reembolso)}</b>
-          </div>
-          {msg && <p style={{ fontSize: 12.5, color: 'var(--brand-600)', marginTop: 8 }}>{msg}</p>}
-          <button className="btn btn-primary" disabled={saving || reembolso <= 0} onClick={lancar} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
-            {saving ? 'Lançando…' : <><i className="ti ti-businessplan" /> Lançar reembolso no Financeiro</>}
-          </button>
+
+          {modo === 'vista' ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Valor pago (R$)</label>
+                  <input value={valorPago} onChange={(e) => setValorPago(e.target.value)} placeholder="0,00"
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Multa (%)</label>
+                  <input value={multa} onChange={(e) => setMulta(e.target.value)} disabled={isentar}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, opacity: isentar ? 0.5 : 1 }} />
+                </div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, margin: '8px 0' }}>
+                <input type="checkbox" checked={isentar} onChange={(e) => setIsentar(e.target.checked)} /> Isentar multa (rescisão por nossa culpa)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '8px 12px', borderRadius: 8 }}>
+                <span style={{ fontSize: 13 }}>Reembolso ao cliente</span>
+                <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(reembolso)}</b>
+              </div>
+              {msg && <p style={{ fontSize: 12.5, color: 'var(--brand-600)', marginTop: 8 }}>{msg}</p>}
+              <button className="btn btn-primary" disabled={saving || reembolso <= 0} onClick={lancar} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
+                {saving ? 'Lançando…' : <><i className="ti ti-businessplan" /> Lançar reembolso no Financeiro</>}
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Valor total (R$)</label>
+                  <input value={vAcordo} onChange={(e) => setVAcordo(e.target.value)} placeholder="0,00"
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Parcelas</label>
+                  <input type="number" min={1} max={24} value={nParc} onChange={(e) => setNParc(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>1º pagamento</label>
+                  <input type="date" value={data1} onChange={(e) => setData1(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '8px 12px', borderRadius: 8, marginTop: 8 }}>
+                <span style={{ fontSize: 13 }}>{nP}x de</span>
+                <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(valorParcela)}</b>
+              </div>
+              {msg && <p style={{ fontSize: 12.5, color: 'var(--brand-600)', marginTop: 8 }}>{msg}</p>}
+              <button className="btn btn-primary" disabled={saving || vAc <= 0} onClick={criarAc} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
+                {saving ? 'Criando…' : <><i className="ti ti-calendar-dollar" /> Criar acordo (aguardando OK do gestor)</>}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

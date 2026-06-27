@@ -28,9 +28,23 @@ export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: bo
     .eq('id', lancamentoId)
   if (e1) return { ok: false, error: /row-level|policy|permission/i.test(e1.message) ? 'Sem permissão para dar baixa.' : e1.message }
 
-  // Espelha de volta no SAC: se o lançamento veio de um chamado, conclui-o.
+  // Espelha de volta no SAC.
   let concluiuChamado = false
-  if (lanc.origem_ref_id) {
+  // (1) parcela de acordo: baixa a parcela; só conclui o chamado quando TODAS estiverem pagas.
+  const { data: parc } = await sb.from('sac_parcelas').select('id, acordo_id').eq('lancamento_id', lancamentoId).maybeSingle()
+  const parcela = parc as { id: string; acordo_id: string } | null
+  if (parcela) {
+    await sb.from('sac_parcelas').update({ pago: true }).eq('id', parcela.id)
+    const { count: pend } = await sb.from('sac_parcelas').select('id', { count: 'exact', head: true }).eq('acordo_id', parcela.acordo_id).eq('pago', false)
+    if (!pend) {
+      await sb.from('sac_acordos').update({ status: 'pago' }).eq('id', parcela.acordo_id)
+      const { data: ac } = await sb.from('sac_acordos').select('ticket_id').eq('id', parcela.acordo_id).single()
+      const tid = (ac as { ticket_id?: string } | null)?.ticket_id
+      if (tid) { await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', tid); concluiuChamado = true }
+    }
+    revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac/pagamentos')
+  } else if (lanc.origem_ref_id) {
+    // (2) reembolso à vista: conclui o chamado direto.
     const { data: tk } = await sb.from('sac_tickets').select('id').eq('id', lanc.origem_ref_id).maybeSingle()
     if (tk) {
       await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', lanc.origem_ref_id)
