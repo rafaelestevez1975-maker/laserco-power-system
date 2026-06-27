@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso } from '@/lib/financeiro'
+import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -308,4 +309,6 @@ export async function salvarConfig(input: {
 // Mantidas para não quebrar imports existentes. lancamentos_financeiros é o
 // financeiro por UNIDADE (/contas); aqui só os reembolsos do SAC espelham de volta.
 // =============================================================================
-export { darBaixaLancamento, receberLancamento } from './actions-sac'
+// 'use server' não permite `export … from`; embrulha em funções async que repassam.
+export async function darBaixaLancamento(lancamentoId: string) { return _darBaixaLancamento(lancamentoId) }
+export async function receberLancamento(lancamentoId: string) { return _receberLancamento(lancamentoId) }
