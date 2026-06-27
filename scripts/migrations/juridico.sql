@@ -31,7 +31,10 @@ CREATE TABLE IF NOT EXISTS juridico_notificacoes (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   empresa_id    uuid NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
   unidade_id    uuid REFERENCES unidades(id) ON DELETE SET NULL,
-  fin_id        uuid REFERENCES fin_recebiveis(id) ON DELETE SET NULL, -- recebível de origem
+  -- vínculo lógico com fin_recebiveis(id). SEM FK rígida p/ não acoplar a ordem das
+  -- migrations (financeiro.sql pode não estar aplicada ainda); a unicidade abaixo
+  -- (uq_jur_notif_fin) já evita gerar 2 notificações para o mesmo recebível.
+  fin_id        uuid,
   unidade_nome  text NOT NULL DEFAULT '',
   franqueado    text,
   cnpj          text,
