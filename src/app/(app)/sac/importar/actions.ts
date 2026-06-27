@@ -4,11 +4,20 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 
-export type LinhaImport = { nome: string; telefone?: string; email?: string; cpf?: string; motivo?: string; obs?: string }
+export type LinhaImport = { nome: string; telefone?: string; email?: string; cpf?: string; motivo?: string; obs?: string; valor_pago?: string; valor_devolucao?: string; data?: string }
 export type ImportResult = { ok: boolean; error?: string; inseridos?: number; ignorados?: number }
 
 const CANAIS = ['Reclame Aqui', 'Procon', 'Sults', 'Blip', 'WhatsApp', 'E-mail', 'Instagram', 'Telefone', 'Manual', 'Formulário']
 const MAX = 5000
+
+/** "1.234,56" / "1234.56" / "R$ 80" → número (ou null). */
+function parseNum(v?: string | null): number | null {
+  if (!v) return null
+  const t = String(v).trim().replace(/[R$\s]/g, '')
+  if (!t) return null
+  const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t)
+  return Number.isFinite(n) ? n : null
+}
 
 /** Importa reclamações de planilha (Reclame Aqui/Procon/Sults/CSV) como chamados SAC em lote. */
 export async function importarTickets(payload: { linhas: LinhaImport[]; canal: string; unidadeId: string | null }): Promise<ImportResult> {
@@ -33,21 +42,27 @@ export async function importarTickets(payload: { linhas: LinhaImport[]; canal: s
   }
   if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
 
-  const rows = linhas.map((l) => ({
-    empresa_id,
-    unidade_id: payload.unidadeId || null,
-    nome_cliente: l.nome.trim(),
-    telefone_cliente: l.telefone?.trim() || null,
-    email_cliente: l.email?.trim() || null,
-    cpf_cliente: l.cpf?.replace(/\D/g, '') || null,
-    assunto: l.motivo?.trim() || 'Importado',
-    motivo_label: l.motivo?.trim() || null,
-    canal,
-    status: 'aberto',
-    prioridade: 'media',
-    fase: 'Novo',
-    observacoes: l.obs?.trim() || null,
-  }))
+  const rows = linhas.map((l) => {
+    const dataTxt = (l.data || '').trim()
+    const obs = [dataTxt ? `Reclamação: ${dataTxt}` : '', l.obs?.trim() || ''].filter(Boolean).join(' · ') || null
+    return {
+      empresa_id,
+      unidade_id: payload.unidadeId || null,
+      nome_cliente: l.nome.trim(),
+      telefone_cliente: l.telefone?.trim() || null,
+      email_cliente: l.email?.trim() || null,
+      cpf_cliente: l.cpf?.replace(/\D/g, '') || null,
+      assunto: l.motivo?.trim() || 'Importado',
+      motivo_label: l.motivo?.trim() || null,
+      canal,
+      status: 'aberto',
+      prioridade: 'media',
+      fase: 'Novo',
+      valor_pago: parseNum(l.valor_pago),
+      valor_devolucao: parseNum(l.valor_devolucao),
+      observacoes: obs,
+    }
+  })
 
   // insere em lotes de 500
   let inseridos = 0
