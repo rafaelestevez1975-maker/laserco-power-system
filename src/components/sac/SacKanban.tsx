@@ -7,6 +7,7 @@ import { moverTicketFase } from '@/app/(app)/sac/kanban/actions'
 import { solicitarReembolso, criarAcordo } from '@/app/(app)/sac/actions'
 import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 import { moedaBR } from '@/lib/fmt'
+import { calcReembolso, primeiroPagamentoValido, MSG_DIA15 } from '@/lib/sac'
 
 export type Ticket = {
   id: string; numero: number | null; protocolo: string | null; nome_cliente: string | null
@@ -98,13 +99,20 @@ function Card({ t, onOpen }: { t: Ticket; onOpen: (t: Ticket) => void }) {
 function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
   const router = useRouter()
   const [valorPago, setValorPago] = useState(t.valor_pago != null ? String(t.valor_pago) : '')
+  const [sessoesContr, setSessoesContr] = useState('')
+  const [sessoesFeitas, setSessoesFeitas] = useState('')
   const [multa, setMulta] = useState('30')
   const [isentar, setIsentar] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
   const vp = Number(String(valorPago).replace(/\./g, '').replace(',', '.')) || 0
   const pctMulta = isentar ? 0 : Number(multa) || 0
-  const reembolso = Math.max(0, Math.round(vp * (1 - pctMulta / 100) * 100) / 100)
+  const contrNum = Math.max(0, Math.floor(Number(sessoesContr) || 0))
+  const feitasNum = Math.max(0, Math.floor(Number(sessoesFeitas) || 0))
+  // Sem sessões informadas → degrada para "valor pago − multa" (contr=1, feitas=0).
+  const temSessoes = contrNum > 0
+  const R = calcReembolso(vp, temSessoes ? contrNum : 1, temSessoes ? feitasNum : 0, pctMulta, isentar)
+  const reembolso = R.fim
 
   const [modo, setModo] = useState<'vista' | 'parcelado'>('vista')
   const [vAcordo, setVAcordo] = useState('')
@@ -113,6 +121,7 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
   const vAc = Number(String(vAcordo).replace(/\./g, '').replace(',', '.')) || 0
   const nP = Math.min(24, Math.max(1, Number(nParc) || 1))
   const valorParcela = Math.round((vAc / nP) * 100) / 100
+  const data1Valida = !data1 || primeiroPagamentoValido(data1)
 
   const [ficha, setFicha] = useState<ClienteResumo | null>(null)
   const [buscandoFicha, setBuscandoFicha] = useState(false)
@@ -128,7 +137,10 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
 
   async function lancar() {
     setMsg(''); setSaving(true)
-    const res = await solicitarReembolso(t.id, reembolso, pctMulta)
+    const resumo = temSessoes
+      ? `Reembolso por saldo de sessões: ${R.restantes} restante(s) × ${moedaBR(R.vSess)} = ${moedaBR(R.saldo)}${R.multa > 0 ? ` − multa ${pctMulta}% (${moedaBR(R.multa)})` : ' (sem multa)'} = ${moedaBR(R.fim)}.`
+      : `Reembolso à vista${R.multa > 0 ? ` − multa ${pctMulta}%` : ' (sem multa)'} = ${moedaBR(R.fim)}.`
+    const res = await solicitarReembolso(t.id, reembolso, pctMulta, resumo)
     setSaving(false)
     if (!res.ok) setMsg(res.error || 'Erro ao lançar.')
     else { setMsg('Reembolso lançado no Financeiro (Contas a Pagar) e chamado movido para "Em pagamento".'); router.refresh() }
@@ -138,6 +150,7 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
     setMsg('')
     if (!(vAc > 0)) { setMsg('Informe o valor total do acordo.'); return }
     if (!data1) { setMsg('Informe a data do 1º pagamento.'); return }
+    if (!primeiroPagamentoValido(data1)) { setMsg(MSG_DIA15); return }
     setSaving(true)
     const res = await criarAcordo(t.id, vAc, nP, data1)
     setSaving(false)
@@ -187,9 +200,14 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
                 <span>Créditos: <b>{money(ficha.saldoCreditos ?? 0)}</b></span>
                 <span>Valor/sessão: <b>{money(valorSessao)}</b></span>
               </div>
-              {sessRestantes > 0 && valorSessao > 0 && (
-                <button className="btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => { setModo('vista'); setValorPago(String(Math.round(valorSessao * sessRestantes * 100) / 100)) }}>
-                  <i className="ti ti-calculator" /> Usar base por sessão: {sessRestantes}× {money(valorSessao)} = {money(valorSessao * sessRestantes)}
+              {(ficha.agendamentos ?? 0) > 0 && (
+                <button className="btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => {
+                  setModo('vista')
+                  setValorPago(String(Math.round((ficha.totalGasto ?? 0) * 100) / 100))
+                  setSessoesContr(String(ficha.agendamentos ?? 0))
+                  setSessoesFeitas(String(ficha.concluidos ?? 0))
+                }}>
+                  <i className="ti ti-calculator" /> Usar dados do contrato ({ficha.concluidos}/{ficha.agendamentos} sessões · {money(ficha.totalGasto ?? 0)})
                 </button>
               )}
             </div>
@@ -217,13 +235,38 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
                     style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, opacity: isentar ? 0.5 : 1 }} />
                 </div>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Sessões contratadas</label>
+                  <input type="number" min={0} value={sessoesContr} onChange={(e) => setSessoesContr(e.target.value)} placeholder="ex.: 10"
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Sessões já feitas</label>
+                  <input type="number" min={0} value={sessoesFeitas} onChange={(e) => setSessoesFeitas(e.target.value)} placeholder="ex.: 3"
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+                </div>
+              </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, margin: '8px 0' }}>
                 <input type="checkbox" checked={isentar} onChange={(e) => setIsentar(e.target.checked)} /> Isentar multa (rescisão por nossa culpa)
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '8px 12px', borderRadius: 8 }}>
-                <span style={{ fontSize: 13 }}>Reembolso ao cliente</span>
-                <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(reembolso)}</b>
-              </div>
+              {temSessoes ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3px 12px', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 9, padding: 10, fontSize: 12.5 }}>
+                  <span>Total pago</span><b style={{ textAlign: 'right' }}>{money(vp)}</b>
+                  <span>Valor por sessão ({contrNum} sessões)</span><span style={{ textAlign: 'right' }}>{money(R.vSess)}</span>
+                  <span>Sessões já feitas ({feitasNum}) — abatidas</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.consumido)}</span>
+                  <span>Saldo das {R.restantes} sessões restantes</span><b style={{ textAlign: 'right' }}>{money(R.saldo)}</b>
+                  <span>Multa de rescisão{isentar ? ' (isenta)' : ` ${pctMulta}%`}</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.multa)}</span>
+                  <span style={{ fontWeight: 800, borderTop: '1px solid var(--line)', paddingTop: 5, marginTop: 3 }}>Valor a reembolsar</span>
+                  <b style={{ textAlign: 'right', fontWeight: 800, borderTop: '1px solid var(--line)', paddingTop: 5, marginTop: 3, color: 'var(--brand-600)' }}>{money(R.fim)}</b>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-2)', padding: '8px 12px', borderRadius: 8 }}>
+                  <span style={{ fontSize: 13 }}>Reembolso ao cliente</span>
+                  <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(reembolso)}</b>
+                </div>
+              )}
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}><i className="ti ti-info-circle" /> A multa incide só sobre o saldo das sessões não usadas; as feitas são abatidas. Informe as sessões (ou use “dados do contrato”) para o cálculo por saldo.</p>
               {msg && <p style={{ fontSize: 12.5, color: 'var(--brand-600)', marginTop: 8 }}>{msg}</p>}
               <button className="btn btn-primary" disabled={saving || reembolso <= 0} onClick={lancar} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
                 {saving ? 'Lançando…' : <><i className="ti ti-businessplan" /> Lançar reembolso no Financeiro</>}
@@ -252,8 +295,9 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
                 <span style={{ fontSize: 13 }}>{nP}x de</span>
                 <b style={{ fontSize: 18, color: 'var(--brand-600)' }}>{money(valorParcela)}</b>
               </div>
+              {!data1Valida && <p style={{ fontSize: 12, color: '#B91C1C', marginTop: 6 }}><i className="ti ti-alert-triangle" /> {MSG_DIA15}</p>}
               {msg && <p style={{ fontSize: 12.5, color: 'var(--brand-600)', marginTop: 8 }}>{msg}</p>}
-              <button className="btn btn-primary" disabled={saving || vAc <= 0} onClick={criarAc} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
+              <button className="btn btn-primary" disabled={saving || vAc <= 0 || !data1Valida} onClick={criarAc} style={{ width: '100%', marginTop: 10, justifyContent: 'center' }}>
                 {saving ? 'Criando…' : <><i className="ti ti-calendar-dollar" /> Criar acordo (aguardando OK do gestor)</>}
               </button>
             </>

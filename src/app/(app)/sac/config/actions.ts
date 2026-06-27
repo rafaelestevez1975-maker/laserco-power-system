@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import type { ActionResult } from '@/lib/types'
+import { type PremMonetaria } from '@/lib/sac'
 
 /** Garante operador com papel que pode configurar o SAC. */
 async function guard(): Promise<{ sb: SB; error?: undefined } | { sb: null; error: string }> {
@@ -62,16 +63,15 @@ export async function toggleTag(id: string, ativo: boolean): Promise<ActionResul
   revalidatePath('/sac/config'); return { ok: true }
 }
 
-// ─── Premiação (sac_premiacao_config: pesos + premios) ───
-export type PremPesos = { pesoResolvidos: number; pesoSLA: number; pesoTempo: number; pesoSemAtraso: number }
-export type PremPremios = { p1: string; p2: string; p3: string }
-
-export async function salvarPremiacaoConfig(pesos: PremPesos, premios: PremPremios): Promise<ActionResult> {
+// ─── Premiação monetária do SAC (sac_premiacao_config.pesos = PremMonetaria jsonb) ───
+// Legado: SAC_PREM (index.html 8913) — prêmio em R$ por atendente. Guardamos os 9 parâmetros
+// no jsonb `pesos`; a coluna `premios` (modelo antigo de texto) deixa de ser usada.
+export async function salvarPremiacaoConfig(prem: PremMonetaria): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
-  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id').limit(1).single()
+  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id').limit(1).maybeSingle()
   const eid = (cfg as { empresa_id?: string } | null)?.empresa_id
   if (!eid) return { ok: false, error: 'Configuração de premiação não encontrada.' }
-  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos, premios, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
+  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos: prem, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
   if (e) return { ok: false, error: msgErro(e.message, 'salvar premiação') }
   revalidatePath('/sac/ranking'); return { ok: true }
 }

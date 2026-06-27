@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
+import { primeiroPagamentoValido, MSG_DIA15 } from '@/lib/sac'
 
 export type NovoChamadoInput = {
   nome_cliente: string
@@ -179,6 +180,8 @@ export async function criarAcordo(ticketId: string, valorTotal: number, nParcela
   if (!(n >= 1 && n <= 24)) return { ok: false, error: 'Número de parcelas deve ser de 1 a 24.' }
   const d1 = new Date(data1)
   if (isNaN(d1.getTime())) return { ok: false, error: 'Data do 1º pagamento inválida.' }
+  // Regra do legado (sacAcordoSalvar): 1º pagamento sempre após o dia 15.
+  if (!primeiroPagamentoValido(data1)) return { ok: false, error: MSG_DIA15 }
 
   const { data: t } = await sb.from('sac_tickets').select('empresa_id, unidade_id, nome_cliente').eq('id', ticketId).single()
   const tk = t as { empresa_id?: string | null; unidade_id?: string | null; nome_cliente?: string } | null
