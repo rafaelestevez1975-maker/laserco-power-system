@@ -32,5 +32,14 @@
 ### 02:15 — Onda 0 concluída (auditoria) ✅
 Auditoria exaustiva das 1.086 features → `TODO-LEGADO-COMPLETO.md`. Placar inicial: 87 funcional / 61 parcial / 516 clone / 422 ausente.
 
-### 02:15 — Onda 1 iniciada 🔧
-Workflow `construir-modulos-reais` rodando: Clientes, Agenda, Contas, Expansão. (atualizo aqui quando verificar.)
+### 02:15 → 02:35 — Onda 1 CONCLUÍDA e VERIFICADA ✅ (commit `aa55c18`)
+4 telas clone→funcional sobre dado real. **`tsc --noEmit` 0 erros + `next build` EXIT 0.** Dado validado no lkii: 345.458 clientes ativos · 135.997 agendamentos · 12.944 receitas.
+- **Clientes** (`/clientes` + `/clientes/[id]`): lista paginada server-side (347k) + busca nome/cpf/telefone + filtros + KPIs reais + ficha (Dados/Agendamentos/Carteira) + novo cliente (validação+dedup) + inativar soft. RBAC + multitenant.
+- **Agenda** (`/agenda`): grade por profissional, criar/confirmar/cancelar com checagem de sobreposição. Corrigiu enum real `status_agendamento` (aberto/confirmado/em_atendimento/concluido/cancelado/no_show).
+- **Contas** (`/contas`): Pagar/Receber da unidade sobre lancamentos_financeiros, KPIs, baixa, categorias plano_contas.
+- **Expansão** (`/expansao`): CRM de franquia (crm_leads pipeline) + CrmBoard + **migration `scripts/migrations/050_expansao_pipeline.sql`** gerada (⚠️ NÃO aplicada — banner avisa).
+- TODOs adiados (marcados `//TODO(legado)`): import CSV clientes, abas OS/Contratos/Acompanhamento da ficha, eventos da rede/recorrência na agenda, export/import das contas, conversas/disparos próprios e CRUD de tipos na Expansão.
+- ⚠️ Estado da base: agendamentos sem cliente_id/profissional_id vinculados; lancamentos todos receita+pago (aba Pagar nasce vazia). Não é bug — é dado; empty-states cobrem.
+
+### 02:35 — Onda 2 iniciada 🔧
+Workflow `construir-modulos-onda2`: Serviços+Produtos · Pacotes+Planos · Colaboradores · Perfis+RBAC(editor que persiste cargo_permissoes) · Categorias+Descontos+Auditoria · Relatórios (faturamento/agendamentos/clientes sobre dado real).
