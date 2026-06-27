@@ -90,17 +90,29 @@ export function normTel(raw: string): string {
   return d.startsWith('55') ? d : '55' + d
 }
 
+/** Traduz erros de envio da UAZAPI/WhatsApp para algo claro pro atendente. */
+export function traduzErroEnvio(body: unknown, fallback = 'Falha no envio.'): string {
+  const raw = String((body as { error?: string; message?: string } | null)?.error || (body as { message?: string } | null)?.message || '')
+  const m = raw.toLowerCase()
+  if (/\b463\b|temporary restriction|starting new conversation|under a temporary|spam|quality/.test(m))
+    return 'O WhatsApp restringiu temporariamente este número para INICIAR conversas novas (proteção anti-spam, comum em número recém-conectado). Responda quem o cliente iniciou, evite muitos envios seguidos e aguarde algumas horas — costuma liberar sozinho.'
+  if (/not.*on.*whatsapp|invalid.*number|no.*account|exists.*false/.test(m)) return 'Esse número não tem WhatsApp ativo.'
+  if (/disconnect|not connected|no instance|instance.*not/.test(m)) return 'A conexão do canal caiu. Reconecte o número em Canais.'
+  if (/rate|too many|limit/.test(m)) return 'Muitos envios em sequência — aguarde alguns segundos e tente de novo.'
+  return raw || fallback
+}
+
 /** Envia texto por uma instância (token da instância)  base para os disparos. */
 export async function sendText(token: string, numero: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   const { ok, body } = await instPost('/send/text', token, { number: normTel(numero), text: texto })
-  return ok ? { ok: true } : { ok: false, error: (body as { error?: string })?.error || 'Falha no envio.' }
+  return ok ? { ok: true } : { ok: false, error: traduzErroEnvio(body) }
 }
 
 export type MidiaTipo = 'image' | 'video' | 'audio' | 'ptt' | 'document' | 'sticker'
 /** Envia mídia por uma instância (token). `file` = URL pública OU base64 (data URI ou puro). */
 export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, file: string, opts: { caption?: string; docName?: string } = {}): Promise<{ ok: boolean; error?: string; fileURL?: string }> {
   const { ok, body } = await instPost('/send/media', token, { number: normTel(numero), type: tipo, file, ...opts })
-  if (!ok) return { ok: false, error: (body as { error?: string })?.error || 'Falha no envio de mídia.' }
+  if (!ok) return { ok: false, error: traduzErroEnvio(body, 'Falha no envio de mídia.') }
   const b = body as { fileURL?: string; message?: { fileURL?: string } }
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
 }

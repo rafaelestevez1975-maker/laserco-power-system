@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { normTel, listInstances, sendText } from '@/lib/uazapi'
+import { reHostMidia } from '@/lib/sac-midia'
 import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
 
 /**
@@ -93,7 +94,9 @@ export async function POST(req: NextRequest) {
   await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chat.id, wa_id: waId, direcao: fromMe ? 'saida' : 'entrada',
     autor: fromMe ? (msg.senderName || 'WhatsApp') : (msg.senderName || chat.nome || telefone),
-    tipo, texto: texto || null, midia_url: msg.fileURL || null, status: msg.status ?? null, criado_em: quando,
+    tipo, texto: texto || null,
+    midia_url: msg.fileURL ? await reHostMidia(msg.fileURL, { prefixo: 'recebidas' }) : null,
+    status: msg.status ?? null, criado_em: quando,
   })
 
   // IA de atendimento (OpenRouter): responde quando é mensagem do cliente,
