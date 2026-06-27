@@ -10,6 +10,7 @@
 - ✅ `npx next build` → **✓ Compiled successfully** (build de produção completo, todas as rotas).
 - ✅ **Banco lkii: 182 tabelas** — apliquei TODAS as migrations aditivas pendentes (sem perder nenhum dado; só criei tabelas novas e relaxei alguns CHECK). Isso ativou o **Financeiro REAL** (fin_*) e destravou todos os módulos.
 - ✅ Tudo commitado e no GitHub na branch **`feat/sac-paridade-alta`** (commit a commit).
+- 📊 **Cobertura: 89 de 109 telas do menu** funcionais. Faltam **20**, todas variações de visão (não módulos centrais): **15 sub-relatórios** em `/relatorios/*` (assinaturas, ocorrências, atendimentos, avaliações, estatísticas, fidelidade, etc. — a outra sessão vinha cobrindo Relatórios) e **5 sub-abas da Expansão** (`/expansao/captacao|funil|leads|whatsapp|tipos` — o CRM de franquias central já funciona). Continuam mostrando o clone visual; me peça e eu construo numa próxima onda.
 
 **Módulos que viraram funcionais nesta madrugada:** Financeiro (real), Marketing, Ponto Digital (GPS), Desempenho, Jurídico, Universidade, Disco, Notas (NFS-e), Anamnese, Automações, Implantação, App do Cliente, RH Folha/Férias/Jornada/Regras, Exportações, Comissões — além dos que já funcionavam (SAC, CRM, Clientes, Agenda, Contas, etc.).
 
