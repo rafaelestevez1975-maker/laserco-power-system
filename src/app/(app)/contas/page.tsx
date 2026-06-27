@@ -12,6 +12,7 @@ type SP = {
   aba?: string // 'pagar' (despesa) | 'receber' (receita)
   status?: string // pago | pendente | atrasado
   categoria?: string // plano_contas.id
+  fornecedor?: string // legado: filtro Fornecedor (texto)
   unidade?: string // '' (todas) | 'franqueadora' (rede, unidade_id null) | <uuid da loja>
   di?: string // data_vencimento >=
   df?: string // data_vencimento <=
@@ -34,12 +35,14 @@ function aplicarFiltros<
     lte(c: string, v: unknown): Q
     lt(c: string, v: unknown): Q
     is(c: string, v: unknown): Q
+    ilike(c: string, v: string): Q
   },
->(q: Q, tipo: 'receita' | 'despesa', unit: UnitScope, status: string | undefined, categoria: string | undefined, di: string | undefined, df: string | undefined, hojeISO: string): Q {
+>(q: Q, tipo: 'receita' | 'despesa', unit: UnitScope, status: string | undefined, categoria: string | undefined, di: string | undefined, df: string | undefined, hojeISO: string, fornecedor?: string): Q {
   let out = q.eq('tipo', tipo)
   if (unit.mode === 'eq' && unit.id) out = out.eq('unidade_id', unit.id)
   else if (unit.mode === 'null') out = out.is('unidade_id', null)
   if (categoria) out = out.eq('categoria_id', categoria)
+  if (fornecedor) out = out.ilike('fornecedor', `%${fornecedor}%`)
   if (di) out = out.gte('data_vencimento', di)
   if (df) out = out.lte('data_vencimento', df)
   if (status === 'pago') out = out.eq('status', 'pago')
@@ -77,6 +80,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   const mostrarUnidade = !unidadeId
 
   const hojeISO = new Date().toISOString().slice(0, 10)
+  const fornecedorFil = (sp.fornecedor ?? '').trim()
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
 
@@ -93,10 +97,10 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   // ── Página de lançamentos (server-side .range + count exato) ──
   let listQ = sb
     .from('lancamentos_financeiros')
-    .select('id, descricao, valor, status, data_vencimento, data_pagamento, categoria_id, unidade_id, forma_pagamento, observacao, tipo', { count: 'exact' })
+    .select('id, descricao, valor, status, data_vencimento, data_pagamento, categoria_id, unidade_id, forma_pagamento, fornecedor, observacao, tipo', { count: 'exact' })
     .order('data_vencimento', { ascending: false, nullsFirst: false })
     .range(from, from + PAGE_SIZE - 1)
-  listQ = aplicarFiltros(listQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
+  listQ = aplicarFiltros(listQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO, fornecedorFil)
   const { data: rowsRaw, count } = await listQ
   const rows: LancRow[] = ((rowsRaw ?? []) as LancRow[]).map((r) => ({
     ...r,
@@ -119,7 +123,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
     .from('lancamentos_financeiros')
     .select('valor, status, data_vencimento')
     .range(0, KPI_CAP - 1)
-  kpiQ = aplicarFiltros(kpiQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO)
+  kpiQ = aplicarFiltros(kpiQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO, fornecedorFil)
   const { data: kpiRaw } = await kpiQ
   const kpiRows = (kpiRaw ?? []) as { valor: number | null; status: string | null; data_vencimento: string | null }[]
 
@@ -148,7 +152,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
       activeUnitName={ctx?.activeUnitName ?? 'Todas as unidades'}
       unidades={unidades}
       mostrarUnidade={mostrarUnidade}
-      filtros={{ status: sp.status ?? '', categoria: sp.categoria ?? '', unidade: upFiltro, di: sp.di ?? '', df: sp.df ?? '' }}
+      filtros={{ status: sp.status ?? '', categoria: sp.categoria ?? '', fornecedor: fornecedorFil, unidade: upFiltro, di: sp.di ?? '', df: sp.df ?? '' }}
       kpis={{ previsto, realizado, emAberto, atrasado }}
       page={page}
       totalPages={totalPages}

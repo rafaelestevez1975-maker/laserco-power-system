@@ -146,17 +146,19 @@ export async function salvarPermissoesCargo(
   return { ok: true, gravadas, removidas }
 }
 
-/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação principal). */
+/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação principal).
+ *  `acaoVerbo` define o sufixo de `acao` (ex.: 'criar' → rbac.cargo.criar). */
 async function registrarAuditoria(
   userId: string,
   cargo: { id: string; nome: string; slug: string },
   dados: Record<string, unknown>,
+  acaoVerbo = 'permissoes.editar',
 ): Promise<void> {
   try {
     const admin = adminClient()
     await admin.from('audit_log').insert({
       usuario_id: userId,
-      acao: 'rbac.cargo.permissoes.editar',
+      acao: `rbac.cargo.${acaoVerbo}`,
       recurso_id: 'sistema.cargo',
       recurso_uuid: cargo.id,
       recurso_label: `${cargo.nome} (${cargo.slug})`,
@@ -307,25 +309,36 @@ export async function criarCargo(input: {
     slug = `${slug}_${n}`
   }
 
-  const { data: inserted, error: eIns } = await admin
-    .from('cargos')
-    .insert({
-      empresa_id: empresaId,
-      nome,
-      slug,
-      descricao: (input?.descricao || '').trim() || null,
-      is_sistema: false,
-      ativo: input?.ativo === false ? false : true,
-      bate_ponto: input?.batePonto === false ? false : true,
-      criado_por: op.userId,
-    })
-    .select('id, nome, slug')
-    .maybeSingle()
-  if (eIns) return { ok: false, error: `Falha ao criar perfil: ${eIns.message}` }
-  const novo = inserted as { id: string; nome: string; slug: string } | null
+  const baseRow = {
+    empresa_id: empresaId,
+    nome,
+    slug,
+    descricao: (input?.descricao || '').trim() || null,
+    is_sistema: false,
+    ativo: input?.ativo === false ? false : true,
+    criado_por: op.userId,
+  }
+  // Tenta com bate_ponto; se a coluna ainda não existe (migration rbac.sql não aplicada),
+  // refaz sem ela — o perfil ainda é criado normalmente.
+  let inserted: { id: string; nome: string; slug: string } | null = null
+  {
+    const r = await admin.from('cargos')
+      .insert({ ...baseRow, bate_ponto: input?.batePonto === false ? false : true })
+      .select('id, nome, slug').maybeSingle()
+    if (r.error && /bate_ponto/.test(r.error.message)) {
+      const r2 = await admin.from('cargos').insert(baseRow).select('id, nome, slug').maybeSingle()
+      if (r2.error) return { ok: false, error: `Falha ao criar perfil: ${r2.error.message}` }
+      inserted = r2.data as typeof inserted
+    } else if (r.error) {
+      return { ok: false, error: `Falha ao criar perfil: ${r.error.message}` }
+    } else {
+      inserted = r.data as typeof inserted
+    }
+  }
+  const novo = inserted
   if (!novo) return { ok: false, error: 'Perfil não foi criado.' }
 
-  await registrarAuditoria(op.userId, novo, { acao: 'criar', nome, slug })
+  await registrarAuditoria(op.userId, novo, { acao: 'criar', nome, slug }, 'criar')
   revalidatePath('/perfis')
   return { ok: true, id: novo.id }
 }
@@ -364,7 +377,7 @@ export async function atualizarCargo(
   const { error: eUpd } = await admin.from('cargos').update(patch).eq('id', cargoId)
   if (eUpd) return { ok: false, error: `Falha ao atualizar perfil: ${eUpd.message}` }
 
-  await registrarAuditoria(op.userId, cargo, { acao: 'editar', ...patch })
+  await registrarAuditoria(op.userId, cargo, { acao: 'editar', ...patch }, 'editar')
   revalidatePath('/perfis')
   revalidatePath(`/perfis/${cargoId}`)
   return { ok: true }
@@ -389,7 +402,7 @@ export async function alternarAtivoCargo(cargoId: string): Promise<ActionResult 
   const { error: eUpd } = await admin.from('cargos').update({ ativo: novo }).eq('id', cargoId)
   if (eUpd) return { ok: false, error: `Falha ao alternar status: ${eUpd.message}` }
 
-  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativar' : 'inativar' })
+  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativar' : 'inativar' }, novo ? 'ativar' : 'inativar')
   revalidatePath('/perfis')
   revalidatePath(`/perfis/${cargoId}`)
   return { ok: true, ativo: novo }
@@ -419,7 +432,7 @@ export async function alternarBatePonto(cargoId: string): Promise<ActionResult &
     return { ok: false, error: `Falha ao alternar bate-ponto: ${eUpd.message}` }
   }
 
-  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativou bate-ponto' : 'desativou bate-ponto' })
+  await registrarAuditoria(op.userId, cargo, { acao: novo ? 'ativou bate-ponto' : 'desativou bate-ponto' }, 'bate_ponto')
   revalidatePath('/perfis')
   return { ok: true, batePonto: novo }
 }
@@ -455,7 +468,7 @@ export async function excluirCargo(cargoId: string): Promise<ActionResult> {
   const { error: eDel } = await admin.from('cargos').delete().eq('id', cargoId)
   if (eDel) return { ok: false, error: `Falha ao excluir perfil: ${eDel.message}` }
 
-  await registrarAuditoria(op.userId, cargo, { acao: 'excluir' })
+  await registrarAuditoria(op.userId, cargo, { acao: 'excluir' }, 'excluir')
   revalidatePath('/perfis')
   return { ok: true }
 }
@@ -516,7 +529,7 @@ export async function atribuirCargoUsuario(input: {
     if (eIns) return { ok: false, error: `Falha ao atribuir perfil: ${eIns.message}` }
   }
 
-  await registrarAuditoria(op.userId, cargo, { acao: 'atribuir cargo', perfil_id: input.perfilId })
+  await registrarAuditoria(op.userId, cargo, { acao: 'atribuir cargo', perfil_id: input.perfilId }, 'usuario.atribuir')
   revalidatePath('/perfis')
   revalidatePath(`/perfis/${input.cargoId}`)
   return { ok: true }
@@ -540,7 +553,7 @@ export async function removerCargoUsuario(input: { cargoId: string; perfilId: st
     .eq('cargo_id', input.cargoId)
   if (eDel) return { ok: false, error: `Falha ao remover vínculo: ${eDel.message}` }
 
-  await registrarAuditoria(op.userId, cargo, { acao: 'remover cargo', perfil_id: input.perfilId })
+  await registrarAuditoria(op.userId, cargo, { acao: 'remover cargo', perfil_id: input.perfilId }, 'usuario.remover')
   revalidatePath('/perfis')
   revalidatePath(`/perfis/${input.cargoId}`)
   return { ok: true }

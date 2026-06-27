@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { criarMotivo, renomearMotivo, toggleMotivo, criarTag, renomearTag, toggleTag } from '@/app/(app)/sac/config/actions'
+import { criarMotivo, renomearMotivo, toggleMotivo, criarTag, renomearTag, toggleTag, salvarSlaHoras } from '@/app/(app)/sac/config/actions'
 
 export type Motivo = { id: string; label: string; ativo: boolean; ordem: number }
 export type Tag = { id: string; nome: string; cor: string | null; ativo: boolean }
@@ -22,7 +22,7 @@ const INTEGRACOES_SAC: { n: string; ic: string; on: boolean }[] = [
   { n: 'Instagram Direct', ic: 'ti-brand-instagram', on: false },
 ]
 
-export function SacConfigManager({ motivos, tags, podeEditar }: { motivos: Motivo[]; tags: Tag[]; podeEditar: boolean }) {
+export function SacConfigManager({ motivos, tags, slaHoras, podeEditar }: { motivos: Motivo[]; tags: Tag[]; slaHoras: number; podeEditar: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -58,13 +58,7 @@ export function SacConfigManager({ motivos, tags, podeEditar }: { motivos: Motiv
         </section>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16, marginTop: 16 }}>
-        <section className="lc-card" style={{ padding: 16 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-alarm" /> SLA de atendimento</h3>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <b style={{ fontSize: 26 }}>48</b><span style={{ color: 'var(--text-2)' }}>horas corridas</span>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>Prazo para resolução antes de marcar o chamado como <b>“Em atraso”</b>. Regra da rede (definida com o cliente). Tornar configurável por unidade exige uma tabela de parâmetros do SAC.</p>
-        </section>
+        <SlaCard slaHoras={slaHoras} podeEditar={podeEditar} busy={busy} run={run} />
 
         <section className="lc-card" style={{ padding: 16 }}>
           <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-plug" /> Canais ativos</h3>
@@ -91,6 +85,25 @@ export function SacConfigManager({ motivos, tags, podeEditar }: { motivos: Motiv
         <i className="ti ti-info-circle" /> Motivos e tags alimentam o cadastro e a triagem dos chamados. Desativar (olho) preserva o histórico sem excluir.
       </div>
     </>
+  )
+}
+
+// SLA de atendimento (horas): paridade com o legado (SAC_CFG.slaHoras=48 · index.html 9149).
+// Input numérico persistido em sac_premiacao_config.pesos.slaHoras; usado para marcar "Em atraso".
+function SlaCard({ slaHoras, podeEditar, busy, run }: { slaHoras: number; podeEditar: boolean; busy: boolean; run: Run }) {
+  const [h, setH] = useState(String(slaHoras))
+  const num = Math.round(Number(h) || 0)
+  const mudou = num >= 1 && num <= 1000 && num !== slaHoras
+  return (
+    <section className="lc-card" style={{ padding: 16 }}>
+      <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-alarm" /> SLA de atendimento</h3>
+      <label style={{ fontSize: 12, color: 'var(--text-3)' }}>Prazo (horas) para resolução antes de marcar o chamado como <b>“Em atraso”</b></label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+        <input type="number" min={1} max={1000} value={h} disabled={!podeEditar} onChange={(e) => setH(e.target.value)} style={{ ...inp, maxWidth: 120 }} />
+        <span style={{ color: 'var(--text-2)', fontSize: 13 }}>horas corridas</span>
+        {podeEditar && <button className="btn btn-primary" disabled={busy || !mudou} onClick={() => run(() => salvarSlaHoras(num))}>Salvar</button>}
+      </div>
+    </section>
   )
 }
 

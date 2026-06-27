@@ -39,6 +39,7 @@ export function MetasUnidadeSimulador({
   const [agReal, setAgReal] = useState<number>(210)
   const [nvReal, setNvReal] = useState<number>(38)
   const [indiques, setIndiques] = useState<number>(60)
+  const [indReal, setIndReal] = useState<number>(0) // indicações realizadas no mês até hoje
   const [saving, setSaving] = useState<string | null>(null)
 
   const plbl = PLBL[div]
@@ -48,12 +49,14 @@ export function MetasUnidadeSimulador({
     setVenda(v < META_MIN ? META_MIN : v)
   }
 
+  // Legado indMetaSync (~8100): meta diária = ceil(meta/30) e projeção do mês =
+  // round(realizado / diaAtual * 30) — base de 30 dias e usando o realizado REAL.
   const ind = useMemo(() => {
-    const diaUtil = 26 // base do legado para meta diária de indicações
-    const diaria = Math.max(1, Math.round(indiques / diaUtil))
-    const proj = diaria * diaUtil
+    const diaria = Math.ceil(indiques / 30)
+    const diaAtual = new Date().getDate() || 1
+    const proj = Math.round((indReal / diaAtual) * 30)
     return { diaria, proj }
-  }, [indiques])
+  }, [indiques, indReal])
 
   const periodoHint: Record<number, string> = {
     1: 'Meta cheia do mês.',
@@ -173,13 +176,14 @@ export function MetasUnidadeSimulador({
       {/* Meta de indicações */}
       <div className="doc-card">
         <h3><i className="ti ti-user-heart" /> Meta de indicações (Indiques)</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
           <div className="mf"><label>Meta mensal de indicações</label><input type="number" min={0} step={5} value={indiques} onChange={(e) => setIndiques(Number(e.target.value) || 0)} /></div>
-          <div className="metric-box"><span>Meta diária (auto)</span><b>{ind.diaria}</b></div>
-          <div className="metric-box purple"><span>Projeção do mês (auto)</span><b>{ind.proj}</b></div>
+          <div className="mf"><label>Realizado no mês (até hoje)</label><input type="number" min={0} value={indReal} onChange={(e) => setIndReal(Number(e.target.value) || 0)} /></div>
+          <div className="metric-box"><span>Meta diária (auto)</span><b>{ind.diaria} /dia</b></div>
+          <div className="metric-box purple"><span>Projeção do mês (no ritmo atual)</span><b>{ind.proj}</b></div>
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-          <i className="ti ti-info-circle" /> A <b>meta diária</b> e a <b>projeção do mês</b> são calculadas automaticamente a partir da meta mensal. Acompanhe no <b>dashboard de Gestão de Indiques</b>.
+          <i className="ti ti-info-circle" /> A <b>meta diária</b> é a meta mensal dividida por <b>30 dias</b> (arredondada para cima). A <b>projeção do mês</b> usa o <b>realizado até hoje</b> no ritmo atual (realizado ÷ dia atual × 30). Acompanhe no <b>dashboard de Gestão de Indiques</b>.
         </div>
       </div>
 

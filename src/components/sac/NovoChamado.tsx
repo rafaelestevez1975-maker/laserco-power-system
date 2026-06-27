@@ -10,7 +10,9 @@ const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telef
 const PRIOS: { k: string; l: string }[] = [
   { k: 'baixa', l: 'Baixa' }, { k: 'media', l: 'Média' }, { k: 'alta', l: 'Alta' }, { k: 'urgente', l: 'Crítica' },
 ]
+const TIPOS = ['Franquia', 'Própria']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
+const hojeISO = () => new Date().toISOString().slice(0, 10)
 
 export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: Unidade[]; atendentes: Atendente[]; activeUnitId: string | null }) {
   const router = useRouter()
@@ -19,7 +21,8 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
   const [err, setErr] = useState('')
   const [f, setF] = useState({
     nome_cliente: '', cpf_cliente: '', telefone_cliente: '', email_cliente: '',
-    canal: 'Manual', unidade_id: activeUnitId || '', motivo_label: '', prioridade: 'media',
+    canal: 'Manual', unidade_id: activeUnitId || '', tipo: 'Franquia', data_reclamacao: hojeISO(),
+    motivo_label: '', prioridade: 'media',
     fase: 'Novo', atribuido_para: '', area_reclamada: '', valor_pago: '', valor_devolucao: '',
     multa_aplicada: false, pago: false, observacoes: '',
   })
@@ -38,6 +41,7 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
     const res = await criarChamado({
       nome_cliente: f.nome_cliente, cpf_cliente: f.cpf_cliente, telefone_cliente: f.telefone_cliente,
       email_cliente: f.email_cliente, canal: f.canal, unidade_id: f.unidade_id || null,
+      tipo: f.tipo, data_reclamacao: f.data_reclamacao,
       motivo_label: f.motivo_label, prioridade: f.prioridade, fase: f.fase,
       atribuido_para: f.atribuido_para || null, area_reclamada: f.area_reclamada,
       valor_pago: f.valor_pago, valor_devolucao: f.valor_devolucao,
@@ -87,6 +91,14 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
                     {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
                   </select>
                 </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div><label style={lab}>Tipo</label>
+                  <select style={inp} value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
+                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div><label style={lab}>Data da reclamação</label><input style={inp} type="date" value={f.data_reclamacao} onChange={(e) => set('data_reclamacao', e.target.value)} /></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div><label style={lab}>Motivo / assunto</label><input style={inp} value={f.motivo_label} onChange={(e) => set('motivo_label', e.target.value)} placeholder="Ex.: Cobrança indevida" /></div>

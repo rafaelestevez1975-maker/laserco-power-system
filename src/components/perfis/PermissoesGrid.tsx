@@ -48,6 +48,8 @@ export function PermissoesGrid({ cargoId, recursos, acoes, inicial, paresExisten
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
   const [colapsados, setColapsados] = useState<Record<string, boolean>>({})
+  // Escopo usado pelas ações em massa (Marcar todas / Leitura total / módulo / linha).
+  const [escopoMassa, setEscopoMassa] = useState<Escopo>('unidade')
 
   const paresSet = useMemo(() => new Set(paresExistentes), [paresExistentes])
   const cellKey = (r: string, a: string) => `${r}|${a}`
@@ -107,6 +109,59 @@ export function PermissoesGrid({ cargoId, recursos, acoes, inicial, paresExisten
     })
   }
 
+  /** Liga/desliga o MÓDULO inteiro (todos os recursos×ações do grupo) num escopo.
+   *  Legado L7288: clicar no título do grupo alterna o grupo inteiro. */
+  function setModulo(recursosDoModulo: Recurso[], escopo: Escopo | '') {
+    setMsg(null)
+    setState((prev) => {
+      const next = { ...prev }
+      for (const r of recursosDoModulo) {
+        for (const a of acoes) {
+          if (!paresSet.has(cellKey(r.id, a.id))) continue
+          const k = cellKey(r.id, a.id)
+          if (escopo === '') delete next[k]
+          else next[k] = escopo
+        }
+      }
+      return next
+    })
+  }
+
+  /** Aplica todas as ações de TODOS os recursos num escopo (preset local "Marcar todas").
+   *  Espelha o legado permAll (L7289) sem precisar ir ao servidor antes de salvar. */
+  function marcarTudoLocal(escopo: Escopo) {
+    setMsg(null)
+    setState((prev) => {
+      const next = { ...prev }
+      for (const r of recursos) {
+        for (const a of acoes) {
+          if (!paresSet.has(cellKey(r.id, a.id))) continue
+          next[cellKey(r.id, a.id)] = escopo
+        }
+      }
+      return next
+    })
+  }
+
+  /** Desmarca tudo localmente (legado permNone, L7290). */
+  function desmarcarTudoLocal() {
+    setMsg(null)
+    setState({})
+  }
+
+  /** Concede só a ação 'ler' (escopo escolhido) em todos os recursos (preset local). */
+  function leituraTotalLocal() {
+    setMsg(null)
+    setState((prev) => {
+      const next = { ...prev }
+      for (const r of recursos) {
+        if (!paresSet.has(cellKey(r.id, 'ler'))) continue
+        next[cellKey(r.id, 'ler')] = escopoMassa
+      }
+      return next
+    })
+  }
+
   async function salvar() {
     if (!sujo) return
     setBusy(true); setMsg(null)
@@ -148,10 +203,27 @@ export function PermissoesGrid({ cargoId, recursos, acoes, inicial, paresExisten
 
         {podeEditar && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-ghost" disabled={busy} onClick={() => preset('leitura_total', 'unidade')} title="Concede 'ler' (Unidade) em todos os recursos">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-3)' }}>
+              Escopo das ações em massa:
+              <select
+                value={escopoMassa}
+                disabled={busy}
+                onChange={(e) => setEscopoMassa(e.target.value as Escopo)}
+                style={{ fontSize: 11.5, padding: '3px 6px', borderRadius: 6, border: `1px solid ${ESCOPO_COR[escopoMassa]}`, color: ESCOPO_COR[escopoMassa], fontWeight: 600 }}
+              >
+                {ESCOPOS.map((e) => <option key={e} value={e}>{ESCOPO_LABEL[e]}</option>)}
+              </select>
+            </span>
+            <button className="btn btn-ghost" disabled={busy} onClick={() => marcarTudoLocal(escopoMassa)} title="Concede TODAS as ações no escopo escolhido em todos os recursos">
+              <i className="ti ti-checkbox" /> Marcar todas
+            </button>
+            <button className="btn btn-ghost" disabled={busy} onClick={desmarcarTudoLocal} title="Desmarca todas as permissões (no editor; salve para persistir)">
+              <i className="ti ti-square" /> Desmarcar todas
+            </button>
+            <button className="btn btn-ghost" disabled={busy} onClick={leituraTotalLocal} title="Concede 'ler' (no escopo escolhido) em todos os recursos">
               <i className="ti ti-eye" /> Leitura total
             </button>
-            <button className="btn btn-ghost" disabled={busy} onClick={() => { if (confirm('Remover TODAS as permissões deste cargo?')) preset('limpar') }} title="Remove todas as permissões do cargo">
+            <button className="btn btn-ghost" disabled={busy} onClick={() => { if (confirm('Remover TODAS as permissões deste cargo agora (salva imediatamente)?')) preset('limpar') }} title="Remove todas as permissões do cargo (persistência imediata)">
               <i className="ti ti-eraser" /> Limpar tudo
             </button>
             <span style={{ width: 1, height: 22, background: 'var(--line)' }} />
@@ -215,6 +287,8 @@ export function PermissoesGrid({ cargoId, recursos, acoes, inicial, paresExisten
                     busy={busy}
                     setCell={setCell}
                     setLinha={setLinha}
+                    setModulo={setModulo}
+                    escopoMassa={escopoMassa}
                     colSpanTotal={acoes.length + 1 + (podeEditar ? 1 : 0)}
                   />
                 )
@@ -233,7 +307,7 @@ export function PermissoesGrid({ cargoId, recursos, acoes, inicial, paresExisten
 }
 
 function ModuloBloco({
-  modulo, recursos, acoes, aberto, onToggle, state, paresSet, podeEditar, busy, setCell, setLinha, colSpanTotal,
+  modulo, recursos, acoes, aberto, onToggle, state, paresSet, podeEditar, busy, setCell, setLinha, setModulo, escopoMassa, colSpanTotal,
 }: {
   modulo: string
   recursos: Recurso[]
@@ -246,22 +320,50 @@ function ModuloBloco({
   busy: boolean
   setCell: (r: string, a: string, e: Escopo | '') => void
   setLinha: (r: string, e: Escopo | '') => void
+  setModulo: (recursos: Recurso[], e: Escopo | '') => void
+  escopoMassa: Escopo
   colSpanTotal: number
 }) {
   const concedidasNoModulo = recursos.reduce((acc, r) => {
     for (const a of acoes) if (state[`${r.id}|${a.id}`]) acc++
     return acc
   }, 0)
+  // "Grupo cheio" = todo par existente do módulo está concedido → o título alterna p/ revogar.
+  let totalPares = 0
+  for (const r of recursos) for (const a of acoes) if (paresSet.has(`${r.id}|${a.id}`)) totalPares++
+  const grupoCheio = totalPares > 0 && concedidasNoModulo >= totalPares
 
   return (
     <>
-      <tr style={{ background: 'var(--brand-50, #F7E7EB)', cursor: 'pointer' }} onClick={onToggle}>
-        <td colSpan={colSpanTotal} style={{ fontWeight: 700, textTransform: 'capitalize', fontSize: 12.5 }}>
-          <i className={`ti ${aberto ? 'ti-chevron-down' : 'ti-chevron-right'}`} style={{ marginRight: 6, verticalAlign: '-2px' }} />
-          {modulo}
-          <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 8 }}>
-            {recursos.length} recurso(s){concedidasNoModulo ? ` · ${concedidasNoModulo} concedida(s)` : ''}
-          </span>
+      <tr style={{ background: 'var(--brand-50, #F7E7EB)' }}>
+        <td colSpan={colSpanTotal} style={{ fontSize: 12.5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Título: clicar marca/desmarca o grupo inteiro no escopo escolhido (legado L7288).
+                O chevron à esquerda controla colapsar/expandir. */}
+            <span onClick={onToggle} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }} title={aberto ? 'Recolher' : 'Expandir'}>
+              <i className={`ti ${aberto ? 'ti-chevron-down' : 'ti-chevron-right'}`} style={{ verticalAlign: '-2px' }} />
+            </span>
+            <span
+              onClick={podeEditar ? () => setModulo(recursos, grupoCheio ? '' : escopoMassa) : onToggle}
+              style={{ fontWeight: 700, textTransform: 'capitalize', cursor: 'pointer' }}
+              title={podeEditar ? (grupoCheio ? 'Clique para revogar o grupo inteiro' : `Clique para conceder o grupo inteiro (${escopoMassa})`) : undefined}
+            >
+              {modulo}
+            </span>
+            <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>
+              {recursos.length} recurso(s){concedidasNoModulo ? ` · ${concedidasNoModulo} concedida(s)` : ''}
+            </span>
+            {podeEditar && (
+              <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+                <button className="btn btn-ghost" disabled={busy} onClick={() => setModulo(recursos, escopoMassa)} style={{ padding: '2px 8px', fontSize: 11 }} title={`Conceder o grupo (${escopoMassa})`}>
+                  <i className="ti ti-checkbox" /> Grupo
+                </button>
+                <button className="btn btn-ghost" disabled={busy} onClick={() => setModulo(recursos, '')} style={{ padding: '2px 8px', fontSize: 11 }} title="Revogar o grupo">
+                  <i className="ti ti-square" /> Limpar
+                </button>
+              </span>
+            )}
+          </div>
         </td>
       </tr>
       {aberto && recursos.map((r) => (

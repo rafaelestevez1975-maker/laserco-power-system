@@ -1,55 +1,93 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { moedaBR } from '@/lib/fmt'
-import { RelFiltros } from '@/components/relatorios/RelFiltros'
 import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
-import { resolveRelRange, asTsStart } from '@/components/relatorios/relPeriodo'
+import { asTsStart } from '@/components/relatorios/relPeriodo'
 import { DashTabs, dashQuery } from '@/components/dashboards/DashTabs'
-import { contar, pullLancamentos, ultimosMeses, rotuloMes, type LancMin } from '@/components/dashboards/agg'
+import { DashFiltros } from '@/components/dashboards/DashFiltros'
+import { resolveDashRange } from '@/components/dashboards/dashPeriodo'
+import { GerServBusca } from '@/components/dashboards/GerServBusca'
+import {
+  contar, pullLancamentos, somaLanc, somaPorChave, pullServicosPorOS,
+  ultimosMeses, rotuloMes,
+} from '@/components/dashboards/agg'
+import { pullOS } from '@/lib/relatorios'
 
 export const dynamic = 'force-dynamic'
 
-type SP = { periodo?: string; di?: string; df?: string }
+type SP = { periodo?: string; di?: string; df?: string; unidade?: string }
 
-const somaVal = (rows: LancMin[]) => rows.reduce((a, r) => a + (r.valor || 0), 0)
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)
+
+const FORMA_LABEL: Record<string, string> = {
+  dinheiro: 'Dinheiro', pix: 'PIX', cartao_credito: 'Cartão de crédito', cartao_debito: 'Cartão de débito',
+  credito: 'Crédito', debito: 'Débito', boleto: 'Boleto', transferencia: 'Transferência',
+  link: 'Link de pagamento', credito_recorrente: 'Crédito Recorrente', cheque: 'Cheque', outros: 'Outros',
+}
 
 export default async function DashGerencialPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
   const ctx = await getSessionContext()
   const sb = await createClient()
-  const unidadeId = ctx?.activeUnitId ?? null
 
-  // Visão geral histórica → default '90d' (financeiro só tem histórico).
-  const periodo = sp.periodo || '90d'
-  const range = resolveRelRange(periodo, sp.di, sp.df)
+  const fixaTopo = ctx?.activeUnitId ?? null
+  const uniFiltro = fixaTopo ? null : (sp.unidade && sp.unidade !== 'todas' ? sp.unidade : null)
+  const unidadeId = fixaTopo ?? uniFiltro
+  const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
+  const unidadeNome = unidadeId ? (ctx?.activeUnitName ?? unidades.find((u) => u.id === unidadeId)?.nome ?? 'Unidade') : 'Todas as unidades'
+
+  // Default gerencial = 'Últimos 30 dias' (legado defPer).
+  const periodo = sp.periodo || '30d'
+  const range = resolveDashRange(periodo, sp.di, sp.df)
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // ── Agregados de topo (counts head:true + soma enxuta de receita) ──
+  // ── Agregados de topo (counts head:true + soma de receita + OS fechadas p/ serviços) ──
   const ag = { dateCol: 'inicio', gte: iniTs, lt: fimTs, unidadeId }
-  const [
-    totalAg,
-    concluido,
-    cancelado,
-    rec,
-  ] = await Promise.all([
+  const [totalAg, concluido, cancelado, rec, osFech] = await Promise.all([
     contar(sb, 'agendamentos', ag),
     contar(sb, 'agendamentos', { ...ag, eq: { status: 'concluido' } }),
     contar(sb, 'agendamentos', { ...ag, eq: { status: 'cancelado' } }),
     pullLancamentos(sb, 'receita', unidadeId, range.ini, range.fim),
+    pullOS(sb, { unidadeId, ini: range.ini, fim: range.fim, status: 'fechada' }),
   ])
-  const totalReceita = somaVal(rec.rows)
+  const totalReceita = somaLanc(rec.rows)
 
-  // Clientes novos no período (criado_em). Sem escopo por unidade: clientes.unidade_origem_id
-  // é sempre null na base lkii → contagem global, com nota honesta abaixo.
-  const novosClientes = await contar(sb, 'clientes', { dateCol: 'criado_em', gte: range.ini, lt: range.fim })
+  // ── Serviços (faturamento + sessões reais via os_servicos das OS fechadas) ──
+  const servicos = await pullServicosPorOS(sb, osFech.rows.map((o) => o.id))
+  const totServFat = servicos.reduce((a, s) => a + s.faturamento, 0)
+  const totSessoes = servicos.reduce((a, s) => a + s.sessoes, 0)
+  const ranked = [...servicos].sort((a, b) => b.faturamento - a.faturamento)
+  const topServ = ranked.slice(0, 10)
 
-  // ── Séries mensais (12 meses) ──
+  // ── 5 KPIs do legado (Faturamento/Ticket/Atendimentos/Sessões/Taxa de retorno) ──
+  const atendimentos = concluido // agendamentos concluídos = atendimentos realizados
+  const sessoesReal = totSessoes > 0 ? totSessoes : atendimentos // sessões via os_servicos; fallback p/ atendimentos
+  const ticketMedio = atendimentos > 0 ? totalReceita / atendimentos : 0
+  const taxaRetorno = pct(concluido, totalAg) // % de comparecimento como proxy de retorno/efetividade
+
+  const kpis: RelKpi[] = [
+    { label: 'Faturamento no período', value: moedaBR(totalReceita), icon: 'ti-currency-dollar' },
+    { label: 'Ticket médio', value: moedaBR(ticketMedio), icon: 'ti-receipt' },
+    { label: 'Atendimentos', value: atendimentos.toLocaleString('pt-BR'), icon: 'ti-user-check' },
+    { label: 'Sessões realizadas', value: sessoesReal.toLocaleString('pt-BR'), icon: 'ti-checkbox' },
+    { label: 'Taxa de retorno', value: `${taxaRetorno}%`, icon: 'ti-rotate', delta: `${concluido.toLocaleString('pt-BR')} de ${totalAg.toLocaleString('pt-BR')} agend.`, deltaTone: 'flat' },
+  ]
+
+  // ── Widget: Faturamento por forma de pagamento (real, lancamentos_financeiros) ──
+  const porForma = somaPorChave(rec.rows, (r) => r.forma_pagamento || 'outros')
+  const formaRows: BarRow[] = [...porForma.entries()]
+    .map(([k, v]) => ({ label: FORMA_LABEL[k] ?? k, value: v, display: moedaBR(v) }))
+    .sort((a, b) => b.value - a.value)
+
+  // ── Widget: Top 10 serviços por faturamento e por sessões ──
+  const topFatRows: BarRow[] = topServ.map((s) => ({ label: s.nome, value: s.faturamento, display: moedaBR(s.faturamento) }))
+  const topSessRows: BarRow[] = [...ranked].sort((a, b) => b.sessoes - a.sessoes).slice(0, 10)
+    .map((s) => ({ label: s.nome, value: s.sessoes, display: `${s.sessoes} sess.` }))
+
+  // ── Séries mensais (12 meses) p/ a tabela ──
   const meses = ultimosMeses(range.fim, 12)
-
-  // Receita por mês a partir das linhas já carregadas.
   const recPorMes = new Map<string, number>()
   for (const r of rec.rows) {
     if (!r.data_competencia) continue
@@ -58,32 +96,15 @@ export default async function DashGerencialPage({ searchParams }: { searchParams
   }
   const serieReceita: BarRow[] = meses.map((m) => ({ label: rotuloMes(m.ym), value: recPorMes.get(m.ym) || 0 }))
 
-  // Clientes novos por mês (1 count head:true por mês = 12 queries baratas).
-  const novosPorMes = await Promise.all(
-    meses.map((m) => contar(sb, 'clientes', { dateCol: 'criado_em', gte: m.ini, lt: m.fim })),
-  )
-  const serieClientes: BarRow[] = meses.map((m, i) => ({ label: rotuloMes(m.ym), value: novosPorMes[i], display: novosPorMes[i].toLocaleString('pt-BR') }))
-
-  // Agendamentos por mês.
-  const agPorMes = await Promise.all(
-    meses.map((m) => {
-      const a = asTsStart(m.ini)
-      const b = asTsStart(m.fim)
-      return contar(sb, 'agendamentos', { dateCol: 'inicio', gte: a, lt: b, unidadeId })
-    }),
-  )
-  const serieAg: BarRow[] = meses.map((m, i) => ({ label: rotuloMes(m.ym), value: agPorMes[i], display: agPorMes[i].toLocaleString('pt-BR') }))
-
-  const taxaConclusao = pct(concluido, totalAg)
-  const taxaCancel = pct(cancelado, totalAg)
-  const mesesComRec = serieReceita.filter((m) => m.value > 0).length
-
-  const kpis: RelKpi[] = [
-    { label: 'Receita no período', value: moedaBR(totalReceita), icon: 'ti-cash', delta: mesesComRec > 0 ? `${moedaBR(totalReceita / mesesComRec)}/mês` : undefined, deltaTone: 'flat' },
-    { label: 'Agendamentos', value: totalAg.toLocaleString('pt-BR'), icon: 'ti-calendar-stats', delta: `${taxaConclusao}% concluídos`, deltaTone: 'up' },
-    { label: 'Cancelamentos', value: cancelado.toLocaleString('pt-BR'), icon: 'ti-calendar-x', delta: `${taxaCancel}% do total`, deltaTone: taxaCancel > 25 ? 'down' : 'flat' },
-    { label: 'Clientes novos', value: novosClientes.toLocaleString('pt-BR'), icon: 'ti-user-plus' },
-  ]
+  const exportData = {
+    nome: 'dashboard-gerencial',
+    header: ['#', 'Serviço', 'Faturamento', '% do total', 'Sessões', 'Ticket médio'],
+    rows: topServ.map((s, i) => [
+      i + 1, s.nome, moedaBR(s.faturamento),
+      `${totServFat > 0 ? ((s.faturamento / totServFat) * 100).toFixed(1) : '0,0'}%`,
+      s.sessoes, moedaBR(s.sessoes > 0 ? s.faturamento / s.sessoes : 0),
+    ]) as (string | number)[][],
+  }
 
   return (
     <div className="view active">
@@ -91,57 +112,76 @@ export default async function DashGerencialPage({ searchParams }: { searchParams
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '0 0 6px' }}>
         <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Dashboard Gerencial</h2>
-        <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-          {range.label} · {unidadeId ? ctx?.activeUnitName : 'Todas as unidades'}
-        </span>
+        <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>{range.label} · {unidadeNome}</span>
       </div>
 
-      <RelFiltros periodo={periodo} di={sp.di || ''} df={sp.df || ''} basePath="/dashboards/gerencial" />
+      <DashFiltros
+        periodo={periodo}
+        di={sp.di || ''}
+        df={sp.df || ''}
+        basePath="/dashboards/gerencial"
+        unidades={fixaTopo ? [] : unidades}
+        unidade={sp.unidade || 'todas'}
+        exportData={topServ.length > 0 ? exportData : undefined}
+      />
 
       <RelKpis kpis={kpis} />
 
+      <GerServBusca servicos={servicos} />
+
       <div className="dash-grid" style={{ marginBottom: 16 }}>
+        <BarChart title="Top 10 serviços — faturamento" icon="ti-sparkles" rows={topFatRows} gold asMoeda emptyMsg="Sem vendas de serviço no período (OS fechadas)." />
+        <BarChart title="Top 10 serviços — sessões realizadas" icon="ti-checkbox" rows={topSessRows} emptyMsg="Sem sessões no período." />
+        <BarChart title="Faturamento por forma de pagamento" icon="ti-credit-card" rows={formaRows} gold asMoeda emptyMsg="Sem receita lançada no período." />
         <BarChart title="Receita por mês" icon="ti-chart-bar" rows={serieReceita} gold asMoeda emptyMsg="Sem receita no período." />
-        <BarChart title="Agendamentos por mês" icon="ti-calendar-stats" rows={serieAg} emptyMsg="Sem agendamentos no período." />
-        <BarChart title="Clientes novos por mês" icon="ti-user-plus" rows={serieClientes} gold emptyMsg="Sem clientes novos no período." />
       </div>
 
-      <div className="rel-card">
-        <div className="rel-card-h" style={{ marginBottom: 12, cursor: 'default' }}>
-          <span>
-            <i className="ti ti-table" /> Resumo mensal
-          </span>
+      <div style={{ marginTop: 4 }}>
+        <div className="set-sec" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 8px' }}>
+          Top 10 serviços — detalhamento (com % do total)
         </div>
-        <div className="cli-scroll">
-          <table className="cli-table">
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th className="num-r">Receita</th>
-                <th className="num-r">Agendamentos</th>
-                <th className="num-r">Clientes novos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meses.map((m, i) => (
-                <tr key={m.ym}>
-                  <td style={{ color: 'var(--text-2)' }}>{rotuloMes(m.ym)}</td>
-                  <td className="num-r">{moedaBR(recPorMes.get(m.ym) || 0)}</td>
-                  <td className="num-r">{agPorMes[i].toLocaleString('pt-BR')}</td>
-                  <td className="num-r">{novosPorMes[i].toLocaleString('pt-BR')}</td>
+        <div className="rel-card">
+          <div className="cli-scroll">
+            <table className="cli-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Serviço</th>
+                  <th className="num-r">Faturamento</th>
+                  <th className="num-r">% do total</th>
+                  <th className="num-r">Sessões</th>
+                  <th className="num-r">Ticket médio</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 10 }}>
-          <i className="ti ti-info-circle" /> Clientes novos são contados globalmente (a base lkii não vincula
-          cliente à unidade de origem). Receita e agendamentos respeitam a unidade ativa.
+              </thead>
+              <tbody>
+                {topServ.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
+                      Nenhuma venda de serviço (OS fechada) no período selecionado.
+                    </td>
+                  </tr>
+                )}
+                {topServ.map((s, i) => (
+                  <tr key={s.nome}>
+                    <td>{i + 1}</td>
+                    <td style={{ color: 'var(--text-2)' }}>{s.nome}</td>
+                    <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(s.faturamento)}</td>
+                    <td className="num-r">{totServFat > 0 ? ((s.faturamento / totServFat) * 100).toFixed(1) : '0,0'}%</td>
+                    <td className="num-r">{s.sessoes.toLocaleString('pt-BR')}</td>
+                    <td className="num-r">{moedaBR(s.sessoes > 0 ? s.faturamento / s.sessoes : 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* TODO(legado: buildDashb/gerencial): comparativo vs período anterior, metas e ticket por
-          unidade dependem de tabela de metas e de vínculo cliente↔unidade — indisponíveis no lkii atual. */}
+      <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 12 }}>
+        <i className="ti ti-info-circle" /> Faturamento por serviço/sessões vem das OS <b>fechadas</b> do período (os_servicos);
+        forma de pagamento e faturamento total vêm de lançamentos financeiros. Atendimentos = agendamentos concluídos.
+        {(osFech.capped || rec.capped) && ' Período amplo: agregação limitada aos primeiros registros — refine o período.'}
+      </div>
     </div>
   )
 }

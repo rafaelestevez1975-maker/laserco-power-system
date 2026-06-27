@@ -13,6 +13,8 @@ export type NovoChamadoInput = {
   email_cliente?: string
   canal: string
   unidade_id?: string | null
+  tipo?: string
+  data_reclamacao?: string
   motivo_label?: string
   prioridade?: string
   fase?: string
@@ -27,6 +29,10 @@ export type NovoChamadoInput = {
 
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
 const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
+// Legado: tipo da unidade (Franquia/Própria) e data da reclamação (sacForm 9243/9246).
+// sac_tickets não tem colunas próprias para isso → registramos no prefixo de observações
+// (mesmo padrão da importação, que grava "Reclamação: <data>").
+const TIPOS = ['Franquia', 'Própria']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 
 /** Converte "1.234,56" / "1234.56" / number em número (ou null). */
@@ -60,6 +66,12 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
   }
   if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
 
+  // Tipo e data da reclamação não têm coluna própria → vão no prefixo das observações.
+  const tipo = TIPOS.includes((input.tipo || '').trim()) ? (input.tipo || '').trim() : ''
+  const dataRecl = (input.data_reclamacao || '').trim()
+  const prefixo = [tipo ? `Tipo: ${tipo}` : '', dataRecl ? `Reclamação: ${dataRecl}` : ''].filter(Boolean).join(' · ')
+  const observacoes = [prefixo, input.observacoes?.trim() || ''].filter(Boolean).join(' · ') || null
+
   const { error } = await sb.from('sac_tickets').insert({
     empresa_id,
     unidade_id: input.unidade_id || null,
@@ -79,7 +91,7 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
     valor_devolucao: parseNum(input.valor_devolucao),
     multa_aplicada: !!input.multa_aplicada,
     pago: !!input.pago,
-    observacoes: input.observacoes?.trim() || null,
+    observacoes,
   })
 
   if (error) {
