@@ -42,10 +42,25 @@ export default async function ServicosPage({ searchParams }: { searchParams: Pro
   const kpiInativos = kpiTotal - kpiAtivos
   const kpiComiss = comissRes.count ?? 0
 
-  // ── Grupos = valores distintos de servicos.grupo (não há tabela de grupos no backend) ──
-  // Puxa só a coluna grupo (148 linhas, leve) e deduplica server-side com contagem.
-  const { data: gruposRaw } = await sb.from('servicos').select('grupo, ativo')
+  // ── Grupos: fonte ÚNICA com a tela /cadastros/grupo-servicos ──
+  // A lista de grupos é o catálogo real (tabela grupo_servicos) UNIDO aos valores de
+  // servicos.grupo. Assim as duas telas concordam: um grupo cadastrado sem serviço aparece
+  // aqui com contagem 0, e um grupo livre digitado em servicos.grupo (que não exista na
+  // tabela) aparece nas duas. Antes /servicos ignorava a tabela e os números divergiam.
+  // range() explícito: sem ele o PostgREST corta em 1000 linhas silenciosamente, o que
+  // truncaria a contagem de grupos e divergiria dos KPIs (count:exact) se o catálogo crescer.
+  const [gruposServRes, gruposTabRes] = await Promise.all([
+    sb.from('servicos').select('grupo, ativo').range(0, 49999),
+    sb.from('grupo_servicos').select('nome, ativo').order('ordem', { ascending: true }).order('nome', { ascending: true }),
+  ])
+  const gruposRaw = gruposServRes.data
   const contagem = new Map<string, { total: number; ativos: number }>()
+  // Semeia com os grupos cadastrados na tabela (ativos), para que apareçam mesmo com 0 serviços.
+  for (const g of (gruposTabRes.data ?? []) as { nome: string | null; ativo: boolean | null }[]) {
+    if (g.ativo === false) continue
+    const nome = (g.nome || '').trim()
+    if (nome && !contagem.has(nome)) contagem.set(nome, { total: 0, ativos: 0 })
+  }
   for (const r of (gruposRaw ?? []) as { grupo: string | null; ativo: boolean | null }[]) {
     const g = (r.grupo || '').trim()
     if (!g) continue

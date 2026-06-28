@@ -22,10 +22,11 @@ type Props = {
   podeEscrever: boolean
   filtros: { ativo: string; nome: string }
   contador: { total: number; ativos: number }
+  exibindo: number
   semTabela: boolean
 }
 
-export function OrigensManager({ origens, podeEscrever, filtros, contador, semTabela }: Props) {
+export function OrigensManager({ origens, podeEscrever, filtros, contador, exibindo, semTabela }: Props) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -159,7 +160,11 @@ export function OrigensManager({ origens, podeEscrever, filtros, contador, semTa
             </table>
           </div>
           <div className="cli-foot">
-            <span>{contador.total} registros encontrados · {contador.ativos} ativos</span>
+            <span>
+              {exibindo === contador.total
+                ? `${contador.total} registros encontrados · ${contador.ativos} ativos`
+                : `Exibindo ${exibindo} de ${contador.total} registros · ${contador.ativos} ativos`}
+            </span>
           </div>
         </div>
       )}

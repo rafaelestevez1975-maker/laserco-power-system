@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { SEG_CAMPOS, segCount, segLabel, type SegCriterio } from '@/lib/automacoes'
+import { useState } from 'react'
+import { SEG_CAMPOS, segLabel, type SegCriterio } from '@/lib/automacoes'
 
 /**
  * Segmentador de base (legado segModal 6678 / SEG_CAMPOS 6645).
- * Combina vários critérios e estima o nº de contatos (segCount). Ao confirmar,
- * chama onApply(criterios). Os valores de serviço/unidade vêm de dados reais.
+ * Combina vários critérios. Ao confirmar, chama onApply(criterios) e o servidor
+ * conta DE VERDADE os contatos na base de clientes (não mostramos mais a
+ * estimativa fabricada do legado — 1248 × fatores fixos — que não batia com o real).
+ * Os valores de serviço/unidade vêm de dados reais.
  */
 export function SegmentadorModal({
   open, titulo, aplicarLabel, servicos, unidades, onClose, onApply, busy,
@@ -15,7 +17,6 @@ export function SegmentadorModal({
   onClose: () => void; onApply: (criterios: SegCriterio[]) => void; busy?: boolean
 }) {
   const [crit, setCrit] = useState<SegCriterio[]>([{ campo: 'verificado', op: 'é', valor: 'Sim' }])
-  const total = useMemo(() => segCount(crit), [crit])
 
   if (!open) return null
   const st: React.CSSProperties = { padding: '7px 8px', border: '1px solid var(--line-strong, #ddd)', borderRadius: 8, fontFamily: 'inherit', fontSize: 12.5 }
@@ -68,7 +69,7 @@ export function SegmentadorModal({
             </div>
           ))}
           <button className="btn" onClick={add} style={{ marginTop: 2 }}><i className="ti ti-plus" /> Adicionar critério</button>
-          <div style={{ marginTop: 14, fontWeight: 800, fontSize: 15, color: 'var(--brand-600)' }}>≈ {total.toLocaleString('pt-BR')} clientes no segmento</div>
+          <div style={{ marginTop: 14, fontWeight: 700, fontSize: 13, color: 'var(--text-2)' }}><i className="ti ti-users" /> O total real de clientes do segmento é calculado ao gerar a base.</div>
           <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>{segLabel(crit)}</div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '12px 18px', borderTop: '1px solid var(--line)' }}>

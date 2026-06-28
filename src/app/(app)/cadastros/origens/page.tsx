@@ -28,19 +28,28 @@ export default async function OrigensPage({ searchParams }: { searchParams: Prom
   else if (ativo === 'Não') query = query.eq('ativo', false)
   if (nome) query = query.ilike('nome', `%${nome}%`)
 
+  // Contador do legado: "X registros encontrados · Y ativos" usava o TOTAL
+  // absoluto (ORIGENS.length), independente dos filtros. Conta o catálogo inteiro
+  // com count exato (head:true), sem trazer linhas.
+  const [totalRes, ativosRes] = await Promise.all([
+    sb.from('origens_cliente').select('id', { count: 'exact', head: true }),
+    sb.from('origens_cliente').select('id', { count: 'exact', head: true }).eq('ativo', true),
+  ])
+
   const { data, error } = await query
   const origens = (data ?? []) as OrigemRow[]
-  const semTabela = !!error
+  const semTabela = !!error || !!totalRes.error
 
-  // Contador do legado: "X registros encontrados · Y ativos".
-  const ativos = origens.filter((o) => o.ativo !== false).length
+  const total = totalRes.count ?? 0
+  const ativos = ativosRes.count ?? 0
 
   return (
     <OrigensManager
       origens={origens}
       podeEscrever={podeEscrever}
       filtros={{ ativo, nome }}
-      contador={{ total: origens.length, ativos }}
+      contador={{ total, ativos }}
+      exibindo={origens.length}
       semTabela={semTabela}
     />
   )

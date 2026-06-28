@@ -18,10 +18,20 @@ export default async function ComunicadosPage() {
 
   const { data: comsRaw } = await sb.from('comunicados').select('*').order('criado_em', { ascending: false }).limit(500)
 
-  // Agregado de leituras (via service-role, só contagem)  taxa correta p/ qualquer papel.
-  const { data: leiturasAll } = await admin.from('comunicado_leituras').select('comunicado_id')
+  // Pool de destinatários = perfis ATIVOS AGORA (mesma base do roster em rosterLeitura/
+  // total_destinatarios em criarComunicado). Mantém LISTA e RELATÓRIO sempre coerentes.
+  const { data: ativosRaw } = await admin.from('perfis_usuario').select('id').eq('ativo', true)
+  const ativos = new Set(((ativosRaw ?? []) as { id: string }[]).map((p) => p.id))
+  const totalDestinatarios = ativos.size
+
+  // Agregado de leituras (via service-role, só contagem) — conta APENAS cientes de perfis
+  // ativos hoje (espelha rosterLeitura: cientes = ativos que leram). Evita lidos > dest.
+  const { data: leiturasAll } = await admin.from('comunicado_leituras').select('comunicado_id, perfil_id')
   const countMap: Record<string, number> = {}
-  for (const r of (leiturasAll ?? []) as { comunicado_id: string }[]) countMap[r.comunicado_id] = (countMap[r.comunicado_id] ?? 0) + 1
+  for (const r of (leiturasAll ?? []) as { comunicado_id: string; perfil_id: string }[]) {
+    if (!ativos.has(r.perfil_id)) continue
+    countMap[r.comunicado_id] = (countMap[r.comunicado_id] ?? 0) + 1
+  }
 
   // "Ciente" do próprio usuário (para o gate de leitura obrigatória).
   let myCiente: string[] = []
@@ -38,7 +48,9 @@ export default async function ComunicadosPage() {
     obrigatorio: !!r.leitura_obrigatoria,
     email: !!r.enviar_email,
     status: (r.status as Comunicado['status']) ?? 'publicado',
-    dest: r.total_destinatarios ?? 0,
+    // dest = perfis ativos AGORA (idêntico ao roster.length do relatório), não o
+    // snapshot congelado em total_destinatarios — assim a LISTA bate com o RELATÓRIO.
+    dest: totalDestinatarios,
     lidos: countMap[r.id] ?? 0,
     autor: r.autor_nome || '',
     quando: r.publicado_em || r.agendado_para || r.criado_em,

@@ -75,11 +75,21 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
   const conectadas = unidadesFiscais.filter((u) => u.conectada).length
 
   // ── KPIs das notas emitidas (count por status + soma de valores). ──
+  // Os KPIs DEVEM honrar os MESMOS filtros da tabela (competência/unidade/tipo) para
+  // que os números batam com a lista exibida. (Antes os KPIs ignoravam sp.* e somavam
+  // só por unidade ativa → tabela filtrada divergia dos KPIs — mesma classe do SAC.)
+  // O filtro de status NÃO é aplicado aos KPIs porque cada KPI já É uma quebra por status.
   let notas: NotaRow[] = []
+  let listaTotal = 0 // total real de linhas no recorte (count exact) — p/ "mostrando N de TOTAL"
+  let valorCapped = false // soma de valores truncada pelo teto de segurança?
   let kpiEmitidas = 0
   let kpiCanceladas = 0
   let kpiProcessando = 0
   let kpiValorTotal = 0
+  // Teto de segurança ao paginar a soma de valores (a tabela `nfse` é pequena, mas
+  // SEMPRE escopamos por unidade/competência/tipo). Acima do teto sinalizamos truncamento.
+  const VAL_CAP = 50000
+  const VAL_PAGE = 1000
   if (!semTabela) {
     type Raw = {
       id: string
@@ -93,50 +103,80 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
       criado_em: string | null
       cliente?: { nome: string | null } | { nome: string | null }[] | null
     }
+    // Recorte ativo (idêntico p/ lista, count e soma).
+    const fUni = (sp.unidade || activeUnitId || '').trim()
+    const fComp = sp.comp || ''
+    const fTipo = sp.tipo === 'nfse' || sp.tipo === 'nfe' ? sp.tipo : ''
+    const fStatus = ['autorizada', 'cancelada', 'processando', 'erro'].includes(sp.status || '') ? sp.status! : ''
+
     let listQ = sb
       .from('nfse')
       .select('id, numero, competencia, tipo, fato_gerador, cliente_nome, valor, status, criado_em, cliente:clientes(nome)')
       .order('criado_em', { ascending: false, nullsFirst: false })
       .range(0, 199)
-    const fUni = (sp.unidade || activeUnitId || '').trim()
     if (fUni) listQ = listQ.eq('unidade_id', fUni)
-    if (sp.comp) listQ = listQ.eq('competencia', sp.comp)
-    if (sp.tipo === 'nfse' || sp.tipo === 'nfe') listQ = listQ.eq('tipo', sp.tipo)
-    if (['autorizada', 'cancelada', 'processando', 'erro'].includes(sp.status || '')) listQ = listQ.eq('status', sp.status!)
-    const { data: rowsRaw } = await listQ
-    notas = ((rowsRaw ?? []) as Raw[]).map((r) => ({
-      id: r.id,
-      numero: r.numero,
-      competencia: r.competencia,
-      tipo: r.tipo,
-      fato_gerador: r.fato_gerador,
-      clienteNome: r.cliente_nome || one(r.cliente)?.nome || null,
-      valor: Number(r.valor) || 0,
-      status: r.status,
-    }))
-    // KPIs (sem filtro de status/tipo) — count por status no escopo de unidade ativa.
+    if (fComp) listQ = listQ.eq('competencia', fComp)
+    if (fTipo) listQ = listQ.eq('tipo', fTipo)
+    if (fStatus) listQ = listQ.eq('status', fStatus)
+    const { data: rowsRaw, error: listErr } = await listQ
+    if (!listErr) {
+      notas = ((rowsRaw ?? []) as Raw[]).map((r) => ({
+        id: r.id,
+        numero: r.numero,
+        competencia: r.competencia,
+        tipo: r.tipo,
+        fato_gerador: r.fato_gerador,
+        clienteNome: r.cliente_nome || one(r.cliente)?.nome || null,
+        valor: Number(r.valor) || 0,
+        status: r.status,
+      }))
+    }
+
+    // KPIs — count por status APLICANDO os filtros comp/unidade/tipo (não o de status).
     // Tratamos o builder como um tipo leve (CountQuery) para não estourar a
     // profundidade de instanciação do PostgREST no TS (TS2589) — igual à página de OS.
     type CountRes = { count: number | null }
     type CountQuery = { eq(c: string, v: unknown): CountQuery }
     const base = (): CountQuery => {
       let q = sb.from('nfse').select('id', { count: 'exact', head: true }) as unknown as CountQuery
-      if (activeUnitId) q = q.eq('unidade_id', activeUnitId)
+      if (fUni) q = q.eq('unidade_id', fUni)
+      if (fComp) q = q.eq('competencia', fComp)
+      if (fTipo) q = q.eq('tipo', fTipo)
       return q
     }
-    const [emRes, caRes, prRes] = await Promise.all([
+    // Total real do recorte (já com o filtro de status, p/ casar com a lista capada).
+    const totalBase = (): CountQuery => { let q = base(); if (fStatus) q = q.eq('status', fStatus); return q }
+    const [emRes, caRes, prRes, totRes] = await Promise.all([
       base().eq('status', 'autorizada') as unknown as PromiseLike<CountRes>,
       base().eq('status', 'cancelada') as unknown as PromiseLike<CountRes>,
       base().eq('status', 'processando') as unknown as PromiseLike<CountRes>,
+      totalBase() as unknown as PromiseLike<CountRes>,
     ])
     kpiEmitidas = emRes.count ?? 0
     kpiCanceladas = caRes.count ?? 0
     kpiProcessando = prRes.count ?? 0
-    // Soma de valores das notas autorizadas (no escopo da unidade ativa).
-    let valQ = sb.from('nfse').select('valor').eq('status', 'autorizada')
-    if (activeUnitId) valQ = valQ.eq('unidade_id', activeUnitId)
-    const { data: valRows } = await valQ.range(0, 4999)
-    kpiValorTotal = ((valRows ?? []) as { valor: number | null }[]).reduce((a, r) => a + (Number(r.valor) || 0), 0)
+    listaTotal = totRes.count ?? 0
+
+    // Soma de valores das notas autorizadas no recorte (comp/unidade/tipo) — paginada
+    // p/ não subdimensionar em volume; sinaliza truncamento se exceder o teto.
+    type ValQuery = {
+      eq(c: string, v: unknown): ValQuery
+      range(a: number, b: number): PromiseLike<{ data: { valor: number | null }[] | null; error: { message?: string } | null }>
+    }
+    let off = 0
+    for (;;) {
+      let valQ = sb.from('nfse').select('valor').eq('status', 'autorizada') as unknown as ValQuery
+      if (fUni) valQ = valQ.eq('unidade_id', fUni)
+      if (fComp) valQ = valQ.eq('competencia', fComp)
+      if (fTipo) valQ = valQ.eq('tipo', fTipo)
+      const { data: valRows, error: valErr } = await valQ.range(off, off + VAL_PAGE - 1)
+      if (valErr) break
+      const batch = (valRows ?? []) as { valor: number | null }[]
+      kpiValorTotal += batch.reduce((a, r) => a + (Number(r.valor) || 0), 0)
+      if (batch.length < VAL_PAGE) break
+      off += VAL_PAGE
+      if (off >= VAL_CAP) { valorCapped = true; break }
+    }
   }
 
   // ── Clientes p/ o modal de emissão manual (cap leve). ──
@@ -157,6 +197,8 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
       unidades={unidadesFiscais}
       conectadas={conectadas}
       notas={notas}
+      listaTotal={listaTotal}
+      valorCapped={valorCapped}
       kpis={{ emitidas: kpiEmitidas, valorTotal: kpiValorTotal, canceladas: kpiCanceladas, processando: kpiProcessando }}
       clientes={clientes}
       activeUnitId={activeUnitId}

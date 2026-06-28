@@ -45,7 +45,9 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
     .filter((r) => (r.estoque_minimo ?? 0) > 0 && (r.estoque_atual ?? 0) <= (r.estoque_minimo ?? 0)).length
 
   // ── Grupos = valores distintos de produtos.grupo ──
-  const { data: gruposRaw } = await sb.from('produtos').select('grupo')
+  // range() explícito: sem ele o PostgREST corta em 1000 linhas silenciosamente, o que
+  // truncaria a lista de grupos e divergiria dos KPIs (count:exact) se o catálogo crescer.
+  const { data: gruposRaw } = await sb.from('produtos').select('grupo').range(0, 49999)
   const grupos = [...new Set(((gruposRaw ?? []) as { grupo: string | null }[])
     .map((r) => (r.grupo || '').trim())
     .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))

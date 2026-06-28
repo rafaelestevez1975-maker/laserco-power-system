@@ -7,11 +7,12 @@ import { renomearGrupo } from '@/app/(app)/servicos/actions'
 export type GrupoInfo = { nome: string; total: number; ativos: number }
 
 /**
- * "Grupo de serviços" = valores distintos de servicos.grupo (não há tabela de grupos
- * no backend lkii — 404 na introspecção). Exibimos como chips clicáveis (filtram a lista)
- * e, para gestor/admin, permitimos renomear (update em massa). Criar grupo = criar/editar
- * um serviço com o novo grupo (feito no modal de serviço). Excluir grupo não se aplica:
- * sumiria sozinho ao não restar nenhum serviço com aquele valor.
+ * "Grupo de serviços" = união da tabela de cadastro grupo_servicos com os valores
+ * distintos de servicos.grupo (mesma fonte usada em /cadastros/grupo-servicos, para que
+ * as duas telas concordem). Um grupo cadastrado sem serviço aparece com contagem 0.
+ * Exibimos como chips clicáveis (filtram a lista) e, para gestor/admin, permitimos
+ * renomear (update em massa dos serviços daquele grupo). Criar/excluir grupo é feito na
+ * tela de cadastro /cadastros/grupo-servicos.
  */
 export function GruposManager({
   grupos, semGrupo, grupoAtivo, podeEscrever,

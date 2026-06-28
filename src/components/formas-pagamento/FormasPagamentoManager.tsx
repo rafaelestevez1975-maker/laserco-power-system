@@ -29,6 +29,7 @@ type Props = {
   podeEscrever: boolean
   kpis: { total: number; ativos: number; cartoes: number }
   filtros: { ativo: string; nome: string }
+  total: number
   vazio: boolean
 }
 
@@ -36,7 +37,7 @@ function pct(v: number | null): string {
   return `${(v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, vazio }: Props) {
+export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, total, vazio }: Props) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -178,7 +179,13 @@ export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, va
             </table>
           </div>
           <div className="cli-foot">
-            <span>{formas.length === 0 ? 'Nenhum registro' : `Exibindo ${formas.length} forma(s)`}</span>
+            <span>
+              {formas.length === 0
+                ? 'Nenhum registro'
+                : formas.length === total
+                  ? `Exibindo ${formas.length} forma(s)`
+                  : `Exibindo ${formas.length} de ${total} forma(s)`}
+            </span>
           </div>
         </div>
       )}

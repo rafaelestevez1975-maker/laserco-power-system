@@ -29,18 +29,25 @@ export default async function FormasPagamentoPage({ searchParams }: { searchPara
   else if (ativo === 'Não') query = query.eq('ativo', false)
   if (nome) query = query.ilike('nome', `%${nome}%`)
 
+  // KPIs absolutos: catálogo INTEIRO, independente dos filtros da tela (o legado
+  // preservava o total). A lista de formas costuma ter ~30 itens — leve.
+  const todasRes = await sb
+    .from('formas_pagamento')
+    .select('nome, tipo, ativo')
+
   const { data, error } = await query
   // Se a migration ainda não foi aplicada (tabela inexistente), tratamos como vazio
   // com banner pedindo para aplicar a migration.
   const formas = (data ?? []) as FormaRow[]
-  const semTabela = !!error
+  const semTabela = !!error || !!todasRes.error
 
-  // KPIs sobre o conjunto carregado (lista costuma ter ~30 formas — leve).
+  // KPIs sobre o catálogo completo (não sobre o resultado filtrado).
   const cartoesRe = /Crédito|Débito|Link de Pagamento/i
+  const todas = (todasRes.data ?? []) as { nome: string | null; tipo: string | null; ativo: boolean | null }[]
   const kpis = {
-    total: formas.length,
-    ativos: formas.filter((r) => r.ativo !== false).length,
-    cartoes: formas.filter((r) => cartoesRe.test(`${r.tipo || ''} ${r.nome || ''}`)).length,
+    total: todas.length,
+    ativos: todas.filter((r) => r.ativo !== false).length,
+    cartoes: todas.filter((r) => cartoesRe.test(`${r.tipo || ''} ${r.nome || ''}`)).length,
   }
 
   return (
@@ -49,7 +56,8 @@ export default async function FormasPagamentoPage({ searchParams }: { searchPara
       podeEscrever={podeEscrever}
       kpis={kpis}
       filtros={{ ativo, nome }}
-      vazio={semTabela || formas.length === 0}
+      total={kpis.total}
+      vazio={semTabela || (kpis.total === 0)}
     />
   )
 }

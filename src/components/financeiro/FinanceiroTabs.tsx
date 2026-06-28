@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { moedaBR, dataBR } from '@/lib/fmt'
 import {
   STATUS_PILL, PRIO_PILL, FIN_CATS_REC, finPct, finFranqEmail, proximoPassoRegua,
-  SALDO_INICIAL_FLUXO, SALDO_INICIAL_PROJ, type ReguaPasso,
+  SALDO_INICIAL_PROJ, type ReguaPasso,
 } from '@/lib/financeiro'
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
@@ -42,8 +42,9 @@ function PrioPill({ pr }: { pr: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
 }
 
-export function FinanceiroTabs({ migracaoOk, recebiveis, contasPagar, conciliacao, config, hojeISO, tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, tabInicial = 'fluxo' }: {
   migracaoOk: boolean
+  truncado?: boolean
   recebiveis: Recebivel[]
   contasPagar: ContaPagar[]
   conciliacao: Conciliacao[]
@@ -70,7 +71,14 @@ export function FinanceiroTabs({ migracaoOk, recebiveis, contasPagar, conciliaca
         </div>
       )}
 
-      {tab === 'fluxo' && <FluxoTab recebiveis={recebiveis} contasPagar={contasPagar} config={config} />}
+      {truncado && (
+        <div className="rel-legend" style={{ background: '#FFF8E1', color: 'var(--text)', border: '1px solid var(--amber)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="ti ti-alert-triangle" style={{ color: 'var(--amber)', fontSize: 18 }} />
+          <span>O volume de lançamentos ultrapassou o limite de leitura desta tela — <b>os totais e KPIs abaixo são parciais</b> (somam apenas os registros carregados). Filtre por período/unidade para ver os valores completos.</span>
+        </div>
+      )}
+
+      {tab === 'fluxo' && <FluxoTab recebiveis={recebiveis} contasPagar={contasPagar} config={config} hojeISO={hojeISO} />}
       {tab === 'dre' && <DreTab recebiveis={recebiveis} contasPagar={contasPagar} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
@@ -86,7 +94,7 @@ export function FinanceiroTabs({ migracaoOk, recebiveis, contasPagar, conciliaca
 // =============================================================================
 // FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
 // =============================================================================
-function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; config: FinConfig }) {
+function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; config: FinConfig; hojeISO: string }) {
   const aReceber = sum(recebiveis.filter((r) => r.status === 'aberto'), (r) => r.valor)
   const recebido = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
   const atrasado = sum(recebiveis.filter((r) => r.status === 'atrasado'), (r) => r.valor)
@@ -104,13 +112,43 @@ function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]
     { ic: 'ti-wallet', cor: '#6A1B9A', bg: '#F3E5F5', lbl: 'Resultado projetado', val: resultado, sub: 'Entradas − saídas do mês' },
   ]
 
-  // série 6 meses (legado: valores mock; mês atual usa os reais)
-  const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']
-  const ent = [642, 705, 688, 734, (aReceber + recebido + atrasado) / 1000, 812]
-  const sai = [598, 640, 612, 665, (aPagar + pago) / 1000, 690]
+  // Série 6 meses — agora 100% dos dados reais (recebíveis e contas a pagar),
+  // bucketizados pela data efetiva. Meses sem lançamento ficam em 0 (estado honesto),
+  // nunca números inventados. (Antes: Jan–Abr/Jun eram mock; só o mês atual era real.)
+  const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  const hoje = new Date(hojeISO + 'T00:00:00')
+  // janela: 6 meses terminando no mês corrente
+  const janela = Array.from({ length: 6 }, (_v, k) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - k), 1)
+    return { ano: d.getFullYear(), mes: d.getMonth(), label: MES_ABREV[d.getMonth()], ent: 0, sai: 0 }
+  })
+  const idxDe = (iso: string | null): number => {
+    if (!iso) return -1
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return -1
+    return janela.findIndex((b) => b.ano === d.getFullYear() && b.mes === d.getMonth())
+  }
+  // Entradas: data de pagamento quando baixado, senão vencimento (data prevista de entrada).
+  for (const r of recebiveis) {
+    if (r.status === 'suspenso') continue
+    const i = idxDe(r.data_pagamento || r.vencimento)
+    if (i >= 0) janela[i].ent += Number(r.valor) || 0
+  }
+  // Saídas: contas a pagar (não suspensas) pelo vencimento.
+  for (const p of contasPagar) {
+    if (p.status === 'suspenso') continue
+    const i = idxDe(p.vencimento)
+    if (i >= 0) janela[i].sai += Number(p.valor) || 0
+  }
+  const meses = janela.map((b) => b.label)
+  // mantém a escala dos gráficos em milhares (÷1000), como no layout original
+  const ent = janela.map((b) => b.ent / 1000)
+  const sai = janela.map((b) => b.sai / 1000)
+  const semSerie = janela.every((b) => b.ent === 0 && b.sai === 0)
   const max = Math.max(...ent, ...sai) * 1.1 || 1
-  let acc = SALDO_INICIAL_FLUXO / 1000
-  const saldoSerie = meses.map((_m, i) => { acc += ent[i] - sai[i]; return acc })
+  // Saldo acumulado a partir do resultado real do período (sem saldo inicial inventado).
+  let acc = 0
+  const saldoSerie = janela.map((_b, i) => { acc += ent[i] - sai[i]; return acc })
 
   // composição dos recebíveis (não pagos, não suspensos) por categoria
   const naoFechados = recebiveis.filter((r) => r.status !== 'pago' && r.status !== 'suspenso')
@@ -136,9 +174,12 @@ function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 14, marginBottom: 6 }}>
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Fluxo de caixa · 6 meses</div>
+          {semSerie ? (
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '24px 4px' }}>Sem lançamentos nos últimos 6 meses.</div>
+          ) : (<>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 4px 0' }}>
             {meses.map((m, i) => (
-              <div key={m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+              <div key={`${m}-${i}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120 }}>
                   <div title={`Entradas ${moedaBR(ent[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#27AE60', height: Math.max(3, (ent[i] / max) * 120) }} />
                   <div title={`Saídas ${moedaBR(sai[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#E74C3C', height: Math.max(3, (sai[i] / max) * 120) }} />
@@ -151,6 +192,7 @@ function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]
             <span><i className="ti ti-square-rounded-filled" style={{ color: '#27AE60' }} /> Entradas</span>
             <span><i className="ti ti-square-rounded-filled" style={{ color: '#E74C3C' }} /> Saídas</span>
           </div>
+          </>)}
         </div>
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Composição dos recebíveis</div>
@@ -167,14 +209,15 @@ function FluxoTab({ recebiveis, contasPagar, config }: { recebiveis: Recebivel[]
       </div>
 
       <div className="rel-card">
-        <div className="set-sec" style={{ marginTop: 0 }}>Projeção de caixa (mensal)</div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Movimentação de caixa (mensal · realizado/previsto)</div>
         <div className="cli-scroll">
           <table className="cli-table">
             <thead><tr><th>Mês</th><th className="num-r">Entradas</th><th className="num-r">Saídas</th><th className="num-r">Resultado</th><th className="num-r">Saldo acumulado</th></tr></thead>
             <tbody>
-              {meses.map((m, i) => (
-                <tr key={m}>
-                  <td>{m}/2026</td>
+              {semSerie && <tr><td colSpan={5} style={{ padding: 20, color: 'var(--text-3)' }}>Sem lançamentos nos últimos 6 meses.</td></tr>}
+              {!semSerie && janela.map((b, i) => (
+                <tr key={`${b.ano}-${b.mes}`}>
+                  <td>{b.label}/{b.ano}</td>
                   <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(ent[i] * 1000)}</td>
                   <td className="num-r" style={{ color: 'var(--red)' }}>{moedaBR(sai[i] * 1000)}</td>
                   <td className="num-r" style={{ fontWeight: 700, color: (ent[i] - sai[i]) >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR((ent[i] - sai[i]) * 1000)}</td>

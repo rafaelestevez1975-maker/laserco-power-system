@@ -176,8 +176,12 @@ function TabCampanhas({ campanhas, canais, listas, templates, activeUnitId, pode
 
 function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: CampanhaRow; onBack: () => void; onCRM: (id: string) => void; busy: boolean; podeEscrever: boolean }) {
   const env = camp.enviadas || 0
-  const conv = Math.round(camp.respostas * 0.6)
-  const funnel: [string, number][] = [['Enviadas', env], ['Entregues', camp.entregues], ['Lidas', camp.lidas], ['Respostas', camp.respostas], ['Conversões', conv]]
+  // entregues/lidas/respostas só são preenchidas por webhook da UAZAPI (writeback de
+  // status), que ainda não existe — então ficam em 0. Mostramos os zeros reais e um
+  // aviso honesto, em vez de fabricar Conversões (respostas×0.6) e Custo (×R$0,08)
+  // que o legado inventava.
+  const semMetricas = camp.entregues === 0 && camp.lidas === 0 && camp.respostas === 0
+  const funnel: [string, number][] = [['Enviadas', env], ['Entregues', camp.entregues], ['Lidas', camp.lidas], ['Respostas', camp.respostas]]
   const max = Math.max(env, 1)
   return (
     <div>
@@ -188,25 +192,27 @@ function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: Campanh
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div className="metric-box"><span>Enviadas</span><b>{env}</b></div>
-        <div className="metric-box"><span>Entregues</span><b>{camp.entregues} ({pct(camp.entregues, env)})</b></div>
-        <div className="metric-box"><span>Lidas</span><b>{camp.lidas} ({pct(camp.lidas, camp.entregues)})</b></div>
-        <div className="metric-box"><span>Respostas</span><b>{camp.respostas}</b></div>
-        <div className="metric-box"><span>Conversões</span><b>{conv}</b></div>
-        <div className="metric-box"><span>Custo estimado</span><b>R$ {(env * 0.08).toFixed(2).replace('.', ',')}</b></div>
+        <div className="metric-box"><span>Entregues</span><b>{semMetricas ? '—' : `${camp.entregues} (${pct(camp.entregues, env)})`}</b></div>
+        <div className="metric-box"><span>Lidas</span><b>{semMetricas ? '—' : `${camp.lidas} (${pct(camp.lidas, camp.entregues)})`}</b></div>
+        <div className="metric-box"><span>Respostas</span><b>{semMetricas ? '—' : camp.respostas}</b></div>
       </div>
 
       <div className="rel-card" style={{ padding: 16, marginBottom: 16, background: '#E7F9EE', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <i className="ti ti-affiliate" style={{ fontSize: 24, color: '#0f6b3a' }} />
         <div style={{ flex: 1, minWidth: 220 }}>
-          <h4 style={{ margin: 0, fontSize: 14, color: '#0f6b3a' }}><i className="ti ti-arrow-right" /> {camp.respostas} respondentes viram leads no CRM</h4>
-          <p style={{ margin: 0, fontSize: 12.5, color: '#177a45' }}>Cada um entra flegado como <b>Disparo WhatsApp</b> para a equipe seguir o fluxo de fechamento.</p>
+          <h4 style={{ margin: 0, fontSize: 14, color: '#0f6b3a' }}><i className="ti ti-arrow-right" /> {camp.respostas > 0 ? `${camp.respostas} respondentes viram leads no CRM` : 'Respondentes viram leads no CRM'}</h4>
+          <p style={{ margin: 0, fontSize: 12.5, color: '#177a45' }}>{camp.respostas > 0 ? <>Cada um entra flegado como <b>Disparo WhatsApp</b> para a equipe seguir o fluxo de fechamento.</> : <>Quando a campanha tiver respostas, envie-as ao CRM flegadas como <b>Disparo WhatsApp</b>.</>}</p>
         </div>
         {podeEscrever && <button className="btn btn-primary" disabled={busy || camp.respostas <= 0} onClick={() => onCRM(camp.id)}><i className="ti ti-user-plus" /> Enviar ao CRM</button>}
       </div>
 
       <div className="rel-card" style={{ padding: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-filter" /> Funil da campanha</div>
-        {funnel.map(([lbl, n]) => (
+        {semMetricas ? (
+          <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '6px 0' }}>
+            Sem métricas de entrega/leitura/resposta ainda — elas chegam pelo retorno de status da UAZAPI (webhook). Por enquanto só registramos as <b>{env}</b> mensagens enviadas.
+          </div>
+        ) : funnel.map(([lbl, n]) => (
           <div key={lbl} style={{ marginBottom: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 3 }}><span>{lbl}</span><span style={{ color: 'var(--text-3)' }}>{n} ({pct(n, env)})</span></div>
             <div style={{ height: 8, background: 'var(--surface-2)', borderRadius: 5 }}><div style={{ height: 8, width: `${(n / max) * 100}%`, background: 'var(--brand-500)', borderRadius: 5 }} /></div>
@@ -353,8 +359,9 @@ function TabVip({ vip, podeEscrever, busy, onAgendar, onExcluir }: { vip: VipRow
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div className="metric-box"><span>Grupos VIP agendados</span><b>{vip.length}</b></div>
         <div className="metric-box"><span>Membros (ativos)</span><b>{membros.toLocaleString('pt-BR')}</b></div>
-        <div className="metric-box"><span>Conversão média</span><b>31%</b></div>
-        <div className="metric-box"><span>Receita último VIP</span><b>R$ 42.800</b></div>
+        {/* conversão/receita do VIP não têm origem real (sem colunas no vip_grupos) → estado honesto em vez de número inventado (31% / R$ 42.800). */}
+        <div className="metric-box"><span>Conversão média</span><b>—</b></div>
+        <div className="metric-box"><span>Receita último VIP</span><b>—</b></div>
       </div>
 
       {podeEscrever && (

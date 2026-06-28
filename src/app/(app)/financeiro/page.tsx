@@ -54,35 +54,55 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
   // ── Feature-detect: a migration cria fin_recebiveis. Se a tabela não existe,
   //    a query falha → banner de migration + tela em modo vazio. ──
+  // Limites de leitura das listas. Como os KPIs/totais são somados em memória a
+  // partir destes arrays, capturamos também o count REAL de cada tabela
+  // ({ count: 'exact' }) para detectar truncamento e avisar o operador quando a
+  // lista exibida estiver abaixo do total (evita total silenciosamente subcontado).
+  const LIM_REC = 2000, LIM_PAG = 2000, LIM_CONC = 1000
   let migracaoOk = true
   let recebiveis: Recebivel[] = []
+  let recTotal = 0
   {
-    const { data, error } = await sb
+    const { data, error, count } = await sb
       .from('fin_recebiveis')
-      .select('id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, dias_atraso, boleto, enviado, data_pagamento, jur_id')
+      .select('id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, dias_atraso, boleto, enviado, data_pagamento, jur_id', { count: 'exact' })
       .order('vencimento', { ascending: true, nullsFirst: false })
-      .limit(2000)
+      .limit(LIM_REC)
     if (error) migracaoOk = false
-    else recebiveis = ((data ?? []) as Recebivel[]).map((r) => ({
-      ...r,
-      // Recalcula dias de atraso em runtime (calcDias) p/ status 'atrasado'.
-      dias_atraso: r.status === 'atrasado' ? (r.dias_atraso || calcDiasAtraso(r.vencimento, hojeISO)) : r.dias_atraso,
-    }))
+    else {
+      recTotal = count ?? 0
+      recebiveis = ((data ?? []) as Recebivel[]).map((r) => ({
+        ...r,
+        // Recalcula dias de atraso em runtime (calcDias) p/ status 'atrasado'.
+        dias_atraso: r.status === 'atrasado' ? (r.dias_atraso || calcDiasAtraso(r.vencimento, hojeISO)) : r.dias_atraso,
+      }))
+    }
   }
 
   let contasPagar: ContaPagar[] = []
   let conciliacao: Conciliacao[] = []
   let config: FinConfig | null = null
+  let pagTotal = 0
+  let concTotal = 0
   if (migracaoOk) {
-    const [{ data: pagRaw }, { data: concRaw }, { data: cfgRaw }] = await Promise.all([
-      sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade').order('vencimento', { ascending: true, nullsFirst: false }).limit(2000),
-      sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao').order('data', { ascending: true, nullsFirst: false }).limit(1000),
+    const [{ data: pagRaw, count: pagCount }, { data: concRaw, count: concCount }, { data: cfgRaw }] = await Promise.all([
+      sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade', { count: 'exact' }).order('vencimento', { ascending: true, nullsFirst: false }).limit(LIM_PAG),
+      sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao', { count: 'exact' }).order('data', { ascending: true, nullsFirst: false }).limit(LIM_CONC),
       sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     ])
     contasPagar = (pagRaw ?? []) as ContaPagar[]
     conciliacao = (concRaw ?? []) as Conciliacao[]
     config = cfgRaw as FinConfig | null
+    pagTotal = pagCount ?? 0
+    concTotal = concCount ?? 0
   }
+
+  // Truncamento: lista carregada abaixo do total real → totais somados em memória
+  // seriam parciais. Mostramos aviso explícito na UI (nunca número subcontado silencioso).
+  const truncado =
+    recebiveis.length < recTotal ||
+    contasPagar.length < pagTotal ||
+    conciliacao.length < concTotal
 
   // Config com defaults do legado quando não houver linha salva.
   const cfg: FinConfig = config ?? {
@@ -94,6 +114,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     <div className="view active">
       <FinanceiroTabs
         migracaoOk={migracaoOk}
+        truncado={truncado}
         recebiveis={recebiveis}
         contasPagar={contasPagar}
         conciliacao={conciliacao}

@@ -13,9 +13,11 @@ export default async function GrupoServicosPage() {
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
 
   // Cadastro de grupos (grupo_servicos) + contagem de serviços por grupo (servicos.grupo).
+  // range() explícito no select de serviços: sem ele o PostgREST corta em 1000 linhas
+  // silenciosamente e a contagem de serviços por grupo ficaria truncada se o catálogo crescer.
   const [gruposRes, servRes] = await Promise.all([
     sb.from('grupo_servicos').select('id, nome, ativo').order('ordem', { ascending: true }).order('nome', { ascending: true }),
-    sb.from('servicos').select('grupo'),
+    sb.from('servicos').select('grupo').range(0, 49999),
   ])
 
   const semTabela = !!gruposRes.error

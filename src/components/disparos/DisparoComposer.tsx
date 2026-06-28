@@ -77,7 +77,7 @@ export function DisparoComposer({ canais, activeUnitId, templates, listas }: { c
     const quando = agendar ? ` agendado para ${new Date(agendar).toLocaleString('pt-BR')}` : ''
     if (!window.confirm(`Disparar para ${total} número(s) pelo canal "${sel?.label ?? canal}"${quando}?`)) return
     setSaving(true); setMsg(null)
-    const res = await dispararCampanha(canal, texto, numeros, Number(dMin), Number(dMax), nome, agendar || undefined)
+    const res = await dispararCampanha(canal, texto, numeros, Number(dMin), Number(dMax), nome, agendar || undefined, publico || undefined)
     setSaving(false)
     if (!res.ok) { setMsg({ tipo: 'erro', txt: res.error || 'Erro ao disparar.' }); return }
     setMsg({ tipo: 'ok', txt: res.agendado ? `Campanha agendada para ${res.total} número(s).` : `Campanha criada para ${res.total} número(s). O envio roda com delay (anti-ban).` })

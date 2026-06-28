@@ -27,14 +27,14 @@ const TODAS = '__todas__'
 type Props = {
   indicacoes: Indicacao[]; unidades: Unidade[]; activeUnitId: string | null; activeUnitName: string
   uniNome: Record<string, string>; isAdmin: boolean; premio: Premio; metaMensal: number; ultimoSorteio: Sorteio
-  migrationPendente: boolean
+  migrationPendente: boolean; totalIndicacoesMes: number
 }
 
 // Achata os indicados em "leads" do Kanban (legado indKanbanLeads 8121).
 type KLead = { id: string; nome: string; whats: string; status: IndStatus; por: string; origem: string; unidadeId: string | null }
 
 export function IndiquesManager(props: Props) {
-  const { indicacoes, unidades, activeUnitId, activeUnitName, uniNome, isAdmin, premio, ultimoSorteio, migrationPendente } = props
+  const { indicacoes, unidades, activeUnitId, activeUnitName, uniNome, isAdmin, premio, ultimoSorteio, migrationPendente, totalIndicacoesMes } = props
   const router = useRouter()
   const [tab, setTab] = useState<'lista' | 'sorteio' | 'premio'>('lista')
   const [filtroUni, setFiltroUni] = useState<string>(activeUnitId || TODAS)
@@ -65,7 +65,9 @@ export function IndiquesManager(props: Props) {
   const totalIndicados = leads.length
   const trabalhados = leads.filter((x) => x.status !== 'Novo').length
   const fechados = leads.filter((x) => x.status === 'Fechado').length
-  const indicadoresMes = indFiltradas.length
+  // "Indicadores no mês" = nº de indicações (cabeças). Sem filtro de unidade usa o COUNT
+  // real do servidor (não cai no teto de 500 da lista); com filtro local conta o array.
+  const indicadoresMes = filtroUni === TODAS ? totalIndicacoesMes : indFiltradas.length
 
   // Dashboard de gestão (indMetaSync 8100 / indDashHTML 8107).
   const metaMes = premio?.meta_mensal ?? props.metaMensal ?? 60

@@ -29,10 +29,17 @@ export default async function MetasPage() {
   // Colaboradores ativos da unidade ativa (multitenant).
   let cq = sb.from('colaboradores').select('id, nome, cargo, unidade_id').eq('status', 'ativo').order('nome', { ascending: true }).limit(500)
   if (ctx?.activeUnitId) cq = cq.eq('unidade_id', ctx.activeUnitId)
-  const { data: colabRaw } = await cq
+  const { data: colabRaw, error: colabErr } = await cq
   const colaboradores: ColabOpt[] = ((colabRaw ?? []) as { id: string; nome: string; cargo: string | null }[]).map((c) => ({ id: c.id, nome: c.nome, cargo: c.cargo }))
   const mapaColab = new Map(colaboradores.map((c) => [c.id, c.nome]))
   const colabIds = colaboradores.map((c) => c.id)
+
+  // KPI "Colaboradores ativos" → contagem REAL (count exato), nunca o .length de uma lista
+  // capada a 500. Mesmo escopo de unidade da lista acima.
+  let countQ = sb.from('colaboradores').select('id', { count: 'exact', head: true }).eq('status', 'ativo')
+  if (ctx?.activeUnitId) countQ = countQ.eq('unidade_id', ctx.activeUnitId)
+  const { count: colabAtivosCount } = await countQ
+  const totalColaboradoresAtivos = colabAtivosCount ?? colaboradores.length
 
   // Metas dos colaboradores visíveis. Se houver escopo de unidade e existirem colaboradores,
   // restringe por colaborador_id; sem colaboradores na unidade, não há metas a mostrar.
@@ -45,7 +52,18 @@ export default async function MetasPage() {
       .limit(500)
     if (ctx?.activeUnitId && colabIds.length > 0) mq = mq.in('colaborador_id', colabIds)
     const { data: metasRaw } = await mq
-    metas = ((metasRaw ?? []) as Omit<MetaRow, 'colaboradorNome'>[]).map((m) => ({
+    const metasBase = (metasRaw ?? []) as Omit<MetaRow, 'colaboradorNome'>[]
+
+    // Sem escopo de unidade (admin/todas) as metas vêm globalmente, mas mapaColab cobre só
+    // os 500 primeiros colaboradores em ordem alfabética → nomes ficariam '—'. Resolve os
+    // nomes faltantes consultando exatamente os colaborador_id presentes nestas metas.
+    const idsFaltantes = Array.from(new Set(metasBase.map((m) => m.colaborador_id).filter((id) => id && !mapaColab.has(id))))
+    if (idsFaltantes.length > 0) {
+      const { data: extraColab } = await sb.from('colaboradores').select('id, nome').in('id', idsFaltantes)
+      for (const c of (extraColab ?? []) as { id: string; nome: string }[]) mapaColab.set(c.id, c.nome)
+    }
+
+    metas = metasBase.map((m) => ({
       ...m,
       colaboradorNome: mapaColab.get(m.colaborador_id) ?? '—',
     }))
@@ -61,10 +79,16 @@ export default async function MetasPage() {
         Metas da unidade — ficam visíveis no Dashboard principal ao acessar o sistema. Defina meta de venda, de agendamentos e de clientes novos (avaliações), com apuração por mês, quinzena ou dezena e alertas em tempo real. Abaixo, gerencie também as <b>metas individuais por colaborador</b>.
       </p>
 
+      {colabErr && (
+        <div className="crm-note" style={{ borderColor: 'var(--red, #D85563)', color: 'var(--red, #D85563)' }}>
+          <i className="ti ti-alert-triangle" /> Não foi possível carregar os colaboradores. Os indicadores podem estar incompletos.
+        </div>
+      )}
+
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, margin: '0 0 18px' }}>
         {([
-          ['Colaboradores ativos', colaboradores.length, 'ti-users'],
+          ['Colaboradores ativos', totalColaboradoresAtivos, 'ti-users'],
           ['Metas cadastradas', totalMetas, 'ti-target'],
           ['Metas batidas', batidas, 'ti-trophy'],
         ] as [string, number, string][]).map(([label, val, icon]) => (

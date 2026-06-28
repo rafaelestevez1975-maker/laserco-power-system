@@ -17,13 +17,19 @@ export const IND_STATUS_COR: Record<string, string> = {
  * Mapeamento entre o status do banco (CHECK: pendente/contatado/respondeu/agendou/
  * compareceu/comprou/desistiu) e os 7 rótulos do Kanban do legado.
  * Mantém o banco intacto e exibe os rótulos do cliente.
+ *
+ * BIJEÇÃO 1-pra-1: há exatamente 7 valores no banco e 7 colunas no Kanban, então
+ * cada rótulo tem um valor próprio e o round-trip (mover card → salvar → recarregar)
+ * preserva a coluna. Antes, 'Sem retorno' e 'Perdido' colapsavam ambos em 'desistiu'
+ * (a coluna 'Sem retorno' nunca retinha cards) e 'respondeu'/'agendou' colapsavam em
+ * 'Agendado'. Agora 'Sem retorno'↔'respondeu' e 'Agendado'↔'agendou' são distintos.
  */
 export const DB_TO_LABEL: Record<string, IndStatus> = {
-  pendente: 'Novo', contatado: 'Em contato', respondeu: 'Agendado',
+  pendente: 'Novo', contatado: 'Em contato', respondeu: 'Sem retorno',
   agendou: 'Agendado', compareceu: 'Compareceu', comprou: 'Fechado', desistiu: 'Perdido',
 }
 export const LABEL_TO_DB: Record<IndStatus, string> = {
-  Novo: 'pendente', 'Em contato': 'contatado', 'Sem retorno': 'desistiu',
+  Novo: 'pendente', 'Em contato': 'contatado', 'Sem retorno': 'respondeu',
   Agendado: 'agendou', Compareceu: 'compareceu', Fechado: 'comprou', Perdido: 'desistiu',
 }
 

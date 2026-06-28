@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
 import { scopeUnidade } from '@/lib/sb'
@@ -36,13 +37,16 @@ export default async function ChecklistPage() {
   const snap = ((snapData ?? [])[0] as FunilSnapshot | undefined) ?? null
   const linhas = avaliarFunil(snap)
 
-  // ── 1b) Médias da REDE (todas as unidades visíveis) — usadas no checklist mensal SULTS ──
-  // Pega o último snapshot de cada unidade e tira a média (legacy chkAvg).
-  const { data: redeData } = await sb
+  // ── 1b) Médias da REDE (TODA a rede) — usadas no checklist mensal SULTS ──
+  // Pega o último snapshot de cada unidade e tira a média (legacy chkAvg sobre CHK_UNITS).
+  // Usa service-role DE PROPÓSITO: a média da rede tem de ser a mesma para qualquer
+  // papel/unidade ativa. Com o client RLS, um gestor escopado veria só a própria unidade
+  // e toda comparação "acima da média da rede" cairia em valor >= ele mesmo (sempre Conforme).
+  const { data: redeData } = await adminClient()
     .from('kpis_unidade_snapshot')
     .select('unidade_id, agendamentos_total, taxa_comparecimento, taxa_conversao, ticket_medio, data_referencia')
     .order('data_referencia', { ascending: false })
-    .limit(500)
+    .limit(2000)
   const ultimoPorUnidade = new Map<string, { ag: number; comp: number; conv: number; ticket: number }>()
   for (const r of (redeData ?? []) as Array<{ unidade_id: string; agendamentos_total: number | null; taxa_comparecimento: number | null; taxa_conversao: number | null; ticket_medio: number | null }>) {
     if (!ultimoPorUnidade.has(r.unidade_id)) {

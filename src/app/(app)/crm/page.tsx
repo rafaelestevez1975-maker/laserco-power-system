@@ -28,6 +28,17 @@ export default async function CrmPage() {
   const { data: leadsRaw } = await q
   const leadRows = (leadsRaw ?? []) as LeadRow[]
 
+  // Contagem REAL por etapa (count exato, não cai no teto de 500 — mesmo padrão do SAC
+  // Kanban). O cabeçalho de cada coluna e os KPIs de número usam isto; a lista de cards
+  // continua capada em 500 por etapa do board.
+  const contagens = await Promise.all(etapas.map((et) => {
+    let cq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'cliente').eq('etapa_id', et.id)
+    if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
+    return cq
+  }))
+  const totaisPorEtapa: Record<string, number> = {}
+  etapas.forEach((et, i) => { totaisPorEtapa[et.id] = contagens[i].count ?? 0 })
+
   // Nomes dos responsáveis (1 query, mapeada por id) + colaboradores p/ o select do modal.
   const { data: colabRaw } = await sb
     .from('perfis_usuario').select('id, nome_completo').eq('ativo', true)
@@ -40,15 +51,22 @@ export default async function CrmPage() {
     responsavel_nome: l.responsavel_id ? (nomePorId.get(l.responsavel_id) ?? null) : null,
   }))
 
-  // KPIs reais
-  const nomeDe = (id: string | null) => etapas.find((e) => e.id === id)?.nome ?? ''
-  const ganho = leads.filter((l) => nomeDe(l.etapa_id) === 'Convertido').length
-  const perdido = leads.filter((l) => nomeDe(l.etapa_id) === 'Perdido').length
-  const ativos = leads.filter((l) => !['Convertido', 'Perdido'].includes(nomeDe(l.etapa_id)))
-  const valorNeg = ativos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
+  // KPIs reais — usam a CONTAGEM exata por etapa (não o array capado em 500).
+  // Etapas de fechamento (ganho/perdido) por nome, p/ separar do "funil ativo".
+  const ehGanho = (n: string) => /convert|ganho|fechad/i.test(n)
+  const ehPerdido = (n: string) => /perdid/i.test(n)
+  const ganho = etapas.filter((e) => ehGanho(e.nome)).reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
+  const perdido = etapas.filter((e) => ehPerdido(e.nome)).reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
+  const ativos = etapas.filter((e) => !ehGanho(e.nome) && !ehPerdido(e.nome))
+  const totalFunil = ativos.reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
   const conv = ganho + perdido > 0 ? Math.round((ganho / (ganho + perdido)) * 100) : 0
   const agora = Date.now()
-  const vencidos = ativos.filter((l) => l.criado_em && agora - new Date(l.criado_em).getTime() > 48 * 3600e3).length
+  // Valor em negociação e prazos 48h vencidos dependem de valor/criado_em por lead —
+  // calculados sobre os leads carregados (até 500 mais recentes por unidade).
+  const idsAtivos = new Set(ativos.map((e) => e.id))
+  const leadsAtivos = leads.filter((l) => l.etapa_id && idsAtivos.has(l.etapa_id))
+  const valorNeg = leadsAtivos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
+  const vencidos = leadsAtivos.filter((l) => l.criado_em && agora - new Date(l.criado_em).getTime() > 48 * 3600e3).length
 
   return (
     <div className="view active">
@@ -61,7 +79,7 @@ export default async function CrmPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '14px 0 18px' }}>
-        <div className="metric-box"><span>Leads no funil</span><b>{ativos.length}</b></div>
+        <div className="metric-box"><span>Leads no funil</span><b>{totalFunil}</b></div>
         <div className="metric-box"><span>Valor em negociação</span><b>{money(valorNeg)}</b></div>
         <div className="metric-box"><span>Taxa de conversão</span><b>{conv}%</b></div>
         <div className="metric-box" style={vencidos > 0 ? { border: '1.5px solid var(--red)' } : undefined}>
@@ -69,7 +87,7 @@ export default async function CrmPage() {
         </div>
       </div>
 
-      <CrmBoard etapas={etapas} leads={leads} unidades={ctx?.unidades ?? []} colaboradores={colaboradores} activeUnitId={activeUnit} isAdmin={ctx?.isAdmin ?? false} />
+      <CrmBoard etapas={etapas} leads={leads} totaisPorEtapa={totaisPorEtapa} unidades={ctx?.unidades ?? []} colaboradores={colaboradores} activeUnitId={activeUnit} isAdmin={ctx?.isAdmin ?? false} />
     </div>
   )
 }

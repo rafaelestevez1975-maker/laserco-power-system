@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getSessionContext } from '@/lib/session'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { listInstances, criarCampanhaSimples } from '@/lib/uazapi'
+import { registrarCampanha } from '@/app/(app)/disparos/actions'
 import type { ActionResult } from '@/lib/types'
 import type { ExpLista, ExpDisparo } from '@/components/expansao/types'
 
@@ -48,7 +49,7 @@ export async function dadosDisparos(activeUnitId: string | null): Promise<{ list
  *  agendarISO (opcional) = data/hora local do input datetime-local; vazio = envia agora.
  *  A mensagem pode usar placeholders da UAZAPI ({{first_name}}, {{name}}) para personalizar. */
 export async function dispararCampanha(
-  canalNome: string, texto: string, numerosRaw: string, delayMin: number, delayMax: number, nomeCampanha: string, agendarISO?: string,
+  canalNome: string, texto: string, numerosRaw: string, delayMin: number, delayMax: number, nomeCampanha: string, agendarISO?: string, baseNome?: string,
 ): Promise<{ ok: boolean; error?: string; total?: number; agendado?: boolean }> {
   const ctx = await getSessionContext()
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }
@@ -75,6 +76,22 @@ export async function dispararCampanha(
 
   const res = await criarCampanhaSimples(canal.token, { numbers, text: texto, delayMin: dMin, delayMax: dMax, info: nomeCampanha || 'Campanha', scheduledFor })
   if (!res.ok) return { ok: false, error: res.error }
+
+  // Persiste a campanha no histórico (disparo_campanhas) para que ela apareça na
+  // aba Campanhas e alimente os KPIs/relatório — antes o disparo era enviado mas
+  // NUNCA registrado, deixando a lista vazia e os números zerados entre telas.
+  // 'enviadas' = nº de destinatários submetidos à UAZAPI (entregues/lidas/respostas
+  // dependem de webhook e ficam em 0 — estado honesto — até essa integração existir).
+  await registrarCampanha({
+    nome: nomeCampanha || 'Campanha',
+    baseNome: baseNome ?? null,
+    canalNome,
+    status: scheduledFor > 0 ? 'sched' : 'run',
+    enviadas: numbers.length,
+    agendadaPara: scheduledFor > 0 ? new Date(scheduledFor).toISOString() : null,
+    uazapiId: res.id ?? null,
+  })
+
   return { ok: true, total: numbers.length, agendado: scheduledFor > 0 }
 }
 

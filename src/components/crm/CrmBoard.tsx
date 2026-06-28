@@ -39,8 +39,8 @@ function iniciais(nome: string | null | undefined): string {
 }
 
 export function CrmBoard({
-  etapas, leads: leadsProp, unidades, colaboradores, activeUnitId, isAdmin,
-}: { etapas: Etapa[]; leads: Lead[]; unidades: Unidade[]; colaboradores: Colaborador[]; activeUnitId: string | null; isAdmin: boolean }) {
+  etapas, leads: leadsProp, totaisPorEtapa, unidades, colaboradores, activeUnitId, isAdmin,
+}: { etapas: Etapa[]; leads: Lead[]; totaisPorEtapa: Record<string, number>; unidades: Unidade[]; colaboradores: Colaborador[]; activeUnitId: string | null; isAdmin: boolean }) {
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>(leadsProp)
   const [search, setSearch] = useState('')
@@ -80,7 +80,7 @@ export function CrmBoard({
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div className="kanban">
           {etapas.map((et) => (
-            <Column key={et.id} etapa={et} leads={filtered.filter((l) => l.etapa_id === et.id)} />
+            <Column key={et.id} etapa={et} leads={filtered.filter((l) => l.etapa_id === et.id)} total={totaisPorEtapa[et.id] ?? 0} buscando={q.length > 0} />
           ))}
         </div>
       </DndContext>
@@ -142,17 +142,24 @@ function FunilModal({ etapas, onClose, onSaved }: { etapas: Etapa[]; onClose: ()
   )
 }
 
-function Column({ etapa, leads }: { etapa: Etapa; leads: Lead[] }) {
+function Column({ etapa, leads, total, buscando }: { etapa: Etapa; leads: Lead[]; total: number; buscando: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa.id })
   const soma = leads.reduce((s, l) => s + (l.valor_estimado || 0), 0)
+  // Cabeçalho usa o total REAL da etapa (count do servidor). Quando há mais leads do que
+  // os carregados (teto de 500 do board), mostra "carregados de total". Durante a busca o
+  // cabeçalho reflete os resultados visíveis.
+  const carregados = leads.length
+  const cnt = buscando ? carregados : (total < carregados ? carregados : total)
   return (
     <div className="kan-col">
       <div className="kan-head">
         <span className="dot" style={{ background: etapa.cor }} />
         <span className="t">{etapa.nome}</span>
-        <span className="cnt">{leads.length}</span>
+        <span className="cnt">{cnt}</span>
       </div>
-      <div className="kan-sum">{money(soma)} no estágio</div>
+      <div className="kan-sum">
+        {money(soma)} no estágio{!buscando && total > carregados ? ` · mostrando ${carregados} de ${total}` : ''}
+      </div>
       <div ref={setNodeRef} className="kan-body" style={isOver ? { outline: '2px dashed var(--brand-400)', outlineOffset: -4, borderRadius: 8 } : undefined}>
         {leads.length === 0 && <div style={{ padding: 10, fontSize: 12, color: 'var(--text-3)' }}>Sem leads</div>}
         {leads.map((l) => <Card key={l.id} lead={l} etapaNome={etapa.nome} />)}

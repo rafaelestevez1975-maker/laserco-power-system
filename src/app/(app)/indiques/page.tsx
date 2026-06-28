@@ -12,16 +12,32 @@ export default async function IndiquesPage() {
   const uniNome = Object.fromEntries((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
   const mes = mesRef()
 
+  // Janela do MÊS ATUAL (a tabela `indicacoes` não tem mes_ref; o mês é o criado_em).
+  // Sem este filtro a página carregava indicações de qualquer mês mas rotulava tudo como
+  // mesLabel() — KPIs ("Indiques no mês", "% da meta", "Projeção"), "Indicadores no mês" e
+  // o pool do Sorteio ("todos que indicaram no mês") contavam meses passados.
+  const ini = new Date()
+  const inicioMes = new Date(ini.getFullYear(), ini.getMonth(), 1).toISOString()
+  const inicioProx = new Date(ini.getFullYear(), ini.getMonth() + 1, 1).toISOString()
+
   // Filtro de unidade vem do componente; aqui carregamos TODAS as visíveis (RLS) e
   // o componente filtra client-side (legado: select "Todas as unidades").
   let q = sb
     .from('indicacoes')
     .select('id, indicador_nome, indicador_telefone, premio_descricao, status, origem, unidade_id, criado_em, indicacao_indicados(id, nome, telefone, email, status, observacoes)')
+    .gte('criado_em', inicioMes).lt('criado_em', inicioProx)
     .order('criado_em', { ascending: false })
     .limit(500)
   if (activeUnit) q = q.eq('unidade_id', activeUnit)
-  const { data } = await q
-  const indicacoes = (data ?? []) as Indicacao[]
+  const { data, error } = await q
+  const indicacoes = (error ? [] : (data ?? [])) as Indicacao[]
+
+  // Total REAL de indicações no mês (independe do .limit(500) da lista, mesmo padrão do
+  // SAC Kanban). Usado pelo KPI "Indicadores no mês" quando a lista é capada.
+  let cq = sb.from('indicacoes').select('id', { count: 'exact', head: true })
+    .gte('criado_em', inicioMes).lt('criado_em', inicioProx)
+  if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
+  const { count: totalIndicacoesMes } = await cq
 
   // Prêmio/meta do mês (indique_config) — tolerante à migration não aplicada.
   let premio: { premio: string; valor_ref: string | null; observacao: string | null; meta_mensal: number; unidade_id: string | null } | null = null
@@ -57,6 +73,7 @@ export default async function IndiquesPage() {
         metaMensal={(premio as { meta_mensal?: number } | null)?.meta_mensal ?? 60}
         ultimoSorteio={ultimoSorteio}
         migrationPendente={migrationPendente}
+        totalIndicacoesMes={totalIndicacoesMes ?? indicacoes.length}
       />
     </div>
   )

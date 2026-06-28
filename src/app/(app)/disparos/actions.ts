@@ -4,10 +4,35 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { getSessionContext } from '@/lib/session'
 import { exigirPapel } from '@/lib/rbac'
-import { segCount, segLabel, type SegCriterio } from '@/lib/automacoes'
+import { segLabel, type SegCriterio } from '@/lib/automacoes'
 import { normTel } from '@/lib/uazapi'
 
 const PAPEIS_ESCRITA = ['gestor', 'operacoes']
+
+/**
+ * Conta DE VERDADE os contatos do segmento na base de clientes (substitui o
+ * segCount fabricado do legado — base fixa 1248 × fatores hardcoded — que gravava
+ * um número inventado em disparo_bases.contatos). Usa COUNT exato no Supabase
+ * aplicando só os critérios que mapeiam para colunas reais de `clientes`
+ * (verificado/cidade/estado), escopado pela unidade. Critérios que dependem de
+ * histórico de compras (já contratou / contratou serviço X / gasto) ainda não são
+ * avaliáveis aqui sem joins pesados: são ignorados na contagem em vez de gerar
+ * estimativa falsa — devolve nº real de clientes que casam com os filtros suportados.
+ */
+async function contarSegmentoReal(sb: SB, crit: SegCriterio[], unidadeId: string | null): Promise<number> {
+  let q = sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', true)
+  if (unidadeId) q = q.eq('unidade_origem_id', unidadeId)
+  for (const c of crit) {
+    const v = (c.valor || '').trim()
+    if (c.campo === 'verificado') q = q.eq('verificado', /^s/i.test(v))
+    else if (c.campo === 'cidade' && v) q = q.ilike('cidade', `%${v}%`)
+    else if (c.campo === 'estado' && v) q = q.ilike('estado', `%${v}%`)
+    // demais critérios (jaCliente/contratou/naoContratou/gasto/unidade) sem coluna
+    // direta confiável → não fabrica fator; permanecem fora da contagem.
+  }
+  const { count, error } = await q
+  return error ? 0 : (count ?? 0)
+}
 
 async function empresaDaUnidade(sb: SB, unidadeId: string): Promise<string | null> {
   const { data } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
@@ -23,7 +48,7 @@ async function ctxEmpresaUnidade(sb: SB): Promise<{ empresaId: string | null; un
 
 // ─── Bases & Segmentos (DISP_BASES 6529 / segModal 6678) ───
 
-/** Cria uma base "Sistema" a partir de critérios do segmentador (estimativa via segCount). */
+/** Cria uma base "Sistema" a partir de critérios do segmentador (COUNT real de clientes). */
 export async function criarBaseSegmento(criterios: SegCriterio[]): Promise<{ ok: boolean; error?: string; contatos?: number }> {
   const { op, error } = await requireOperador(); if (!op) return { ok: false, error }
   const neg = exigirPapel(op.papel, PAPEIS_ESCRITA, 'criar bases'); if (neg) return { ok: false, error: neg }
@@ -32,7 +57,7 @@ export async function criarBaseSegmento(criterios: SegCriterio[]): Promise<{ ok:
 
   const { empresaId, unidadeId } = await ctxEmpresaUnidade(op.sb)
   if (!empresaId) return { ok: false, error: 'Unidade sem empresa vinculada.' }
-  const n = segCount(crit)
+  const n = await contarSegmentoReal(op.sb, crit, unidadeId)
   const { error: e } = await op.sb.from('disparo_bases').insert({
     empresa_id: empresaId, unidade_id: unidadeId, nome: segLabel(crit), tipo: 'sistema',
     contatos: n, criterios: crit, criado_por: op.userId,
@@ -75,7 +100,7 @@ export async function excluirBase(id: string): Promise<{ ok: boolean; error?: st
 
 /** Registra uma campanha (rascunho/agendada/concluída) no histórico. */
 export async function registrarCampanha(input: {
-  nome: string; baseNome?: string; baseId?: string | null; canalNome?: string | null
+  nome: string; baseNome?: string | null; baseId?: string | null; canalNome?: string | null
   status?: 'draft' | 'sched' | 'run' | 'done'; enviadas?: number; agendadaPara?: string | null; uazapiId?: string | null
 }): Promise<{ ok: boolean; error?: string }> {
   const { op, error } = await requireOperador(); if (!op) return { ok: false, error }

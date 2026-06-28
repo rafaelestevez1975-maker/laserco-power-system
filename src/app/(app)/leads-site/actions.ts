@@ -98,12 +98,19 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     novoId = (ins as { id?: string })?.id
   } else {
     destino = 'CRM'
-    const { data: etapa } = await sb.from('crm_etapas').select('id').eq('ativo', true).order('ordem', { ascending: true }).limit(1).single()
+    // Etapa inicial DO FUNIL DE CLIENTES (pipeline='cliente') — a migration 050 criou
+    // etapas de 'franquia' com a mesma ordem 1..6, então sem o filtro o .single()
+    // quebraria por múltiplas linhas (ou pegaria uma etapa de franquia) e o lead sumiria
+    // do board do CRM (que só renderiza etapas pipeline='cliente').
+    const { data: etapa, error: eEtapa } = await sb.from('crm_etapas')
+      .select('id').eq('ativo', true).eq('pipeline', 'cliente')
+      .order('ordem', { ascending: true }).limit(1).maybeSingle()
+    if (eEtapa) return { ok: false, error: 'Não foi possível ler o funil do CRM.' }
     const etapa_id = (etapa as { id?: string } | null)?.id
     if (!etapa_id) return { ok: false, error: 'Funil do CRM sem etapas.' }
     const { data: ins, error } = await sb.from('crm_leads').insert({
       empresa_id, unidade_id: unidadeId, etapa_id, responsavel_id: user.id, nome: parsed.nome, telefone: parsed.tel, email: parsed.email,
-      origem: ORIGEM_CRM[parsed.tipo] || 'formulario', servico_interesse: parsed.area || parsed.tipo || null, observacoes: parsed.mensagem, status: 'ativo',
+      origem: ORIGEM_CRM[parsed.tipo] || 'formulario', servico_interesse: parsed.area || parsed.tipo || null, observacoes: parsed.mensagem, status: 'ativo', pipeline: 'cliente',
     }).select('id').single()
     if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão p/ criar lead.' : error.message }
     novoId = (ins as { id?: string })?.id
