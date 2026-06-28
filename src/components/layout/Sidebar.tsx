@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MENU, isGroup, type Badge, type Group, type Item, type Leaf } from '@/lib/menu'
+import { MENU, isGroup, ehFuncional, type Badge, type Group, type Item, type Leaf } from '@/lib/menu'
 
 function leafActive(href: string, pathname: string) {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
@@ -59,11 +59,12 @@ export function Sidebar({
 }
 
 function LeafLink({ leaf, pathname, onNavigate }: { leaf: Leaf; pathname: string; onNavigate?: () => void }) {
+  const func = ehFuncional(leaf.href)
   return (
-    <Link href={leaf.href} onClick={onNavigate} className={`nav-item ${leafActive(leaf.href, pathname) ? 'active' : ''}`}>
+    <Link href={leaf.href} onClick={onNavigate} className={`nav-item ${leafActive(leaf.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
       <i className={`ti ${leaf.icon} lead`} />
       {leaf.label}
-      {leaf.badge && <BadgeTag badge={leaf.badge} />}
+      {func ? (leaf.badge && <BadgeTag badge={leaf.badge} />) : <span className="em-breve">prévia</span>}
     </Link>
   )
 }
@@ -73,25 +74,29 @@ function GroupEntry({
 }: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; onNavigate?: () => void }) {
   const children = group.children.filter((c) => canSee(c, isAdmin, recursos))
   const childActive = children.some((c) => leafActive(c.href, pathname))
+  const grupoFunc = children.some((c) => ehFuncional(c.href)) // grupo "aceso" se tiver ao menos 1 filho funcional
   const [open, setOpen] = useState(childActive)
   if (children.length === 0) return null
 
   return (
     <>
-      <div className={`nav-item ${open ? 'open' : ''}`} onClick={() => setOpen((v) => !v)}>
+      <div className={`nav-item ${open ? 'open' : ''} ${grupoFunc ? '' : 'inativo'}`} onClick={() => setOpen((v) => !v)}>
         <i className={`ti ${group.icon} lead`} />
         {group.label}
         {group.badge && <BadgeTag badge={group.badge} />}
         <i className="ti ti-chevron-right chev" />
       </div>
       <div className={`submenu ${open ? 'open' : ''}`}>
-        {children.map((c) => (
-          <Link key={c.href} href={c.href} onClick={onNavigate} className={`sub-item ${leafActive(c.href, pathname) ? 'active' : ''}`}>
-            <i className={`ti ${c.icon}`} />
-            {c.label}
-            {c.badge && <BadgeTag badge={c.badge} />}
-          </Link>
-        ))}
+        {children.map((c) => {
+          const func = ehFuncional(c.href)
+          return (
+            <Link key={c.href} href={c.href} onClick={onNavigate} className={`sub-item ${leafActive(c.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
+              <i className={`ti ${c.icon}`} />
+              {c.label}
+              {func ? (c.badge && <BadgeTag badge={c.badge} />) : <span className="em-breve">prévia</span>}
+            </Link>
+          )
+        })}
       </div>
     </>
   )

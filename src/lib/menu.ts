@@ -200,6 +200,50 @@ export const MENU: Section[] = [
   },
 ]
 
+/**
+ * Fonte de verdade do estado FUNCIONAL de cada tela (convenção com o cliente p/ homologação):
+ * rota AQUI = tela funcional → cor normal/ativa no menu. Fora daqui = ainda é clone visual do
+ * legado (aspecto apagado/inativo + tag "prévia"). Quando uma tela ficar 100% pronta (igual ao
+ * HTML e com dados), basta ADICIONAR a rota aqui que ela "acende" sozinha no menu.
+ * Classificação auditada em 27/06 (5 agentes lendo cada page.tsx + cross-check no filesystem).
+ */
+export const ROTAS_FUNCIONAIS = new Set<string>([
+  // Acompanhamento
+  '/', '/agenda', '/pdv', '/os',
+  // Cadastros
+  '/cadastros/anamnese', '/cadastros/categorias-pagar', '/cadastros/categorias-receber', '/cadastros/parcerias',
+  '/cadastros/formas-pagamento', '/cadastros/grupo-servicos', '/cadastros/comissoes', '/cadastros/metas',
+  '/cadastros/contratos', '/cadastros/motivos', '/cadastros/planos', '/cadastros/perfis', '/cadastros/origens',
+  '/clientes', '/colaboradores', '/contas', '/pacotes', '/produtos', '/servicos',
+  // Gestão · Relatórios (só os com tela real; os demais ainda são snapshot)
+  '/relatorios/agendamentos', '/relatorios/clientes', '/relatorios/contratos', '/relatorios/descontos',
+  '/relatorios/faturamento', '/relatorios/financeiro', '/relatorios/metas', '/relatorios/ordens-servico',
+  '/relatorios/pagamentos', '/relatorios/ranking-vendas',
+  // Gestão · Dashboards
+  '/dashboards/financeiro', '/dashboards/gerencial', '/dashboards/funil', '/dashboards/vendas-geral',
+  '/dashboards/vendas-mes', '/dashboards/vendas-comparativo', '/dashboards/vendas-historico',
+  // Gestão · diversos
+  '/automacoes', '/disparos', '/crm', '/leads-site', '/canais', '/indiques',
+  '/marketing', '/comunicados', '/chamados', '/checklist', '/universidade', '/disco', '/notas',
+  // Gestão · RH
+  '/ponto', '/rh', '/rh/colaboradores', '/rh/ponto', '/rh/recrutamento', '/rh/folha', '/rh/ferias', '/rh/desempenho', '/rh/regras',
+  // Administração · Expansão
+  '/expansao', '/expansao/disparos', '/implantacao',
+  // Administração · SAC
+  '/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/pagamentos',
+  '/sac/atendentes', '/sac/ranking', '/sac/importar', '/sac/config',
+  // Administração · Financeiro Franqueadora
+  '/financeiro', '/financeiro/dre', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
+  '/juridico', '/auditoria',
+  // Rede & Conta
+  '/minha-unidade', '/unidades', '/minha-conta', '/app-cliente', '/exportacoes', '/ajuda',
+])
+
+/** A rota (sem querystring) corresponde a uma tela funcional? Usado pelo Sidebar p/ acender/apagar. */
+export function ehFuncional(href: string): boolean {
+  return ROTAS_FUNCIONAIS.has(href.split('?')[0])
+}
+
 /** Título + ícone para a topbar a partir do pathname. */
 export function titleFor(pathname: string): { icon: string; title: string } {
   for (const section of MENU) {
