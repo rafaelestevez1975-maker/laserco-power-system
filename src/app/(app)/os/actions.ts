@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, scopeUnidade } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+import { inserirOSComNumero } from '@/lib/os-numero'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -55,32 +56,18 @@ export async function abrirOS(input: NovaOSInput): Promise<ActionResult> {
   if (!ORIGENS.includes(origem)) return { ok: false, error: 'Origem inválida.' }
 
   // Próximo número: max(numero) na unidade + 1 (escopo multitenant). Sem sequence no backend.
-  const { data: ult } = await op.sb
-    .from('os')
-    .select('numero')
-    .eq('unidade_id', unidadeId)
-    .order('numero', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const proximo = ((ult as { numero: number } | null)?.numero ?? 0) + 1
-
-  const { data, error: e } = await op.sb
-    .from('os')
-    .insert({
-      numero: proximo,
-      unidade_id: unidadeId,
-      cliente_id: (input.clienteId || '').trim() || null,
-      status: 'aberta',
-      origem,
-      observacao: (input.observacao || '').trim() || null,
-      criado_por: op.userId,
-    })
-    .select('id')
-    .single()
-
-  if (e) return { ok: false, error: msgErro(e.message, 'abrir OS') }
+  // Sob concorrência, dois abrirOS na mesma unidade podem ler o mesmo max → numero duplicado.
+  // Mitigação: insere de forma otimista e, se colidir (unique violation 23505), recomputa e tenta de novo.
+  const novo = await inserirOSComNumero(op.sb, unidadeId, {
+    cliente_id: (input.clienteId || '').trim() || null,
+    status: 'aberta',
+    origem,
+    observacao: (input.observacao || '').trim() || null,
+    criado_por: op.userId,
+  })
+  if ('error' in novo) return { ok: false, error: msgErro(novo.error, 'abrir OS') }
   revalidatePath('/os')
-  return { ok: true, id: (data as { id: string }).id }
+  return { ok: true, id: novo.id }
 }
 
 // ─────────────────────────────────────── Itens da OS ────────────────────────────────────────

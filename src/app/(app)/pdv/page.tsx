@@ -37,16 +37,21 @@ export default async function PdvPage() {
   const vendedores: Opcao[] = ((vendRaw ?? []) as { id: string; nome_completo: string | null }[]).map((v) => ({ id: v.id, nome: v.nome_completo || '(sem nome)' }))
 
   // ── Cortesias já usadas no mês nesta unidade (p/ exibir saldo do teto) ──
+  // Gate por `criado_em` (sempre preenchido) e não por `fechada_em`: cortesias importadas/legadas
+  // sem `fechada_em` ficavam fora da conta e furavam o teto. Mesma regra usada no bloqueio real
+  // em finalizarVenda (actions.ts) — saldo exibido e bloqueio precisam bater.
   let cortesiaUsada = 0
   if (unidadeId) {
-    const { data: cort } = await sb
+    const { data: cort, error: eCort } = await sb
       .from('os')
       .select('total_bruto')
       .eq('unidade_id', unidadeId)
       .eq('status', 'fechada')
       .eq('total', 0)
-      .gte('fechada_em', inicioDoMes(new Date().toISOString()))
-    cortesiaUsada = ((cort ?? []) as { total_bruto: number | null }[]).reduce((s, r) => s + (Number(r.total_bruto) || 0), 0)
+      .gte('criado_em', inicioDoMes(new Date().toISOString()))
+    if (!eCort) {
+      cortesiaUsada = ((cort ?? []) as { total_bruto: number | null }[]).reduce((s, r) => s + (Number(r.total_bruto) || 0), 0)
+    }
   }
 
   return (

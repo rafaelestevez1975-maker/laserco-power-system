@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
-import { ClienteFicha, type ClienteFull, type AgendamentoRow, type OSRow } from '@/components/clientes/ClienteFicha'
+import { ClienteFicha, type ClienteFull, type AgendamentoRow, type OSRow, type ContratoRow } from '@/components/clientes/ClienteFicha'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +32,12 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
     .eq('cliente_id', id)
     .order('inicio', { ascending: false })
     .limit(100)
+
+  // Total real de agendamentos (a lista acima é capada em 100) → KPI/rodapé honesto.
+  const { count: agsTotal } = await sb
+    .from('agendamentos')
+    .select('id', { count: 'exact', head: true })
+    .eq('cliente_id', id)
 
   type RawAg = {
     id: string; inicio: string | null; fim: string | null; status: string | null
@@ -79,6 +85,30 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
     total: o.total, observacao: o.observacao, criado_em: o.criado_em, fechada_em: o.fechada_em,
   }))
 
+  // Total real de OS (a lista acima é capada em 100) → KPI/rodapé honesto.
+  const { count: osTotal } = await sb
+    .from('os')
+    .select('id', { count: 'exact', head: true })
+    .eq('cliente_id', id)
+
+  // Contratos/assinatura reais do cliente (tabela `contratos`, scripts/migrations/relatorios.sql).
+  // A tabela pode não existir ainda → trata o erro p/ não inventar plano. cliente_id é FK real.
+  let contratos: ContratoRow[] = []
+  {
+    const { data: ctRaw, error: ctErr } = await sb
+      .from('contratos')
+      .select('id, plano, status, valor_mensal, criado_em, assinado_em')
+      .eq('cliente_id', id)
+      .order('criado_em', { ascending: false })
+    if (!ctErr) {
+      type RawCt = { id: string; plano: string | null; status: string | null; valor_mensal: number | null; criado_em: string | null; assinado_em: string | null }
+      contratos = ((ctRaw ?? []) as RawCt[]).map((c) => ({
+        id: c.id, plano: c.plano, status: c.status, valor_mensal: c.valor_mensal,
+        criado_em: c.criado_em, assinado_em: c.assinado_em,
+      }))
+    }
+  }
+
   // Contagem de cadastros com o MESMO nome (badge de duplicidade na ficha)
   let duplicados = 0
   if (cliente.nome) {
@@ -96,7 +126,10 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
       <ClienteFicha
         cliente={cliente}
         agendamentos={agendamentos}
+        agendamentosTotal={agsTotal ?? agendamentos.length}
         ordens={ordens}
+        ordensTotal={osTotal ?? ordens.length}
+        contratos={contratos}
         duplicados={duplicados}
         unidadeOrigemNome={unidadeOrigemNome}
         podeEscrever={podeEscrever}

@@ -187,7 +187,7 @@ export function ContasManager(props: Props) {
       </div>
       {kpiCapped && (
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 10 }}>
-          <i className="ti ti-info-circle" /> KPIs calculados sobre os primeiros lançamentos do filtro (volume alto — refine o período para totais exatos).
+          <i className="ti ti-info-circle" /> Volume muito alto: os totais consideram os primeiros 100 mil lançamentos do filtro. Refine o período para valores exatos.
         </div>
       )}
 

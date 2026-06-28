@@ -52,6 +52,15 @@ export type OSRow = {
   fechada_em: string | null
 }
 
+export type ContratoRow = {
+  id: string
+  plano: string | null
+  status: string | null
+  valor_mensal: number | null
+  criado_em: string | null
+  assinado_em: string | null
+}
+
 type Tab = 'dados' | 'agendamentos' | 'carteira' | 'os' | 'contratos' | 'acompanhamento'
 
 const GENEROS: [string, string][] = [['', '—'], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
@@ -69,43 +78,26 @@ function statusPill(s: string | null): React.CSSProperties {
   return { ...base, background: '#FBEFD9', color: '#9A6700' }
 }
 
-// ── Extrato de cashback com validade de 30 dias (legado cashbackRender, 3138-3158) ──
-// Distribui o saldo real em lotes (demonstração de validade); soma só os ainda válidos.
-function cashbackLotes(saldo: number): { ac: Date; exp: Date; valor: number; status: string; cor: string; valido: number }[] {
-  const base = Math.max(0, Math.round(saldo))
-  if (!base) return []
-  const offs = [-3, -16, -25, -33]
-  const parts = [0.30, 0.25, 0.25, 0.20].map((p) => Math.round(base * p))
-  // ajusta arredondamento na 1ª parcela
-  const soma = parts.reduce((a, b) => a + b, 0)
-  if (soma !== base && parts.length) parts[0] += base - soma
-  const hoje = new Date()
-  const dOf = (n: number) => { const x = new Date(hoje); x.setDate(x.getDate() + n); return x }
-  return offs.map((off, i) => {
-    const ac = dOf(off), exp = dOf(off + 30)
-    const diff = Math.ceil((exp.getTime() - hoje.getTime()) / 86400000)
-    let status: string, cor: string, valido = parts[i]
-    if (diff < 0) { status = 'Expirado — excluído'; cor = 'var(--red)'; valido = 0 }
-    else if (diff <= 7) { status = `Expira em ${diff} dia(s)`; cor = 'var(--amber)' }
-    else { status = `Válido (${diff} dias)`; cor = 'var(--green)' }
-    return { ac, exp, valor: parts[i], status, cor, valido }
-  })
+// ── Mapeamento status do contrato → label + classe CSS (espelha relatorios/contratos) ──
+const CONTRATO_STATUS: Record<string, { label: string; cls: string }> = {
+  ativo: { label: 'Ativo', cls: 'os-fechada' },
+  encerrado: { label: 'Encerrado', cls: 'os-aberta' },
+  cancelado: { label: 'Cancelado', cls: 'os-cancelada' },
+  inadimplente: { label: 'Inadimplente', cls: 'os-cancelada' },
+}
+function contratoStatusMeta(s: string | null): { label: string; cls: string } {
+  return (s && CONTRATO_STATUS[s]) || { label: s || '—', cls: 'os-aberta' }
 }
 
-// ── Documentos/termos do cliente (legado openClienteFicha docs[], 3174) ──
-const DOCS: [string, string, string, string, string][] = [
-  ['Anamnese Digital', 'Preenchida', 'ti-file-text', 'os-fechada', 'Preenchida'],
-  ['Termo de Realização de Sessão', 'Sessões registradas', 'ti-clipboard-check', 'os-aberta', 'Em andamento'],
-  ['Autorização de Uso de Imagem', 'Assinada', 'ti-photo', 'os-fechada', 'Assinada'],
-  ['Termo de Troca de Procedimento para Crédito', 'Não preenchido', 'ti-replace', 'os-cancelada', 'Pendente'],
-]
-
 export function ClienteFicha({
-  cliente, agendamentos, ordens, duplicados, unidadeOrigemNome, podeEscrever,
+  cliente, agendamentos, agendamentosTotal, ordens, ordensTotal, contratos, duplicados, unidadeOrigemNome, podeEscrever,
 }: {
   cliente: ClienteFull
   agendamentos: AgendamentoRow[]
+  agendamentosTotal: number
   ordens: OSRow[]
+  ordensTotal: number
+  contratos: ContratoRow[]
   duplicados: number
   unidadeOrigemNome: string | null
   podeEscrever: boolean
@@ -192,16 +184,17 @@ export function ClienteFicha({
 
   const tabs: [Tab, string, string][] = [
     ['dados', 'ti-user', 'Dados básicos'],
-    ['agendamentos', 'ti-calendar', `Agendamentos${agendamentos.length ? ` (${agendamentos.length})` : ''}`],
+    ['agendamentos', 'ti-calendar', `Agendamentos${agendamentosTotal ? ` (${agendamentosTotal})` : ''}`],
     ['carteira', 'ti-wallet', 'Carteira'],
     ['acompanhamento', 'ti-clipboard-heart', 'Acompanhamento'],
-    ['os', 'ti-clipboard-list', `Ordens de Serviço${ordens.length ? ` (${ordens.length})` : ''}`],
+    ['os', 'ti-clipboard-list', `Ordens de Serviço${ordensTotal ? ` (${ordensTotal})` : ''}`],
     ['contratos', 'ti-file-description', 'Contratos'],
   ]
 
-  const lotes = cashbackLotes(cliente.saldo_creditos ?? 0)
-  const saldoCashbackValido = lotes.reduce((s, l) => s + l.valido, 0)
+  const saldoCashback = Math.max(0, Math.round(cliente.saldo_creditos ?? 0))
   const contratosViaOS = ordens.filter((o) => o.status === 'fechada')
+  // Assinatura ativa = contrato com status 'ativo' (mais recente). Sem isso → estado honesto.
+  const assinaturaAtiva = contratos.find((c) => c.status === 'ativo') ?? null
 
   return (
     <>
@@ -338,7 +331,7 @@ export function ClienteFicha({
           </div>
           {agendamentos.length > 0 && (
             <div className="cli-foot" style={{ padding: '12px 16px', fontSize: 12.5, color: 'var(--text-2)' }}>
-              {agendamentos.length} agendamento(s) · {agendamentos.filter((a) => a.status === 'concluido').length} concluído(s) · {agendamentos.filter((a) => a.status === 'cancelado').length} cancelado(s)
+              {agendamentosTotal} agendamento(s){agendamentosTotal > agendamentos.length ? ` (mostrando ${agendamentos.length})` : ''} · {agendamentos.filter((a) => a.status === 'concluido').length} concluído(s){agendamentosTotal > agendamentos.length ? '+' : ''} · {agendamentos.filter((a) => a.status === 'cancelado').length} cancelado(s){agendamentosTotal > agendamentos.length ? '+' : ''}
             </div>
           )}
         </div>
@@ -354,16 +347,27 @@ export function ClienteFicha({
               <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>R$ 1 gasto = 1 ponto</div>
             </div>
             <div className="cart-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 18px' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Cashback válido</div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{moedaBR(saldoCashbackValido)}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>Saldo de {moedaBR(cliente.saldo_creditos)} · validade de 30 dias</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Saldo de cashback</div>
+              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{moedaBR(saldoCashback)}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>Crédito disponível na rede</div>
             </div>
             <div className="cart-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 18px' }}>
               <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Plano de assinatura</div>
-              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                Laser&Club <span className="os-st os-fechada">Prata · Ativo</span>
-              </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>R$ 149,90/mês · cashback 5%</div>
+              {assinaturaAtiva
+                ? (
+                  <>
+                    <div style={{ fontSize: 18, fontWeight: 800, marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {assinaturaAtiva.plano || 'Plano'} <span className={`os-st ${contratoStatusMeta(assinaturaAtiva.status).cls}`}>{contratoStatusMeta(assinaturaAtiva.status).label}</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>{moedaBR(assinaturaAtiva.valor_mensal)}/mês</div>
+                  </>
+                )
+                : (
+                  <>
+                    <div style={{ fontSize: 16, fontWeight: 700, marginTop: 6, color: 'var(--text-3)' }}>Sem assinatura ativa</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 6 }}>Este cliente não tem plano de assinatura ativo.</div>
+                  </>
+                )}
             </div>
           </div>
 
@@ -376,33 +380,19 @@ export function ClienteFicha({
             </ul>
           </div>
 
-          {/* Extrato de cashback com validade de 30 dias */}
+          {/* Extrato de cashback — só temos o saldo atual (sem tabela de movimentação). */}
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
-            <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}><i className="ti ti-cash" /> Extrato de cashback · validade de 30 dias</h3>
-            <div style={{ background: '#FBEFD9', color: '#9A6700', borderRadius: 8, padding: '8px 11px', fontSize: 12, marginBottom: 10 }}>
-              <i className="ti ti-clock-exclamation" /> Cada crédito de cashback deve ser usado em até <b>30 dias</b> a partir do acúmulo. Depois disso o crédito é <b>automaticamente excluído</b>.
-            </div>
-            {lotes.length === 0
+            <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}><i className="ti ti-cash" /> Extrato de cashback</h3>
+            {saldoCashback === 0
               ? <div style={{ color: 'var(--text-3)', fontSize: 13, padding: 6 }}>Sem cashback acumulado.</div>
               : (
                 <>
-                  <div className="cli-scroll">
-                    <table className="cli-table">
-                      <thead><tr><th>Acúmulo</th><th className="num-r">Valor</th><th>Expira em</th><th>Status</th><th className="num-r">Saldo válido</th></tr></thead>
-                      <tbody>
-                        {lotes.map((l, i) => (
-                          <tr key={i}>
-                            <td>{dataBR(l.ac)}</td>
-                            <td className="num-r">{moedaBR(l.valor)}</td>
-                            <td>{dataBR(l.exp)}</td>
-                            <td style={{ color: l.cor, fontWeight: 600 }}>{l.status}</td>
-                            <td className="num-r">{l.valido ? moedaBR(l.valido) : <span className="muted">—</span>}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+                    Saldo atual de cashback: <b>{moedaBR(saldoCashback)}</b>.
                   </div>
-                  <div style={{ textAlign: 'right', marginTop: 8, fontWeight: 700 }}>Saldo de cashback válido: {moedaBR(saldoCashbackValido)}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
+                    O detalhamento por lançamento (acúmulo, uso e validade) ainda não está disponível — exibimos apenas o saldo consolidado.
+                  </div>
                 </>
               )}
           </div>
@@ -484,7 +474,7 @@ export function ClienteFicha({
           </div>
           {ordens.length > 0 && (
             <div className="cli-foot" style={{ padding: '12px 16px', fontSize: 12.5, color: 'var(--text-2)' }}>
-              {ordens.length} OS · {ordens.filter((o) => o.status === 'fechada').length} fechada(s) · {ordens.filter((o) => o.status === 'cancelada').length} cancelada(s)
+              {ordensTotal} OS{ordensTotal > ordens.length ? ` (mostrando ${ordens.length})` : ''} · {ordens.filter((o) => o.status === 'fechada').length} fechada(s){ordensTotal > ordens.length ? '+' : ''} · {ordens.filter((o) => o.status === 'cancelada').length} cancelada(s){ordensTotal > ordens.length ? '+' : ''}
             </div>
           )}
         </div>

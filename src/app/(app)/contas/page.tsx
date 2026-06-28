@@ -6,7 +6,8 @@ import { ContasManager, type LancRow, type Categoria } from '@/components/contas
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 30
-const KPI_CAP = 20000 // teto p/ somatórios (a tabela toda tem ~13k; escopada por unidade é bem menor)
+const KPI_BATCH = 1000 // tamanho do lote ao paginar os somatórios (limite default do PostgREST)
+const KPI_HARD_CAP = 100000 // teto de segurança absoluto p/ somatórios (a tabela toda tem ~13k)
 
 type SP = {
   aba?: string // 'pagar' (despesa) | 'receber' (receita)
@@ -85,7 +86,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   const from = (page - 1) * PAGE_SIZE
 
   // ── Categorias (árvore) do tipo da aba para o filtro + form ──
-  const { data: catRaw } = await sb
+  const { data: catRaw, error: catErr } = await sb
     .from('plano_contas')
     .select('id, parent_id, codigo, nome, tipo, aceita_lancamentos, ativo')
     .eq('tipo', tipo)
@@ -101,7 +102,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
     .order('data_vencimento', { ascending: false, nullsFirst: false })
     .range(from, from + PAGE_SIZE - 1)
   listQ = aplicarFiltros(listQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO, fornecedorFil)
-  const { data: rowsRaw, count } = await listQ
+  const { data: rowsRaw, count, error: listErr } = await listQ
   const rows: LancRow[] = ((rowsRaw ?? []) as LancRow[]).map((r) => ({
     ...r,
     categoria: r.categoria_id ? catNome[r.categoria_id] ?? '' : '',
@@ -117,28 +118,56 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  // ── KPIs reais (sobre o conjunto filtrado completo, não só a página) ──
-  // Busca leve: só valor/status/vencimento, com teto de segurança.
-  let kpiQ = sb
-    .from('lancamentos_financeiros')
-    .select('valor, status, data_vencimento')
-    .range(0, KPI_CAP - 1)
-  kpiQ = aplicarFiltros(kpiQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO, fornecedorFil)
-  const { data: kpiRaw } = await kpiQ
-  const kpiRows = (kpiRaw ?? []) as { valor: number | null; status: string | null; data_vencimento: string | null }[]
-
+  // ── KPIs reais (sobre o conjunto filtrado COMPLETO, não só a página) ──
+  // Busca leve (só valor/status/vencimento) paginada em lotes determinísticos
+  // (.order + .range), somando TODAS as linhas do filtro. Sem ordenação o
+  // range pegava um subconjunto arbitrário e os R$ discordavam da contagem.
   let previsto = 0
   let realizado = 0
   let emAberto = 0
   let atrasado = 0
-  for (const k of kpiRows) {
-    const v = k.valor || 0
-    previsto += v
-    if (k.status === 'pago') realizado += v
-    else {
-      emAberto += v
-      if (k.data_vencimento && k.data_vencimento < hojeISO) atrasado += v
+  let kpiErr: unknown = null
+  let kpiCapped = false
+  let kpiFrom = 0
+  while (kpiFrom < KPI_HARD_CAP) {
+    let kpiQ = sb
+      .from('lancamentos_financeiros')
+      .select('valor, status, data_vencimento')
+      .order('data_vencimento', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true }) // desempate estável entre lotes
+      .range(kpiFrom, kpiFrom + KPI_BATCH - 1)
+    kpiQ = aplicarFiltros(kpiQ, tipo, unitScope, sp.status, sp.categoria, sp.di, sp.df, hojeISO, fornecedorFil)
+    const { data: kpiRaw, error } = await kpiQ
+    if (error) { kpiErr = error; break }
+    const batch = (kpiRaw ?? []) as { valor: number | null; status: string | null; data_vencimento: string | null }[]
+    for (const k of batch) {
+      const v = k.valor || 0
+      previsto += v
+      if (k.status === 'pago') realizado += v
+      else {
+        emAberto += v
+        if (k.data_vencimento && k.data_vencimento < hojeISO) atrasado += v
+      }
     }
+    if (batch.length < KPI_BATCH) break // último lote
+    kpiFrom += KPI_BATCH
+    if (kpiFrom >= KPI_HARD_CAP) { kpiCapped = true; break } // teto de segurança atingido
+  }
+
+  // Estado de erro honesto: se qualquer query falhou (RLS, coluna ausente,
+  // erro de banco) não renderizamos tela vazia disfarçada de "sem dados".
+  const erro = catErr || listErr || kpiErr
+  if (erro) {
+    const detalhe = (erro as { message?: string })?.message || String(erro)
+    return (
+      <div className="view active">
+        <div className="crm-note" style={{ marginBottom: 14, borderColor: 'var(--red, #D85563)', color: 'var(--red, #D85563)' }}>
+          <i className="ti ti-alert-triangle" /> Não foi possível carregar contas a pagar/receber. Os números abaixo
+          seriam não confiáveis, então nada é exibido. Tente novamente; se persistir, avise o suporte.
+          <div style={{ fontSize: 11.5, marginTop: 6, color: 'var(--text-3)' }}>Detalhe técnico: {detalhe}</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -157,7 +186,7 @@ export default async function ContasPage({ searchParams }: { searchParams: Promi
       page={page}
       totalPages={totalPages}
       total={total}
-      kpiCapped={kpiRows.length >= KPI_CAP}
+      kpiCapped={kpiCapped}
     />
   )
 }

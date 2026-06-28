@@ -5,6 +5,7 @@ import { requireOperador, msgErro } from '@/lib/sb'
 import { adminClient } from '@/lib/supabase/admin'
 import { ehAdmin } from '@/lib/rbac'
 import { descLimitFor, CORTESIA_LIMIT_MES, FORMAS_PDV, inicioDoMes } from '@/lib/pdv'
+import { inserirOSComNumero } from '@/lib/os-numero'
 
 /**
  * PDV / Nova Venda (legacy/index.html: buildPdv 5835, pdvFinish 5877).
@@ -92,41 +93,38 @@ export async function finalizarVenda(input: FinalizarVendaInput): Promise<Action
   if (total <= 0 && subtotal > 0) {
     const clienteId = (input.clienteId || '').trim()
     if (clienteId) {
-      const { count } = await op.sb
+      // Limite de 1 cortesia por cliente (regra do legado): conta TODAS as cortesias do cliente
+      // na unidade (sem gate de mês — é "1 por cliente", não "1 por mês"), via count exato.
+      const { count, error: eCliente } = await op.sb
         .from('os')
         .select('id', { count: 'exact', head: true })
         .eq('unidade_id', unidadeId)
         .eq('cliente_id', clienteId)
         .eq('status', 'fechada')
         .eq('total', 0)
+      if (eCliente) return { ok: false, error: msgErro(eCliente.message, 'validar cortesia do cliente') }
       if ((count ?? 0) > 0) {
         return { ok: false, error: 'Este cliente já recebeu uma sessão cortesia (limite de 1 por cliente).' }
       }
     }
+    // Teto mensal: gate por `criado_em` (sempre preenchido) e não por `fechada_em` — cortesias
+    // legadas/importadas sem `fechada_em` precisam contar, senão o teto da unidade é furado.
+    // Mesma regra que alimenta o saldo exibido em pdv/page.tsx (precisam bater).
     const desde = inicioDoMes(new Date().toISOString())
-    const { data: cortesias } = await op.sb
+    const { data: cortesias, error: eCortesias } = await op.sb
       .from('os')
       .select('total_bruto')
       .eq('unidade_id', unidadeId)
       .eq('status', 'fechada')
       .eq('total', 0)
-      .gte('fechada_em', desde)
+      .gte('criado_em', desde)
+    if (eCortesias) return { ok: false, error: msgErro(eCortesias.message, 'validar o teto de cortesias') }
     const usado = ((cortesias ?? []) as { total_bruto: number | null }[]).reduce((s, r) => s + (Number(r.total_bruto) || 0), 0)
     if (usado + subtotal > CORTESIA_LIMIT_MES) {
       const restante = Math.max(0, CORTESIA_LIMIT_MES - usado)
       return { ok: false, error: `Teto mensal de cortesias da unidade atingido (R$ ${CORTESIA_LIMIT_MES.toLocaleString('pt-BR')}). Restam R$ ${restante.toLocaleString('pt-BR')}.` }
     }
   }
-
-  // ── Próximo número da OS (max+1 escopado por unidade — sem sequence no lkii) ──
-  const { data: ult } = await op.sb
-    .from('os')
-    .select('numero')
-    .eq('unidade_id', unidadeId)
-    .order('numero', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const numero = ((ult as { numero: number } | null)?.numero ?? 0) + 1
 
   // ── Observação (marca PDV + vendedor + NFS-e) ──
   const obsPartes = ['[PDV]']
@@ -135,29 +133,24 @@ export async function finalizarVenda(input: FinalizarVendaInput): Promise<Action
   if (input.observacao?.trim()) obsPartes.push(input.observacao.trim())
   const observacao = obsPartes.join(' · ')
 
-  // ── Cria a OS já fechada ──
-  const { data: osRow, error: eOs } = await op.sb
-    .from('os')
-    .insert({
-      numero,
-      unidade_id: unidadeId,
-      cliente_id: (input.clienteId || '').trim() || null,
-      status: 'fechada',
-      origem: 'avulsa',
-      observacao,
-      criado_por: op.userId,
-      fechada_em: new Date().toISOString(),
-      preco_total: total,
-      desconto_total: descontoValor,
-      total_bruto: subtotal,
-      total,
-      valor_pago: total,
-      valor_pendente: 0,
-    })
-    .select('id')
-    .single()
-  if (eOs) return { ok: false, error: msgErro(eOs.message, 'registrar a venda') }
-  const osId = (osRow as { id: string }).id
+  // ── Cria a OS já fechada (numero max+1 com retry anti-corrida — sem sequence no lkii) ──
+  const osNova = await inserirOSComNumero(op.sb, unidadeId, {
+    cliente_id: (input.clienteId || '').trim() || null,
+    status: 'fechada',
+    origem: 'avulsa',
+    observacao,
+    criado_por: op.userId,
+    fechada_em: new Date().toISOString(),
+    preco_total: total,
+    desconto_total: descontoValor,
+    total_bruto: subtotal,
+    total,
+    valor_pago: total,
+    valor_pendente: 0,
+  })
+  if ('error' in osNova) return { ok: false, error: msgErro(osNova.error, 'registrar a venda') }
+  const osId = osNova.id
+  const numero = osNova.numero
 
   // ── Itens (desconto distribuído proporcionalmente pelo % da venda) ──
   for (const it of itens) {

@@ -5,7 +5,7 @@ import {
   resolvePeriodo, rangeISO, hojeBR, META_NOVOS_PCT, META_AVAL_PCT, type PeriodoKey,
 } from '@/lib/agenda'
 import { DashFiltro } from './DashFiltro'
-import { Corridinha } from './Corridinha'
+import { Corridinha, type CorridinhaData, type RankRow } from './Corridinha'
 
 /**
  * Dashboard da unidade (rota /). Server Component que substitui o clone estático.
@@ -113,6 +113,17 @@ export async function DashboardUnidade({ searchParams }: { searchParams: SP }) {
   const greetNome = (ctx?.nome || 'Operador').split(' ')[0]
   const unidLabel = ctx?.activeUnitName || 'Todas as unidades'
 
+  // ── Corridinha / ranking da rede (dados REAIS por unidade) ──────────────────
+  // Hoje (dia) e mês corrente, agregados por unidade a partir de agendamentos/OS.
+  const hojeRange = rangeISO(hoje, hoje)
+  const corridinha = await buildCorridinha(
+    sb,
+    ctx?.unidades ?? [],
+    unidadeId,
+    hojeRange,
+    mesRange,
+  )
+
   // Referência da rede (média por unidade) — números do legado como baseline visual.
   const REDE = { ag: 980, comp: 764, compP: 78, conv: 480, convP: 49, ticket: 392 }
 
@@ -202,8 +213,8 @@ export async function DashboardUnidade({ searchParams }: { searchParams: SP }) {
       {/* Simulação de crescimento (dashSim) */}
       <Simulacao ag={totalAg} compP={pctComp} convP={pctConv} ticket={ticket} rede={REDE} />
 
-      {/* Corridinha + ranking de agendamentos do mês (client, com dados da rede) */}
-      <Corridinha unidadeNome={unidLabel} />
+      {/* Corridinha + ranking de agendamentos do mês (dados reais da rede) */}
+      <Corridinha data={corridinha} />
     </div>
   )
 }
@@ -235,6 +246,108 @@ function periodoSomaDias(iso: string, n: number): string {
   const d = new Date(`${iso}T12:00:00-03:00`)
   d.setDate(d.getDate() + n)
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d)
+}
+
+// ── Ranking real da rede (corridinha) ───────────────────────────────────────
+// Agrega agendamentos (dia/mês) e vendas/OS fechadas (dia/mês) por unidade,
+// usando SÓ dados reais. Sem mock, sem Math.random. Vendas entram apenas como
+// POSIÇÃO (valor oculto, paridade com o legado). Erro de query → estado honesto.
+const PAGE = 1000
+const PULL_CAP = 30000
+
+/** Soma do `total` das OS fechadas no período, agrupado por unidade_id. */
+async function somaOsPorUnidade(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  unidadeId: string | null, de: string, ate: string,
+): Promise<{ map: Map<string, number>; erro: boolean }> {
+  const map = new Map<string, number>()
+  let from = 0
+  for (;;) {
+    let q = sb.from('os').select('unidade_id, total')
+      .eq('status', 'fechada').gte('fechada_em', de).lt('fechada_em', ate)
+    if (unidadeId) q = q.eq('unidade_id', unidadeId)
+    const { data, error } = await q.range(from, from + PAGE - 1)
+    if (error) return { map, erro: true }
+    const rows = (data ?? []) as Array<{ unidade_id: string | null; total: number | null }>
+    for (const r of rows) {
+      if (!r.unidade_id) continue
+      map.set(r.unidade_id, (map.get(r.unidade_id) ?? 0) + (Number(r.total) || 0))
+    }
+    if (rows.length < PAGE || from + PAGE >= PULL_CAP) break
+    from += PAGE
+  }
+  return { map, erro: false }
+}
+
+/** Contagem de agendamentos não-cancelados no período, agrupado por unidade_id. */
+async function contaAgPorUnidade(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  unidadeId: string | null, de: string, ate: string,
+): Promise<{ map: Map<string, number>; erro: boolean }> {
+  const map = new Map<string, number>()
+  let from = 0
+  for (;;) {
+    let q = sb.from('agendamentos').select('unidade_id')
+      .gte('inicio', de).lt('inicio', ate).not('status', 'in', '(cancelado)')
+    if (unidadeId) q = q.eq('unidade_id', unidadeId)
+    const { data, error } = await q.range(from, from + PAGE - 1)
+    if (error) return { map, erro: true }
+    const rows = (data ?? []) as Array<{ unidade_id: string | null }>
+    for (const r of rows) {
+      if (!r.unidade_id) continue
+      map.set(r.unidade_id, (map.get(r.unidade_id) ?? 0) + 1)
+    }
+    if (rows.length < PAGE || from + PAGE >= PULL_CAP) break
+    from += PAGE
+  }
+  return { map, erro: false }
+}
+
+/** Converte um mapa unidade→valor em posições (1 = maior). Só inclui valores > 0. */
+function posicoes(map: Map<string, number>): Map<string, number> {
+  const ordenado = [...map.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
+  const pos = new Map<string, number>()
+  ordenado.forEach(([id], i) => pos.set(id, i + 1))
+  return pos
+}
+
+async function buildCorridinha(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  unidades: Array<{ id: string; nome: string }>,
+  minhaId: string | null,
+  hojeRange: { de: string; ate: string },
+  mesRange: { de: string; ate: string },
+): Promise<CorridinhaData> {
+  if (unidades.length === 0) return { rows: [], minhaId, erro: false }
+
+  // Quando o usuário tem unidade ativa, a RLS pode limitar a leitura à própria
+  // unidade — então NÃO filtramos por unidade aqui (queremos a rede inteira).
+  // A RLS do Supabase ainda decide o que cada perfil enxerga.
+  const [agDia, agMes, vendaDia, vendaMes] = await Promise.all([
+    contaAgPorUnidade(sb, null, hojeRange.de, hojeRange.ate),
+    contaAgPorUnidade(sb, null, mesRange.de, mesRange.ate),
+    somaOsPorUnidade(sb, null, hojeRange.de, hojeRange.ate),
+    somaOsPorUnidade(sb, null, mesRange.de, mesRange.ate),
+  ])
+
+  const erro = agDia.erro || agMes.erro || vendaDia.erro || vendaMes.erro
+  if (erro) return { rows: [], minhaId, erro: true }
+
+  const posDia = posicoes(vendaDia.map)
+  const posMes = posicoes(vendaMes.map)
+
+  const rows: RankRow[] = unidades.map((u) => ({
+    id: u.id,
+    u: u.nome,
+    agd: agDia.map.get(u.id) ?? 0,
+    agm: agMes.map.get(u.id) ?? 0,
+    posVendaDia: posDia.get(u.id) ?? 0,
+    posVendaMes: posMes.get(u.id) ?? 0,
+    temVendaDia: (vendaDia.map.get(u.id) ?? 0) > 0,
+    temVendaMes: (vendaMes.map.get(u.id) ?? 0) > 0,
+  }))
+
+  return { rows, minhaId, erro: false }
 }
 
 // ── Subcomponentes visuais ──────────────────────────────────────────────────
