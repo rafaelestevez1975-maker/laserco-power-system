@@ -29,7 +29,7 @@ const FASES: { nome: string; cor: string }[] = [
 const prioColor = (p: string | null) => (p === 'alta' || p === 'critica' ? '#C2410C' : p === 'baixa' ? '#64748B' : '#9A6700')
 const money = (v: number | null) => (v == null ? null : moedaBR(v))
 
-export function SacKanban({ tickets: ticketsProp }: { tickets: Ticket[] }) {
+export function SacKanban({ tickets: ticketsProp, totais }: { tickets: Ticket[]; totais?: Record<string, number> }) {
   const router = useRouter()
   const [tickets, setTickets] = useState<Ticket[]>(ticketsProp)
   const [detail, setDetail] = useState<Ticket | null>(null)
@@ -53,7 +53,7 @@ export function SacKanban({ tickets: ticketsProp }: { tickets: Ticket[] }) {
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div className="kanban">
           {FASES.map((f) => (
-            <Col key={f.nome} fase={f} tickets={tickets.filter((t) => (t.fase || 'Novo') === f.nome)} onOpen={setDetail} />
+            <Col key={f.nome} fase={f} total={totais?.[f.nome]} tickets={tickets.filter((t) => (t.fase || 'Novo') === f.nome)} onOpen={setDetail} />
           ))}
         </div>
       </DndContext>
@@ -62,11 +62,14 @@ export function SacKanban({ tickets: ticketsProp }: { tickets: Ticket[] }) {
   )
 }
 
-function Col({ fase, tickets, onOpen }: { fase: { nome: string; cor: string }; tickets: Ticket[]; onOpen: (t: Ticket) => void }) {
+function Col({ fase, tickets, total, onOpen }: { fase: { nome: string; cor: string }; tickets: Ticket[]; total?: number; onOpen: (t: Ticket) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: fase.nome })
+  const totalReal = total ?? tickets.length
+  const capado = total != null && total > tickets.length
   return (
     <div className="kan-col">
-      <div className="kan-head"><span className="dot" style={{ background: fase.cor }} /><span className="t">{fase.nome}</span><span className="cnt">{tickets.length}</span></div>
+      <div className="kan-head"><span className="dot" style={{ background: fase.cor }} /><span className="t">{fase.nome}</span><span className="cnt">{totalReal}</span></div>
+      {capado && <div style={{ fontSize: 10, color: 'var(--text-3)', padding: '0 2px 4px' }}>mostrando {tickets.length} mais recentes</div>}
       <div ref={setNodeRef} className="kan-body" style={isOver ? { outline: '2px dashed var(--brand-400)', outlineOffset: -4, borderRadius: 8 } : undefined}>
         {tickets.length === 0 && <div style={{ padding: 10, fontSize: 12, color: 'var(--text-3)' }}>Sem chamados</div>}
         {tickets.map((t) => <Card key={t.id} t={t} onOpen={onOpen} />)}
