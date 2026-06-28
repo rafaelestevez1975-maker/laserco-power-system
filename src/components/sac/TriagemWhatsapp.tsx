@@ -251,7 +251,9 @@ export function TriagemWhatsapp({
       <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Veja as conversas e abra o chamado com 1 clique</span>
     </div>
     {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 14, alignItems: 'start' }}>
+    {/* Altura travada na viewport: a thread rola DENTRO da coluna (scroll interno) em vez de
+        empurrar a página inteira pra baixo. Offset ≈ topbar + paddings + rel-head + header. */}
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100vh - 250px)', minHeight: 360 }}>
       {/* Lista de conversas — rel-card "Conversas (N)" do legado */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--line)' }}>Conversas ({totalReal})</div>
@@ -277,7 +279,7 @@ export function TriagemWhatsapp({
             </div>
           )}
         </div>
-        <div style={{ maxHeight: 580, overflow: 'auto', flex: 1 }}>
+        <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
           {filtrados.length === 0 && <div style={{ padding: 16, color: 'var(--text-3)', fontSize: 13 }}>Nenhuma conversa.</div>}
           {filtrados.map((c) => {
             const unread = !!c.nao_lidas && !lidos.has(c.id)
@@ -345,7 +347,7 @@ export function TriagemWhatsapp({
               </div>
             </div>
             {/* Área de bolhas: fundo var(--bg) como no legado (index.html:9069). */}
-            <div ref={threadRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg)' }}>
+            <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg)' }}>
               {thread.length === 0 && <div style={{ margin: 'auto', color: 'var(--text-3)', fontSize: 13 }}>Sem mensagens nesta conversa.</div>}
               {thread.map((m) => {
                 const entrada = isIn(m.direcao)
