@@ -1,10 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
-import { primeiroPagamentoValido, MSG_DIA15, montarObs, lerObsMeta } from '@/lib/sac'
+import { primeiroPagamentoValido, MSG_DIA15, montarObs, lerObsMeta, montarObsCredor } from '@/lib/sac'
 
 export type NovoChamadoInput = {
   nome_cliente: string
@@ -194,8 +193,7 @@ export async function solicitarReembolso(
     .maybeSingle()
   if (jaExiste) return { ok: false, error: 'Já existe um reembolso lançado para este chamado no Financeiro. Verifique em Contas a Pagar antes de relançar.' }
 
-  const { data: cat } = await sb.from('plano_contas').select('id').eq('codigo', '2.3').limit(1).single()
-  const categoria_id = (cat as { id?: string } | null)?.id ?? null
+  const categoria_id = await categoriaReembolso(sb)
 
   const hoje = new Date().toISOString().slice(0, 10)
   const ref = tk.protocolo || `SAC-${tk.numero ?? ''}`
@@ -224,11 +222,27 @@ export async function solicitarReembolso(
 
   revalidatePath('/sac/kanban')
   revalidatePath('/sac/chamados')
+  revalidatePath('/sac/pagamentos')
   revalidatePath('/sac')
   return { ok: true }
 }
 
 function addMonths(d: Date, n: number): Date { const x = new Date(d); x.setMonth(x.getMonth() + n); return x }
+
+/** Resolve a categoria do plano de contas para um reembolso/devolução do SAC.
+ *  O legado classifica como "Reembolso SAC". Não existe essa categoria no seed → tentamos,
+ *  por NOME (não por código fixo, que apontava para '2.3' = Cessão de Direitos, errado), as
+ *  categorias de devolução a clientes que existem no plano (categorias.sql). Se nenhuma existir,
+ *  cai em null graciosamente (lançamento sem categoria, como antes — nunca quebra). */
+async function categoriaReembolso(sb: SB): Promise<string | null> {
+  const candidatos = ['Reembolso SAC', 'Devolução a Clientes', 'Devoluções a Clientes', 'Devoluções e Abatimentos']
+  for (const nome of candidatos) {
+    const { data } = await sb.from('plano_contas').select('id').ilike('nome', nome).limit(1).maybeSingle()
+    const id = (data as { id?: string } | null)?.id
+    if (id) return id
+  }
+  return null
+}
 
 /** Resolve a empresa do chamado: empresa_id do ticket → empresa da unidade → empresa única.
  *  (Os chamados importados vêm sem empresa_id/unidade_id.) */
@@ -246,9 +260,11 @@ async function resolverEmpresa(sb: SB, empresaId?: string | null, unidadeId?: st
 /** Cria um acordo de pagamento PARCELADO de um chamado (status 'aguardando_ok' até o gestor validar).
  *  Gera as parcelas (valor igual, última ajusta o resto; vencimento mês a mês) e move o chamado p/ Em pagamento. */
 export async function criarAcordo(ticketId: string, valorTotal: number, nParcelas: number, data1: string, observacao?: string): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { op, error: authErr } = await requireOperador()
+  if (!op) return { ok: false, error: authErr }
+  // Acordo a partir do chamado: quem opera o SAC (atendente/gestor) ou o financeiro.
+  if (!temPapel(op.papel, ...PAPEIS_SAC, 'financeiro')) return { ok: false, error: 'Você não tem permissão para criar acordos.' }
+  const sb = op.sb
   if (!(valorTotal > 0)) return { ok: false, error: 'Valor total deve ser maior que zero.' }
   const n = Math.round(nParcelas)
   if (!(n >= 1 && n <= 24)) return { ok: false, error: 'Número de parcelas deve ser de 1 a 24.' }
@@ -266,7 +282,7 @@ export async function criarAcordo(ticketId: string, valorTotal: number, nParcela
   const { data: ac, error: ea } = await sb.from('sac_acordos').insert({
     ticket_id: ticketId, empresa_id, unidade_id: tk.unidade_id ?? null,
     cliente: tk.nome_cliente ?? null, valor_total: valorTotal, n_parcelas: n,
-    status: 'aguardando_ok', observacao: observacao?.trim() || null, criado_por: user.id,
+    status: 'aguardando_ok', observacao: montarObsCredor(observacao || '', ''), criado_por: op.userId,
   }).select('id').single()
   if (ea) return { ok: false, error: msgErro(ea.message, 'criar acordo') }
   const acordoId = (ac as { id: string }).id
@@ -286,16 +302,19 @@ export async function criarAcordo(ticketId: string, valorTotal: number, nParcela
   return { ok: true }
 }
 
-export type AcordoAvulsoInput = { cliente: string; unidade_id?: string | null; valorTotal: number; nParcelas: number; data1: string; observacao?: string }
+export type AcordoAvulsoInput = { cliente: string; unidade_id?: string | null; valorTotal: number; nParcelas: number; data1: string; observacao?: string; ticketId?: string | null }
 
-/** Cria um acordo AVULSO (sem chamado vinculado) direto na aba Pagamentos.
+/** Cria um acordo direto na aba Pagamentos. Pode ser AVULSO (sem chamado) ou VINCULADO
+ *  a um chamado (dropdown "Chamado vinculado" do legado, sacAcChamPick): nesse caso herda
+ *  empresa/unidade/cliente do ticket, grava ticket_id e move o chamado p/ "Em pagamento".
  *  Mesma regra de parcelamento e do dia 15; entra como 'aguardando_ok'. */
 export async function criarAcordoAvulso(input: AcordoAvulsoInput): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
-  const cliente = (input.cliente || '').trim()
-  if (!cliente) return { ok: false, error: 'Informe o cliente.' }
+  const { op, error: authErr } = await requireOperador()
+  if (!op) return { ok: false, error: authErr }
+  // Gate igual ao da UI (botão "Novo acordo" só aparece p/ gestor/financeiro/admin).
+  if (!temPapel(op.papel, 'gestor', 'financeiro')) return { ok: false, error: 'Você não tem permissão para criar acordos.' }
+  const sb = op.sb
+  let cliente = (input.cliente || '').trim()
   if (!(input.valorTotal > 0)) return { ok: false, error: 'Valor total deve ser maior que zero.' }
   const n = Math.round(input.nParcelas)
   if (!(n >= 1 && n <= 24)) return { ok: false, error: 'Número de parcelas deve ser de 1 a 24.' }
@@ -303,13 +322,27 @@ export async function criarAcordoAvulso(input: AcordoAvulsoInput): Promise<{ ok:
   if (isNaN(d1.getTime())) return { ok: false, error: 'Data do 1º pagamento inválida.' }
   if (!primeiroPagamentoValido(input.data1)) return { ok: false, error: MSG_DIA15 }
 
-  const empresa_id = await resolverEmpresa(sb, null, input.unidade_id ?? null)
+  // Chamado vinculado (opcional): herda empresa/unidade/cliente do ticket.
+  const ticketId = input.ticketId?.trim() || null
+  let empresa_id: string | null
+  let unidade_id: string | null = input.unidade_id ?? null
+  if (ticketId) {
+    const { data: t } = await sb.from('sac_tickets').select('empresa_id, unidade_id, nome_cliente').eq('id', ticketId).single()
+    const tk = t as { empresa_id?: string | null; unidade_id?: string | null; nome_cliente?: string } | null
+    if (!tk) return { ok: false, error: 'Chamado vinculado não encontrado.' }
+    if (!cliente) cliente = (tk.nome_cliente || '').trim()
+    unidade_id = tk.unidade_id ?? unidade_id
+    empresa_id = await resolverEmpresa(sb, tk.empresa_id, tk.unidade_id)
+  } else {
+    empresa_id = await resolverEmpresa(sb, null, unidade_id)
+  }
+  if (!cliente) return { ok: false, error: 'Informe o cliente.' }
   if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
 
   const { data: ac, error: ea } = await sb.from('sac_acordos').insert({
-    ticket_id: null, empresa_id, unidade_id: input.unidade_id ?? null,
+    ticket_id: ticketId, empresa_id, unidade_id,
     cliente, valor_total: input.valorTotal, n_parcelas: n,
-    status: 'aguardando_ok', observacao: input.observacao?.trim() || null, criado_por: user.id,
+    status: 'aguardando_ok', observacao: montarObsCredor(input.observacao || '', ''), criado_por: op.userId,
   }).select('id').single()
   if (ea) return { ok: false, error: msgErro(ea.message, 'criar acordo') }
   const acordoId = (ac as { id: string }).id
@@ -324,6 +357,26 @@ export async function criarAcordoAvulso(input: AcordoAvulsoInput): Promise<{ ok:
   const { error: ep } = await sb.from('sac_parcelas').insert(parcelas)
   if (ep) return { ok: false, error: ep.message }
 
+  if (ticketId) await sb.from('sac_tickets').update({ fase: 'Em pagamento', valor_devolucao: input.valorTotal }).eq('id', ticketId)
+  revalidatePath('/sac/pagamentos')
+  if (ticketId) { revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac') }
+  return { ok: true }
+}
+
+/** Registra a "Observação ao credor" + data de previsão de um acordo (paridade sacAcordoObs).
+ *  Grava ambos na coluna `sac_acordos.observacao` (não há coluna dedicada no schema), exibidos
+ *  no banner do card. Visível a todos. Só gestor/financeiro/admin edita. */
+export async function salvarObsCredor(acordoId: string, texto: string, dataPrev: string): Promise<{ ok: boolean; error?: string }> {
+  const { op, error: authErr } = await requireOperador()
+  if (!op) return { ok: false, error: authErr }
+  if (!temPapel(op.papel, 'gestor', 'financeiro')) return { ok: false, error: 'Apenas gestor, financeiro ou admin registra observação ao credor.' }
+  const sb = op.sb
+
+  const { data: ac } = await sb.from('sac_acordos').select('id').eq('id', acordoId).maybeSingle()
+  if (!ac) return { ok: false, error: 'Acordo não encontrado.' }
+
+  const { error } = await sb.from('sac_acordos').update({ observacao: montarObsCredor(texto, dataPrev) }).eq('id', acordoId)
+  if (error) return { ok: false, error: msgErro(error.message, 'salvar a observação ao credor') }
   revalidatePath('/sac/pagamentos')
   return { ok: true }
 }
@@ -342,8 +395,7 @@ export async function validarAcordo(acordoId: string): Promise<{ ok: boolean; er
 
   const { data: parc } = await sb.from('sac_parcelas').select('id, n, vencimento, valor, lancamento_id').eq('acordo_id', acordoId).order('n', { ascending: true })
   const parcelas = (parc ?? []) as { id: string; n: number; vencimento: string; valor: number; lancamento_id: string | null }[]
-  const { data: cat } = await sb.from('plano_contas').select('id').eq('codigo', '2.3').limit(1).single()
-  const categoria_id = (cat as { id?: string } | null)?.id ?? null
+  const categoria_id = await categoriaReembolso(sb)
   let ref = 'acordo'
   if (acordo.ticket_id) {
     const { data: tkr } = await sb.from('sac_tickets').select('protocolo, numero').eq('id', acordo.ticket_id).single()

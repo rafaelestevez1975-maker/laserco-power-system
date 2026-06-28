@@ -44,7 +44,7 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
         <div className="cli-scroll">
           <table className="cli-table">
             <thead>
-              <tr><th>Protocolo</th><th>Cliente</th><th>Canal</th><th>Unidade</th><th>Atendente</th><th>Motivo</th><th>Prioridade</th><th>Fase</th><th>Situação</th><th>SLA</th><th></th></tr>
+              <tr><th>Protocolo</th><th>Cliente</th><th>Canal</th><th>Unidade</th><th>Atendente</th><th>Motivo</th><th>Prioridade</th><th>Fase</th><th>Status</th><th>SLA</th><th></th></tr>
             </thead>
             <tbody>
               {tickets.length === 0 && <tr><td colSpan={11} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum chamado para os filtros selecionados.</td></tr>}

@@ -13,12 +13,14 @@ export type Reembolso = {
 const stPill = (s: string | null) =>
   s === 'pago' ? { bg: '#E7F0EC', c: '#15803D', t: 'Pago' } : s === 'vencido' ? { bg: '#FBE9EB', c: '#D85563', t: 'Vencido' } : { bg: '#FBEFD9', c: '#9A6700', t: 'Pendente' }
 
-export function PagamentosSac({ itens, podeBaixar }: { itens: Reembolso[]; podeBaixar: boolean }) {
+export function PagamentosSac({ itens, totalReembolsos, podeBaixar }: { itens: Reembolso[]; totalReembolsos: number; podeBaixar: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const totalPend = itens.filter((i) => i.status !== 'pago').reduce((s, i) => s + (i.valor || 0), 0)
   const totalPago = itens.filter((i) => i.status === 'pago').reduce((s, i) => s + (i.valor || 0), 0)
+  // A página carrega no máx. 200 reembolsos; se houver mais, os somatórios cobrem só os carregados.
+  const truncado = totalReembolsos > itens.length
 
   async function baixar(id: string) {
     if (!confirm('Confirmar baixa deste reembolso? O chamado vinculado será concluído automaticamente.')) return
@@ -35,8 +37,9 @@ export function PagamentosSac({ itens, podeBaixar }: { itens: Reembolso[]; podeB
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, margin: '4px 0 16px' }}>
         <div className="metric-box"><span>Reembolsos pendentes</span><b>{moedaBR(totalPend)}</b></div>
         <div className="metric-box"><span>Já pagos</span><b>{moedaBR(totalPago)}</b></div>
-        <div className="metric-box"><span>Total de solicitações</span><b>{itens.length}</b></div>
+        <div className="metric-box"><span>Total de solicitações</span><b>{totalReembolsos}</b></div>
       </div>
+      {truncado && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 8 }}><i className="ti ti-info-circle" /> Mostrando os {itens.length} reembolsos mais recentes de {totalReembolsos}. Os somatórios acima cobrem só os carregados.</div>}
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
 
       <div className="cli-card">

@@ -36,40 +36,40 @@ export function SacFiltros({ atendentes = [], motivos = [], unidades = [], child
       </div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
-          defaultValue={sp.get('q') ?? ''} placeholder="🔎 Cliente, protocolo, CPF, telefone, motivo, canal ou unidade..."
+          defaultValue={sp.get('q') ?? ''} placeholder="Buscar cliente, protocolo..."
           onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
           style={{ ...sel, minWidth: 260 }}
         />
-        <select value={sp.get('canal') ?? ''} onChange={(e) => setParams({ canal: e.target.value })} style={sel}>
-          <option value="">Todos os canais</option>
-          {CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={sp.get('fase') ?? ''} onChange={(e) => setParams({ fase: e.target.value })} style={sel}>
-          <option value="">Todas as fases</option>
-          {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
-        </select>
-        <select value={sp.get('situacao') ?? ''} onChange={(e) => setParams({ situacao: e.target.value })} style={sel}>
-          <option value="">Todas as situações</option>
-          {SITUACOES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
         {motivos.length > 0 && (
           <select value={sp.get('motivo') ?? ''} onChange={(e) => setParams({ motivo: e.target.value })} style={sel}>
-            <option value="">Todos os motivos</option>
+            <option value="">Motivo (todos)</option>
             {motivos.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         )}
         {atendentes.length > 0 && (
           <select value={sp.get('atendente') ?? ''} onChange={(e) => setParams({ atendente: e.target.value })} style={sel}>
-            <option value="">Todos os atendentes</option>
+            <option value="">Atendente (todos)</option>
             {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
           </select>
         )}
         {unidades.length > 0 && (
           <select value={sp.get('unidade') ?? ''} onChange={(e) => setParams({ unidade: e.target.value })} style={sel}>
-            <option value="">Todas as unidades</option>
+            <option value="">Unidade (todas)</option>
             {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
           </select>
         )}
+        <select value={sp.get('canal') ?? ''} onChange={(e) => setParams({ canal: e.target.value })} style={sel}>
+          <option value="">Canal (todos)</option>
+          {CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={sp.get('situacao') ?? ''} onChange={(e) => setParams({ situacao: e.target.value })} style={sel}>
+          <option value="">Status (todos)</option>
+          {SITUACOES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={sp.get('fase') ?? ''} onChange={(e) => setParams({ fase: e.target.value })} style={sel}>
+          <option value="">Fase (todas)</option>
+          {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
+        </select>
         <select value={periodo} onChange={(e) => setParams({ periodo: e.target.value, ...(e.target.value !== 'custom' ? { di: '', df: '' } : {}) })} style={sel}>
           {PERIODOS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
         </select>

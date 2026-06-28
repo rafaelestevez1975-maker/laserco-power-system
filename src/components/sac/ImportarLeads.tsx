@@ -96,24 +96,29 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
   }
 
   return (
-    <div className="lc-card" style={{ padding: 18, maxWidth: 880 }}>
-      <h3 className="lc-title" style={{ fontSize: 16, marginBottom: 4 }}>Importar chamados de planilha</h3>
-      <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 14 }}>Exporte do Reclame Aqui / Procon / Sults (ou um CSV) e suba aqui. Mapeie as colunas e importe em lote.</p>
-
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-        <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
-          <i className="ti ti-upload" /> Escolher arquivo (.xlsx / .csv)
-          <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={(e) => onFile(e.target.files?.[0])} />
-        </label>
-        <button type="button" className="btn" onClick={baixarModelo}><i className="ti ti-download" /> Baixar modelo</button>
-        {fileName && <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{fileName} · {rows.length} linha(s)</span>}
+    <>
+      {/* Header idêntico ao legado (sacImportar, index.html:9141): card .rel-card com título
+          ti-file-import brand-500 + descrição das colunas esperadas. */}
+      <div className="rel-card" style={{ marginBottom: 12 }}>
+        <b><i className="ti ti-file-import" style={{ color: 'var(--brand-500)' }} /> Importar leads / reclamações</b>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', margin: '6px 0 0' }}>Importe uma planilha (.xlsx) com reclamações vindas de Sults, Reclame Aqui, Procon ou planilhas internas. Colunas: Cliente, CPF, WhatsApp, Canal, Unidade, Motivo, Data, Valor Pago, Reembolso.</p>
       </div>
 
-      {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginBottom: 12 }}>{err}</div>}
-      {msg && <div className="modal-note" style={{ background: '#E7F0EC', color: '#15803D', marginBottom: 12 }}>{msg}</div>}
+      {/* Card de ação idêntico ao legado (index.html:9142): "Baixar modelo" (ghost) +
+          "Selecionar planilha" (primary) + info. O mapeamento real fica no card abaixo. */}
+      <div className="rel-card" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button type="button" className="btn btn-ghost" onClick={baixarModelo}><i className="ti ti-download" /> Baixar modelo</button>
+        <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
+          <i className="ti ti-upload" /> Selecionar planilha
+          <input type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={(e) => onFile(e.target.files?.[0])} />
+        </label>
+        {fileName && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{fileName} · {rows.length} linha(s)</span>}
+        {err && <span style={{ fontSize: 12, color: 'var(--red)' }}>{err}</span>}
+        {msg && <span style={{ fontSize: 12, color: '#15803D' }}>{msg}</span>}
+      </div>
 
       {map && (
-        <>
+        <div className="rel-card" style={{ marginTop: 12 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Canal (origem da planilha)</label>
               <select style={inp} value={canal} onChange={(e) => setCanal(e.target.value)}>{CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}</select>
@@ -158,8 +163,8 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
               {busy ? 'Importando…' : <><i className="ti ti-download" /> Importar {validas.length} chamado(s)</>}
             </button>
           </div>
-        </>
+        </div>
       )}
-    </div>
+    </>
   )
 }

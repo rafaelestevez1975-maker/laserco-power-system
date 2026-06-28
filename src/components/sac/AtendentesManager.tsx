@@ -67,9 +67,17 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
 
   return (
     <>
-      <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 14px', gap: 10, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          <i className="ti ti-inbox" /> Fila de atendimento{comEscopo ? <> · <b>{escopo}</b></> : <> · <b>toda a rede</b></>}: <b>{filaConversas}</b> conversa(s) aguardando humano · <b>{filaTickets}</b> chamado(s) sem atendente
+      {/* Card de apresentação — paridade com o legado (rel-card, título + "Cadastrar no Colaboradores").
+          Mantém as features novas: status da fila, "Novo atendente" e "Distribuir fila". */}
+      <div className="rel-card" style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <b><i className="ti ti-users" style={{ color: 'var(--brand-500)' }} /> Atendentes do SAC</b>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, maxWidth: 620 }}>
+            O cadastro de atendentes (com acessos, perfil e login) é feito no módulo <b>Colaboradores</b>. Aqui você acompanha a performance e a premiação.
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6 }}>
+            <i className="ti ti-inbox" /> Fila de atendimento{comEscopo ? <> · <b>{escopo}</b></> : <> · <b>toda a rede</b></>}: <b>{filaConversas}</b> conversa(s) aguardando humano · <b>{filaTickets}</b> chamado(s) sem atendente
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           {msg && <span style={{ fontSize: 12.5, color: 'var(--brand-600)' }}>{msg}</span>}
@@ -134,12 +142,17 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
         </div>
       </div>
 
-      {/* Premiação por desempenho — paridade com o card do legado + atalho à Matriz de comissões */}
-      <div className="cli-card" style={{ marginTop: 12, padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          <b><i className="ti ti-trophy" /> Premiação por desempenho</b>
-          <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
-            Prêmio estimado pelos KPIs reais (resolvidos, SLA, reversões). {ativos.length} atendente(s) ativo(s).
+      {/* Premiação por desempenho — paridade visual com o card do legado: rel-card fundo
+          surface-2, ícone ouro ti-percentage e link à Matriz de Comissões. Mantém os atalhos
+          novos (Ranking SAC, Colaboradores). */}
+      <div className="rel-card" style={{ marginTop: 12, background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <i className="ti ti-percentage" style={{ color: 'var(--gold-500)', fontSize: 20 }} />
+          <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+            <b>Premiação por desempenho:</b> o perfil <b>Atendente</b> participa da <Link href="/cadastros/comissoes" style={{ color: 'var(--brand-500)', fontWeight: 700 }}>Matriz de Comissões</Link> com critérios de SAC (casos resolvidos, rapidez e SLA). Configure metas e prêmios por lá.
+            <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
+              Prêmio estimado pelos KPIs reais (resolvidos, SLA, reversões). {ativos.length} atendente(s) ativo(s).
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { moedaBR } from '@/lib/fmt'
+import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 
 type Bar = { nome: string; n: number }
 type Kpis = { total: number; concluidos: number; emAberto: number; slaViol: number; slaPct: number }
@@ -98,63 +99,79 @@ export function SacRelatorios({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 16, marginBottom: 18 }}>
-        <CardBars title="Por canal" icon="ti-chart-bar" dados={canais} total={kpis.total} />
-        <CardBars title="Por fase" icon="ti-layout-kanban" dados={fases} total={kpis.total} />
-        <CardBars title="Por prioridade" icon="ti-flag" dados={prioridades.map((p) => ({ nome: p.nome.replace(/^\w/, (c) => c.toUpperCase()), n: p.n }))} total={kpis.total} />
-        {motivos.length > 0 && <CardBars title="Por motivo (top)" icon="ti-list-details" dados={motivos} total={kpis.total} />}
+      {/* Por canal / Por motivo — grid 2 cols dash-w, motivo dourado (paridade legado sacRelatorios). */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <BarChart title="Por canal" icon="ti-radio" rows={toRows(canais)} />
+        <BarChart title="Por motivo" icon="ti-list-details" rows={toRows(motivos)} gold emptyMsg="Sem dados no período." />
       </div>
 
+      {/* Por fase / Por prioridade — melhorias da migração, mesmo visual dash-w. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <BarChart title="Por fase" icon="ti-layout-kanban" rows={toRows(fases)} />
+        <BarChart title="Por prioridade" icon="ti-flag" rows={toRows(prioridades.map((p) => ({ nome: p.nome.replace(/^\w/, (c) => c.toUpperCase()), n: p.n })))} />
+      </div>
+
+      {/* Chamados por unidade (Top 10) — restaurado do legado; só na visão "Todas as unidades". */}
       {mostrarUnidade && (
-        <div style={{ marginBottom: 18 }}>
-          <CardBars title="Chamados por unidade (Top 10)" icon="ti-building" dados={porUnidade} total={kpis.total} larguraNome={180} />
+        <div style={{ marginBottom: 14 }}>
+          <BarChart title="Chamados por unidade (Top 10)" icon="ti-building" rows={toRows(porUnidade)} emptyMsg="Sem chamados por unidade no período." />
         </div>
       )}
 
+      {/* Performance por atendente — melhoria da migração; tabela com markup legado (cli-card/cli-scroll/cli-table). */}
       {atendentes.length > 0 && (
-        <div className="rel-card" style={{ padding: 16, marginBottom: 18 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 12 }}><i className="ti ti-users" /> Performance por atendente</h3>
-          <table className="cli-table" style={{ fontSize: 13 }}>
-            <thead><tr><th>Atendente</th><th className="num-r">Chamados</th><th className="num-r">Resolvidos</th><th className="num-r">SLA cumprido</th></tr></thead>
-            <tbody>
-              {atendentes.map((a) => (
-                <tr key={a.nome}>
-                  <td><b>{a.nome}</b></td>
-                  <td className="num-r">{a.total}</td>
-                  <td className="num-r">{a.resolvidos}</td>
-                  <td className="num-r" style={{ color: a.slaPct >= 80 ? 'var(--green)' : a.slaPct >= 50 ? '#9A6700' : 'var(--red)', fontWeight: 700 }}>{a.total ? `${a.slaPct}%` : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="dash-w" style={{ marginBottom: 14 }}>
+          <h4><i className="ti ti-users" /> Performance por atendente</h4>
+          <div className="cli-card">
+            <div className="cli-scroll">
+              <table className="cli-table">
+                <thead><tr><th>Atendente</th><th className="num-r">Chamados</th><th className="num-r">Resolvidos</th><th className="num-r">SLA cumprido</th></tr></thead>
+                <tbody>
+                  {atendentes.map((a) => (
+                    <tr key={a.nome}>
+                      <td><b>{a.nome}</b></td>
+                      <td className="num-r">{a.total}</td>
+                      <td className="num-r">{a.resolvidos}</td>
+                      <td className="num-r" style={{ color: a.slaPct >= 80 ? 'var(--green)' : a.slaPct >= 50 ? '#9A6700' : 'var(--red)', fontWeight: 700 }}>{a.total ? `${a.slaPct}%` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="rel-card" style={{ padding: 16, marginBottom: 18 }}>
-        <h3 style={{ fontSize: 14, marginBottom: 4 }}><i className="ti ti-cash" /> Reembolsos</h3>
+      {/* Reembolsos — restaurado do legado: dashWidget('Reembolsos','ti-cash', relTable([Protocolo,Cliente,Unidade,Valor,Multa,Pagamento])). */}
+      <div className="dash-w" style={{ marginBottom: 14 }}>
+        <h4><i className="ti ti-cash" /> Reembolsos</h4>
         <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
           {reembResumo.count > 0
             ? <>{moedaBR(reembResumo.total)} em {reembResumo.count} solicitação(ões) · {reembResumo.pagos} paga(s)</>
             : 'Nenhum reembolso solicitado no período.'}
         </div>
         {reembolsos.length > 0 && (
-          <table className="cli-table" style={{ fontSize: 13 }}>
-            <thead><tr><th>Protocolo</th><th>Cliente</th><th>Unidade</th><th className="num-r">Valor</th><th>Multa</th><th>Pagamento</th></tr></thead>
-            <tbody>
-              {reembolsos.map((r, i) => (
-                <tr key={`${r.ref}-${i}`}>
-                  <td><b>{r.ref}</b></td>
-                  <td>{r.cliente || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-                  <td>{r.unidade}</td>
-                  <td className="num-r">{moedaBR(r.valor)}</td>
-                  <td>{r.multa ? 'Sim' : <span style={{ color: 'var(--text-3)' }}>Não</span>}</td>
-                  <td>{r.pago
-                    ? <span style={{ color: '#0F6B3A', fontWeight: 700 }}>Pago</span>
-                    : <span style={{ color: '#B7791F', fontWeight: 700 }}>Pendente</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="cli-card">
+            <div className="cli-scroll">
+              <table className="cli-table">
+                <thead><tr><th>Protocolo</th><th>Cliente</th><th>Unidade</th><th className="num-r">Valor</th><th>Multa</th><th>Pagamento</th></tr></thead>
+                <tbody>
+                  {reembolsos.map((r, i) => (
+                    <tr key={`${r.ref}-${i}`}>
+                      <td><b>{r.ref}</b></td>
+                      <td>{r.cliente || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                      <td>{r.unidade}</td>
+                      <td className="num-r">{moedaBR(r.valor)}</td>
+                      <td>{r.multa ? 'Sim' : <span style={{ color: 'var(--text-3)' }}>Não</span>}</td>
+                      <td>{r.pago
+                        ? <span style={{ color: '#0F6B3A', fontWeight: 700 }}>Pago</span>
+                        : <span style={{ color: '#B7791F', fontWeight: 700 }}>Pendente</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
 
@@ -165,26 +182,8 @@ export function SacRelatorios({
   )
 }
 
-function CardBars({ title, icon, dados, total, larguraNome = 130 }: { title: string; icon: string; dados: Bar[]; total: number; larguraNome?: number }) {
-  const max = Math.max(1, ...dados.map((d) => d.n))
-  return (
-    <div className="rel-card" style={{ padding: 16 }}>
-      <h3 style={{ fontSize: 14, marginBottom: 12 }}><i className={`ti ${icon}`} /> {title}</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {dados.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Sem dados no período.</div>}
-        {dados.map((d) => {
-          const pct = total ? Math.round((d.n / total) * 100) : 0
-          return (
-            <div key={d.nome} style={{ display: 'grid', gridTemplateColumns: `${larguraNome}px 1fr 74px`, alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 12.5 }}>{d.nome}</span>
-              <div style={{ background: 'var(--line)', borderRadius: 6, height: 14, overflow: 'hidden' }}>
-                <div style={{ width: `${(d.n / max) * 100}%`, height: '100%', background: 'linear-gradient(90deg,var(--brand-400),var(--brand-600))' }} />
-              </div>
-              <span style={{ fontSize: 12.5, fontWeight: 700, textAlign: 'right' }}>{d.n} <span style={{ fontWeight: 500, color: 'var(--text-3)' }}>({pct}%)</span></span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+// Adapta as barras do servidor ({nome,n}) para o formato do componente compartilhado
+// BarChart ({label,value}). O BarChart já replica dashWidget+barChart do legado (dash-w).
+function toRows(dados: Bar[]): BarRow[] {
+  return dados.map((d) => ({ label: d.nome, value: d.n }))
 }
