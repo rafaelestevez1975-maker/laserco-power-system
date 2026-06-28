@@ -83,23 +83,11 @@ BEGIN
   SELECT id INTO v_unidade FROM unidades WHERE ativa = true ORDER BY nome LIMIT 1;
   IF v_empresa IS NULL THEN RETURN; END IF;
 
-  IF (SELECT count(*) FROM contratos) = 0 THEN
-    FOR r IN SELECT id, nome FROM clientes WHERE ativo = true ORDER BY criado_em DESC NULLS LAST LIMIT 60 LOOP
-      -- plano por rotação
-      v_plano := (ARRAY['Club Bronze','Club Prata','Club Ouro','Club PDRN'])[(i % 4)+1];
-      v_valor := (ARRAY[99.90, 149.90, 229.90, 189.90])[(i % 4)+1];
-      -- status por rotação (maioria ativo; alguns inadimplentes/encerrados/cancelados)
-      v_status := 'ativo';
-      IF i % 11 = 5 THEN v_status := 'inadimplente';
-      ELSIF i % 9 = 7 THEN v_status := 'cancelado';
-      ELSIF i % 13 = 3 THEN v_status := 'encerrado';
-      END IF;
-      v_criado := DATE '2026-06-27' - ((i*5) % 180);
-      -- contratos cancelados/recentes podem não ter assinatura
-      v_assin := CASE WHEN i % 7 = 6 THEN NULL ELSE v_criado + ((i % 3)) END;
-
-      INSERT INTO contratos (empresa_id, unidade_id, cliente_id, cliente_nome, plano, status, valor_mensal, criado_em, assinado_em)
-      VALUES (v_empresa, v_unidade, r.id, r.nome, v_plano, v_status, v_valor, v_criado, v_assin);
+  -- SEM seed de contratos fake (removido a pedido do cliente). A tabela `contratos` nasce
+  -- VAZIA e é alimentada por contratos REAIS (assinatura de plano na venda/OS). O relatório
+  -- de Contratos mostra empty-state honesto até existir contrato real.
+  IF false THEN
+    FOR r IN SELECT id, nome FROM clientes WHERE false LOOP
       i := i + 1;
     END LOOP;
   END IF;

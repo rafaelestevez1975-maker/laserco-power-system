@@ -185,39 +185,10 @@ BEGIN
   -- config padrão
   INSERT INTO fin_config (empresa_id) VALUES (v_empresa) ON CONFLICT (empresa_id) DO NOTHING;
 
-  -- recebíveis (só se vazio)
-  IF (SELECT count(*) FROM fin_recebiveis WHERE empresa_id = v_empresa) = 0 THEN
-    FOR r IN SELECT id, nome FROM unidades WHERE ativa = true ORDER BY nome LOOP
-      v_bruto := 58000 + ((i*37) % 92)*1000 + ((i*53) % 5)*5300;
-      v_roy   := round(v_bruto * 10 / 100, 2);
-      v_fundo := round(v_bruto * 2  / 100, 2);
-      v_status := 'aberto'; v_dias := 0;
-      IF i % 9 = 4 THEN v_status := 'atrasado'; v_dias := (ARRAY[3,7,12,22])[(i % 4)+1];
-      ELSIF i % 4 = 0 THEN v_status := 'pago'; END IF;
-
-      INSERT INTO fin_recebiveis (empresa_id, unidade_id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, dias_atraso, enviado, data_pagamento)
-      VALUES (v_empresa, r.id, r.nome, 'Royalties', 'Maio/2026', v_bruto, v_roy, DATE '2026-06-10', v_status, v_dias, v_status <> 'aberto', CASE WHEN v_status='pago' THEN DATE '2026-06-06' END);
-
-      INSERT INTO fin_recebiveis (empresa_id, unidade_id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, enviado, data_pagamento)
-      VALUES (v_empresa, r.id, r.nome, 'Fundo de marketing', 'Maio/2026', v_bruto, v_fundo, DATE '2026-06-10',
-              CASE WHEN v_status='atrasado' THEN 'aberto' ELSE v_status END, v_status='pago', CASE WHEN v_status='pago' THEN DATE '2026-06-06' END);
-
-      i := i + 1;
-    END LOOP;
-  END IF;
-
-  -- contas a pagar (só se vazio) — despesas fixas da matriz
-  IF (SELECT count(*) FROM fin_contas_pagar WHERE empresa_id = v_empresa) = 0 THEN
-    INSERT INTO fin_contas_pagar (empresa_id, categoria, descricao, escopo, valor, vencimento, status, prioridade) VALUES
-      (v_empresa,'Salários','Folha · Escritório / Matriz','Escritório',86400, DATE '2026-06-05','pago','alta'),
-      (v_empresa,'Pró-labore','Pró-labore sócios','Escritório',32000, DATE '2026-06-05','pago','alta'),
-      (v_empresa,'Impostos','DAS / Simples Nacional · competência 05/2026','Escritório',41870.55, DATE '2026-06-20','aberto','alta'),
-      (v_empresa,'Aluguel','Aluguel sede administrativa','Escritório',18500, DATE '2026-06-10','aberto','alta'),
-      (v_empresa,'Tecnologia','Licenças de software da rede (sistema, BI, e-mail)','Escritório',9740, DATE '2026-06-15','aberto','baixa'),
-      (v_empresa,'Marketing','Mídia paga rede + produção de conteúdo','Escritório',54300, DATE '2026-06-12','aberto','baixa'),
-      (v_empresa,'Contabilidade','Honorários contábeis da rede','Escritório',12600, DATE '2026-06-10','aberto','media'),
-      (v_empresa,'Fornecedores','Insumos e PDRN · compra centralizada','Rede',73250, DATE '2026-06-18','aberto','media');
-  END IF;
+  -- SEM seed de recebíveis/contas a pagar fake (removido a pedido do cliente: nada de dado
+  -- de negócio inventado). As tabelas nascem VAZIAS e são alimentadas por dados REAIS:
+  -- recebíveis = royalties/fundo apurados das vendas reais das unidades; contas a pagar =
+  -- despesas reais da matriz lançadas pelo financeiro. A tela mostra empty-state honesto.
 END $$;
 
 COMMIT;
