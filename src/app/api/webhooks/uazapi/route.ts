@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
-import { normTel, listInstances, sendText } from '@/lib/uazapi'
+import { normTel, listInstances, sendText, resolverInstancia, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
 import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
 
@@ -9,14 +9,25 @@ import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/i
  * sac_whatsapp_chats + sac_whatsapp_mensagens (alimenta a Triagem WhatsApp).
  * Auth: `?secret=` / header x-webhook-secret == UAZAPI_WEBHOOK_SECRET, OU body.token == UAZAPI_TOKEN.
  * Configurar na UAZAPI: https://<dominio>/api/webhooks/uazapi?secret=<UAZAPI_WEBHOOK_SECRET>
+ *
+ * Cobre as DUAS formas de envelope documentadas (spec UAZAPI):
+ *  (a) { EventType:'messages', message:{...} }            — forma "legada" plana
+ *  (b) WebhookEvent { event:'message'|'messages_update'|'connection', instance, token, data:{...} }
+ * O canal de ORIGEM (instance/token/owner) é resolvido contra canais_whatsapp para propagar
+ * unidade_id ao chat (escopo por unidade) e rotear a resposta pelo MESMO número que recebeu.
  */
 type Msg = {
   id?: string; messageid?: string; chatid?: string; fromMe?: boolean; isGroup?: boolean
   wasSentByApi?: boolean; messageType?: string; text?: string; senderName?: string
-  messageTimestamp?: number; status?: string; fileURL?: string
+  messageTimestamp?: number; status?: string; fileURL?: string; owner?: string
 }
-type WebhookBody = { EventType?: string; event?: string; message?: Msg; token?: string }
+type WebhookBody = {
+  EventType?: string; event?: string
+  message?: Msg; data?: Msg
+  instance?: string; token?: string; owner?: string
+}
 type ChatRow = { id: string; nome: string | null; nao_lidas: number; bot_ativo?: boolean | null; atendente_id?: string | null }
+type CanalBinding = { instancia_nome: string; unidade_id: string | null }
 
 function classificarTipo(mt?: string): string {
   const t = (mt ?? '').toLowerCase()
@@ -33,30 +44,59 @@ function classificarTipo(mt?: string): string {
 const PREVIEW: Record<string, string> = { text: '', image: '📷 Imagem', audio: '🎤 Áudio', video: '🎬 Vídeo', document: '📎 Documento', sticker: '🏷️ Figurinha', location: '📍 Localização', contact: '👤 Contato', outro: '📩 Mensagem' }
 function preview(tipo: string, texto: string) { return tipo === 'text' ? texto.slice(0, 120) : (texto ? `${PREVIEW[tipo]} · ${texto.slice(0, 100)}` : PREVIEW[tipo]) }
 
+/** Em produção SEMPRE exige secret OU token. Só aceita anônimo em desenvolvimento
+ *  (NODE_ENV !== 'production') quando nenhum secret está configurado — evita que uma env
+ *  ausente no deploy abra o endpoint para gravações não autenticadas. */
 function autorizado(req: NextRequest, body: WebhookBody): boolean {
   const secret = process.env.UAZAPI_WEBHOOK_SECRET
   const got = req.headers.get('x-webhook-secret') ?? req.nextUrl.searchParams.get('secret') ?? ''
   if (secret && got === secret) return true
   const tk = process.env.UAZAPI_TOKEN
   if (tk && body.token && body.token === tk) return true
-  return !secret // se nenhum secret configurado, aceita (dev)
+  if (process.env.NODE_ENV === 'production') return false // fora de dev, exige credencial
+  return !secret // dev sem secret configurado: aceita
 }
+
+const isColMissing = (msg?: string | null) => /column|does not exist|schema cache|unidade_id|canal/i.test(msg || '')
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as WebhookBody | null
   if (!body) return NextResponse.json({ error: 'invalid-json' }, { status: 400 })
   if (!autorizado(req, body)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  const event = body.EventType ?? body.event ?? ''
-  const msg = body.message
+  // Normaliza o tipo de evento das duas formas: 'messages' (plano) e 'message' (envelope).
+  const rawEvent = (body.EventType ?? body.event ?? '').toLowerCase()
+  const eventKind =
+    rawEvent === 'messages_update' ? 'messages_update'
+    : rawEvent === 'connection' ? 'connection'
+    : (rawEvent === 'messages' || rawEvent === 'message') ? 'messages'
+    : rawEvent
+  // O payload da mensagem vem em `message` (forma a) OU `data` (forma b — WebhookEvent).
+  const msg = body.message ?? body.data
   const sb = adminClient()
 
-  if (event === 'messages_update') {
+  // ── Conexão: reflete queda/retorno do canal sem depender de polling em /canais ──
+  if (eventKind === 'connection') {
+    // Resolve o NOME real da instância (o evento pode trazer id/owner) p/ casar canais_whatsapp.
+    const instancias = await listInstances().catch(() => [] as Instancia[])
+    const inst = resolverInstancia(instancias, { instance: body.instance, token: body.token, owner: msg?.owner ?? body.owner })
+    const nomeInst = inst?.name ?? (body.instance || msg?.owner || '').trim()
+    const conectado = inst ? inst.status === 'connected'
+      : /open|connected|online/i.test(String((msg as unknown as { status?: string })?.status ?? rawEvent))
+    if (nomeInst) {
+      // Atualiza o vínculo SE a tabela tiver coluna de status (defensivo: degrada se não existir).
+      const { error } = await sb.from('canais_whatsapp').update({ status: conectado ? 'connected' : 'disconnected' }).eq('instancia_nome', nomeInst)
+      if (error && !isColMissing(error.message)) console.error('webhook connection:', error.message)
+    }
+    return NextResponse.json({ ok: true, event: 'connection', instancia: nomeInst, conectado })
+  }
+
+  if (eventKind === 'messages_update') {
     const waId = msg?.messageid ?? msg?.id
     if (waId && msg?.status) await sb.from('sac_whatsapp_mensagens').update({ status: msg.status }).eq('wa_id', waId)
-    return NextResponse.json({ ok: true, event })
+    return NextResponse.json({ ok: true, event: 'messages_update' })
   }
-  if (event !== 'messages' || !msg?.chatid) return NextResponse.json({ ignored: event || 'no-message' })
+  if (eventKind !== 'messages' || !msg?.chatid) return NextResponse.json({ ignored: rawEvent || 'no-message' })
   if (msg.isGroup) return NextResponse.json({ ignored: 'group' })
   if (msg.wasSentByApi) return NextResponse.json({ ignored: 'sent-by-api' })
 
@@ -74,21 +114,51 @@ export async function POST(req: NextRequest) {
     if (dup) return NextResponse.json({ ok: true, dedup: true })
   }
 
+  // ── Canal de ORIGEM → unidade/escopo (escopo por unidade_id na entrada) ──
+  // Identifica QUAL número/instância recebeu a mensagem para (1) carimbar a unidade no chat e
+  // (2) responder pelo mesmo canal. Usa o vínculo confiável de canais_whatsapp (não regex de nome).
+  const instancias = await listInstances().catch(() => [] as Instancia[])
+  const inst = resolverInstancia(instancias, { instance: body.instance, token: body.token, owner: msg.owner ?? body.owner })
+  let unidadeOrigem: string | null = null
+  const canalNome: string | null = inst?.name ?? null
+  if (inst?.name) {
+    // Vínculo confiável canal⟷unidade (colunas confirmadas em canais_whatsapp).
+    const { data: bind } = await sb.from('canais_whatsapp')
+      .select('instancia_nome, unidade_id').eq('instancia_nome', inst.name).maybeSingle()
+    const b = bind as CanalBinding | null
+    if (b) unidadeOrigem = b.unidade_id ?? null
+  }
+
+  // Insert com escopo (unidade_id/canal_nome). Se as colunas não existirem no schema,
+  // degrada para o insert mínimo — sem quebrar a entrada das mensagens.
+  let chat: ChatRow | null = null
   const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas, bot_ativo, atendente_id').eq('telefone', telefone).maybeSingle()
-  let chat = chatRaw as ChatRow | null
+  chat = chatRaw as ChatRow | null
+
   if (!chat) {
-    const { data: created, error } = await sb.from('sac_whatsapp_chats').insert({
+    const baseInsert: Record<string, unknown> = {
       telefone, wa_chatid: msg.chatid, nome: !fromMe ? (msg.senderName || null) : null,
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando, nao_lidas: fromMe ? 0 : 1,
-    }).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
-    if (error || !created) return NextResponse.json({ error: 'db-insert-failed' }, { status: 500 })
-    chat = created as ChatRow
+    }
+    const comEscopo = { ...baseInsert, unidade_id: unidadeOrigem, canal_nome: canalNome }
+    let ins = await sb.from('sac_whatsapp_chats').insert(comEscopo).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
+    if (ins.error && isColMissing(ins.error.message)) {
+      ins = await sb.from('sac_whatsapp_chats').insert(baseInsert).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
+    }
+    if (ins.error || !ins.data) return NextResponse.json({ error: 'db-insert-failed' }, { status: 500 })
+    chat = ins.data as ChatRow
   } else {
-    await sb.from('sac_whatsapp_chats').update({
+    const basePatch: Record<string, unknown> = {
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando,
       nao_lidas: fromMe ? chat.nao_lidas : (chat.nao_lidas ?? 0) + 1,
       ...(!fromMe && msg.senderName && !chat.nome ? { nome: msg.senderName } : {}),
-    }).eq('id', chat.id)
+    }
+    // Reafirma o escopo no chat existente (caso tenha entrado antes do carimbo de unidade).
+    const comEscopo = { ...basePatch, ...(unidadeOrigem ? { unidade_id: unidadeOrigem } : {}), ...(canalNome ? { canal_nome: canalNome } : {}) }
+    let upd = await sb.from('sac_whatsapp_chats').update(comEscopo).eq('id', chat.id)
+    if (upd.error && isColMissing(upd.error.message)) {
+      upd = await sb.from('sac_whatsapp_chats').update(basePatch).eq('id', chat.id)
+    }
   }
 
   await sb.from('sac_whatsapp_mensagens').insert({
@@ -112,25 +182,29 @@ export async function POST(req: NextRequest) {
       }))
       const r = await gerarRespostaSAC(historico)
       if (r?.resposta) {
-        const all = await listInstances()
-        const canal = all.find((i) => /laser/i.test(i.name) && i.status === 'connected')
+        // Responde pelo MESMO canal que recebeu (origem). Só cai pra heurística se a origem
+        // não foi resolvida (envelope sem instance/token) — e nunca por outro número conectado.
+        const canal = (inst && inst.status === 'connected' && inst.token)
+          ? inst
+          : instancias.find((i) => /laser/i.test(i.name) && i.status === 'connected')
         if (canal?.token) {
           const env = await sendText(canal.token, telefone, r.resposta)
           const ag = new Date().toISOString()
           await sb.from('sac_whatsapp_mensagens').insert({
-            chat_id: chat.id, direcao: 'saida', autor: 'Assistente IA', tipo: 'text', texto: r.resposta, status: env.ok ? 'sent' : 'failed', criado_em: ag,
+            chat_id: chat.id, wa_id: env.messageid ?? null, direcao: 'saida', autor: 'Assistente IA',
+            tipo: 'text', texto: r.resposta, status: env.ok ? (env.status ?? 'sent') : 'failed', criado_em: ag,
           })
           const patch: Record<string, unknown> = { ultima_msg: r.resposta.slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: ag }
           if (r.transferir) patch.bot_ativo = false // assunto sensível → fila humana
           if (r.nomeCliente && !chat.nome) patch.nome = r.nomeCliente
           await sb.from('sac_whatsapp_chats').update(patch).eq('id', chat.id)
-          return NextResponse.json({ ok: true, telefone, ia: true, transferir: r.transferir })
+          return NextResponse.json({ ok: true, telefone, ia: true, transferir: r.transferir, canal: canal.name })
         }
       }
     } catch (e) { console.error('webhook IA:', (e as Error).message) }
   }
 
-  return NextResponse.json({ ok: true, telefone, direcao: fromMe ? 'saida' : 'entrada' })
+  return NextResponse.json({ ok: true, telefone, direcao: fromMe ? 'saida' : 'entrada', unidade: unidadeOrigem })
 }
 
 export async function GET(req: NextRequest) {

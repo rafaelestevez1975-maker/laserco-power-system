@@ -9,6 +9,8 @@ export default async function CanaisPage() {
   const ctx = await getSessionContext()
   const unidades = ctx?.unidades ?? []
   const uniNome = new Map(unidades.map((u) => [u.id, u.nome]))
+  const isAdmin = ctx?.isAdmin ?? false
+  const activeUnitId = ctx?.activeUnitId ?? null
   let canais: Canal[] = []
   let erro = ''
 
@@ -16,10 +18,18 @@ export default async function CanaisPage() {
     erro = 'UAZAPI não configurada (faltam UAZAPI_BASE_URL / UAZAPI_ADMIN_TOKEN).'
   } else {
     try {
-      const all = (await listInstances()).filter((i) => /laser/i.test(i.name))
+      const todas = (await listInstances()).filter((i) => /laser/i.test(i.name))
       const sb = await createClient()
       const { data } = await sb.from('canais_whatsapp').select('id, instancia_nome, escopo, unidade_id, rotulo, delay_min, delay_max')
       const byNome = new Map<string, Binding>(((data ?? []) as Binding[]).map((b) => [b.instancia_nome, b]))
+      // Escopo por unidade: admin vê tudo; o gestor só vê canais GERAIS ou da SUA unidade ativa.
+      // Instâncias ainda NÃO vinculadas só aparecem para o admin (evita um gestor conectar/
+      // desconectar o número de outra unidade ou um canal sem dono definido).
+      const all = isAdmin ? todas : todas.filter((i) => {
+        const b = byNome.get(i.name)
+        if (!b) return false
+        return b.escopo === 'geral' || (!!activeUnitId && b.unidade_id === activeUnitId)
+      })
       canais = await Promise.all(all.map(async (i) => {
         const b = byNome.get(i.name)
         // Saúde de envio: o WhatsApp permite INICIAR conversas por este número? (restrição de número novo)
@@ -50,7 +60,7 @@ export default async function CanaisPage() {
     <div className="view active">
       {erro
         ? <div className="rel-card" style={{ padding: 16, color: 'var(--red)' }}>{erro}</div>
-        : <CanaisManager canais={canais} unidades={unidades} isAdmin={ctx?.isAdmin ?? false} activeUnitId={ctx?.activeUnitId ?? null} activeUnitName={ctx?.activeUnitName ?? ''} />}
+        : <CanaisManager canais={canais} unidades={unidades} isAdmin={isAdmin} activeUnitId={activeUnitId} activeUnitName={ctx?.activeUnitName ?? ''} />}
     </div>
   )
 }

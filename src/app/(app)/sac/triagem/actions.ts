@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { adminClient } from '@/lib/supabase/admin'
-import { listInstances, sendText, sendMedia } from '@/lib/uazapi'
+import { listInstances, sendText, sendMedia, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
 
 // Papéis que operam a triagem (admin_geral sempre passa via temPapel).
@@ -24,12 +24,43 @@ async function guardTriagem(): Promise<
   return { ok: true, sb: op.sb, userId: op.userId, nome: op.nome, papel: op.papel }
 }
 
-/** Localiza um canal WhatsApp conectado da Laser&Co. */
-async function canalConectado(): Promise<{ token?: string; error?: string }> {
-  const all = await listInstances()
-  const canal = all.find((i) => /laser/i.test(i.name) && i.status === 'connected')
-  if (!canal?.token) return { error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
-  return { token: canal.token }
+type ChatCanal = { telefone?: string; atendente_id?: string | null; canal_nome?: string | null; unidade_id?: string | null }
+
+/** Carrega o chat com os campos de roteamento (canal/unidade), DEFENSIVO contra a
+ *  ausência das colunas canal_nome/unidade_id (degrada para o select mínimo). */
+async function carregarChat(sb: SB, chatId: string): Promise<ChatCanal | null> {
+  let r = await sb.from('sac_whatsapp_chats').select('telefone, atendente_id, canal_nome, unidade_id').eq('id', chatId).maybeSingle()
+  if (r.error && /column|does not exist|schema cache|canal|unidade/i.test(r.error.message || '')) {
+    r = await sb.from('sac_whatsapp_chats').select('telefone, atendente_id').eq('id', chatId).maybeSingle()
+  }
+  return (r.data as ChatCanal | null) ?? null
+}
+
+/** Localiza o canal de ENVIO certo para ESTE chat: prioriza o canal de origem da conversa
+ *  (canal_nome gravado pelo webhook) e, na falta, o canal vinculado à unidade do chat —
+ *  evitando responder a unidade B pelo número da unidade A. Só cai para "qualquer canal
+ *  Laser conectado" quando a conversa não tem origem registrada (chats antigos). */
+async function canalConectado(chat: ChatCanal | null): Promise<{ token?: string; nome?: string; error?: string }> {
+  const all: Instancia[] = await listInstances().catch(() => [])
+  const conectadas = all.filter((i) => i.status === 'connected' && i.token)
+  if (conectadas.length === 0) return { error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+
+  // 1) Canal de origem da conversa (registrado pelo webhook).
+  if (chat?.canal_nome) {
+    const c = conectadas.find((i) => i.name === chat.canal_nome)
+    if (c) return { token: c.token, nome: c.name }
+  }
+  // 2) Canal vinculado à unidade do chat (canais_whatsapp).
+  if (chat?.unidade_id) {
+    const sb = adminClient()
+    const { data } = await sb.from('canais_whatsapp').select('instancia_nome, unidade_id').eq('unidade_id', chat.unidade_id)
+    const nomes = new Set(((data ?? []) as { instancia_nome: string }[]).map((b) => b.instancia_nome))
+    const c = conectadas.find((i) => nomes.has(i.name))
+    if (c) return { token: c.token, nome: c.name }
+  }
+  // 3) Fallback: qualquer canal Laser conectado (conversas sem origem/unidade).
+  const c = conectadas.find((i) => /laser/i.test(i.name)) ?? conectadas[0]
+  return { token: c.token, nome: c.name }
 }
 
 /** Responde a conversa pelo canal conectado, registra a saída com o ATENDENTE real
@@ -40,11 +71,10 @@ export async function responderConversa(chatId: string, texto: string): Promise<
   const { sb, userId, nome } = g
   if (!texto.trim()) return { ok: false, error: 'Escreva a mensagem.' }
 
-  const { data: chat } = await sb.from('sac_whatsapp_chats').select('id, telefone, atendente_id').eq('id', chatId).single()
-  const c = chat as { telefone?: string; atendente_id?: string | null } | null
+  const c = await carregarChat(sb, chatId)
   if (!c?.telefone) return { ok: false, error: 'Conversa não encontrada.' }
 
-  const canal = await canalConectado()
+  const canal = await canalConectado(c)
   if (!canal.token) return { ok: false, error: canal.error }
 
   const env = await sendText(canal.token, c.telefone, texto.trim())
@@ -52,7 +82,8 @@ export async function responderConversa(chatId: string, texto: string): Promise<
 
   const agora = new Date().toISOString()
   await sb.from('sac_whatsapp_mensagens').insert({
-    chat_id: chatId, direcao: 'saida', autor: nome, enviada_por: userId, tipo: 'text', texto: texto.trim(), status: 'sent', criado_em: agora,
+    chat_id: chatId, wa_id: env.messageid ?? null, direcao: 'saida', autor: nome, enviada_por: userId,
+    tipo: 'text', texto: texto.trim(), status: env.status ?? 'sent', criado_em: agora,
   })
   // Ao responder, assume a conversa (se ainda sem dono) e pausa o bot.
   const patch: Record<string, unknown> = { ultima_msg: texto.trim().slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: agora, bot_ativo: false }
@@ -70,11 +101,10 @@ export async function enviarMidia(chatId: string, m: { tipo: 'image' | 'audio' |
   const { sb, userId, nome } = g
   if (!m.file) return { ok: false, error: 'Arquivo vazio.' }
 
-  const { data: chat } = await sb.from('sac_whatsapp_chats').select('id, telefone, atendente_id').eq('id', chatId).single()
-  const c = chat as { telefone?: string; atendente_id?: string | null } | null
+  const c = await carregarChat(sb, chatId)
   if (!c?.telefone) return { ok: false, error: 'Conversa não encontrada.' }
 
-  const canal = await canalConectado()
+  const canal = await canalConectado(c)
   if (!canal.token) return { ok: false, error: canal.error }
 
   const env = await sendMedia(canal.token, c.telefone, m.tipo, m.file, { caption: m.caption, docName: m.nomeArquivo })
@@ -87,8 +117,8 @@ export async function enviarMidia(chatId: string, m: { tipo: 'image' | 'audio' |
   const agora = new Date().toISOString()
   const previewTxt = m.caption || ({ image: '📷 Imagem', audio: '🎤 Áudio', ptt: '🎤 Áudio', video: '🎬 Vídeo', document: '📎 Documento' }[m.tipo] || '📩 Mídia')
   await sb.from('sac_whatsapp_mensagens').insert({
-    chat_id: chatId, direcao: 'saida', autor: nome, enviada_por: userId, tipo: m.tipo === 'ptt' ? 'audio' : m.tipo,
-    texto: m.caption || null, midia_url: midiaUrl, midia_mimetype: m.mimetype || null, midia_nome: m.nomeArquivo || null, status: 'sent', criado_em: agora,
+    chat_id: chatId, wa_id: env.messageid ?? null, direcao: 'saida', autor: nome, enviada_por: userId, tipo: m.tipo === 'ptt' ? 'audio' : m.tipo,
+    texto: m.caption || null, midia_url: midiaUrl, midia_mimetype: m.mimetype || null, midia_nome: m.nomeArquivo || null, status: env.status ?? 'sent', criado_em: agora,
   })
   const patch: Record<string, unknown> = { ultima_msg: previewTxt.slice(0, 120), ultima_msg_tipo: m.tipo === 'ptt' ? 'audio' : m.tipo, ultima_msg_em: agora, bot_ativo: false }
   if (!c.atendente_id) patch.atendente_id = userId
@@ -165,9 +195,23 @@ export async function buscarClientePorContato(telefone?: string | null, cpf?: st
     cli = data as Record<string, unknown> | null
   }
   if (!cli && telDig.length >= 8) {
-    const last = telDig.slice(-8)
-    const { data } = await adm.from('clientes').select(cols).ilike('telefone', `%${last}%`).limit(1).maybeSingle()
-    cli = data as Record<string, unknown> | null
+    // Casa por telefone com DESEMPATE seguro (o cálculo de reembolso puxa a ficha do cliente —
+    // não pode pegar outra pessoa que compartilhe os 8 dígitos finais). Buscamos os candidatos
+    // pelos últimos 8 dígitos e escolhemos por sufixo cada vez mais específico:
+    //   1) número completo normalizado (com/sem DDI 55)  → match exato
+    //   2) últimos 9 dígitos (DDD + 9 + número)          → forte
+    //   3) últimos 8, só se houver candidato ÚNICO       → fallback sem ambiguidade
+    const last8 = telDig.slice(-8)
+    const { data: cands } = await adm.from('clientes').select(cols).ilike('telefone', `%${last8}%`).limit(50)
+    const lista = (cands ?? []) as Record<string, unknown>[]
+    if (lista.length > 0) {
+      const dig = (v: unknown) => String(v ?? '').replace(/\D/g, '')
+      const semDDI = telDig.replace(/^55/, '')
+      const exato = lista.find((r) => { const d = dig(r.telefone); return d === telDig || d === semDDI || d.endsWith(telDig) || (telDig.endsWith(d) && d.length >= 10) })
+      const last9 = telDig.slice(-9)
+      const porNove = lista.filter((r) => dig(r.telefone).endsWith(last9))
+      cli = exato ?? (porNove.length === 1 ? porNove[0] : (lista.length === 1 ? lista[0] : null))
+    }
   }
   if (!cli) return { achou: false }
 

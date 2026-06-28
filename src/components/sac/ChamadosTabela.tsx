@@ -26,7 +26,8 @@ const TIPOS = ['Franquia', 'Própria']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 const cap = (s: string | null) => (s || '').replace(/^\w/, (c) => c.toUpperCase())
 const pill = (bg: string, color: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color, display: 'inline-block', whiteSpace: 'nowrap' })
-const prioPill = (p: string | null) => (p === 'alta' || p === 'urgente' ? pill('#FCEBE0', '#C2410C') : p === 'baixa' ? pill('#EEF2F7', '#64748B') : pill('#FBEFD9', '#9A6700'))
+// Cores idênticas ao SAC_PRIOS do legado (index.html:8905): baixa azul, média marrom, alta laranja, crítica vermelho.
+const prioPill = (p: string | null) => (p === 'urgente' ? pill('#FBE6E6', '#B91C1C') : p === 'alta' ? pill('#FCEBE0', '#C2410C') : p === 'baixa' ? pill('#E7EEFB', '#2563EB') : pill('#FBF3E2', '#B7791F'))
 const fasePill = (f: string | null) => (f === 'Concluído' ? pill('#E7F0EC', '#15803D') : f === 'Em pagamento' ? pill('#FBEFD9', '#9A6700') : (f || '').startsWith('Aguardando') ? pill('#EEF2F7', '#64748B') : f && f.includes('Contato') ? pill('#E6F0FB', '#3D7FD1') : pill('#F7E7EB', '#8A2A41'))
 const sitPill = (s: Situacao) => (s === 'Concluído' ? pill('#E7F0EC', '#0F6B3A') : s === 'Em atraso' ? pill('#FBE6E6', '#B91C1C') : pill('#E7EEFB', '#1E3A8A'))
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }
@@ -59,12 +60,12 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
                     <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--text-3)' }}>Central</span>}{tipo && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{tipo}</div>}</td>
                     <td>{t.atribuido_para ? atNome(t.atribuido_para) : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
                     <td>{t.motivo_label || ''}</td>
-                    <td><span style={prioPill(t.prioridade)}>{cap(t.prioridade)}</span></td>
+                    <td><span style={prioPill(t.prioridade)}>{PRIORIDADES.find((x) => x.k === t.prioridade)?.l ?? cap(t.prioridade)}</span></td>
                     <td><span style={fasePill(t.fase)}>{t.fase || ''}</span></td>
                     <td><span style={sitPill(sit)}>{sit}</span></td>
                     <td>{t.sla_violado ? <span style={pill('#FBE9EB', '#D85563')}><i className="ti ti-alarm" /> Violado</span> : <span style={pill('#E7F0EC', '#15803D')}>OK</span>}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      <button className="btn" style={{ padding: '4px 9px', fontSize: 12 }} title="Editar chamado" onClick={(e) => { e.stopPropagation(); setEdit(t) }}><i className="ti ti-edit" /></button>
+                      <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} title="Editar chamado" onClick={(e) => { e.stopPropagation(); setEdit(t) }}><i className="ti ti-edit" /></button>
                     </td>
                   </tr>
                 )

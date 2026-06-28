@@ -157,19 +157,30 @@ export async function limitesEnvio(token: string): Promise<LimiteEnvio | null> {
   }
 }
 
-/** Envia texto por uma instância (token da instância)  base para os disparos. */
-export async function sendText(token: string, numero: string, texto: string): Promise<{ ok: boolean; error?: string }> {
+/** Extrai messageid/status da resposta de envio da UAZAPI (formato varia por endpoint).
+ *  O messageid é o wa_id que permite casar os callbacks messages_update (delivered/read). */
+function lerEnvio(body: unknown): { messageid?: string; status?: string } {
+  const b = (body || {}) as { messageid?: string; id?: string; status?: string; message?: { messageid?: string; id?: string; status?: string } }
+  return {
+    messageid: b.messageid ?? b.id ?? b.message?.messageid ?? b.message?.id,
+    status: b.status ?? b.message?.status,
+  }
+}
+
+/** Envia texto por uma instância (token da instância)  base para os disparos.
+ *  Retorna messageid (wa_id) p/ vincular a mensagem própria aos callbacks de status. */
+export async function sendText(token: string, numero: string, texto: string): Promise<{ ok: boolean; error?: string; messageid?: string; status?: string }> {
   const { ok, body } = await instPost('/send/text', token, { number: normTel(numero), text: texto })
-  return ok ? { ok: true } : { ok: false, error: traduzErroEnvio(body) }
+  return ok ? { ok: true, ...lerEnvio(body) } : { ok: false, error: traduzErroEnvio(body) }
 }
 
 export type MidiaTipo = 'image' | 'video' | 'audio' | 'ptt' | 'document' | 'sticker'
 /** Envia mídia por uma instância (token). `file` = URL pública OU base64 (data URI ou puro). */
-export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, file: string, opts: { caption?: string; docName?: string } = {}): Promise<{ ok: boolean; error?: string; fileURL?: string }> {
+export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, file: string, opts: { caption?: string; docName?: string } = {}): Promise<{ ok: boolean; error?: string; fileURL?: string; messageid?: string; status?: string }> {
   const { ok, body } = await instPost('/send/media', token, { number: normTel(numero), type: tipo, file, ...opts })
   if (!ok) return { ok: false, error: traduzErroEnvio(body, 'Falha no envio de mídia.') }
   const b = body as { fileURL?: string; message?: { fileURL?: string } }
-  return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL }
+  return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL, ...lerEnvio(body) }
 }
 
 /** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar.
