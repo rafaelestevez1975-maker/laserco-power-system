@@ -154,7 +154,7 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
     <div className="view active">
       <SacDashFiltros atendentes={atendentes} />
 
-      <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 12px' }}>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
         <i className="ti ti-filter" /> {total.toLocaleString('pt-BR')} chamado(s) · {periodoLabel}{periodoRange} · {atendentesResumo}
         {activeUnit && <> · {uniNome[activeUnit] ?? 'unidade ativa'}</>}
       </div>
