@@ -1,41 +1,67 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { distribuirFila, criarAcessoAtendente } from '@/app/(app)/sac/atendentes/actions'
+import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo } from '@/app/(app)/sac/atendentes/actions'
 
 export type AtendenteRow = {
   id: string; nome: string; papel: string; cargo: string | null; area: string | null
   unidadeNome: string | null; email: string | null; ativo: boolean; conversas: number; tickets: number
+  chamadosTotal: number; resolvidos: number; slaPct: number | null; premio: number
 }
 export type UnidadeOpt = { id: string; nome: string }
 
 const pill = (bg: string, color: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color })
+const brl = (n: number) => `R$ ${Math.round(Number(n) || 0).toLocaleString('pt-BR')}`
 
-/** Gera uma senha provisória forte (só letras/números — evita & # que se corrompem ao copiar). */
+/** Gera uma senha provisória forte com CSPRNG (crypto.getRandomValues; fallback p/ Math.random
+ *  em ambientes sem WebCrypto). Só letras/números — evita & # que se corrompem ao copiar. */
 function gerarSenha(): string {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ', num = '23456789', min = 'abcdefghijkmnpqrstuvwxyz'
-  const pick = (s: string) => s[Math.floor(Math.random() * s.length)]
+  const rnd = (n: number): number => {
+    const c = typeof crypto !== 'undefined' ? crypto : undefined
+    if (c?.getRandomValues) { const a = new Uint32Array(1); c.getRandomValues(a); return a[0] % n }
+    return Math.floor(Math.random() * n)
+  }
+  const pick = (s: string) => s[rnd(s.length)]
   const base = [pick(abc), pick(abc), pick(min), pick(min), pick(min), pick(num), pick(num)]
-  for (let i = base.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[base[i], base[j]] = [base[j], base[i]] }
+  for (let i = base.length - 1; i > 0; i--) { const j = rnd(i + 1);[base[i], base[j]] = [base[j], base[i]] }
   return 'Laser' + base.join('') // ex.: LaserKMabc23 (>= 12 chars, só letras/números)
 }
 
-export function AtendentesManager({ atendentes, filaConversas, filaTickets, podeDistribuir, podeCriar = false, unidades = [] }: {
+export function AtendentesManager({ atendentes, filaConversas, filaTickets, podeDistribuir, podeCriar = false, unidades = [], escopo = 'Todas as unidades', comEscopo = false }: {
   atendentes: AtendenteRow[]; filaConversas: number; filaTickets: number; podeDistribuir: boolean
-  podeCriar?: boolean; unidades?: UnidadeOpt[]
+  podeCriar?: boolean; unidades?: UnidadeOpt[]; escopo?: string; comEscopo?: boolean
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [novo, setNovo] = useState(false)
+  const [toggling, setToggling] = useState<string | null>(null)
+
+  const temFila = filaConversas > 0 || filaTickets > 0
+  const ativos = atendentes.filter((a) => a.ativo)
 
   async function distribuir() {
     setBusy(true); setMsg('')
     const r = await distribuirFila()
     setBusy(false)
     if (!r.ok) { setMsg(r.error || 'Erro ao distribuir.'); return }
-    setMsg(`Distribuído: ${r.conversas} conversa(s) entre ${r.atendentes} atendente(s) por menor carga.`)
+    const partes = [
+      (r.conversas ?? 0) > 0 ? `${r.conversas} conversa(s)` : '',
+      (r.tickets ?? 0) > 0 ? `${r.tickets} chamado(s)` : '',
+    ].filter(Boolean)
+    setMsg(partes.length ? `Distribuído: ${partes.join(' e ')} entre ${r.atendentes} atendente(s) por menor carga.` : 'Nada na fila para distribuir.')
+    router.refresh()
+  }
+
+  async function alternarAtivo(a: AtendenteRow) {
+    setToggling(a.id); setMsg('')
+    const r = await setAtendenteAtivo(a.id, !a.ativo)
+    setToggling(null)
+    if (!r.ok) { setMsg(r.error || 'Não foi possível alterar o status.'); return }
+    setMsg(`${a.nome} ${a.ativo ? 'desativada' : 'reativada'}.`)
     router.refresh()
   }
 
@@ -43,9 +69,9 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
     <>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '4px 0 14px', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          <i className="ti ti-inbox" /> Fila de atendimento: <b>{filaConversas}</b> conversa(s) aguardando humano · <b>{filaTickets}</b> chamado(s) sem atendente
+          <i className="ti ti-inbox" /> Fila de atendimento{comEscopo ? <> · <b>{escopo}</b></> : <> · <b>toda a rede</b></>}: <b>{filaConversas}</b> conversa(s) aguardando humano · <b>{filaTickets}</b> chamado(s) sem atendente
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           {msg && <span style={{ fontSize: 12.5, color: 'var(--brand-600)' }}>{msg}</span>}
           {podeCriar && (
             <button className="btn" onClick={() => setNovo(true)} title="Criar o login de uma nova atendente (acesso SAC)">
@@ -53,8 +79,8 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
             </button>
           )}
           {podeDistribuir && (
-            <button className="btn btn-primary" disabled={busy || filaConversas === 0} onClick={distribuir} title={filaConversas === 0 ? 'Sem conversas na fila' : 'Atribui as conversas em espera ao atendente de menor carga'}>
-              {busy ? 'Distribuindo…' : <><i className="ti ti-arrows-shuffle" /> Distribuir conversas igualmente</>}
+            <button className="btn btn-primary" disabled={busy || !temFila} onClick={distribuir} title={!temFila ? 'Nada na fila para distribuir' : 'Atribui conversas e chamados em espera ao atendente de menor carga'}>
+              {busy ? 'Distribuindo…' : <><i className="ti ti-arrows-shuffle" /> Distribuir fila igualmente</>}
             </button>
           )}
         </div>
@@ -64,16 +90,23 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
         <div className="cli-scroll">
           <table className="cli-table">
             <thead>
-              <tr><th>Atendente</th><th>Cargo (RH)</th><th>Papel</th><th>Unidade</th><th>Conversas</th><th>Chamados</th><th>Carga</th><th>Status</th></tr>
+              <tr>
+                <th>Atendente</th><th>Cargo (RH)</th><th>Papel</th><th>Unidade</th>
+                <th style={{ textAlign: 'center' }}>Conversas</th><th style={{ textAlign: 'center' }}>Em aberto</th>
+                <th style={{ textAlign: 'center' }}>Carga</th><th style={{ textAlign: 'center' }}>Resolvidos</th>
+                <th style={{ textAlign: 'center' }}>SLA</th><th style={{ textAlign: 'right' }}>Prêmio (mês)</th>
+                <th>Status</th>{podeCriar && <th />}
+              </tr>
             </thead>
             <tbody>
               {atendentes.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum atendente SAC ativo. {podeCriar ? 'Use “Novo atendente” para criar o primeiro acesso.' : 'Cadastre colaboradores com papel SAC.'}</td></tr>
+                <tr><td colSpan={podeCriar ? 12 : 11} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum atendente SAC. {podeCriar ? 'Use “Novo atendente” para criar o primeiro acesso.' : 'Cadastre colaboradores com papel SAC.'}</td></tr>
               )}
               {atendentes.map((a) => {
                 const carga = a.conversas + a.tickets
+                const slaCor = a.slaPct == null ? 'var(--text-3)' : a.slaPct >= 90 ? '#15803D' : a.slaPct >= 70 ? '#B7791F' : '#C2410C'
                 return (
-                  <tr key={a.id}>
+                  <tr key={a.id} style={a.ativo ? undefined : { opacity: 0.6 }}>
                     <td><b>{a.nome}</b>{a.email && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.email}</div>}</td>
                     <td>{a.cargo || <span style={{ color: 'var(--text-3)' }}>— sem ficha RH</span>}{a.area && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.area}</div>}</td>
                     <td><span style={pill('#EFE9F7', '#6b1f3a')}>{a.papel}</span></td>
@@ -81,7 +114,18 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                     <td style={{ textAlign: 'center' }}>{a.conversas}</td>
                     <td style={{ textAlign: 'center' }}>{a.tickets}</td>
                     <td style={{ textAlign: 'center' }}><b style={{ color: carga === 0 ? 'var(--green)' : carga > 8 ? '#C2410C' : 'var(--brand-600)' }}>{carga}</b></td>
+                    <td style={{ textAlign: 'center' }}>{a.resolvidos}<span style={{ color: 'var(--text-3)', fontSize: 11 }}>/{a.chamadosTotal}</span></td>
+                    <td style={{ textAlign: 'center', color: slaCor, fontWeight: a.slaPct != null ? 700 : 400 }}>{a.slaPct == null ? '—' : `${a.slaPct}%`}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: a.premio > 0 ? 'var(--brand-600)' : 'var(--text-3)' }}>{a.premio > 0 ? brl(a.premio) : '—'}</td>
                     <td><span style={a.ativo ? pill('#E7F0EC', '#15803D') : pill('#FBE9EB', '#D85563')}>{a.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    {podeCriar && (
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-icon" disabled={toggling === a.id} onClick={() => alternarAtivo(a)}
+                          title={a.ativo ? 'Desativar (deixa de receber distribuição)' : 'Reativar atendente'}>
+                          <i className={`ti ${toggling === a.id ? 'ti-loader' : a.ativo ? 'ti-user-off' : 'ti-user-check'}`} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )
               })}
@@ -89,8 +133,25 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
           </table>
         </div>
       </div>
+
+      {/* Premiação por desempenho — paridade com o card do legado + atalho à Matriz de comissões */}
+      <div className="cli-card" style={{ marginTop: 12, padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+          <b><i className="ti ti-trophy" /> Premiação por desempenho</b>
+          <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
+            Prêmio estimado pelos KPIs reais (resolvidos, SLA, reversões). {ativos.length} atendente(s) ativo(s).
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Link className="btn" href="/sac/ranking" title="Ranking e regras de premiação do SAC"><i className="ti ti-medal" /> Ranking SAC</Link>
+          <Link className="btn" href="/cadastros/comissoes" title="Matriz de comissões da rede"><i className="ti ti-table" /> Matriz de comissões</Link>
+          <Link className="btn" href="/colaboradores" title="Cadastro de colaborador (RH) — fonte da ficha do atendente"><i className="ti ti-user-star" /> Cadastrar no Colaboradores</Link>
+        </div>
+      </div>
+
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). A distribuição atribui a fila ao atendente de menor carga.
+        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). A distribuição atribui a fila (conversas e chamados sem dono) ao atendente de menor carga. SLA% = casos no prazo ÷ total atendido.
+        {podeDistribuir && !podeCriar && <> Gestor/SAC pode distribuir a fila; apenas o administrador cria, ativa ou desativa acessos.</>}
       </div>
 
       {novo && <NovoAtendenteModal unidades={unidades} onClose={() => setNovo(false)} onCriado={() => router.refresh()} />}
@@ -174,6 +235,9 @@ function NovoAtendenteModal({ unidades, onClose, onCriado }: { unidades: Unidade
                   {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
               </div>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              <i className="ti ti-info-circle" /> Para a ficha de RH completa (cargo, área, documentos), cadastre também em <b>Colaboradores</b> ligando ao mesmo e-mail.
             </div>
             {erro && <div style={{ color: 'var(--danger, #D85563)', fontSize: 13 }}><i className="ti ti-alert-triangle" /> {erro}</div>}
             <div style={{ display: 'flex', gap: 10, marginTop: 4, justifyContent: 'flex-end' }}>

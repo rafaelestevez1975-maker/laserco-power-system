@@ -30,11 +30,6 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const from = (page - 1) * PAGE_SIZE
   const { ini, fim } = rangePeriodo(periodo, di, df)
 
-  // Filtros base (escopo de unidade) reutilizados na query da lista e no total geral.
-  type Q = ReturnType<typeof sb.from>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const aplicarUnidade = (qb: any) => (ctx?.activeUnitId ? qb.eq('unidade_id', ctx.activeUnitId) : qb)
-
   let query = sb
     .from('sac_tickets')
     .select('id, numero, protocolo, nome_cliente, telefone_cliente, email_cliente, cpf_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado, atribuido_para, observacoes, area_reclamada, valor_pago, valor_devolucao, multa_aplicada, pago, criado_em', { count: 'exact' })
@@ -62,10 +57,11 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
       query = query.or(conds.join(','))
     }
   }
-  query = aplicarUnidade(query) // respeita a unidade ativa do topo
+  if (ctx?.activeUnitId) query = query.eq('unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
 
   // Total geral (sem filtros, só escopo de unidade) — para o "X de Y" do legado.
-  const totalGeralQ = aplicarUnidade(sb.from('sac_tickets').select('id', { count: 'exact', head: true }))
+  let totalGeralQ = sb.from('sac_tickets').select('id', { count: 'exact', head: true })
+  if (ctx?.activeUnitId) totalGeralQ = totalGeralQ.eq('unidade_id', ctx.activeUnitId)
   const [{ data, count, error }, { count: countGeral }] = await Promise.all([query, totalGeralQ])
   const tickets = (data ?? []) as ChamadoRow[]
   const total = count ?? 0

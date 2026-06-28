@@ -36,11 +36,16 @@ async function enriquecer(sb: SB, perfis: PerfilRow[]): Promise<Pessoa[]> {
   }))
 }
 
-/** Atendentes do SAC (perfis papel sac/admin ativos) + cargo/área do RH. */
-export async function listAtendentesSac(sb: SB): Promise<Pessoa[]> {
-  const { data } = await sb
+/** Atendentes do SAC (perfis papel sac/admin) + cargo/área do RH.
+ *  Por padrão só ATIVOS (distribuição/ranking só consideram quem opera). Passe
+ *  `incluirInativos=true` para a gestão de atendentes, que precisa listar e
+ *  reativar quem foi desativado (paridade com o legado, que mostra Ativo/Inativo). */
+export async function listAtendentesSac(sb: SB, incluirInativos = false): Promise<Pessoa[]> {
+  let q = sb
     .from('perfis_usuario')
     .select('id, nome_completo, email, papel, unidade_id, ativo')
-    .in('papel', PAPEIS_SAC).eq('ativo', true).order('nome_completo')
+    .in('papel', PAPEIS_SAC)
+  if (!incluirInativos) q = q.eq('ativo', true)
+  const { data } = await q.order('nome_completo')
   return enriquecer(sb, (data ?? []) as PerfilRow[])
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, descartarConversa, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 
 // ticks de entrega (status da UAZAPI)
 function Ticks({ status }: { status?: string | null }) {
@@ -32,9 +32,14 @@ export type Chat = { id: string; telefone: string | null; nome: string | null; u
 export type Msg = { id: string; chat_id: string | null; direcao: string | null; autor: string | null; tipo: string | null; texto: string | null; midia_url?: string | null; midia_mimetype?: string | null; status?: string | null; criado_em: string | null }
 export type Atendente = { id: string; nome: string }
 export type Nota = { id: string; chat_id: string | null; autor_nome: string | null; texto: string | null; criada_em: string | null }
+export type Unidade = { id: string; nome: string }
 
 const SLA_MIN = 5
-const STATUS_LABEL: Record<string, string> = { aberto: 'Aberto', pendente: 'Pendente', resolvido: 'Resolvido' }
+const STATUS_OPCOES = ['aberto', 'pendente', 'resolvido'] as const
+const STATUS_LABEL: Record<string, string> = { aberto: 'Aberto', pendente: 'Pendente', resolvido: 'Resolvido', fechado: 'Fechado', em_atendimento: 'Em atendimento' }
+// Conversas nesses status saem da fila ativa de triagem (paridade do legado: ao virar
+// chamado / ser descartada, some da lista). Um toggle deixa revê-las quando preciso.
+const STATUS_ARQUIVADO = new Set(['resolvido', 'fechado'])
 
 const isIn = (d: string | null) => !/out|saida|saída|enviad|atendente|bot/i.test(d || '')
 const hora = (s: string | null) => (s ? new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '')
@@ -42,11 +47,20 @@ const iniciais = (n: string | null, tel: string | null) => (n?.trim()?.[0]?.toUp
 
 type Aba = 'minhas' | 'fila' | 'todas'
 
-export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: { chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; notas: Nota[]; operadorId: string | null }) {
+export function TriagemWhatsapp({
+  chats, msgs, atendentes, notas, operadorId,
+  unidades = [], activeUnitId = null, motivos = [],
+  totalN, minhasN: minhasNServer, filaN: filaNServer, amostraCapped = false,
+}: {
+  chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; notas: Nota[]; operadorId: string | null
+  unidades?: Unidade[]; activeUnitId?: string | null; motivos?: string[]
+  totalN?: number; minhasN?: number; filaN?: number; amostraCapped?: boolean
+}) {
   const router = useRouter()
   const [busca, setBusca] = useState('')
   const [aba, setAba] = useState<Aba>('todas')
-  const [sel, setSel] = useState<string | null>(chats[0]?.id ?? null)
+  const [verArquivadas, setVerArquivadas] = useState(false)
+  const [sel, setSel] = useState<string | null>(null)
   const [texto, setTexto] = useState('')
   const [busy, setBusy] = useState(false)
   const [aviso, setAviso] = useState('')
@@ -58,6 +72,8 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const [cli, setCli] = useState<ClienteResumo | null>(null)
   const [cliBusy, setCliBusy] = useState(false)
   const [gravando, setGravando] = useState(false)
+  const [chamadoOpen, setChamadoOpen] = useState(false)
+  const [form, setForm] = useState({ nome: '', cpf: '', telefone: '', email: '', unidade_id: '', motivo: '' })
   const fileRef = useRef<HTMLInputElement | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -80,8 +96,12 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
     const novo = !cliOpen; setCliOpen(novo)
     if (novo && sel) {
       const c = chats.find((x) => x.id === sel)
+      // Identifica por CPF (preferencial) quando o cliente já está casado no cadastro do
+      // chamado, senão pelo telefone da conversa. O CPF digitado no fluxo "Abrir chamado"
+      // também alimenta essa busca.
+      const cpf = (form.cpf || cli?.cpf || '').trim() || null
       setCliBusy(true); setCli(null)
-      const r = await buscarClientePorContato(c?.telefone ?? null)
+      const r = await buscarClientePorContato(c?.telefone ?? null, cpf)
       setCli(r); setCliBusy(false)
     }
   }
@@ -95,11 +115,14 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   }
 
   const nomeAtendente = useMemo(() => new Map(atendentes.map((a) => [a.id, a.nome])), [atendentes])
-  const minhasN = chats.filter((c) => c.atendente_id && c.atendente_id === operadorId).length
-  const filaN = chats.filter((c) => !c.atendente_id).length
+  // Contagens REAIS vêm do servidor (count exact); fallback p/ amostra só se não vierem.
+  const totalReal = totalN ?? chats.length
+  const minhasN = minhasNServer ?? chats.filter((c) => c.atendente_id && c.atendente_id === operadorId).length
+  const filaN = filaNServer ?? chats.filter((c) => !c.atendente_id).length
+  const arquivadasN = chats.filter((c) => STATUS_ARQUIVADO.has((c.status || '').toLowerCase())).length
 
   function selecionar(id: string) {
-    setSel(id); setAviso(''); setCliOpen(false); setCli(null); setNotasOpen(false)
+    setSel(id); setAviso(''); setCliOpen(false); setCli(null); setNotasOpen(false); setChamadoOpen(false)
     const c = chats.find((x) => x.id === id)
     if (c && c.nao_lidas && !lidos.has(id)) { setLidos((p) => new Set(p).add(id)); marcarLido(id) }
   }
@@ -138,13 +161,31 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
       mr.start(); setGravando(true)
     } catch { setAviso('Não consegui acessar o microfone.') }
   }
-  async function abrirChamado() {
+  // Abre o "Fluxo inicial — dados do cliente" (legado): pré-preenche nome/telefone da conversa.
+  function abrirFluxoChamado() {
+    const c = chats.find((x) => x.id === sel)
+    if (!c) return
+    setForm({ nome: c.nome || '', cpf: form.cpf || '', telefone: c.telefone || '', email: '', unidade_id: activeUnitId || '', motivo: motivos[0] || '' })
+    setAviso(''); setChamadoOpen(true)
+  }
+  async function confirmarChamado() {
     if (!sel) return
+    if (!form.nome.trim()) { setAviso('Informe o nome do cliente.'); return }
+    if (!form.unidade_id) { setAviso('Selecione a unidade atendida.'); return }
     setBusy(true); setAviso('')
-    const res = await abrirChamadoDaConversa(sel)
+    const res = await abrirChamadoDaConversa(sel, { nome: form.nome, cpf: form.cpf, telefone: form.telefone, email: form.email, unidade_id: form.unidade_id, motivo: form.motivo })
     setBusy(false)
     if (!res.ok) setAviso(res.error || 'Falha ao abrir chamado.')
-    else { setAviso(res.jaExistia ? 'Esta conversa já tem um chamado vinculado.' : 'Chamado aberto e vinculado à conversa. ✅'); router.refresh() }
+    else { setChamadoOpen(false); setAviso(res.jaExistia ? 'Esta conversa já tem um chamado vinculado.' : 'Chamado aberto e vinculado à conversa. ✅'); router.refresh() }
+  }
+  async function descartar() {
+    if (!sel) return
+    if (!confirm('Descartar esta conversa da triagem? Ela sai da fila de atendimento (status Fechado).')) return
+    setBusy(true); setAviso('')
+    const res = await descartarConversa(sel)
+    setBusy(false)
+    if (!res.ok) setAviso(res.error || 'Falha ao descartar.')
+    else { setSel(null); setAviso('Conversa descartada da triagem.'); router.refresh() }
   }
   async function acao(fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) {
     setBusy(true); setAviso('')
@@ -156,11 +197,21 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase()
     let arr = chats
+    // Fila ativa de triagem: conversas resolvidas/fechadas saem da lista (paridade do legado),
+    // a menos que o toggle "ver arquivadas" esteja ligado ou a busca aponte para elas.
+    if (!verArquivadas && !q) arr = arr.filter((c) => !STATUS_ARQUIVADO.has((c.status || '').toLowerCase()))
     if (aba === 'minhas') arr = arr.filter((c) => c.atendente_id && c.atendente_id === operadorId)
     else if (aba === 'fila') arr = arr.filter((c) => !c.atendente_id)
     if (q) arr = arr.filter((c) => (c.nome || '').toLowerCase().includes(q) || (c.telefone || '').includes(q))
     return arr
-  }, [chats, busca, aba, operadorId])
+  }, [chats, busca, aba, operadorId, verArquivadas])
+
+  // Seleção: mantém a conversa atual enquanto ela existir na lista filtrada; senão pega a 1ª.
+  // (Antes ficava presa em chats[0] e "pulava" após reordenação por ultima_msg_em.)
+  useEffect(() => {
+    if (sel && filtrados.some((c) => c.id === sel)) return
+    setSel(filtrados[0]?.id ?? null)
+  }, [filtrados, sel])
 
   const thread = useMemo(() => msgs.filter((m) => m.chat_id === sel), [msgs, sel])
   const chat = chats.find((c) => c.id === sel) || null
@@ -190,22 +241,33 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
     flex: 1, textAlign: 'center', padding: '8px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
     color: aba === id ? 'var(--brand-600)' : 'var(--text-3)', borderBottom: aba === id ? '2px solid var(--brand-500)' : '2px solid transparent',
   })
+  const inpForm: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5, width: '100%' }
 
   return (
     <div className="cli-card" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', height: 'calc(100vh - 220px)', minHeight: 420, overflow: 'hidden' }}>
       {/* Lista de conversas */}
       <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
-          <div style={tab('todas')} onClick={() => setAba('todas')}>Todas ({chats.length})</div>
+          <div style={tab('todas')} onClick={() => setAba('todas')}>Todas ({totalReal})</div>
           <div style={tab('minhas')} onClick={() => setAba('minhas')}>Minhas ({minhasN})</div>
           <div style={tab('fila')} onClick={() => setAba('fila')}>Fila ({filaN})</div>
         </div>
         <div style={{ padding: 10, borderBottom: '1px solid var(--line)' }}>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔎 Buscar conversa..."
             style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
-          <div style={{ fontSize: 10.5, color: 'var(--green)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }} title="As mensagens recebidas/enviadas aparecem automaticamente">
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} /> Tempo real ativo
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginTop: 6 }}>
+            <div style={{ fontSize: 10.5, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 5 }} title="As mensagens recebidas/enviadas aparecem automaticamente">
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} /> Tempo real ativo
+            </div>
+            <label style={{ fontSize: 10.5, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }} title="Mostrar conversas resolvidas/fechadas (descartadas)">
+              <input type="checkbox" checked={verArquivadas} onChange={(e) => setVerArquivadas(e.target.checked)} /> arquivadas{arquivadasN ? ` (${arquivadasN})` : ''}
+            </label>
           </div>
+          {amostraCapped && (
+            <div style={{ fontSize: 10, color: 'var(--amber)', marginTop: 5 }} title={`Carregadas as ${chats.length} conversas mais recentes de ${totalReal}.`}>
+              <i className="ti ti-info-circle" /> Mostrando as {chats.length} mais recentes de {totalReal}. Use a busca para localizar as demais.
+            </div>
+          )}
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {filtrados.length === 0 && <div style={{ padding: 16, color: 'var(--text-3)', fontSize: 13 }}>Nenhuma conversa.</div>}
@@ -252,9 +314,9 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                 </div>
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <select value={stat} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as 'aberto' | 'pendente' | 'resolvido'), 'Status atualizado.')}
+                <select value={STATUS_OPCOES.includes(stat as typeof STATUS_OPCOES[number]) ? stat : 'aberto'} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as typeof STATUS_OPCOES[number]), 'Status atualizado.')}
                   style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }} title="Status da conversa">
-                  {(['aberto', 'pendente', 'resolvido'] as const).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                  {STATUS_OPCOES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                 </select>
                 <button className="btn" onClick={abrirCliente}><i className="ti ti-user-search" /> Cliente</button>
                 <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
@@ -268,7 +330,8 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                 </select>
                 {chat.ticket_id
                   ? <span className="os-st" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><i className="ti ti-headset" /> Chamado vinculado</span>
-                  : <button className="btn btn-primary" disabled={busy} onClick={abrirChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
+                  : <button className="btn btn-primary" disabled={busy} onClick={abrirFluxoChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
+                <button className="btn" disabled={busy} onClick={descartar} title="Tirar a conversa da fila de triagem (status Fechado)" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /> Descartar</button>
               </div>
             </div>
             <div ref={threadRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -308,6 +371,30 @@ export function TriagemWhatsapp({ chats, msgs, atendentes, notas, operadorId }: 
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+            {chamadoOpen && (
+              <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 12, maxHeight: 300, overflowY: 'auto' }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial — dados do cliente</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>Confirme os dados e o chamado é aberto e vinculado a esta conversa.</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo *" style={inpForm} autoFocus />
+                  <input value={form.cpf} onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))} placeholder="CPF" style={inpForm} />
+                  <input value={form.telefone} onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))} placeholder="WhatsApp" style={inpForm} />
+                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="E-mail" style={inpForm} />
+                  <select value={form.unidade_id} onChange={(e) => setForm((f) => ({ ...f, unidade_id: e.target.value }))} style={inpForm}>
+                    <option value="">Unidade atendida *</option>
+                    {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                  </select>
+                  <select value={form.motivo} onChange={(e) => setForm((f) => ({ ...f, motivo: e.target.value }))} style={inpForm}>
+                    <option value="">Motivo / assunto</option>
+                    {motivos.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button className="btn btn-primary" disabled={busy} onClick={confirmarChamado}><i className="ti ti-ticket" /> Abrir chamado</button>
+                  <button className="btn" disabled={busy} onClick={() => setChamadoOpen(false)}>Cancelar</button>
+                </div>
               </div>
             )}
             {notasOpen && (

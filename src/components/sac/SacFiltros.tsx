@@ -1,13 +1,16 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PERIODOS } from '@/lib/periodo'
+import { SITUACOES } from '@/lib/sac'
 
-const CANAIS = ['Reclame Aqui', 'Blip', 'WhatsApp', 'Sults', 'Procon', 'Instagram', 'Manual', 'E-mail']
-const FASES = ['Novo', 'Contato com cliente', 'Em pagamento', 'Concluído']
+const CANAIS = ['Reclame Aqui', 'Blip', 'WhatsApp', 'Sults', 'Procon', 'Instagram', 'Manual', 'E-mail', 'Telefone', 'Formulário']
+// Todas as 7 fases reais do enum (paridade com NovoChamado/ChamadosTabela/SacKanban).
+const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 
-export function SacFiltros({ atendentes = [], motivos = [], unidades = [] }: {
-  atendentes?: { id: string; nome: string }[]; motivos?: string[]; unidades?: { id: string; nome: string }[]
+export function SacFiltros({ atendentes = [], motivos = [], unidades = [], children }: {
+  atendentes?: { id: string; nome: string }[]; motivos?: string[]; unidades?: { id: string; nome: string }[]; children?: ReactNode
 }) {
   const router = useRouter()
   const sp = useSearchParams()
@@ -21,54 +24,66 @@ export function SacFiltros({ atendentes = [], motivos = [], unidades = [] }: {
 
   const sel: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
   const periodo = sp.get('periodo') ?? ''
-  const temFiltro = ['q', 'canal', 'fase', 'atendente', 'motivo', 'unidade', 'periodo'].some((k) => sp.get(k))
+  const temFiltro = ['q', 'canal', 'fase', 'situacao', 'atendente', 'motivo', 'unidade', 'periodo'].some((k) => sp.get(k))
 
   return (
-    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '4px 0 14px' }}>
-      <input
-        defaultValue={sp.get('q') ?? ''} placeholder="🔎 Cliente, protocolo, CPF ou telefone..."
-        onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
-        style={{ ...sel, minWidth: 230 }}
-      />
-      <select value={sp.get('canal') ?? ''} onChange={(e) => setParams({ canal: e.target.value })} style={sel}>
-        <option value="">Todos os canais</option>
-        {CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
-      <select value={sp.get('fase') ?? ''} onChange={(e) => setParams({ fase: e.target.value })} style={sel}>
-        <option value="">Todas as fases</option>
-        {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
-      </select>
-      {motivos.length > 0 && (
-        <select value={sp.get('motivo') ?? ''} onChange={(e) => setParams({ motivo: e.target.value })} style={sel}>
-          <option value="">Todos os motivos</option>
-          {motivos.map((m) => <option key={m} value={m}>{m}</option>)}
+    <div className="cli-card" style={{ padding: 14, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <i className="ti ti-headset" style={{ color: 'var(--brand-500)', fontSize: 18 }} /> <b>Chamados</b>
+        </div>
+        {children}
+      </div>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          defaultValue={sp.get('q') ?? ''} placeholder="🔎 Cliente, protocolo, CPF, telefone, motivo, canal ou unidade..."
+          onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
+          style={{ ...sel, minWidth: 260 }}
+        />
+        <select value={sp.get('canal') ?? ''} onChange={(e) => setParams({ canal: e.target.value })} style={sel}>
+          <option value="">Todos os canais</option>
+          {CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-      )}
-      {atendentes.length > 0 && (
-        <select value={sp.get('atendente') ?? ''} onChange={(e) => setParams({ atendente: e.target.value })} style={sel}>
-          <option value="">Todos os atendentes</option>
-          {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+        <select value={sp.get('fase') ?? ''} onChange={(e) => setParams({ fase: e.target.value })} style={sel}>
+          <option value="">Todas as fases</option>
+          {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
         </select>
-      )}
-      {unidades.length > 0 && (
-        <select value={sp.get('unidade') ?? ''} onChange={(e) => setParams({ unidade: e.target.value })} style={sel}>
-          <option value="">Todas as unidades</option>
-          {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+        <select value={sp.get('situacao') ?? ''} onChange={(e) => setParams({ situacao: e.target.value })} style={sel}>
+          <option value="">Todas as situações</option>
+          {SITUACOES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-      )}
-      <select value={periodo} onChange={(e) => setParams({ periodo: e.target.value, ...(e.target.value !== 'custom' ? { di: '', df: '' } : {}) })} style={sel}>
-        {PERIODOS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-      </select>
-      {periodo === 'custom' && (
-        <>
-          <input type="date" value={sp.get('di') ?? ''} onChange={(e) => setParams({ di: e.target.value })} style={sel} />
-          <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>até</span>
-          <input type="date" value={sp.get('df') ?? ''} onChange={(e) => setParams({ df: e.target.value })} style={sel} />
-        </>
-      )}
-      {temFiltro && (
-        <button className="btn" onClick={() => router.push('/sac/chamados')}><i className="ti ti-x" /> Limpar</button>
-      )}
+        {motivos.length > 0 && (
+          <select value={sp.get('motivo') ?? ''} onChange={(e) => setParams({ motivo: e.target.value })} style={sel}>
+            <option value="">Todos os motivos</option>
+            {motivos.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        )}
+        {atendentes.length > 0 && (
+          <select value={sp.get('atendente') ?? ''} onChange={(e) => setParams({ atendente: e.target.value })} style={sel}>
+            <option value="">Todos os atendentes</option>
+            {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+          </select>
+        )}
+        {unidades.length > 0 && (
+          <select value={sp.get('unidade') ?? ''} onChange={(e) => setParams({ unidade: e.target.value })} style={sel}>
+            <option value="">Todas as unidades</option>
+            {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+          </select>
+        )}
+        <select value={periodo} onChange={(e) => setParams({ periodo: e.target.value, ...(e.target.value !== 'custom' ? { di: '', df: '' } : {}) })} style={sel}>
+          {PERIODOS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+        </select>
+        {periodo === 'custom' && (
+          <>
+            <input type="date" value={sp.get('di') ?? ''} onChange={(e) => setParams({ di: e.target.value })} style={sel} />
+            <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>até</span>
+            <input type="date" value={sp.get('df') ?? ''} onChange={(e) => setParams({ df: e.target.value })} style={sel} />
+          </>
+        )}
+        {temFiltro && (
+          <button className="btn" onClick={() => router.push('/sac/chamados')}><i className="ti ti-eraser" /> Limpar</button>
+        )}
+      </div>
     </div>
   )
 }

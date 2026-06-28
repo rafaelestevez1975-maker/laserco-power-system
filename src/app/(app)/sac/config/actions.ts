@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import type { ActionResult } from '@/lib/types'
-import { type PremMonetaria } from '@/lib/sac'
+import { PREM_DEFAULT, type PremMonetaria } from '@/lib/sac'
 
 /** Garante operador com papel que pode configurar o SAC. */
 async function guard(): Promise<{ sb: SB; error?: undefined } | { sb: null; error: string }> {
@@ -17,6 +17,13 @@ async function guard(): Promise<{ sb: SB; error?: undefined } | { sb: null; erro
 async function proximaOrdem(sb: SB, tabela: string): Promise<number> {
   const { data } = await sb.from(tabela).select('ordem').order('ordem', { ascending: false }).limit(1).maybeSingle()
   return (((data as { ordem?: number } | null)?.ordem) ?? 0) + 1
+}
+
+/** Normaliza/valida uma cor hex (#RGB ou #RRGGBB). Aceita sem '#'. Fallback p/ a cor da marca. */
+function corHex(raw: string | null | undefined): string {
+  const v = (raw || '').trim()
+  const m = /^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.exec(v)
+  return m ? '#' + m[1].toLowerCase() : '#8a2a41'
 }
 
 // ─── Motivos de atendimento (sac_motivos: label, ativo, ordem) ───
@@ -45,14 +52,14 @@ export async function toggleMotivo(id: string, ativo: boolean): Promise<ActionRe
 export async function criarTag(nome: string, cor: string): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
   const n = nome.trim(); if (!n) return { ok: false, error: 'Informe o nome da tag.' }
-  const { error: e } = await sb.from('sac_tags').insert({ nome: n, cor: cor || '#8A2A41', ativo: true })
+  const { error: e } = await sb.from('sac_tags').insert({ nome: n, cor: corHex(cor), ativo: true })
   if (e) return { ok: false, error: msgErro(e.message, 'criar tag') }
   revalidatePath('/sac/config'); return { ok: true }
 }
 export async function renomearTag(id: string, nome: string, cor: string): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
   const n = nome.trim(); if (!n) return { ok: false, error: 'Informe o nome da tag.' }
-  const { error: e } = await sb.from('sac_tags').update({ nome: n, cor: cor || '#8A2A41' }).eq('id', id)
+  const { error: e } = await sb.from('sac_tags').update({ nome: n, cor: corHex(cor) }).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'renomear tag') }
   revalidatePath('/sac/config'); return { ok: true }
 }
@@ -63,20 +70,42 @@ export async function toggleTag(id: string, ativo: boolean): Promise<ActionResul
   revalidatePath('/sac/config'); return { ok: true }
 }
 
+// ─── Configuração única do SAC (sac_premiacao_config) ───────────────────────────
+// Resolve a linha de config. Modelo single-tenant (1 empresa) igual aos demais actions
+// do SAC: se não existir linha, devolve a empresa única para permitir o 1º insert
+// (assim SLA/premiação podem ser salvos numa base sem seed prévio de config).
+type CfgRow = { empresa_id?: string; pesos?: Record<string, unknown> } | null
+async function carregarCfg(sb: SB): Promise<{ eid: string | null; pesos: Record<string, unknown>; existe: boolean }> {
+  const { data } = await sb.from('sac_premiacao_config').select('empresa_id, pesos').limit(1).maybeSingle()
+  const c = data as CfgRow
+  if (c?.empresa_id) return { eid: c.empresa_id, pesos: c.pesos ?? {}, existe: true }
+  const { data: emp } = await sb.from('empresas').select('id').limit(1).maybeSingle()
+  const eid = (emp as { id?: string } | null)?.id ?? null
+  return { eid, pesos: {}, existe: false }
+}
+
+/** Grava `pesos` na linha de config: faz UPDATE se existir, senão INSERT (cria a config). */
+async function gravarPesos(sb: SB, eid: string, pesos: Record<string, unknown>, existe: boolean, oQue: string): Promise<{ error?: string }> {
+  if (existe) {
+    const { error } = await sb.from('sac_premiacao_config').update({ pesos, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
+    return error ? { error: msgErro(error.message, oQue) } : {}
+  }
+  const { error } = await sb.from('sac_premiacao_config').insert({ empresa_id: eid, pesos, atualizado_em: new Date().toISOString() })
+  return error ? { error: msgErro(error.message, oQue) } : {}
+}
+
 // ─── Premiação monetária do SAC (sac_premiacao_config.pesos = PremMonetaria jsonb) ───
 // Legado: SAC_PREM (index.html 8913) — prêmio em R$ por atendente. Guardamos os 9 parâmetros
 // no jsonb `pesos`; a coluna `premios` (modelo antigo de texto) deixa de ser usada.
 export async function salvarPremiacaoConfig(prem: PremMonetaria): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
+  const { eid, pesos: atuais, existe } = await carregarCfg(sb)
+  if (!eid) return { ok: false, error: 'Nenhuma empresa encontrada para salvar a configuração do SAC.' }
   // Preserva o slaHoras já gravado no jsonb `pesos` (não faz parte do form de premiação).
-  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id, pesos').limit(1).maybeSingle()
-  const c = cfg as { empresa_id?: string; pesos?: Record<string, unknown> } | null
-  const eid = c?.empresa_id
-  if (!eid) return { ok: false, error: 'Configuração de premiação não encontrada.' }
-  const slaHoras = c?.pesos?.slaHoras
+  const slaHoras = atuais.slaHoras
   const pesos = slaHoras != null ? { ...prem, slaHoras } : { ...prem }
-  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
-  if (e) return { ok: false, error: msgErro(e.message, 'salvar premiação') }
+  const r = await gravarPesos(sb, eid, pesos, existe, 'salvar premiação')
+  if (r.error) return { ok: false, error: r.error }
   revalidatePath('/sac/ranking'); return { ok: true }
 }
 
@@ -88,12 +117,13 @@ export async function salvarSlaHoras(horas: number): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
   const h = Math.round(Number(horas))
   if (!(h >= 1 && h <= 1000)) return { ok: false, error: 'Informe um prazo de SLA entre 1 e 1000 horas.' }
-  const { data: cfg } = await sb.from('sac_premiacao_config').select('empresa_id, pesos').limit(1).maybeSingle()
-  const c = cfg as { empresa_id?: string; pesos?: Record<string, unknown> } | null
-  const eid = c?.empresa_id
-  if (!eid) return { ok: false, error: 'Configuração do SAC não encontrada.' }
-  const pesos = { ...(c?.pesos ?? {}), slaHoras: h }
-  const { error: e } = await sb.from('sac_premiacao_config').update({ pesos, atualizado_em: new Date().toISOString() }).eq('empresa_id', eid)
-  if (e) return { ok: false, error: msgErro(e.message, 'salvar SLA') }
-  revalidatePath('/sac/config'); return { ok: true }
+  const { eid, pesos: atuais, existe } = await carregarCfg(sb)
+  if (!eid) return { ok: false, error: 'Nenhuma empresa encontrada para salvar a configuração do SAC.' }
+  // Ao criar a config pela 1ª vez, semeia também os pesos de premiação (PREM_DEFAULT)
+  // para o ranking não cair em valores vazios; em update preserva o que já existe.
+  const base = existe ? atuais : { ...PREM_DEFAULT }
+  const pesos = { ...base, slaHoras: h }
+  const r = await gravarPesos(sb, eid, pesos, existe, 'salvar SLA')
+  if (r.error) return { ok: false, error: r.error }
+  revalidatePath('/sac/config'); revalidatePath('/sac/ranking'); return { ok: true }
 }

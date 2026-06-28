@@ -30,13 +30,17 @@ export default async function SacKanbanPage() {
     })),
   ])
 
+  // Estado de erro honesto: se QUALQUER query (lista ou contagem) falhar, não fingimos
+  // colunas vazias — mostramos um aviso. (RLS/rede engolidos viravam "Sem chamados".)
+  const erro = listas.find((r) => r.error)?.error?.message || contagens.find((r) => r.error)?.error?.message || null
+
   const tickets = listas.flatMap((r) => (r.data ?? [])) as Ticket[]
   const totais: Record<string, number> = {}
   FASES.forEach((f, i) => { totais[f] = contagens[i].count ?? 0 })
 
   return (
     <div className="view active">
-      <SacKanban tickets={tickets} totais={totais} />
+      <SacKanban tickets={tickets} totais={totais} erro={erro} />
     </div>
   )
 }

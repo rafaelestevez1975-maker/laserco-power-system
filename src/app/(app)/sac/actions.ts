@@ -34,6 +34,8 @@ const PRIORIDADES = ['baixa', 'media', 'alta', 'urgente']
 // (mesmo padrão da importação, que grava "Reclamação: <data>").
 const TIPOS = ['Franquia', 'Própria']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
+// Papéis que operam o SAC (espelha kanban/importar/atendentes): atendente do SAC e gestor (admin sempre passa).
+const PAPEIS_SAC = ['sac', 'gestor'] as const
 
 /** Converte "1.234,56" / "1234.56" / number em número (ou null). */
 function parseNum(v: number | string | null | undefined): number | null {
@@ -44,11 +46,12 @@ function parseNum(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-/** Abre um chamado no SAC (cria sac_tickets). Respeita RLS/permissão de escrita. */
+/** Abre um chamado no SAC (cria sac_tickets). RBAC por papel + RLS como 2ª linha. */
 export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { op, error: authErr } = await requireOperador()
+  if (!op) return { ok: false, error: authErr }
+  if (!temPapel(op.papel, ...PAPEIS_SAC)) return { ok: false, error: 'Você não tem permissão para abrir chamados.' }
+  const sb = op.sb
   if (!input.nome_cliente?.trim()) return { ok: false, error: 'Informe o nome do cliente.' }
 
   const canal = CANAIS.includes(input.canal) ? input.canal : 'Manual'
@@ -113,9 +116,10 @@ export type EditChamadoInput = {
 /** Edita um chamado existente (campos parciais). Valida prioridade/fase/canal contra os CHECKs.
  *  Tipo (Franquia/Própria) e data da reclamação não têm coluna → vão no prefixo das observações. */
 export async function atualizarChamado(id: string, dados: EditChamadoInput): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { op, error: authErr } = await requireOperador()
+  if (!op) return { ok: false, error: authErr }
+  if (!temPapel(op.papel, ...PAPEIS_SAC)) return { ok: false, error: 'Você não tem permissão para editar chamados.' }
+  const sb = op.sb
   if (dados.nome_cliente !== undefined && !dados.nome_cliente.trim()) return { ok: false, error: 'O nome do cliente não pode ficar vazio.' }
   if (dados.prioridade && !PRIORIDADES.includes(dados.prioridade)) return { ok: false, error: 'Prioridade inválida.' }
   if (dados.fase && !FASES.includes(dados.fase)) return { ok: false, error: 'Fase inválida.' }
@@ -163,9 +167,10 @@ export async function atualizarChamado(id: string, dados: EditChamadoInput): Pro
 export async function solicitarReembolso(
   ticketId: string, valor: number, multaPct: number, observacao?: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) return { ok: false, error: 'Sessão expirada.' }
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_SAC)) return { ok: false, error: 'Você não tem permissão para lançar reembolso.' }
+  const sb = op.sb
   if (!(valor > 0)) return { ok: false, error: 'Valor de reembolso deve ser maior que zero.' }
 
   const { data: t } = await sb
@@ -176,6 +181,18 @@ export async function solicitarReembolso(
   if (!tk) return { ok: false, error: 'Chamado não encontrado.' }
   const empresa_id = await resolverEmpresa(sb, tk.empresa_id, tk.unidade_id)
   if (!empresa_id) return { ok: false, error: 'Não foi possível determinar a empresa.' }
+
+  // Guarda anti-duplicidade: não cria 2º lançamento de despesa pendente para o mesmo chamado.
+  // (Clicar "Lançar reembolso" duas vezes ou reabrir o modal e relançar geraria N despesas.)
+  const { data: jaExiste } = await sb
+    .from('lancamentos_financeiros')
+    .select('id')
+    .eq('origem_ref_id', ticketId)
+    .eq('tipo', 'despesa')
+    .neq('status', 'cancelado')
+    .limit(1)
+    .maybeSingle()
+  if (jaExiste) return { ok: false, error: 'Já existe um reembolso lançado para este chamado no Financeiro. Verifique em Contas a Pagar antes de relançar.' }
 
   const { data: cat } = await sb.from('plano_contas').select('id').eq('codigo', '2.3').limit(1).single()
   const categoria_id = (cat as { id?: string } | null)?.id ?? null
@@ -196,7 +213,7 @@ export async function solicitarReembolso(
     origem: 'manual',
     origem_ref_id: ticketId,
     observacao: `Solicitação do SAC (multa ${multaPct}%).${observacao ? ' ' + observacao : ''}`,
-    criado_por: user.id,
+    criado_por: op.userId,
   })
   if (e1) return { ok: false, error: /row-level|policy|permission/i.test(e1.message) ? 'Sem permissão para lançar no Financeiro.' : e1.message }
 
