@@ -104,12 +104,14 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
 
 export type EditChamadoInput = {
   nome_cliente?: string; telefone_cliente?: string; email_cliente?: string; cpf_cliente?: string
+  canal?: string; unidade_id?: string | null; tipo?: string; data_reclamacao?: string
   motivo_label?: string; prioridade?: string; fase?: string; atribuido_para?: string | null; observacoes?: string
   area_reclamada?: string; valor_pago?: number | string | null; valor_devolucao?: number | string | null
   multa_aplicada?: boolean; pago?: boolean
 }
 
-/** Edita um chamado existente (campos parciais). Valida prioridade/fase contra os CHECKs. */
+/** Edita um chamado existente (campos parciais). Valida prioridade/fase/canal contra os CHECKs.
+ *  Tipo (Franquia/Própria) e data da reclamação não têm coluna → vão no prefixo das observações. */
 export async function atualizarChamado(id: string, dados: EditChamadoInput): Promise<{ ok: boolean; error?: string }> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
@@ -117,22 +119,36 @@ export async function atualizarChamado(id: string, dados: EditChamadoInput): Pro
   if (dados.nome_cliente !== undefined && !dados.nome_cliente.trim()) return { ok: false, error: 'O nome do cliente não pode ficar vazio.' }
   if (dados.prioridade && !PRIORIDADES.includes(dados.prioridade)) return { ok: false, error: 'Prioridade inválida.' }
   if (dados.fase && !FASES.includes(dados.fase)) return { ok: false, error: 'Fase inválida.' }
+  if (dados.canal && !CANAIS.includes(dados.canal)) return { ok: false, error: 'Canal inválido.' }
 
   const patch: Record<string, unknown> = {}
   if (dados.nome_cliente !== undefined) patch.nome_cliente = dados.nome_cliente.trim()
   if (dados.telefone_cliente !== undefined) patch.telefone_cliente = dados.telefone_cliente.trim() || null
   if (dados.email_cliente !== undefined) patch.email_cliente = dados.email_cliente.trim() || null
   if (dados.cpf_cliente !== undefined) patch.cpf_cliente = dados.cpf_cliente.replace(/\D/g, '') || null
+  if (dados.canal) patch.canal = dados.canal
+  if (dados.unidade_id !== undefined) patch.unidade_id = dados.unidade_id || null
   if (dados.motivo_label !== undefined) patch.motivo_label = dados.motivo_label.trim() || null
   if (dados.prioridade) patch.prioridade = dados.prioridade
   if (dados.fase) patch.fase = dados.fase
   if (dados.atribuido_para !== undefined) patch.atribuido_para = dados.atribuido_para || null
-  if (dados.observacoes !== undefined) patch.observacoes = dados.observacoes.trim() || null
   if (dados.area_reclamada !== undefined) patch.area_reclamada = dados.area_reclamada.trim() || null
   if (dados.valor_pago !== undefined) patch.valor_pago = parseNum(dados.valor_pago)
   if (dados.valor_devolucao !== undefined) patch.valor_devolucao = parseNum(dados.valor_devolucao)
   if (dados.multa_aplicada !== undefined) patch.multa_aplicada = !!dados.multa_aplicada
   if (dados.pago !== undefined) patch.pago = !!dados.pago
+
+  // Observações + tipo/data da reclamação (prefixo). Só reconstrói se algum desses campos veio.
+  const mexeuObs = dados.observacoes !== undefined || dados.tipo !== undefined || dados.data_reclamacao !== undefined
+  if (mexeuObs) {
+    const { data: atual } = await sb.from('sac_tickets').select('observacoes').eq('id', id).single()
+    const meta = lerObsMeta((atual as { observacoes?: string | null } | null)?.observacoes)
+    const tipo = dados.tipo !== undefined ? (TIPOS.includes((dados.tipo || '').trim()) ? (dados.tipo || '').trim() : '') : meta.tipo
+    const dataRecl = dados.data_reclamacao !== undefined ? (dados.data_reclamacao || '').trim() : meta.dataRecl
+    const texto = dados.observacoes !== undefined ? (dados.observacoes || '').trim() : meta.texto
+    patch.observacoes = montarObs(tipo, dataRecl, texto)
+  }
+
   if (Object.keys(patch).length === 0) return { ok: true }
 
   const { error } = await sb.from('sac_tickets').update(patch).eq('id', id)

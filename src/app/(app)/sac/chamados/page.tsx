@@ -9,11 +9,11 @@ import { ChamadosTabela, type ChamadoRow } from '@/components/sac/ChamadosTabela
 
 const PAGE_SIZE = 30
 
-type SP = { canal?: string; fase?: string; q?: string; atendente?: string; motivo?: string; unidade?: string; periodo?: string; di?: string; df?: string; page?: string }
+type SP = { canal?: string; fase?: string; situacao?: string; q?: string; atendente?: string; motivo?: string; unidade?: string; periodo?: string; di?: string; df?: string; page?: string }
 
 export default async function SacChamadosPage({ searchParams }: { searchParams: Promise<SP> }) {
   const spv = await searchParams
-  const { canal, fase, q, atendente, motivo, unidade, periodo, di, df, page: pageRaw } = spv
+  const { canal, fase, situacao, q, atendente, motivo, unidade, periodo, di, df, page: pageRaw } = spv
   const ctx = await getSessionContext()
   const sb = await createClient()
   const uniNome: Record<string, string> = Object.fromEntries((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
@@ -30,13 +30,22 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const from = (page - 1) * PAGE_SIZE
   const { ini, fim } = rangePeriodo(periodo, di, df)
 
+  // Filtros base (escopo de unidade) reutilizados na query da lista e no total geral.
+  type Q = ReturnType<typeof sb.from>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const aplicarUnidade = (qb: any) => (ctx?.activeUnitId ? qb.eq('unidade_id', ctx.activeUnitId) : qb)
+
   let query = sb
     .from('sac_tickets')
-    .select('id, numero, protocolo, nome_cliente, telefone_cliente, email_cliente, cpf_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado, atribuido_para, observacoes, area_reclamada, valor_pago, valor_devolucao, multa_aplicada, pago', { count: 'exact' })
+    .select('id, numero, protocolo, nome_cliente, telefone_cliente, email_cliente, cpf_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado, atribuido_para, observacoes, area_reclamada, valor_pago, valor_devolucao, multa_aplicada, pago, criado_em', { count: 'exact' })
     .order('criado_em', { ascending: false })
     .range(from, from + PAGE_SIZE - 1)
   if (canal) query = query.eq('canal', canal)
   if (fase) query = query.eq('fase', fase)
+  // Situação (paridade do "Status" do legado), derivada de fase + sla_violado:
+  if (situacao === 'Concluído') query = query.eq('fase', 'Concluído')
+  else if (situacao === 'Em atraso') query = query.eq('sla_violado', true).neq('fase', 'Concluído')
+  else if (situacao === 'Em andamento') query = query.neq('fase', 'Concluído').or('sla_violado.is.null,sla_violado.eq.false')
   if (atendente) query = query.eq('atribuido_para', atendente)
   if (motivo) query = query.eq('motivo_label', motivo)
   if (unidade && !ctx?.activeUnitId) query = query.eq('unidade_id', unidade)
@@ -44,19 +53,29 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   if (fim) query = query.lt('criado_em', fim)
   if (q) {
     const qs = q.replace(/[,()*]/g, ' ').trim()
-    if (qs) query = query.or(`nome_cliente.ilike.%${qs}%,protocolo.ilike.%${qs}%,cpf_cliente.ilike.%${qs}%,telefone_cliente.ilike.%${qs}%`)
+    // Legado busca em cliente+id+unidade+motivo+canal; aqui mantemos isso e somamos CPF/telefone.
+    // (unidade entra por nome só quando o termo casa com alguma unidade do escopo.)
+    if (qs) {
+      const conds = [`nome_cliente.ilike.%${qs}%`, `protocolo.ilike.%${qs}%`, `cpf_cliente.ilike.%${qs}%`, `telefone_cliente.ilike.%${qs}%`, `motivo_label.ilike.%${qs}%`, `canal.ilike.%${qs}%`]
+      const uniIds = (ctx?.unidades ?? []).filter((u) => u.nome.toLowerCase().includes(qs.toLowerCase())).map((u) => u.id)
+      for (const id of uniIds) conds.push(`unidade_id.eq.${id}`)
+      query = query.or(conds.join(','))
+    }
   }
-  if (ctx?.activeUnitId) query = query.eq('unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
+  query = aplicarUnidade(query) // respeita a unidade ativa do topo
 
-  const { data, count } = await query
+  // Total geral (sem filtros, só escopo de unidade) — para o "X de Y" do legado.
+  const totalGeralQ = aplicarUnidade(sb.from('sac_tickets').select('id', { count: 'exact', head: true }))
+  const [{ data, count, error }, { count: countGeral }] = await Promise.all([query, totalGeralQ])
   const tickets = (data ?? []) as ChamadoRow[]
   const total = count ?? 0
+  const totalGeral = countGeral ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(canal || fase || q || atendente || motivo || unidade || periodo)
+  const temFiltro = !!(canal || fase || situacao || q || atendente || motivo || unidade || periodo)
 
   const urlComPagina = (p: number) => {
     const sp = new URLSearchParams()
-    for (const [k, v] of Object.entries({ canal, fase, q, atendente, motivo, unidade, periodo, di, df })) if (v) sp.set(k, v)
+    for (const [k, v] of Object.entries({ canal, fase, situacao, q, atendente, motivo, unidade, periodo, di, df })) if (v) sp.set(k, v)
     if (p > 1) sp.set('page', String(p))
     const s = sp.toString()
     return `/sac/chamados${s ? `?${s}` : ''}`
@@ -64,18 +83,25 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
 
   return (
     <div className="view active">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+      <SacFiltros atendentes={atendentes} motivos={motivos} unidades={unidadesFiltro}>
         <NovoChamado unidades={ctx?.unidades ?? []} atendentes={atendentes} activeUnitId={ctx?.activeUnitId ?? null} />
-      </div>
-      <SacFiltros atendentes={atendentes} motivos={motivos} unidades={unidadesFiltro} />
+      </SacFiltros>
 
-      <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 8px' }}>
-        <i className="ti ti-filter" /> {total} chamado(s){temFiltro ? ' (filtrado)' : ''} · página {page} de {totalPages} · <span style={{ color: 'var(--text-3)' }}>clique numa linha para editar</span>
-      </div>
+      {error ? (
+        <div className="cli-card" style={{ padding: 18, color: 'var(--red)' }}>
+          <i className="ti ti-alert-triangle" /> Não foi possível carregar os chamados. Recarregue a página ou ajuste os filtros.
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '0 0 8px' }}>
+            <i className="ti ti-filter" /> {total} de {totalGeral} chamado(s){temFiltro ? ' (filtrado)' : ''} · página {page} de {totalPages} · <span style={{ color: 'var(--text-3)' }}>clique numa linha ou no lápis para editar</span>
+          </div>
 
-      <ChamadosTabela tickets={tickets} atendentes={atendentes} motivos={motivos} uniNome={uniNome} />
+          <ChamadosTabela tickets={tickets} atendentes={atendentes} motivos={motivos} uniNome={uniNome} unidades={ctx?.unidades ?? []} />
+        </>
+      )}
 
-      {totalPages > 1 && (
+      {!error && totalPages > 1 && (
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center', marginTop: 14 }}>
           {page > 1
             ? <Link className="btn" href={urlComPagina(page - 1)}><i className="ti ti-chevron-left" /> Anterior</Link>
