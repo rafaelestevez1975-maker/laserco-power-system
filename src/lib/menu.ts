@@ -217,11 +217,11 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/clientes', '/colaboradores', '/contas', '/pacotes', '/produtos', '/servicos',
   // Gestão · Relatórios (só os com tela real; os demais ainda são snapshot)
   '/relatorios/agendamentos', '/relatorios/clientes', '/relatorios/contratos', '/relatorios/descontos',
-  '/relatorios/faturamento', '/relatorios/financeiro', '/relatorios/metas', '/relatorios/ordens-servico',
+  '/relatorios/faturamento', '/relatorios/metas', '/relatorios/ordens-servico',
   '/relatorios/pagamentos', '/relatorios/ranking-vendas',
-  // Gestão · Dashboards
-  '/dashboards/financeiro', '/dashboards/gerencial', '/dashboards/funil', '/dashboards/vendas-geral',
-  '/dashboards/vendas-mes', '/dashboards/vendas-comparativo', '/dashboards/vendas-historico',
+  // (Relatório Financeiro/DRE ainda é parcial — só receitas, sem despesas → prévia)
+  // Gestão · Dashboards (vendas-* ainda são iframe de HTML estático do legado → prévia)
+  '/dashboards/financeiro', '/dashboards/gerencial', '/dashboards/funil',
   // Gestão · diversos
   '/automacoes', '/disparos', '/crm', '/leads-site', '/canais', '/indiques',
   '/marketing', '/comunicados', '/chamados', '/checklist', '/universidade', '/disco', '/notas',
@@ -235,8 +235,8 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   // Administração · Financeiro Franqueadora
   '/financeiro', '/financeiro/dre', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
   '/juridico', '/auditoria',
-  // Rede & Conta
-  '/minha-unidade', '/unidades', '/minha-conta', '/app-cliente', '/exportacoes', '/ajuda',
+  // Rede & Conta (minha-unidade: 4/5 abas stub; app-cliente: protótipo sem persistência → prévia)
+  '/unidades', '/minha-conta', '/exportacoes', '/ajuda',
 ])
 
 /** A rota (sem querystring) corresponde a uma tela funcional? Usado pelo Sidebar p/ acender/apagar. */
