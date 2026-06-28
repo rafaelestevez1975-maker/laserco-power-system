@@ -250,9 +250,11 @@ export function TriagemWhatsapp({
       <b><i className="ti ti-brand-whatsapp" style={{ color: '#0F6B3A' }} /> Triagem WhatsApp</b>
       <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Veja as conversas e abra o chamado com 1 clique</span>
     </div>
-    <div className="cli-card" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', height: 'calc(100vh - 260px)', minHeight: 420, overflow: 'hidden' }}>
-      {/* Lista de conversas */}
-      <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 14, alignItems: 'start' }}>
+      {/* Lista de conversas — rel-card "Conversas (N)" do legado */}
+      <div className="rel-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--line)' }}>Conversas ({totalReal})</div>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
           <div style={tab('todas')} onClick={() => setAba('todas')}>Todas ({totalReal})</div>
           <div style={tab('minhas')} onClick={() => setAba('minhas')}>Minhas ({minhasN})</div>
@@ -275,7 +277,7 @@ export function TriagemWhatsapp({
             </div>
           )}
         </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ maxHeight: 580, overflow: 'auto', flex: 1 }}>
           {filtrados.length === 0 && <div style={{ padding: 16, color: 'var(--text-3)', fontSize: 13 }}>Nenhuma conversa.</div>}
           {filtrados.map((c) => {
             const unread = !!c.nao_lidas && !lidos.has(c.id)
@@ -302,10 +304,10 @@ export function TriagemWhatsapp({
         </div>
       </div>
 
-      {/* Thread */}
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--bg)' }}>
+      {/* Thread — rel-card de conversa do legado (index.html:9068) */}
+      <div className="rel-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         {!chat ? (
-          <div style={{ margin: 'auto', color: 'var(--text-3)' }}>Selecione uma conversa</div>
+          <div style={{ margin: 'auto', color: 'var(--text-3)', padding: 34 }}>Selecione uma conversa</div>
         ) : (
           <>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -319,6 +321,8 @@ export function TriagemWhatsapp({
                   {espera != null && espera >= 1 && <span style={{ marginLeft: 6, color: espera >= SLA_MIN ? 'var(--red)' : 'var(--amber)', fontWeight: 700 }}>· ⏱ {espera}min aguardando</span>}
                 </div>
               </div>
+              {/* Chip de status do legado (index.html:9068): "Aguardando triagem" enquanto não há chamado vinculado. */}
+              {!chat.ticket_id && <span style={{ fontSize: 11, background: '#FBF3E2', color: '#B7791F', fontWeight: 700, padding: '2px 9px', borderRadius: 20 }}>Aguardando triagem</span>}
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select value={STATUS_OPCOES.includes(stat as typeof STATUS_OPCOES[number]) ? stat : 'aberto'} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as typeof STATUS_OPCOES[number]), 'Status atualizado.')}
                   style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }} title="Status da conversa">
@@ -340,20 +344,21 @@ export function TriagemWhatsapp({
                 <button className="btn" disabled={busy} onClick={descartar} title="Tirar a conversa da fila de triagem (status Fechado)" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /> Descartar</button>
               </div>
             </div>
-            <div ref={threadRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Área de bolhas: fundo var(--bg) como no legado (index.html:9069). */}
+            <div ref={threadRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg)' }}>
               {thread.length === 0 && <div style={{ margin: 'auto', color: 'var(--text-3)', fontSize: 13 }}>Sem mensagens nesta conversa.</div>}
               {thread.map((m) => {
                 const entrada = isIn(m.direcao)
                 const t = (m.tipo || '').toLowerCase()
                 return (
-                  <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '78%', background: entrada ? 'var(--surface)' : 'var(--brand-500)', color: entrada ? undefined : '#fff', border: entrada ? '1px solid var(--line)' : 'none', borderRadius: 10, padding: '7px 11px' }}>
+                  <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '78%', background: entrada ? 'var(--surface)' : 'var(--brand-500)', color: entrada ? 'var(--text)' : '#fff', border: entrada ? '1px solid var(--line)' : 'none', borderRadius: 12, padding: '8px 12px', lineHeight: 1.4 }}>
                     {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.85)', marginBottom: 1 }}>{m.autor}</div>}
                     {m.midia_url && t.includes('image') && <img src={m.midia_url} alt="" style={{ maxWidth: 220, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('audio') && <audio controls src={m.midia_url} style={{ maxWidth: 230, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('video') && <video controls src={m.midia_url} style={{ maxWidth: 230, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && (t.includes('document') || t.includes('outro')) && <a href={m.midia_url} target="_blank" rel="noopener" style={{ fontSize: 12.5, color: 'var(--brand-600)' }}><i className="ti ti-file" /> {m.texto || 'Documento'}</a>}
                     {(m.texto || !m.midia_url) && <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{m.texto || (!m.midia_url ? <i style={{ color: 'var(--text-3)' }}>[{m.tipo || 'mídia'}]</i> : null)}</div>}
-                    <div style={{ fontSize: 10, color: entrada ? 'var(--text-3)' : 'rgba(255,255,255,.7)', textAlign: 'right', marginTop: 2, display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>{hora(m.criado_em)} {!entrada && <Ticks status={m.status} />}</div>
+                    <div style={{ fontSize: 9, opacity: entrada ? 1 : 0.7, color: entrada ? 'var(--text-3)' : undefined, textAlign: 'right', marginTop: 3, display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>{hora(m.criado_em)} {!entrada && <Ticks status={m.status} />}</div>
                   </div>
                 )
               })}
@@ -383,8 +388,8 @@ export function TriagemWhatsapp({
               <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 12, maxHeight: 300, overflowY: 'auto' }}>
                 {/* Card de fluxo idêntico ao legado (index.html:9070): borda pontilhada. */}
                 <div style={{ border: '1px dashed var(--line)', borderRadius: 10, padding: 12, background: 'var(--surface-2)' }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial — dados do cliente</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>Confirme os dados e o chamado é aberto e vinculado a esta conversa.</div>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial — dados do cliente</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>Confirme os dados e o chamado é aberto automaticamente com eles.</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo *" style={inpForm} autoFocus />
                   <input value={form.cpf} onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))} placeholder="CPF" style={inpForm} />

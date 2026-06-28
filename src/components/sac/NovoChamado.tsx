@@ -55,81 +55,73 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
     else { setOpen(false); router.refresh() }
   }
 
+  // Modal "Novo chamado" 1:1 com o legado sacForm: classes modal-ov/modal, largura 840,
+  // grid de 3 colunas com a mesma ordem de campos e rótulos do legado.
   return (
     <>
       <button className="btn btn-primary" onClick={() => setOpen(true)}><i className="ti ti-plus" /> Novo chamado</button>
       {open && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setOpen(false)}>
-          <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="lc-card" style={{ width: '100%', maxWidth: 560, padding: 22, background: '#fff', maxHeight: '90vh', overflow: 'auto' }}>
-            <h3 className="lc-title" style={{ fontSize: 18, marginBottom: 14 }}>Abrir chamado</h3>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <div><label style={lab}>Cliente *</label><input style={inp} value={f.nome_cliente} onChange={(e) => set('nome_cliente', e.target.value)} autoFocus /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>CPF</label><input style={inp} value={f.cpf_cliente} onChange={(e) => set('cpf_cliente', e.target.value)} /></div>
-                <div><label style={lab}>WhatsApp / Telefone</label><input style={inp} value={f.telefone_cliente} onChange={(e) => set('telefone_cliente', e.target.value)} /></div>
-              </div>
-              <div><label style={lab}>E-mail</label><input style={inp} value={f.email_cliente} onChange={(e) => set('email_cliente', e.target.value)} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>Canal</label>
-                  <select style={inp} value={f.canal} onChange={(e) => set('canal', e.target.value)}>
+        <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false) }}>
+          <form onSubmit={submit} className="modal" style={{ maxWidth: 840 }}>
+            <div className="modal-head"><h3><i className="ti ti-headset" /> Novo chamado</h3><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button></div>
+            <div className="modal-body" style={{ display: 'block' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={col}><label style={flab}>Nome do cliente *</label><input style={fin} value={f.nome_cliente} onChange={(e) => set('nome_cliente', e.target.value)} autoFocus /></div>
+                <div style={col}><label style={flab}>CPF</label><input style={fin} value={f.cpf_cliente} onChange={(e) => set('cpf_cliente', e.target.value)} /></div>
+                <div style={col}><label style={flab}>WhatsApp / Telefone</label><input style={fin} value={f.telefone_cliente} onChange={(e) => set('telefone_cliente', e.target.value)} /></div>
+                <div style={col}><label style={flab}>E-mail</label><input style={fin} value={f.email_cliente} onChange={(e) => set('email_cliente', e.target.value)} /></div>
+                <div style={col}><label style={flab}>Canal *</label>
+                  <select style={fin} value={f.canal} onChange={(e) => set('canal', e.target.value)}>
                     {CANAIS.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div><label style={lab}>Prioridade</label>
-                  <select style={inp} value={f.prioridade} onChange={(e) => set('prioridade', e.target.value)}>
-                    {PRIOS.map((p) => <option key={p.k} value={p.k}>{p.l}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>Unidade</label>
-                  <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
+                <div style={col}><label style={flab}>Unidade *</label>
+                  <select style={fin} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
                     <option value=""> Sem unidade / central </option>
                     {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                   </select>
                 </div>
-                <div><label style={lab}>Responsável</label>
-                  <select style={inp} value={f.atribuido_para} onChange={(e) => set('atribuido_para', e.target.value)}>
+                <div style={col}><label style={flab}>Tipo</label>
+                  <select style={fin} value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
+                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div style={col}><label style={flab}>Motivo *</label><input style={fin} value={f.motivo_label} onChange={(e) => set('motivo_label', e.target.value)} placeholder="Ex.: Cobrança indevida" /></div>
+                <div style={col}><label style={flab}>Prioridade</label>
+                  <select style={fin} value={f.prioridade} onChange={(e) => set('prioridade', e.target.value)}>
+                    {PRIOS.map((p) => <option key={p.k} value={p.k}>{p.l}</option>)}
+                  </select>
+                </div>
+                <div style={col}><label style={flab}>Responsável</label>
+                  <select style={fin} value={f.atribuido_para} onChange={(e) => set('atribuido_para', e.target.value)}>
                     <option value="">— Não atribuído</option>
                     {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
                   </select>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>Tipo</label>
-                  <select style={inp} value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
-                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div><label style={lab}>Data da reclamação</label><input style={inp} type="date" value={f.data_reclamacao} onChange={(e) => set('data_reclamacao', e.target.value)} /></div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>Motivo / assunto</label><input style={inp} value={f.motivo_label} onChange={(e) => set('motivo_label', e.target.value)} placeholder="Ex.: Cobrança indevida" /></div>
-                <div><label style={lab}>Fase (Kanban)</label>
-                  <select style={inp} value={f.fase} onChange={(e) => set('fase', e.target.value)}>
+                <div style={col}><label style={flab}>Fase (Kanban)</label>
+                  <select style={fin} value={f.fase} onChange={(e) => set('fase', e.target.value)}>
                     {FASES.map((x) => <option key={x} value={x}>{x}</option>)}
                   </select>
                 </div>
+                <div style={col}><label style={flab}>Data da reclamação *</label><input style={fin} type="date" value={f.data_reclamacao} onChange={(e) => set('data_reclamacao', e.target.value)} /></div>
+                <div style={col}><label style={flab}>Serviço/pacote reclamado</label><input style={fin} value={f.area_reclamada} onChange={(e) => set('area_reclamada', e.target.value)} placeholder="Ex.: Pacote axila + virilha" /></div>
+                <div style={col}><label style={flab}>Valor pago (R$)</label><input style={fin} inputMode="decimal" value={f.valor_pago} onChange={(e) => set('valor_pago', e.target.value)} placeholder="0,00" /></div>
+                <div style={col}><label style={flab}>Reembolso solicitado (R$)</label><input style={fin} inputMode="decimal" value={f.valor_devolucao} onChange={(e) => set('valor_devolucao', e.target.value)} placeholder="0,00" /></div>
               </div>
-              <div><label style={lab}>Serviço / pacote reclamado</label><input style={inp} value={f.area_reclamada} onChange={(e) => set('area_reclamada', e.target.value)} placeholder="Ex.: Pacote axila + virilha" /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label style={lab}>Valor pago (R$)</label><input style={inp} inputMode="decimal" value={f.valor_pago} onChange={(e) => set('valor_pago', e.target.value)} placeholder="0,00" /></div>
-                <div><label style={lab}>Reembolso solicitado (R$)</label><input style={inp} inputMode="decimal" value={f.valor_devolucao} onChange={(e) => set('valor_devolucao', e.target.value)} placeholder="0,00" /></div>
-              </div>
-              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-                <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
+                <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input type="checkbox" checked={f.multa_aplicada} onChange={(e) => set('multa_aplicada', e.target.checked)} /> Multa aplicada
                 </label>
-                <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input type="checkbox" checked={f.pago} onChange={(e) => set('pago', e.target.checked)} /> Pagamento/reembolso realizado
                 </label>
               </div>
-              <div><label style={lab}>Observações / tratativa</label><textarea style={{ ...inp, minHeight: 64, resize: 'vertical' }} value={f.observacoes} onChange={(e) => set('observacoes', e.target.value)} /></div>
+              <div style={{ marginTop: 10, ...col }}><label style={flab}>Observações / tratativa</label><textarea rows={3} style={{ ...fin, resize: 'vertical' }} value={f.observacoes} onChange={(e) => set('observacoes', e.target.value)} /></div>
+              {err && <p style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 10 }}>{err}</p>}
             </div>
-            {err && <p style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 10 }}>{err}</p>}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button type="button" className="btn" onClick={() => setOpen(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Abrindo…' : 'Abrir chamado'}</button>
+            <div className="modal-foot">
+              <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary" disabled={saving}><i className="ti ti-check" /> {saving ? 'Abrindo…' : 'Salvar chamado'}</button>
             </div>
           </form>
         </div>
