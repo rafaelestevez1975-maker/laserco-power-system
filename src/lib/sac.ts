@@ -45,6 +45,49 @@ export function primeiroPagamentoValido(dataISO: string | null | undefined): boo
 }
 export const MSG_DIA15 = 'A data do 1º pagamento deve ser após o dia 15.'
 
+// ───────────────────────── Observações: prefixo Tipo/Reclamação ─────────────────────────
+// sac_tickets não tem colunas próprias para "tipo da unidade" (Franquia/Própria) nem
+// "data da reclamação" — o legado guardava esses campos no formulário. Para manter a
+// paridade SEM tocar no banco, gravamos esses dados no PREFIXO de observações no padrão
+// "Tipo: <tipo> · Reclamação: <YYYY-MM-DD>" (mesmo padrão da importação). Estes helpers
+// extraem/reconstroem esse prefixo para exibir na lista e reeditar no modal.
+export type ObsMeta = { tipo: string; dataRecl: string; texto: string }
+
+/** Lê o prefixo "Tipo:/Reclamação:" das observações e devolve {tipo, dataRecl, texto livre}. */
+export function lerObsMeta(obs: string | null | undefined): ObsMeta {
+  const partes = (obs || '').split(' · ')
+  let tipo = '', dataRecl = ''
+  const resto: string[] = []
+  for (const p of partes) {
+    const t = p.trim()
+    const mTipo = /^Tipo:\s*(.+)$/i.exec(t)
+    const mRecl = /^Reclama[çc][ãa]o:\s*(.+)$/i.exec(t)
+    if (mTipo && !tipo) tipo = mTipo[1].trim()
+    else if (mRecl && !dataRecl) dataRecl = mRecl[1].trim()
+    else if (t) resto.push(t)
+  }
+  return { tipo, dataRecl, texto: resto.join(' · ') }
+}
+
+/** Reconstrói as observações com o prefixo "Tipo:/Reclamação:" (campos vazios são omitidos). */
+export function montarObs(tipo: string, dataRecl: string, texto: string): string | null {
+  const prefixo = [tipo ? `Tipo: ${tipo}` : '', dataRecl ? `Reclamação: ${dataRecl}` : ''].filter(Boolean).join(' · ')
+  return [prefixo, (texto || '').trim()].filter(Boolean).join(' · ') || null
+}
+
+// ───────────────────────── Situação do chamado (paridade de Status do legado) ─────────────────────────
+// O legado tinha "Em andamento / Concluído / Em atraso" derivado de (concluído? / SLA estourado?).
+// Aqui derivamos o mesmo a partir de fase + sla_violado (a coluna `status` do schema usa
+// 'aberto'/'resolvido', semântica diferente). Mantém o badge e o filtro de Status do legado.
+export type Situacao = 'Em andamento' | 'Concluído' | 'Em atraso'
+export const SITUACOES: Situacao[] = ['Em andamento', 'Concluído', 'Em atraso']
+
+export function situacaoChamado(fase: string | null | undefined, slaViolado: boolean | null | undefined): Situacao {
+  if ((fase || '') === 'Concluído') return 'Concluído'
+  if (slaViolado) return 'Em atraso'
+  return 'Em andamento'
+}
+
 // ───────────────────────── Premiação monetária do SAC ─────────────────────────
 // Legado: SAC_PREM (8913) + sacPremValor (9122). Prêmio em R$ por atendente.
 export type PremMonetaria = {

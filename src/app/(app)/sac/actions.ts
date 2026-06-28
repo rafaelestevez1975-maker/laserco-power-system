@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
-import { primeiroPagamentoValido, MSG_DIA15 } from '@/lib/sac'
+import { primeiroPagamentoValido, MSG_DIA15, montarObs, lerObsMeta } from '@/lib/sac'
 
 export type NovoChamadoInput = {
   nome_cliente: string
@@ -69,8 +69,7 @@ export async function criarChamado(input: NovoChamadoInput): Promise<{ ok: boole
   // Tipo e data da reclamação não têm coluna própria → vão no prefixo das observações.
   const tipo = TIPOS.includes((input.tipo || '').trim()) ? (input.tipo || '').trim() : ''
   const dataRecl = (input.data_reclamacao || '').trim()
-  const prefixo = [tipo ? `Tipo: ${tipo}` : '', dataRecl ? `Reclamação: ${dataRecl}` : ''].filter(Boolean).join(' · ')
-  const observacoes = [prefixo, input.observacoes?.trim() || ''].filter(Boolean).join(' · ') || null
+  const observacoes = montarObs(tipo, dataRecl, input.observacoes?.trim() || '')
 
   const { error } = await sb.from('sac_tickets').insert({
     empresa_id,
