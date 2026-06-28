@@ -6,18 +6,30 @@ import { criarAcordoAvulso } from '@/app/(app)/sac/actions'
 import { moedaBR, dataBR } from '@/lib/fmt'
 
 type Unidade = { id: string; nome: string }
+export type ChamadoOpcao = { id: string; rotulo: string; cliente: string; valorSugerido: number | null }
+
 const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }
 const lab: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--text-2)' }
 
 function addMonths(d: Date, n: number) { const x = new Date(d); x.setMonth(x.getMonth() + n); return x }
 
-export function NovoAcordo({ unidades }: { unidades: Unidade[] }) {
+export function NovoAcordo({ unidades, chamados }: { unidades: Unidade[]; chamados: ChamadoOpcao[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  const [f, setF] = useState({ cliente: '', unidade_id: '', valorTotal: '', nParcelas: '3', data1: '', observacao: '' })
+  const [f, setF] = useState({ ticketId: '', cliente: '', unidade_id: '', valorTotal: '', nParcelas: '3', data1: '', observacao: '' })
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
+
+  // sacAcChamPick: ao escolher um chamado, auto-preenche cliente + valor sugerido (devolução).
+  function pickChamado(id: string) {
+    const c = chamados.find((x) => x.id === id)
+    setF((p) => ({
+      ...p, ticketId: id,
+      cliente: c?.cliente || p.cliente,
+      valorTotal: c?.valorSugerido != null ? String(c.valorSugerido).replace('.', ',') : p.valorTotal,
+    }))
+  }
 
   const total = Number((f.valorTotal || '').replace(/\./g, '').replace(',', '.')) || 0
   const n = Math.min(24, Math.max(1, Math.round(Number(f.nParcelas) || 1)))
@@ -41,21 +53,27 @@ export function NovoAcordo({ unidades }: { unidades: Unidade[] }) {
     if (!f.data1) { setErr('Informe a data do 1º pagamento.'); return }
     if (!diaOk) { setErr('A data do 1º pagamento deve ser após o dia 15.'); return }
     setSaving(true)
-    const r = await criarAcordoAvulso({ cliente: f.cliente, unidade_id: f.unidade_id || null, valorTotal: total, nParcelas: n, data1: f.data1, observacao: f.observacao })
+    const r = await criarAcordoAvulso({ ticketId: f.ticketId || null, cliente: f.cliente, unidade_id: f.unidade_id || null, valorTotal: total, nParcelas: n, data1: f.data1, observacao: f.observacao })
     setSaving(false)
     if (!r.ok) { setErr(r.error || 'Erro ao criar acordo.'); return }
-    setOpen(false); setF({ cliente: '', unidade_id: '', valorTotal: '', nParcelas: '3', data1: '', observacao: '' }); router.refresh()
+    setOpen(false); setF({ ticketId: '', cliente: '', unidade_id: '', valorTotal: '', nParcelas: '3', data1: '', observacao: '' }); router.refresh()
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-      <button className="btn btn-primary" onClick={() => { setErr(''); setOpen(true) }}><i className="ti ti-calendar-plus" /> Novo acordo</button>
+    <>
+      <button className="btn btn-primary" onClick={() => { setErr(''); setOpen(true) }}><i className="ti ti-plus" /> Novo acordo</button>
       {open && (
         <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false) }}>
           <form onSubmit={submit} className="modal" style={{ width: 560 }}>
             <div className="modal-head"><h3><i className="ti ti-calendar-dollar" /> Novo acordo de pagamento</h3><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button></div>
             <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {err && <div className="modal-note" style={{ gridColumn: '1 / -1', background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
+              <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Chamado vinculado (opcional)</label>
+                <select style={inp} value={f.ticketId} onChange={(e) => pickChamado(e.target.value)}>
+                  <option value="">— Acordo avulso (sem chamado)</option>
+                  {chamados.map((c) => <option key={c.id} value={c.id}>{c.rotulo}</option>)}
+                </select>
+              </div>
               <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Cliente *</label><input style={inp} value={f.cliente} onChange={(e) => set('cliente', e.target.value)} autoFocus /></div>
               <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Unidade</label>
                 <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
@@ -69,7 +87,7 @@ export function NovoAcordo({ unidades }: { unidades: Unidade[] }) {
                 <input style={{ ...inp, maxWidth: 220 }} type="date" value={f.data1} onChange={(e) => set('data1', e.target.value)} />
                 {!diaOk && <div style={{ fontSize: 11.5, color: 'var(--red)', marginTop: 4 }}>A data do 1º pagamento deve ser após o dia 15.</div>}
               </div>
-              <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Observação</label><textarea style={{ ...inp, minHeight: 54, resize: 'vertical' }} value={f.observacao} onChange={(e) => set('observacao', e.target.value)} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Observação ao credor (opcional)</label><textarea style={{ ...inp, minHeight: 54, resize: 'vertical' }} value={f.observacao} onChange={(e) => set('observacao', e.target.value)} placeholder="Motivo, andamento, etc. — fica visível no card do acordo." /></div>
 
               {preview.length > 0 && (
                 <div style={{ gridColumn: '1 / -1', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>
@@ -89,6 +107,6 @@ export function NovoAcordo({ unidades }: { unidades: Unidade[] }) {
           </form>
         </div>
       )}
-    </div>
+    </>
   )
 }

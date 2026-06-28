@@ -5,6 +5,7 @@
   --gold-500:#E0B252;--gold-400:#E9C46A;--gold-600:#C79433;--gold-soft:#F6EACB;
   --bg:#F6F2F3;--surface:#FFFFFF;--surface-2:#FBF7F8;--line:#ECE2E4;--line-strong:#E1D2D5;
   --text:#2A1820;--text-2:#6F6068;--text-3:#A0939A;
+  --muted:var(--text-2); /* alias: o legado usa var(--muted) (cinza) mas nunca a definiu — mapeia p/ o cinza legível */
   --green:#1F9D6B;--green-bg:#E4F5EE;--blue:#3D7FD1;--blue-bg:#E6F0FB;
   --amber:#E0922A;--amber-bg:#FBEFD9;--red:#D85563;--red-bg:#FBE9EB;
   --radius:10px;--radius-lg:14px;

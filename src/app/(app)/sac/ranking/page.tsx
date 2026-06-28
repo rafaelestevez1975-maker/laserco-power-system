@@ -109,13 +109,13 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
         <>
           {/* Card "Destaque" sempre visível: com fallback honesto quando não há premiação no período. */}
           {top && top.premio > 0 ? (
-            <div className="rel-card" style={{ background: 'linear-gradient(135deg,var(--brand-600),var(--brand-400))', color: '#fff', marginBottom: 12, padding: 16, borderRadius: 12 }}>
+            <div className="rel-card" style={{ background: 'linear-gradient(135deg,var(--brand-600),var(--brand-400))', color: '#fff', marginBottom: 12 }}>
               <div style={{ fontSize: 12, opacity: 0.85 }}>{destaqueLabel}</div>
               <div style={{ fontSize: 22, fontWeight: 800 }}>{top.nome}</div>
-              <div style={{ fontSize: 13, opacity: 0.92 }}>{moedaBR(top.premio)} · {top.m.con} resolvidos · {top.m.rev} reversões</div>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>{moedaBR(top.premio)} · {top.m.con} resolvidos · {top.m.rev} reversões</div>
             </div>
           ) : (
-            <div className="rel-card" style={{ marginBottom: 12, padding: 16, borderRadius: 12, color: 'var(--text-3)' }}>
+            <div className="rel-card" style={{ marginBottom: 12, color: 'var(--text-3)' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{destaqueLabel}</div>
               <div style={{ fontSize: 13, marginTop: 4 }}>Sem premiação a destacar neste período — nenhum atendimento atribuído ainda.</div>
             </div>
@@ -133,13 +133,13 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
                     <tr key={l.id}>
                       <td style={{ fontWeight: 700 }}>{medalha(i)}</td>
                       <td><b>{l.nome}</b>{l.cargo ? <span style={{ display: 'block', fontSize: 11, color: 'var(--text-3)' }}>{l.cargo}</span> : null}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700 }}>{l.m.tot}</td>
+                      <td style={{ textAlign: 'center' }}>{l.m.tot}</td>
                       <td style={{ textAlign: 'center' }}>{l.m.con}</td>
-                      <td style={{ textAlign: 'center', color: l.m.rev > 0 ? '#15803D' : 'var(--text-3)', fontWeight: l.m.rev > 0 ? 700 : 400 }}>{l.m.rev}</td>
+                      <td style={{ textAlign: 'center' }}>{l.m.rev > 0 ? <b style={{ color: 'var(--brand-600)' }}>{l.m.rev}</b> : '0'}</td>
                       <td style={{ textAlign: 'center' }}>{l.m.slaOk}</td>
                       <td style={{ textAlign: 'center' }}>{l.m.atr === 0 ? <span style={{ color: '#0F6B3A', fontWeight: 700 }}>Zero ✓</span> : l.m.atr}</td>
                       <td style={{ textAlign: 'right' }}>{moedaBR(l.m.vendas)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--brand-600)' }}>{moedaBR(l.premio)}</td>
+                      <td style={{ textAlign: 'right' }}><b>{moedaBR(l.premio)}</b></td>
                     </tr>
                   ))}
                 </tbody>

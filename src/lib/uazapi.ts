@@ -7,7 +7,7 @@
 const BASE = (process.env.UAZAPI_BASE_URL || '').replace(/\/$/, '')
 const ADMIN = process.env.UAZAPI_ADMIN_TOKEN || ''
 
-export type Instancia = { name: string; token: string; status: string; owner?: string; profileName?: string }
+export type Instancia = { id?: string; name: string; token: string; status: string; owner?: string; profileName?: string }
 export type ConnState = { status: string; connected: boolean; qrcode?: string; paircode?: string }
 
 function asQrDataUrl(qr?: string): string | undefined {
@@ -41,12 +41,39 @@ export async function listInstances(): Promise<Instancia[]> {
   const { body } = await adminGet('/instance/all')
   const arr = Array.isArray(body) ? body : (body?.instances ?? [])
   return (arr as Record<string, unknown>[]).map((i) => ({
+    id: (i.id ?? i.instanceId ?? i.instance_id) as string | undefined,
     name: String(i.name ?? ''),
     token: String(i.token ?? ''),
     status: String(i.status ?? 'disconnected'),
     owner: (i.owner ?? i.number ?? i.phone) as string | undefined,
     profileName: (i.profileName ?? i.name) as string | undefined,
   }))
+}
+
+/** Só os dígitos de um identificador (telefone/owner), p/ casar por número de forma robusta. */
+function soDigitos(s?: string | null): string { return (s || '').replace(/\D/g, '') }
+
+/** Resolve QUAL instância gerou um evento do webhook, na ordem mais confiável:
+ *  token da instância → id da instância → nome da instância → owner (número/JID do dono).
+ *  Devolve a instância casada (com token) ou null. Base do roteamento por canal de origem:
+ *  evita responder a unidade B pelo número da unidade A em redes multi-número. */
+export function resolverInstancia(
+  instancias: Instancia[],
+  ev: { instance?: string | null; token?: string | null; owner?: string | null },
+): Instancia | null {
+  const tk = (ev.token || '').trim()
+  if (tk) { const m = instancias.find((i) => i.token === tk); if (m) return m }
+  const inst = (ev.instance || '').trim()
+  if (inst) {
+    const m = instancias.find((i) => i.id === inst || i.name === inst)
+    if (m) return m
+  }
+  const own = soDigitos(ev.owner)
+  if (own.length >= 8) {
+    const m = instancias.find((i) => soDigitos(i.owner).includes(own) || own.includes(soDigitos(i.owner)))
+    if (m) return m
+  }
+  return null
 }
 
 /** Cria uma instância nova (admintoken) e retorna o token. */

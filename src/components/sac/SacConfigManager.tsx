@@ -38,10 +38,37 @@ export function SacConfigManager({ motivos, tags, slaHoras, canais, unidadeAtiva
 
   return (
     <>
+      {/* Header idêntico ao legado (sacConfig 9147): card .rel-card "Configurações do SAC"
+          com ícone ti-settings brand-500. */}
+      <div className="rel-card" style={{ marginBottom: 14 }}>
+        <b><i className="ti ti-settings" style={{ color: 'var(--brand-500)' }} /> Configurações do SAC</b>
+      </div>
+
       {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginBottom: 12 }}>{err}</div>}
       {!podeEditar && <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>Você pode visualizar os catálogos; a edição é restrita a SAC/gestor/admin.</div>}
 
+      {/* Ordem do legado (sacConfig): SLA → Canais ativos → Integrações → Motivos. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16 }}>
+        <SlaCard slaHoras={slaHoras} podeEditar={podeEditar} busy={busy} run={run} />
+
+        <CanaisCard canais={canais} unidadeAtiva={unidadeAtiva} />
+      </div>
+
+      <section className="lc-card" style={{ padding: 16, marginTop: 16 }}>
+        <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-puzzle" /> Integrações</h3>
+        <div>
+          {INTEGRACOES_SAC.map((it) => (
+            <div key={it.n} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+              <span><i className={`ti ${it.ic}`} style={{ color: 'var(--brand-500)', marginRight: 8 }} />{it.n}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#999' }}>Não configurado</span>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>As integrações exigem credenciais e uma área de conexão própria, ainda não disponível neste módulo. Os chamados desses canais já podem ser registrados manualmente ou pela importação de planilha.</p>
+      </section>
+
+      {/* Motivos de reclamação (último no legado) + Tags (catálogo extra do Next.js, agrupado aqui). */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16, marginTop: 16 }}>
         <section className="lc-card" style={{ padding: 16 }}>
           <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-list-details" /> Motivos de reclamação <span style={{ fontSize: 12, color: 'var(--text-3)' }}>({motivos.length})</span></h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -58,24 +85,6 @@ export function SacConfigManager({ motivos, tags, slaHoras, canais, unidadeAtiva
             {tags.map((t) => <TagRow key={t.id} t={t} podeEditar={podeEditar} busy={busy} run={run} />)}
           </div>
           {podeEditar && <AddRow placeholder="Nova tag…" busy={busy} cor onAdd={(v, c) => run(() => criarTag(v, c || '#8A2A41'))} />}
-        </section>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16, marginTop: 16 }}>
-        <SlaCard slaHoras={slaHoras} podeEditar={podeEditar} busy={busy} run={run} />
-
-        <CanaisCard canais={canais} unidadeAtiva={unidadeAtiva} />
-
-        <section className="lc-card" style={{ padding: 16 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 10 }}><i className="ti ti-puzzle" /> Integrações</h3>
-          <div>
-            {INTEGRACOES_SAC.map((it) => (
-              <div key={it.n} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span><i className={`ti ${it.ic}`} style={{ color: 'var(--brand-500)', marginRight: 8 }} />{it.n}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#999' }}>Não configurado</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>As integrações exigem credenciais e uma área de conexão própria, ainda não disponível neste módulo. Os chamados desses canais já podem ser registrados manualmente ou pela importação de planilha.</p>
         </section>
       </div>
 

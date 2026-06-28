@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, Fragment, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { validarAcordo, salvarObsCredor } from '@/app/(app)/sac/actions'
 import { moedaBR, dataBR } from '@/lib/fmt'
@@ -12,14 +12,16 @@ export type Acordo = {
   n_parcelas: number | null; status: string | null; observacao: string | null; criado_em: string | null; parcelas: Parcela[]
 }
 
+// Cores idênticas ao legado sacAcordoStatusBadge (index.html:9276): [texto, fundo].
+//  Aguardando OK #B7791F/#FBF3E2 · Validado #1E3A8A/#E7EEFB · Pago #0F6B3A/#E7F0EC.
 const ST: Record<string, { bg: string; c: string; t: string }> = {
-  aguardando_ok: { bg: '#FBEFD9', c: '#9A6700', t: 'Aguardando OK' },
-  validado: { bg: '#E6F0FB', c: '#3D7FD1', t: 'Validado' },
-  pago: { bg: '#E7F0EC', c: '#15803D', t: 'Pago' },
+  aguardando_ok: { bg: '#FBF3E2', c: '#B7791F', t: 'Aguardando OK' },
+  validado: { bg: '#E7EEFB', c: '#1E3A8A', t: 'Validado' },
+  pago: { bg: '#E7F0EC', c: '#0F6B3A', t: 'Pago' },
   cancelado: { bg: '#FBE9EB', c: '#D85563', t: 'Cancelado' },
 }
 
-export function AcordosSac({ acordos, totalAcordos, podeValidar }: { acordos: Acordo[]; totalAcordos: number; podeValidar: boolean }) {
+export function AcordosSac({ acordos, totalAcordos, podeValidar, children }: { acordos: Acordo[]; totalAcordos: number; podeValidar: boolean; children?: ReactNode }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
@@ -41,11 +43,16 @@ export function AcordosSac({ acordos, totalAcordos, podeValidar }: { acordos: Ac
 
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <h3 className="lc-title" style={{ fontSize: 15, margin: 0 }}><i className="ti ti-calendar-dollar" /> Acordos parcelados</h3>
-        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
-          {totalAcordos} acordo(s) · {aguardando} aguardando OK do gestor · total {moedaBR(totalValor)}{truncado ? ` (somando os ${acordos.length} carregados)` : ''}
-        </span>
+      {/* Header idêntico ao legado (sacPagamentos, index.html:9292): card .rel-card com título
+          ti-cash + subtítulo de contagem à esquerda e o botão "Novo acordo" à direita. */}
+      <div className="rel-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+        <div>
+          <b><i className="ti ti-cash" style={{ color: 'var(--brand-500)' }} /> Acordos e pagamentos do SAC</b>
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+            {totalAcordos} acordo(s) · {aguardando} aguardando OK do gestor · total {moedaBR(totalValor)}{truncado ? ` (somando os ${acordos.length} carregados)` : ''}
+          </div>
+        </div>
+        {children}
       </div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
 
@@ -71,7 +78,7 @@ export function AcordosSac({ acordos, totalAcordos, podeValidar }: { acordos: Ac
                         <td>
                           <b>{a.cliente || 'Cliente'}</b>
                           {!a.ticket_id && <span style={{ fontSize: 10.5, marginLeft: 6, color: 'var(--text-3)' }}>(avulso)</span>}
-                          {oc.texto && <i className="ti ti-message-circle" title="Há observação ao credor" style={{ fontSize: 12, marginLeft: 6, color: '#9A6700' }} />}
+                          {oc.texto && <i className="ti ti-message-circle" title="Há observação ao credor" style={{ fontSize: 12, marginLeft: 6, color: '#B7791F' }} />}
                         </td>
                         <td><b>{moedaBR(a.valor_total)}</b></td>
                         <td>{pagas}/{a.n_parcelas} paga(s)</td>
@@ -103,7 +110,7 @@ export function AcordosSac({ acordos, totalAcordos, podeValidar }: { acordos: Ac
                                       <span>Parc. {pc.n}</span>
                                       <span style={{ color: 'var(--text-2)' }}>vence {dataBR(pc.vencimento)}</span>
                                       <span><b>{moedaBR(pc.valor)}</b></span>
-                                      <span style={{ color: pc.pago ? '#15803D' : '#9A6700', fontWeight: 700 }}>{pc.pago ? '✓ paga' : 'pendente'}</span>
+                                      <span style={{ color: pc.pago ? '#0F6B3A' : '#B7791F', fontWeight: 700 }}>{pc.pago ? '✓ paga' : 'pendente'}</span>
                                     </div>
                                   ))}
                                   {a.status === 'aguardando_ok' && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}>As parcelas viram lançamentos em Contas a Pagar quando o gestor validar.</div>}

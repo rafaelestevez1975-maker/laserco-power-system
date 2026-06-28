@@ -70,8 +70,9 @@ export default async function SacPagamentosPage() {
 
   return (
     <div className="view active">
-      {podeValidar && <NovoAcordo unidades={ctx?.unidades ?? []} chamados={chamados} />}
-      <AcordosSac acordos={acordos} totalAcordos={totalAcordos} podeValidar={podeValidar} />
+      <AcordosSac acordos={acordos} totalAcordos={totalAcordos} podeValidar={podeValidar}>
+        {podeValidar && <NovoAcordo unidades={ctx?.unidades ?? []} chamados={chamados} />}
+      </AcordosSac>
       <PagamentosSac itens={itens} totalReembolsos={totalReembolsos} podeBaixar={podeBaixar} />
     </div>
   )

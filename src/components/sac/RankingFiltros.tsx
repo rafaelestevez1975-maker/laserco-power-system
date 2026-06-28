@@ -37,7 +37,7 @@ export function RankingFiltros() {
     push(p)
   }
 
-  const lbl: React.CSSProperties = { fontSize: 10, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }
+  const lbl: React.CSSProperties = { fontSize: 10, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }
   const dateInp: React.CSSProperties = { padding: 7, border: '1px solid var(--line)', borderRadius: 8 }
 
   return (
@@ -51,7 +51,7 @@ export function RankingFiltros() {
       {periodo === 'custom' && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
           <input type="date" value={sp.get('di') ?? ''} onChange={(e) => setData('di', e.target.value)} style={dateInp} />
-          <span style={{ color: 'var(--muted)', fontSize: 13 }}>até</span>
+          <span style={{ color: 'var(--text-3)', fontSize: 13 }}>até</span>
           <input type="date" value={sp.get('df') ?? ''} onChange={(e) => setData('df', e.target.value)} style={dateInp} />
         </div>
       )}
