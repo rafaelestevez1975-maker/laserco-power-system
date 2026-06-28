@@ -75,6 +75,32 @@ export function montarObs(tipo: string, dataRecl: string, texto: string): string
   return [prefixo, (texto || '').trim()].filter(Boolean).join(' · ') || null
 }
 
+// ───────────────────────── Acordo: observação ao credor + previsão ─────────────────────────
+// Paridade com o legado (sacAcordoObs 9361-9368): após o acordo ser validado, o operador
+// pode gravar uma "Observação ao credor" (motivo de não pagamento / andamento) + uma data de
+// "Previsão" de atualização — exibidas num banner destacado no card, visível a todos.
+// O schema só tem a coluna `sac_acordos.observacao` (não há `data_prev`/`observacao_credor`),
+// então gravamos AMBOS num único campo com o padrão "Previsão: <data> · <texto>" e os
+// lemos de volta para exibição/reedição (mesmo princípio do prefixo Tipo/Reclamação dos tickets).
+export type ObsCredor = { texto: string; dataPrev: string }
+
+/** Lê o campo `observacao` do acordo e separa {texto da observação, data de previsão}. */
+export function lerObsCredor(obs: string | null | undefined): ObsCredor {
+  const raw = (obs || '').trim()
+  if (!raw) return { texto: '', dataPrev: '' }
+  const m = /^Previs[ãa]o:\s*([^·]+?)\s*(?:·\s*([\s\S]*))?$/i.exec(raw)
+  if (m) return { texto: (m[2] || '').trim(), dataPrev: (m[1] || '').trim() }
+  return { texto: raw, dataPrev: '' }
+}
+
+/** Monta o valor de `observacao` a partir de {texto, dataPrev}. Vazio total => null. */
+export function montarObsCredor(texto: string, dataPrev: string): string | null {
+  const t = (texto || '').trim()
+  const d = (dataPrev || '').trim()
+  if (!t && !d) return null
+  return [d ? `Previsão: ${d}` : '', t].filter(Boolean).join(d ? ' · ' : '') || null
+}
+
 // ───────────────────────── Situação do chamado (paridade de Status do legado) ─────────────────────────
 // O legado tinha "Em andamento / Concluído / Em atraso" derivado de (concluído? / SLA estourado?).
 // Aqui derivamos o mesmo a partir de fase + sla_violado (a coluna `status` do schema usa

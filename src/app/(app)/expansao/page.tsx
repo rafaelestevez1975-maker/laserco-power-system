@@ -53,19 +53,26 @@ export default async function ExpansaoPage() {
   }
 
   if (migracaoOk) {
-    // Total REAL de leads de franquia (count exato, não o tamanho do array capado).
-    let cq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'franquia')
-    if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
-    const { count } = await cq
-    totalLeads = count ?? 0
-
-    // Contagem REAL por etapa — para o funil e os KPIs derivados não caírem no teto.
-    const contagens = await Promise.all(etapas.map((et) => {
-      let eq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'franquia').eq('etapa_id', et.id)
-      if (activeUnit) eq = eq.eq('unidade_id', activeUnit)
-      return eq
-    }))
-    etapas.forEach((et, i) => { totaisPorEtapa[et.id] = contagens[i].count ?? 0 })
+    // Total REAL e contagem por etapa (não o tamanho do array capado) — para o funil e os
+    // KPIs derivados não caírem no teto.
+    // PERF: antes eram 1 count total + 1 count `count:'exact'` POR etapa (fan-out que
+    // saturava o pool do Supabase). Agora é UMA varredura paginada da coluna etapa_id
+    // (mesmos filtros) tabulada em JS. Mesmos números.
+    const etapaMap = new Map<string, number>()
+    const PAGE = 1000
+    for (let offset = 0; ; offset += PAGE) {
+      let cq = sb.from('crm_leads').select('etapa_id').eq('pipeline', 'franquia')
+      if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
+      const { data, error } = await cq.range(offset, offset + PAGE - 1)
+      if (error) { migracaoOk = false; break }
+      const rows = (data ?? []) as { etapa_id: string | null }[]
+      for (const r of rows) {
+        totalLeads++
+        if (r.etapa_id) etapaMap.set(r.etapa_id, (etapaMap.get(r.etapa_id) ?? 0) + 1)
+      }
+      if (rows.length < PAGE) break
+    }
+    etapas.forEach((et) => { totaisPorEtapa[et.id] = etapaMap.get(et.id) ?? 0 })
   }
 
   const leadsCapped = totalLeads > leads.length

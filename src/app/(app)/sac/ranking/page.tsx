@@ -20,18 +20,44 @@ export default async function SacRankingPage() {
 
   // Métricas reais por atendente (sac_tickets). Vendas/pacotes/CSAT ainda não têm fonte
   // real ligada ao atendente → entram como 0 (o prêmio usa o que é mensurável hoje).
-  const linhas = await Promise.all(atendentes.map(async (a) => {
-    const [{ count: total }, { count: resolvidos }, { count: atrasados }, { count: reversoes }] = await Promise.all([
-      sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', a.id),
-      sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', a.id).eq('fase', 'Concluído'),
-      sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', a.id).eq('sla_violado', true),
-      sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', a.id).eq('fase', 'Concluído').not('pago', 'is', true).or('motivo_label.ilike.%cancel%,motivo_label.ilike.%reembolso%,motivo_label.ilike.%retenç%'),
-    ])
-    const tot = total ?? 0
-    const atr = atrasados ?? 0
-    const m: PremMetricas = { tot, con: resolvidos ?? 0, atr, rev: reversoes ?? 0, slaOk: Math.max(0, tot - atr), vendas: 0, pacotes: 0, csat: 0 }
+  // PERF: antes disparava 4 queries `count:'exact'` POR atendente (saturava o pool do
+  // Supabase). Agora é UMA varredura paginada tabulando por atribuido_para em JS. Mesmos
+  // números — incluindo a regra de "reversão" (concluído, não pago, motivo cancel/reembolso/retenç).
+  const reCancel = /cancel|reembolso|retenç/i
+  const stats = new Map<string, { tot: number; con: number; atr: number; rev: number }>()
+  {
+    const PAGE = 1000
+    for (let offset = 0; ; offset += PAGE) {
+      const { data, error } = await sb
+        .from('sac_tickets')
+        .select('atribuido_para, fase, sla_violado, pago, motivo_label')
+        .not('atribuido_para', 'is', null)
+        .range(offset, offset + PAGE - 1)
+      if (error) break
+      const rows = (data ?? []) as {
+        atribuido_para: string | null; fase: string | null; sla_violado: boolean | null
+        pago: boolean | null; motivo_label: string | null
+      }[]
+      for (const r of rows) {
+        if (!r.atribuido_para) continue
+        const s = stats.get(r.atribuido_para) ?? { tot: 0, con: 0, atr: 0, rev: 0 }
+        s.tot++
+        const concl = r.fase === 'Concluído'
+        if (concl) s.con++
+        if (r.sla_violado) s.atr++
+        if (concl && r.pago !== true && r.motivo_label != null && reCancel.test(r.motivo_label)) s.rev++
+        stats.set(r.atribuido_para, s)
+      }
+      if (rows.length < PAGE) break
+    }
+  }
+  const linhas = atendentes.map((a) => {
+    const s = stats.get(a.id) ?? { tot: 0, con: 0, atr: 0, rev: 0 }
+    const tot = s.tot
+    const atr = s.atr
+    const m: PremMetricas = { tot, con: s.con, atr, rev: s.rev, slaOk: Math.max(0, tot - atr), vendas: 0, pacotes: 0, csat: 0 }
     return { id: a.id, nome: a.nome, cargo: a.cargo, m, premio: premioValor(m, prem) }
-  }))
+  })
   linhas.sort((a, b) => b.premio - a.premio || b.m.con - a.m.con)
   const top = linhas[0]
 

@@ -28,16 +28,29 @@ export default async function CrmPage() {
   const { data: leadsRaw } = await q
   const leadRows = (leadsRaw ?? []) as LeadRow[]
 
-  // Contagem REAL por etapa (count exato, não cai no teto de 500 — mesmo padrão do SAC
-  // Kanban). O cabeçalho de cada coluna e os KPIs de número usam isto; a lista de cards
-  // continua capada em 500 por etapa do board.
-  const contagens = await Promise.all(etapas.map((et) => {
-    let cq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'cliente').eq('etapa_id', et.id)
-    if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
-    return cq
-  }))
+  // Contagem REAL por etapa (não cai no teto de 500 — mesmo padrão do SAC Kanban). O
+  // cabeçalho de cada coluna e os KPIs de número usam isto; a lista de cards continua
+  // capada em 500 por etapa do board.
+  // PERF: antes era 1 query `count:'exact'` POR etapa (fan-out que saturava o pool do
+  // Supabase). Agora é UMA varredura paginada da coluna etapa_id (mesmos filtros)
+  // tabulada em JS. Mesmos números.
+  const etapaMap = new Map<string, number>()
+  {
+    const PAGE = 1000
+    for (let offset = 0; ; offset += PAGE) {
+      let cq = sb.from('crm_leads').select('etapa_id').eq('pipeline', 'cliente')
+      if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
+      const { data, error } = await cq.range(offset, offset + PAGE - 1)
+      if (error) break
+      const rows = (data ?? []) as { etapa_id: string | null }[]
+      for (const r of rows) {
+        if (r.etapa_id) etapaMap.set(r.etapa_id, (etapaMap.get(r.etapa_id) ?? 0) + 1)
+      }
+      if (rows.length < PAGE) break
+    }
+  }
   const totaisPorEtapa: Record<string, number> = {}
-  etapas.forEach((et, i) => { totaisPorEtapa[et.id] = contagens[i].count ?? 0 })
+  etapas.forEach((et) => { totaisPorEtapa[et.id] = etapaMap.get(et.id) ?? 0 })
 
   // Nomes dos responsáveis (1 query, mapeada por id) + colaboradores p/ o select do modal.
   const { data: colabRaw } = await sb

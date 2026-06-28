@@ -17,26 +17,41 @@ export default async function SacKanbanPage() {
   // aparece — inclusive fases antigas/com poucos chamados — e o número do cabeçalho bate
   // com o Dashboard. (Antes: "240 mais recentes no geral" escondia fases inteiras, ex.:
   // 1.648 chamados Novos recentes empurravam os 36 "Em pagamento" pra fora da janela.)
-  const [listas, contagens] = await Promise.all([
+  // PERF: as LISTAS (cards capados por fase) precisam mesmo das linhas → não dá pra
+  // colapsar. Mas as CONTAGENS eram 7 queries `count:'exact'` (1 por fase) que saturavam
+  // o pool. Trocamos por UMA varredura paginada só da coluna `fase` (mesmo filtro de
+  // unidade), tabulando o total por fase em JS. Mesmos números.
+  const [listas, faseMap] = await Promise.all([
     Promise.all(FASES.map((f) => {
       let q = sb.from('sac_tickets').select(COLS).eq('fase', f).order('criado_em', { ascending: false }).limit(POR_FASE)
       if (unidadeId) q = q.eq('unidade_id', unidadeId)
       return q
     })),
-    Promise.all(FASES.map((f) => {
-      let q = sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('fase', f)
-      if (unidadeId) q = q.eq('unidade_id', unidadeId)
-      return q
-    })),
+    (async (): Promise<{ map: Map<string, number>; error: string | null }> => {
+      const map = new Map<string, number>()
+      const PAGE = 1000
+      for (let offset = 0; ; offset += PAGE) {
+        let q = sb.from('sac_tickets').select('fase')
+        if (unidadeId) q = q.eq('unidade_id', unidadeId)
+        const { data, error } = await q.range(offset, offset + PAGE - 1)
+        if (error) return { map, error: error.message }
+        const rows = (data ?? []) as { fase: string | null }[]
+        for (const r of rows) {
+          if (r.fase) map.set(r.fase, (map.get(r.fase) ?? 0) + 1)
+        }
+        if (rows.length < PAGE) break
+      }
+      return { map, error: null }
+    })(),
   ])
 
   // Estado de erro honesto: se QUALQUER query (lista ou contagem) falhar, não fingimos
   // colunas vazias — mostramos um aviso. (RLS/rede engolidos viravam "Sem chamados".)
-  const erro = listas.find((r) => r.error)?.error?.message || contagens.find((r) => r.error)?.error?.message || null
+  const erro = listas.find((r) => r.error)?.error?.message || faseMap.error || null
 
   const tickets = listas.flatMap((r) => (r.data ?? [])) as Ticket[]
   const totais: Record<string, number> = {}
-  FASES.forEach((f, i) => { totais[f] = contagens[i].count ?? 0 })
+  FASES.forEach((f) => { totais[f] = faseMap.map.get(f) ?? 0 })
 
   return (
     <div className="view active">

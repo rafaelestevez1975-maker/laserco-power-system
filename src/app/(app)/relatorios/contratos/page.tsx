@@ -62,61 +62,50 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
     else rows = (data ?? []) as ContratoRow[]
   }
 
-  // Builder estrutural mínimo p/ COUNT (evita TS2589 dos generics profundos do PostgREST).
-  type CountQ = {
-    eq: (c: string, v: unknown) => CountQ
-    gte: (c: string, v: unknown) => CountQ
-    lt: (c: string, v: unknown) => CountQ
-    is: (c: string, v: unknown) => CountQ
-    not: (c: string, op: string, v: unknown) => CountQ
-  } & Promise<{ count: number | null; error: unknown }>
-
-  // Helper de contagem exata escopada por unidade (mesmo padrão do SAC Kanban).
-  const contar = async (apply?: (q: CountQ) => void) => {
-    if (tabelaAusente) return 0
-    let q = sb.from('contratos').select('id', { count: 'exact', head: true }) as unknown as CountQ
-    if (unidadeId) q = q.eq('unidade_id', unidadeId)
-    if (apply) apply(q)
-    const { count, error } = await q
-    if (error) return 0
-    return count ?? 0
-  }
-
-  // KPIs — contagens REAIS (não derivadas da lista capada).
-  const planosUnicos = [...new Set(rows.filter((r) => r.status === 'ativo').map((r) => r.plano || '—'))]
-  const [total, ativos, inadimplentes, assinadosPeriodo, encerrados, cancelados, planoCounts] = await Promise.all([
-    contar(),
-    contar((q) => q.eq('status', 'ativo')),
-    contar((q) => q.eq('status', 'inadimplente')),
-    contar((q) => {
-      if (range.ini) q.gte('assinado_em', range.ini)
-      if (range.fim) q.lt('assinado_em', range.fim)
-      else q.not('assinado_em', 'is', null)
-      return q
-    }),
-    contar((q) => q.eq('status', 'encerrado')),
-    contar((q) => q.eq('status', 'cancelado')),
-    Promise.all(planosUnicos.map((p) => contar((q) => (p === '—' ? q.is('plano', null) : q.eq('plano', p)).eq('status', 'ativo')))),
-  ])
-
-  // Valor contratado = MRR dos contratos ATIVOS (soma paginada — robusta a >1000 ativos).
+  // PERF: antes esta tela disparava ~7 + N(planos) queries `count:'exact'` separadas
+  // (1 por status/período + 1 por plano ativo) + 1 scan próprio para o MRR — todas na
+  // MESMA tabela `contratos` com o mesmo escopo de unidade. Agora é UMA varredura
+  // paginada das colunas necessárias, tabulada em JS (Map). Mesmos números.
+  let total = 0, ativos = 0, inadimplentes = 0, assinadosPeriodo = 0, encerrados = 0, cancelados = 0
   let valorContratado = 0
+  const planoAtivoMap = new Map<string, number>()
   if (!tabelaAusente) {
     const PAGE = 1000
-    for (let from = 0; from < 50000; from += PAGE) {
-      let vq = sb.from('contratos').select('valor_mensal').eq('status', 'ativo')
-      if (unidadeId) vq = vq.eq('unidade_id', unidadeId)
-      const { data, error } = await vq.range(from, from + PAGE - 1)
+    for (let offset = 0; offset < 50000; offset += PAGE) {
+      let sq = sb.from('contratos').select('status, plano, assinado_em, valor_mensal')
+      if (unidadeId) sq = sq.eq('unidade_id', unidadeId)
+      const { data, error } = await sq.range(offset, offset + PAGE - 1)
       if (error) break
-      const batch = (data ?? []) as { valor_mensal: number | null }[]
-      valorContratado += batch.reduce((a, r) => a + (Number(r.valor_mensal) || 0), 0)
+      const batch = (data ?? []) as { status: string | null; plano: string | null; assinado_em: string | null; valor_mensal: number | null }[]
+      for (const r of batch) {
+        total++
+        const ativo = r.status === 'ativo'
+        if (ativo) ativos++
+        if (r.status === 'inadimplente') inadimplentes++
+        if (r.status === 'encerrado') encerrados++
+        if (r.status === 'cancelado') cancelados++
+        // assinadosPeriodo: dentro do range [ini, fim) quando há range; senão, qualquer assinado.
+        const ass = r.assinado_em
+        const dentro = range.ini || range.fim
+          ? !!ass && (!range.ini || ass >= range.ini) && (!range.fim || ass < range.fim)
+          : !!ass
+        if (dentro) assinadosPeriodo++
+        if (ativo) {
+          valorContratado += Number(r.valor_mensal) || 0
+          const p = r.plano || '—'
+          planoAtivoMap.set(p, (planoAtivoMap.get(p) ?? 0) + 1)
+        }
+      }
       if (batch.length < PAGE) break
     }
   }
 
-  // Breakdown por plano (contratos ativos) — contagens exatas.
+  // KPIs — contagens REAIS (não derivadas da lista capada).
+  const planosUnicos = [...new Set(rows.filter((r) => r.status === 'ativo').map((r) => r.plano || '—'))]
+
+  // Breakdown por plano (contratos ativos) — contagens exatas da varredura.
   const barPlano: BarRow[] = planosUnicos
-    .map((p, i) => ({ label: p, value: planoCounts[i], display: planoCounts[i].toLocaleString('pt-BR') }))
+    .map((p) => { const value = planoAtivoMap.get(p) ?? 0; return { label: p, value, display: value.toLocaleString('pt-BR') } })
     .sort((a, b) => b.value - a.value)
 
   // Breakdown por status — contagens exatas.
