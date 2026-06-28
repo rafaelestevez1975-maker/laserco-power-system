@@ -352,7 +352,7 @@ export function TriagemWhatsapp({
                 const t = (m.tipo || '').toLowerCase()
                 return (
                   <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '78%', background: entrada ? 'var(--surface)' : 'var(--brand-500)', color: entrada ? 'var(--text)' : '#fff', border: entrada ? '1px solid var(--line)' : 'none', borderRadius: 12, padding: '8px 12px', lineHeight: 1.4 }}>
-                    {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.85)', marginBottom: 1 }}>{m.autor}</div>}
+                    {m.autor && <div style={{ fontSize: 11, fontWeight: 700, color: entrada ? 'var(--brand-500)' : 'rgba(255,255,255,.9)', marginBottom: 2 }}>{m.autor}</div>}
                     {m.midia_url && (t.includes('image') || t.includes('sticker')) && <img src={m.midia_url} alt="" style={{ maxWidth: 220, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('audio') && <audio controls src={m.midia_url} style={{ maxWidth: 230, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('video') && <video controls src={m.midia_url} style={{ maxWidth: 230, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
