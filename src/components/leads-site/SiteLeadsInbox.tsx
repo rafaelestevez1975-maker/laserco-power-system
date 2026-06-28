@@ -43,6 +43,7 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
   // ── Filtros (client-side, instantâneos sobre os leads carregados) ──
   const [fTipo, setFTipo] = useState('')
   const [fStatus, setFStatus] = useState('') // '' | 'pendente' | 'roteado'
+  const [fUnidade, setFUnidade] = useState('') // '' | <unidadeId> | '__none__' (sem loja identificada)
   const [fBusca, setFBusca] = useState('')
   const [fDe, setFDe] = useState('')
   const [fAte, setFAte] = useState('')
@@ -68,12 +69,16 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
         if (fDe && dia < fDe) return false
         if (fAte && dia > fAte) return false
       }
+      if (fUnidade) {
+        if (fUnidade === '__none__') { if (l.sugestaoUnidadeId) return false }
+        else if (l.sugestaoUnidadeId !== fUnidade) return false
+      }
       return true
     })
-  }, [leads, fTipo, fStatus, fBusca, fDe, fAte])
+  }, [leads, fTipo, fStatus, fBusca, fDe, fAte, fUnidade])
 
-  const temFiltro = !!(fTipo || fStatus || fBusca.trim() || fDe || fAte)
-  function limpar() { setFTipo(''); setFStatus(''); setFBusca(''); setFDe(''); setFAte('') }
+  const temFiltro = !!(fTipo || fStatus || fUnidade || fBusca.trim() || fDe || fAte)
+  function limpar() { setFTipo(''); setFStatus(''); setFUnidade(''); setFBusca(''); setFDe(''); setFAte('') }
 
   async function rotear(id: string, sugestao?: string | null) {
     const u = unit[id] || sugestao || activeUnitId || ''
