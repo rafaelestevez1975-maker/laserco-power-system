@@ -4,6 +4,11 @@
 > Branch de trabalho: `feat/sac-paridade-alta` (tudo commitado e enviado pro GitHub).
 > Regras que sigo sozinho: **commit + push a cada entrega** (nada se perde) · migrations **só ADITIVAS** (CREATE TABLE de tabela nova; nunca DROP/ALTER em tabela existente; aplico uma de cada vez) · não toco no que a outra sessão deixou (preservado em `wip/paralelo-checkpoint`).
 
+## 🔔 ÚLTIMA ATUALIZAÇÃO (pós-reclamação do SAC)
+- 🐞 **Bug do SAC corrigido:** Dashboard dizia "Em pagamento: 36" e o Kanban mostrava 0. Causa: o Kanban carregava só os **240 chamados mais recentes** e os 1.648 "Novo" recentes empurravam os 36 "Em pagamento" (antigos) pra fora. Agora carrega **por fase** + mostra a **contagem real** no cabeçalho → bate com o Dashboard. (commit `dbeb074`)
+- 🔀 **Branches reconciliadas:** as duas sessões tinham divergido a branch (reconstruíram os mesmos módulos em paralelo). Elegi a linha **mais completa + verificada-verde** como canônica. **`main` (produção) e `feat/sac-paridade-alta` = `dbeb074`** (tsc 0 + next build OK). Ambas as linhas antigas preservadas em `backup/claude-sac-fin` e `backup/onda4-outra-sessao` (nada perdido).
+- 🚀 **Produção:** dei push em `main` → dispara o deploy da Vercel.
+
 ## 🎯 RESUMO PRA VOCÊ (bom dia!)
 **O sistema está compilando e rodando — verificado de verdade:**
 - ✅ `npx tsc --noEmit` → **0 erros**.
