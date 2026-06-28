@@ -81,7 +81,7 @@ export function SacFiltros({ atendentes = [], motivos = [], unidades = [], child
           </>
         )}
         {temFiltro && (
-          <button className="btn" onClick={() => router.push('/sac/chamados')}><i className="ti ti-eraser" /> Limpar</button>
+          <button className="btn btn-ghost" onClick={() => router.push('/sac/chamados')}><i className="ti ti-eraser" /> Limpar</button>
         )}
       </div>
     </div>

@@ -244,7 +244,13 @@ export function TriagemWhatsapp({
   const inpForm: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5, width: '100%' }
 
   return (
-    <div className="cli-card" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', height: 'calc(100vh - 220px)', minHeight: 420, overflow: 'hidden' }}>
+    <>
+    {/* Header idêntico ao legado (sacTriagem, index.html:9065): título + subtítulo. */}
+    <div className="rel-card" style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+      <b><i className="ti ti-brand-whatsapp" style={{ color: '#0F6B3A' }} /> Triagem WhatsApp</b>
+      <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Veja as conversas e abra o chamado com 1 clique</span>
+    </div>
+    <div className="cli-card" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', height: 'calc(100vh - 260px)', minHeight: 420, overflow: 'hidden' }}>
       {/* Lista de conversas */}
       <div style={{ borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
@@ -340,14 +346,14 @@ export function TriagemWhatsapp({
                 const entrada = isIn(m.direcao)
                 const t = (m.tipo || '').toLowerCase()
                 return (
-                  <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '72%', background: entrada ? 'var(--surface)' : '#DCF8C6', border: '1px solid var(--line)', borderRadius: 10, padding: '7px 11px' }}>
-                    {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand-600)', marginBottom: 1 }}>{m.autor}</div>}
+                  <div key={m.id} style={{ alignSelf: entrada ? 'flex-start' : 'flex-end', maxWidth: '78%', background: entrada ? 'var(--surface)' : 'var(--brand-500)', color: entrada ? undefined : '#fff', border: entrada ? '1px solid var(--line)' : 'none', borderRadius: 10, padding: '7px 11px' }}>
+                    {!entrada && m.autor && <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.85)', marginBottom: 1 }}>{m.autor}</div>}
                     {m.midia_url && t.includes('image') && <img src={m.midia_url} alt="" style={{ maxWidth: 220, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('audio') && <audio controls src={m.midia_url} style={{ maxWidth: 230, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && t.includes('video') && <video controls src={m.midia_url} style={{ maxWidth: 230, borderRadius: 6, display: 'block', marginBottom: 4 }} />}
                     {m.midia_url && (t.includes('document') || t.includes('outro')) && <a href={m.midia_url} target="_blank" rel="noopener" style={{ fontSize: 12.5, color: 'var(--brand-600)' }}><i className="ti ti-file" /> {m.texto || 'Documento'}</a>}
                     {(m.texto || !m.midia_url) && <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{m.texto || (!m.midia_url ? <i style={{ color: 'var(--text-3)' }}>[{m.tipo || 'mídia'}]</i> : null)}</div>}
-                    <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'right', marginTop: 2, display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>{hora(m.criado_em)} {!entrada && <Ticks status={m.status} />}</div>
+                    <div style={{ fontSize: 10, color: entrada ? 'var(--text-3)' : 'rgba(255,255,255,.7)', textAlign: 'right', marginTop: 2, display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center' }}>{hora(m.criado_em)} {!entrada && <Ticks status={m.status} />}</div>
                   </div>
                 )
               })}
@@ -375,6 +381,8 @@ export function TriagemWhatsapp({
             )}
             {chamadoOpen && (
               <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 12, maxHeight: 300, overflowY: 'auto' }}>
+                {/* Card de fluxo idêntico ao legado (index.html:9070): borda pontilhada. */}
+                <div style={{ border: '1px dashed var(--line)', borderRadius: 10, padding: 12, background: 'var(--surface-2)' }}>
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial — dados do cliente</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>Confirme os dados e o chamado é aberto e vinculado a esta conversa.</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -392,8 +400,9 @@ export function TriagemWhatsapp({
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <button className="btn btn-primary" disabled={busy} onClick={confirmarChamado}><i className="ti ti-ticket" /> Abrir chamado</button>
-                  <button className="btn" disabled={busy} onClick={() => setChamadoOpen(false)}>Cancelar</button>
+                  <button className="btn btn-primary" disabled={busy} onClick={confirmarChamado}><i className="ti ti-ticket" /> Abrir chamado automaticamente</button>
+                  <button className="btn btn-ghost" disabled={busy} onClick={() => setChamadoOpen(false)}>Cancelar</button>
+                </div>
                 </div>
               </div>
             )}
@@ -434,5 +443,6 @@ export function TriagemWhatsapp({
         )}
       </div>
     </div>
+    </>
   )
 }

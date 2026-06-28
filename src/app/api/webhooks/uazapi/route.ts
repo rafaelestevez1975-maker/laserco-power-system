@@ -140,7 +140,8 @@ export async function POST(req: NextRequest) {
       telefone, wa_chatid: msg.chatid, nome: !fromMe ? (msg.senderName || null) : null,
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando, nao_lidas: fromMe ? 0 : 1,
     }
-    const comEscopo = { ...baseInsert, unidade_id: unidadeOrigem, canal_nome: canalNome }
+    // Só inclui as chaves de escopo quando há valor — evita forçar null numa coluna NOT NULL.
+    const comEscopo = { ...baseInsert, ...(unidadeOrigem ? { unidade_id: unidadeOrigem } : {}), ...(canalNome ? { canal_nome: canalNome } : {}) }
     let ins = await sb.from('sac_whatsapp_chats').insert(comEscopo).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
     if (ins.error && isColMissing(ins.error.message)) {
       ins = await sb.from('sac_whatsapp_chats').insert(baseInsert).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
