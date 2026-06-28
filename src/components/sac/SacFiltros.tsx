@@ -22,24 +22,30 @@ export function SacFiltros({ atendentes = [], motivos = [], unidades = [], child
     router.push(`/sac/chamados?${p.toString()}`)
   }
 
-  const sel: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
+  // Selects compactos idênticos ao legado (sacChamados/sel): padding 7px 9px, fonte 12.5px, fundo branco.
+  const sel: React.CSSProperties = { padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5, background: '#fff' }
   const periodo = sp.get('periodo') ?? ''
   const temFiltro = ['q', 'canal', 'fase', 'situacao', 'atendente', 'motivo', 'unidade', 'periodo'].some((k) => sp.get(k))
 
+  // Estrutura visual 1:1 com o legado (index.html sacChamados): rel-card com cabeçalho
+  // (ícone headset + "Chamados" à esquerda; busca + "Novo chamado" à direita) e abaixo
+  // a linha de filtros (Motivo, Atendente, Unidade, Canal, Status, Período + Limpar).
   return (
-    <div className="cli-card" style={{ padding: 14, marginBottom: 12 }}>
+    <div className="rel-card" style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <i className="ti ti-headset" style={{ color: 'var(--brand-500)', fontSize: 18 }} /> <b>Chamados</b>
         </div>
-        {children}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            defaultValue={sp.get('q') ?? ''} placeholder="Buscar cliente, protocolo..."
+            onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
+            style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 9, fontSize: 13, minWidth: 200 }}
+          />
+          {children}
+        </div>
       </div>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          defaultValue={sp.get('q') ?? ''} placeholder="Buscar cliente, protocolo..."
-          onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
-          style={{ ...sel, minWidth: 260 }}
-        />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         {motivos.length > 0 && (
           <select value={sp.get('motivo') ?? ''} onChange={(e) => setParams({ motivo: e.target.value })} style={sel}>
             <option value="">Motivo (todos)</option>
@@ -74,14 +80,14 @@ export function SacFiltros({ atendentes = [], motivos = [], unidades = [], child
           {PERIODOS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
         </select>
         {periodo === 'custom' && (
-          <>
-            <input type="date" value={sp.get('di') ?? ''} onChange={(e) => setParams({ di: e.target.value })} style={sel} />
-            <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>até</span>
-            <input type="date" value={sp.get('df') ?? ''} onChange={(e) => setParams({ df: e.target.value })} style={sel} />
-          </>
+          <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <input type="date" value={sp.get('di') ?? ''} onChange={(e) => setParams({ di: e.target.value })} style={{ padding: 6, border: '1px solid var(--line)', borderRadius: 8 }} />
+            <span style={{ color: 'var(--text-3)', fontSize: 12 }}>até</span>
+            <input type="date" value={sp.get('df') ?? ''} onChange={(e) => setParams({ df: e.target.value })} style={{ padding: 6, border: '1px solid var(--line)', borderRadius: 8 }} />
+          </span>
         )}
         {temFiltro && (
-          <button className="btn btn-ghost" onClick={() => router.push('/sac/chamados')}><i className="ti ti-eraser" /> Limpar</button>
+          <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => router.push('/sac/chamados')}><i className="ti ti-eraser" /> Limpar</button>
         )}
       </div>
     </div>

@@ -27,8 +27,11 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
     multa_aplicada: false, pago: false, observacoes: '',
   })
   const set = (k: keyof typeof f, v: string | boolean) => setF((p) => ({ ...p, [k]: v }))
-  const inp: React.CSSProperties = { width: '100%', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit' }
-  const lab: React.CSSProperties = { fontSize: 12, fontWeight: 600 }
+  // Campos/rótulos 1:1 com o legado sacForm (index.html:9234): grid de 3 colunas, label
+  // 11px/600/muted, inputs com padding 8 e borda var(--line).
+  const flab: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--muted)' }
+  const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 3 }
+  const fin: React.CSSProperties = { padding: 8, border: '1px solid var(--line)', borderRadius: 8 }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr('')

@@ -77,7 +77,7 @@ export function SacKanban({ tickets: ticketsProp, totais, erro }: { tickets: Tic
       <div className="rel-card" style={{ padding: 24, textAlign: 'center' }}>
         <i className="ti ti-alert-triangle" style={{ fontSize: 30, color: '#B91C1C' }} />
         <p style={{ fontWeight: 700, margin: '10px 0 2px' }}>Não foi possível carregar o Kanban</p>
-        <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{erro}</p>
+        <p style={{ fontSize: 13, color: 'var(--muted)' }}>{erro}</p>
         <button className="btn" style={{ marginTop: 12 }} onClick={() => router.refresh()}><i className="ti ti-refresh" /> Tentar novamente</button>
       </div>
     )
@@ -92,7 +92,7 @@ export function SacKanban({ tickets: ticketsProp, totais, erro }: { tickets: Tic
       )}
       <div className="rel-card" style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <b><i className="ti ti-layout-kanban" style={{ color: 'var(--brand-500)' }} /> Quadro de atendimentos</b>
-        <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Clique em → para avançar a fase</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clique em → para avançar a fase</span>
       </div>
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
@@ -115,11 +115,11 @@ function Col({ fase, tickets, total, onOpen, onAdvance }: { fase: { nome: string
   const capado = total != null && total > tickets.length
   return (
     <div style={{ minWidth: 230, flex: '0 0 230px', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12, padding: 8 }}>
-      <div style={{ fontWeight: 700, fontSize: 12, padding: '4px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--brand-600)' }}>
+      <div style={{ fontWeight: 700, fontSize: 12, padding: '4px 6px', display: 'flex', justifyContent: 'space-between', color: 'var(--brand-600)' }}>
         {fase.nome}
         <span style={{ background: 'var(--brand-500)', color: '#fff', borderRadius: 20, padding: '0 7px', fontSize: 10 }}>{totalReal}</span>
       </div>
-      {capado && <div style={{ fontSize: 10, color: 'var(--text-3)', padding: '0 6px 4px' }}>mostrando {tickets.length} mais recentes</div>}
+      {capado && <div style={{ fontSize: 10, color: 'var(--muted)', padding: '0 6px 4px' }}>mostrando {tickets.length} mais recentes</div>}
       <div ref={setNodeRef} style={{ minHeight: 24, ...(isOver ? { outline: '2px dashed var(--brand-400)', outlineOffset: -4, borderRadius: 8 } : {}) }}>
         {tickets.map((t) => <Card key={t.id} t={t} onOpen={onOpen} onAdvance={onAdvance} />)}
       </div>
@@ -143,9 +143,9 @@ function Card({ t, onOpen, onAdvance }: { t: Ticket; onOpen: (t: Ticket) => void
   const motivoCanal = [t.motivo_label, t.canal].filter(Boolean).join(' · ')
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} onClick={() => onOpen(t)}>
-      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{t.protocolo || `SAC-${t.numero}`}</div>
+      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.protocolo || `SAC-${t.numero}`}</div>
       <div style={{ fontWeight: 600, fontSize: 13 }}>{t.nome_cliente || 'Cliente'}</div>
-      {motivoCanal && <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0' }}>{motivoCanal}</div>}
+      {motivoCanal && <div style={{ fontSize: 11, color: 'var(--muted)', margin: '2px 0' }}>{motivoCanal}</div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: pi.b, color: pi.c }}>{pi.l}</span>
         {next ? (
