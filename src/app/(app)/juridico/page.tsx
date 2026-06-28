@@ -58,6 +58,11 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
 
   // ── Notificações jurídicas (juridico_notificacoes) — tolerante à migration ausente ──
   let notificacoes: NotifRow[] = []
+  // KPIs reais (server-side): a lista é capada, mas os totais NÃO podem sub-contar.
+  let kpiPendentes = 0
+  let kpiEnviadas = 0
+  let kpiValorPendente = 0
+  let kpiUnidadesAtraso = 0
   {
     let q = sb
       .from('juridico_notificacoes')
@@ -68,6 +73,28 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
     const { data, error } = await q
     if (error && tabelaAusente(error, 'juridico_notificacoes')) migrationPendente = true
     else notificacoes = (data ?? []) as NotifRow[]
+  }
+
+  if (!migrationPendente) {
+    // Contagens reais via count:exact/head:true (não derivadas do array .limit(500)).
+    const pendQ = sb.from('juridico_notificacoes').select('id', { count: 'exact', head: true }).eq('status', 'pendente')
+    const envQ = sb.from('juridico_notificacoes').select('id', { count: 'exact', head: true }).eq('status', 'enviada')
+    if (unidadeAtiva) { pendQ.eq('unidade_id', unidadeAtiva); envQ.eq('unidade_id', unidadeAtiva) }
+
+    // Valor em cobrança e unidades em atraso: leitura enxuta SÓ das pendentes (sem cap de exibição).
+    let valQ = sb
+      .from('juridico_notificacoes')
+      .select('valor, unidade_id, unidade_nome')
+      .eq('status', 'pendente')
+      .limit(100000)
+    if (unidadeAtiva) valQ = valQ.eq('unidade_id', unidadeAtiva)
+
+    const [pendRes, envRes, valRes] = await Promise.all([pendQ, envQ, valQ])
+    kpiPendentes = pendRes.count ?? 0
+    kpiEnviadas = envRes.count ?? 0
+    const pendRows = (valRes.data ?? []) as { valor: number | null; unidade_id: string | null; unidade_nome: string | null }[]
+    kpiValorPendente = pendRows.reduce((a, n) => a + (Number(n.valor) || 0), 0)
+    kpiUnidadesAtraso = new Set(pendRows.map((n) => n.unidade_id ?? n.unidade_nome ?? '')).size
   }
 
   // ── Modelos de notificação (juridico_templates) ──
@@ -192,6 +219,12 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
       activeUnitName={ctx?.activeUnitName ?? 'Todas as unidades'}
       unidades={unidades}
       notificacoes={notificacoes}
+      cobrancasKpis={{
+        pendentes: kpiPendentes,
+        enviadas: kpiEnviadas,
+        valorPendente: kpiValorPendente,
+        unidadesAtraso: kpiUnidadesAtraso,
+      }}
       modelos={modelos}
       unidadesJur={unidadesJur}
       assinatura={{

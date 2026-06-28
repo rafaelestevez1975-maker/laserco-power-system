@@ -93,6 +93,17 @@ export default async function ExpansaoWhatsappPage() {
   const semFonte = !!chatsErr
   const chats = (semFonte ? [] : (chatsRaw ?? [])) as ChatRow[]
 
+  // ── Total REAL de conversas (count exato, não o tamanho do array capado em LIMITE) ──
+  let totalConversas = chats.length
+  if (!semFonte) {
+    const { count } = await sb
+      .from('sac_whatsapp_chats')
+      .select('id', { count: 'exact', head: true })
+    totalConversas = count ?? chats.length
+  }
+  // A amostra carregada (chats) bateu no teto? Então KPIs derivados só da amostra são parciais.
+  const chatsCapped = totalConversas > chats.length
+
   // ── Volume de mensagens (sac_whatsapp_mensagens) — só consultamos se a fonte respondeu ──
   let totalMsgs = 0
   let entrada = 0
@@ -116,7 +127,11 @@ export default async function ExpansaoWhatsappPage() {
   }
 
   // ── KPIs das conversas ──
-  const total = chats.length
+  // total = contagem REAL (count exato). amostra = quanto carregamos para detalhar.
+  const total = totalConversas
+  const amostra = chats.length
+  // Os agregados abaixo são calculados sobre a AMOSTRA (chats capados em LIMITE); quando
+  // chatsCapped, são parciais e marcamos com '+' / nota de amostra.
   const naoLidas = chats.reduce((a, c) => a + (c.nao_lidas ?? 0), 0)
   const comAtendente = chats.filter((c) => !!c.atendente_id).length
   const noBot = chats.filter((c) => c.bot_ativo !== false && !c.atendente_id).length
@@ -170,23 +185,23 @@ export default async function ExpansaoWhatsappPage() {
               <b>{total.toLocaleString('pt-BR')}</b>
             </div>
             <div className="metric-box">
-              <span>Não lidas</span>
-              <b>{naoLidas.toLocaleString('pt-BR')}</b>
+              <span>Não lidas{chatsCapped ? ' (amostra)' : ''}</span>
+              <b>{naoLidas.toLocaleString('pt-BR')}{chatsCapped ? '+' : ''}</b>
             </div>
             <div className="metric-box">
-              <span>Em atendimento humano</span>
-              <b>{comAtendente.toLocaleString('pt-BR')}</b>
+              <span>Em atendimento humano{chatsCapped ? ' (amostra)' : ''}</span>
+              <b>{comAtendente.toLocaleString('pt-BR')}{chatsCapped ? '+' : ''}</b>
             </div>
             <div className="metric-box">
-              <span>No bot (IA)</span>
-              <b>{noBot.toLocaleString('pt-BR')}</b>
+              <span>No bot (IA){chatsCapped ? ' (amostra)' : ''}</span>
+              <b>{noBot.toLocaleString('pt-BR')}{chatsCapped ? '+' : ''}</b>
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '0 0 18px' }}>
             <div className="metric-box">
-              <span>Ativas (7 dias)</span>
-              <b>{novas7d.toLocaleString('pt-BR')}</b>
+              <span>Ativas (7 dias){chatsCapped ? ' (amostra)' : ''}</span>
+              <b>{novas7d.toLocaleString('pt-BR')}{chatsCapped ? '+' : ''}</b>
             </div>
             <div className="metric-box">
               <span>Mensagens recebidas</span>
@@ -214,7 +229,9 @@ export default async function ExpansaoWhatsappPage() {
                 <i className="ti ti-chart-pie" /> Conversas por status
               </span>
               <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600 }}>
-                {total.toLocaleString('pt-BR')} no total
+                {chatsCapped
+                  ? `amostra de ${amostra.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')}`
+                  : `${total.toLocaleString('pt-BR')} no total`}
               </span>
             </div>
             <div className="cli-scroll">
@@ -223,25 +240,25 @@ export default async function ExpansaoWhatsappPage() {
                   <tr>
                     <th>Status</th>
                     <th className="num-r">Conversas</th>
-                    <th className="num-r">% do total</th>
+                    <th className="num-r">% da amostra</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {total === 0 && (
+                  {amostra === 0 && (
                     <tr>
                       <td colSpan={3} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
                         Nenhuma conversa registrada ainda.
                       </td>
                     </tr>
                   )}
-                  {total > 0 &&
+                  {amostra > 0 &&
                     distStatus.map((s) => (
                       <tr key={s.status}>
                         <td>{statusPill(s.status)}</td>
                         <td className="num-r" style={{ fontWeight: 600 }}>
                           {s.count.toLocaleString('pt-BR')}
                         </td>
-                        <td className="num-r">{total > 0 ? ((s.count / total) * 100).toFixed(1) : '0,0'}%</td>
+                        <td className="num-r">{amostra > 0 ? ((s.count / amostra) * 100).toFixed(1) : '0,0'}%</td>
                       </tr>
                     ))}
                 </tbody>

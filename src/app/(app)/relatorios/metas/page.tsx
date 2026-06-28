@@ -41,24 +41,44 @@ export default async function RelMetasPage({ searchParams }: { searchParams: Pro
   const unidadeId = ctx?.activeUnitId ?? null
   const visualizar = sp.visualizar === 'valor' ? 'valor' : 'pct'
 
+  const PAGE = 1000
+
   // Colaboradores da unidade ativa (multitenant — metas_colaborador não tem unidade_id).
-  let cq = sb.from('colaboradores').select('id, nome').eq('status', 'ativo').order('nome', { ascending: true }).limit(500)
-  if (unidadeId) cq = cq.eq('unidade_id', unidadeId)
-  const { data: colabRaw } = await cq
-  const colaboradores = (colabRaw ?? []) as { id: string; nome: string }[]
+  // Paginação completa: numa unidade com >500 ativos a lista era cortada e os agregados
+  // (meta/realizado/% e a decisão Premiação ≥80%) não batiam com a realidade.
+  const colaboradores: { id: string; nome: string }[] = []
+  for (let from = 0; from < 50000; from += PAGE) {
+    let cq = sb.from('colaboradores').select('id, nome').eq('status', 'ativo').order('nome', { ascending: true })
+    if (unidadeId) cq = cq.eq('unidade_id', unidadeId)
+    const { data, error } = await cq.range(from, from + PAGE - 1)
+    if (error) break
+    const batch = (data ?? []) as { id: string; nome: string }[]
+    colaboradores.push(...batch)
+    if (batch.length < PAGE) break
+  }
   const mapaColab = new Map(colaboradores.map((c) => [c.id, c.nome]))
   const colabIds = colaboradores.map((c) => c.id)
 
-  let metas: MetaLin[] = []
+  // Metas dos colaboradores da unidade — paginadas + chunk no .in (evita corte e URL longa).
+  const metas: MetaLin[] = []
   if (!unidadeId || colabIds.length > 0) {
-    let mq = sb
-      .from('metas_colaborador')
-      .select('id, colaborador_id, indicador, unidade_medida, valor_alvo, valor_realizado, status')
-      .order('criado_em', { ascending: false })
-      .limit(1000)
-    if (unidadeId && colabIds.length > 0) mq = mq.in('colaborador_id', colabIds)
-    const { data } = await mq
-    metas = (data ?? []) as MetaLin[]
+    // Sem unidade ativa (rede): paginação direta. Com unidade: por lotes de colaboradores.
+    const grupos: (string[] | null)[] = unidadeId ? [] : [null]
+    if (unidadeId) for (let i = 0; i < colabIds.length; i += 200) grupos.push(colabIds.slice(i, i + 200))
+    for (const grupo of grupos) {
+      for (let from = 0; from < 50000; from += PAGE) {
+        let mq = sb
+          .from('metas_colaborador')
+          .select('id, colaborador_id, indicador, unidade_medida, valor_alvo, valor_realizado, status')
+          .order('criado_em', { ascending: false })
+        if (grupo) mq = mq.in('colaborador_id', grupo)
+        const { data, error } = await mq.range(from, from + PAGE - 1)
+        if (error) break
+        const batch = (data ?? []) as MetaLin[]
+        metas.push(...batch)
+        if (batch.length < PAGE) break
+      }
+    }
   }
 
   const linhas = metas.map((m) => {

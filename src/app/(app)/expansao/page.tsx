@@ -30,14 +30,19 @@ export default async function ExpansaoPage() {
   }
 
   // Leads de franquia (escopados por unidade quando houver; admin/null vê todos).
+  // A LISTA fica capada em LEADS_CAP; os TOTAIS (KPIs, funil, %) usam contagem exata
+  // separada — mesmo padrão do CRM/SAC Kanban (não cai no teto do array).
+  const LEADS_CAP = 500
   let leads: ExpLead[] = []
+  let totalLeads = 0
+  const totaisPorEtapa: Record<string, number> = {}
   if (migracaoOk) {
     let q = sb
       .from('crm_leads')
       .select('id, nome, telefone, email, origem, valor_estimado, etapa_id, status, tipo_lead, temperatura, empresa, uf, criado_em')
       .eq('pipeline', 'franquia')
       .order('criado_em', { ascending: false })
-      .limit(500)
+      .limit(LEADS_CAP)
     if (activeUnit) q = q.eq('unidade_id', activeUnit)
     const { data, error } = await q
     if (error) {
@@ -47,12 +52,33 @@ export default async function ExpansaoPage() {
     }
   }
 
+  if (migracaoOk) {
+    // Total REAL de leads de franquia (count exato, não o tamanho do array capado).
+    let cq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'franquia')
+    if (activeUnit) cq = cq.eq('unidade_id', activeUnit)
+    const { count } = await cq
+    totalLeads = count ?? 0
+
+    // Contagem REAL por etapa — para o funil e os KPIs derivados não caírem no teto.
+    const contagens = await Promise.all(etapas.map((et) => {
+      let eq = sb.from('crm_leads').select('id', { count: 'exact', head: true }).eq('pipeline', 'franquia').eq('etapa_id', et.id)
+      if (activeUnit) eq = eq.eq('unidade_id', activeUnit)
+      return eq
+    }))
+    etapas.forEach((et, i) => { totaisPorEtapa[et.id] = contagens[i].count ?? 0 })
+  }
+
+  const leadsCapped = totalLeads > leads.length
+
   return (
     <div className="view active">
       <ExpansaoTabs
         migracaoOk={migracaoOk}
         etapas={etapas}
         leads={leads}
+        totalLeads={totalLeads}
+        totaisPorEtapa={totaisPorEtapa}
+        leadsCapped={leadsCapped}
         unidades={ctx?.unidades ?? []}
         activeUnitId={activeUnit}
         isAdmin={isAdmin}

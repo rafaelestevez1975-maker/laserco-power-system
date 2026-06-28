@@ -32,11 +32,14 @@ function diasDesde(criadoEm: string | null): number {
 }
 
 export function ExpansaoTabs({
-  migracaoOk, etapas, leads, unidades, activeUnitId, isAdmin,
+  migracaoOk, etapas, leads, totalLeads, totaisPorEtapa, leadsCapped, unidades, activeUnitId, isAdmin,
 }: {
   migracaoOk: boolean
   etapas: ExpEtapa[]
   leads: ExpLead[]
+  totalLeads: number
+  totaisPorEtapa: Record<string, number>
+  leadsCapped: boolean
   unidades: ExpUnidade[]
   activeUnitId: string | null
   isAdmin: boolean
@@ -60,15 +63,15 @@ export function ExpansaoTabs({
 
       {!migracaoOk && <MigrationBanner />}
 
-      {tab === 'dashboard' && <Dashboard leads={leads} etapas={etapas} nomeEtapa={nomeEtapa} />}
+      {tab === 'dashboard' && <Dashboard leads={leads} etapas={etapas} nomeEtapa={nomeEtapa} totalLeads={totalLeads} totaisPorEtapa={totaisPorEtapa} leadsCapped={leadsCapped} />}
       {tab === 'captacao' && <Captacao leads={leads} etapas={etapas} nomeEtapa={nomeEtapa} activeUnitId={activeUnitId} isAdmin={isAdmin} migracaoOk={migracaoOk} />}
-      {tab === 'funil' && <Funil leads={leads} etapas={etapas} />}
+      {tab === 'funil' && <Funil leads={leads} etapas={etapas} totaisPorEtapa={totaisPorEtapa} leadsCapped={leadsCapped} />}
       {tab === 'leads' && (
         migracaoOk
           ? <Leads etapas={etapas} leads={leads} unidades={unidades} activeUnitId={activeUnitId} isAdmin={isAdmin} nomeEtapa={nomeEtapa} />
           : <EmptyState texto="O quadro de leads de franquia será ativado após a migration 050." />
       )}
-      {tab === 'conversas' && <Conversas leads={leads} />}
+      {tab === 'conversas' && <Conversas />}
       {tab === 'tipos' && <Tipos leads={leads} />}
     </div>
   )
@@ -129,23 +132,31 @@ function badgeEtapa(et: ExpEtapa | undefined, nome: string) {
 }
 
 // ─── DASHBOARD ───
-function Dashboard({ leads, etapas, nomeEtapa }: { leads: ExpLead[]; etapas: ExpEtapa[]; nomeEtapa: Map<string, string> }) {
-  const total = leads.length
+function Dashboard({ leads, etapas, nomeEtapa, totalLeads, totaisPorEtapa, leadsCapped }: {
+  leads: ExpLead[]; etapas: ExpEtapa[]; nomeEtapa: Map<string, string>
+  totalLeads: number; totaisPorEtapa: Record<string, number>; leadsCapped: boolean
+}) {
+  // total REAL (count exato) — não o tamanho do array capado.
+  const total = totalLeads
   const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
-  const fechados = leads.filter((l) => nomeDe(l.etapa_id) === 'Fechado').length
-  const perdidos = leads.filter((l) => nomeDe(l.etapa_id) === 'Perdido').length
-  const reuniao = leads.filter((l) => nomeDe(l.etapa_id) === 'Reunião Agendada').length
-  // Legado expDashboard (8614): quentes = temp 'quente' OU 'ardente'.
+  // contagem exata por etapa (count exato) — somada por nome de etapa.
+  const totalEtapaNome = (nome: string) => etapas.filter((e) => e.nome === nome).reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
+  const fechados = totalEtapaNome('Fechado')
+  const perdidos = totalEtapaNome('Perdido')
+  const reuniao = totalEtapaNome('Reunião Agendada')
+  // Legado expDashboard (8614): quentes = temp 'quente' OU 'ardente'. (amostra capada)
   const quentes = leads.filter((l) => l.temperatura === 'quente' || l.temperatura === 'ardente').length
-  // Legado expDashboard (8615): novos = leads com dias<=30.
+  // Legado expDashboard (8615): novos = leads com dias<=30. (amostra capada)
   const novos30 = leads.filter((l) => diasDesde(l.criado_em) <= 30).length
   const ativos = total - fechados - perdidos
-  // Legado expDashboard (8615): conv = fechados / total.
+  // Legado expDashboard (8615): conv = fechados / total. (sobre o total REAL)
   const conv = total > 0 ? Math.round((fechados / total) * 100) : 0
 
+  // Funil por etapa usa a CONTAGEM EXATA por etapa (não o array capado).
   const funilRows = etapas.filter((e) => e.nome !== 'Perdido').map((e) => ({
-    label: e.nome, valor: leads.filter((l) => l.etapa_id === e.id).length, cor: e.cor,
+    label: e.nome, valor: totaisPorEtapa[e.id] ?? 0, cor: e.cor,
   }))
+  // Tipo e origem só temos sobre a amostra (não há count exato por tipo/origem aqui).
   const tipoRows = TIPOS_LEAD.map((t) => ({ label: t.label, valor: leads.filter((l) => l.tipo_lead === t.label).length, cor: t.cor }))
   const origMap = new Map<string, number>()
   for (const l of leads) origMap.set(l.origem || '—', (origMap.get(l.origem || '—') || 0) + 1)
@@ -156,22 +167,28 @@ function Dashboard({ leads, etapas, nomeEtapa }: { leads: ExpLead[]; etapas: Exp
   return (
     <div>
       <div className="kpi-grid">
-        <Kpi label="Total de leads" value={String(total)} icon="ti-users" />
-        <Kpi label="Fechados" value={`${fechados} (${conv}%)`} icon="ti-circle-check" cor="#10b981" />
-        <Kpi label="Reunião agendada" value={String(reuniao)} icon="ti-calendar-event" cor="#8b5cf6" />
-        <Kpi label="Leads quentes" value={String(quentes)} icon="ti-flame" cor="#ef4444" />
+        <Kpi label="Total de leads" value={total.toLocaleString('pt-BR')} icon="ti-users" />
+        <Kpi label="Fechados" value={`${fechados.toLocaleString('pt-BR')} (${conv}%)`} icon="ti-circle-check" cor="#10b981" />
+        <Kpi label="Reunião agendada" value={reuniao.toLocaleString('pt-BR')} icon="ti-calendar-event" cor="#8b5cf6" />
+        <Kpi label="Leads quentes" value={`${quentes.toLocaleString('pt-BR')}${leadsCapped ? '+' : ''}`} icon="ti-flame" cor="#ef4444" />
       </div>
       <div className="kpi-grid">
-        <Kpi label="Novos (30 dias)" value={String(novos30)} icon="ti-user-plus" cor="#0ea5e9" />
-        <Kpi label="Perdidos" value={String(perdidos)} icon="ti-user-x" cor="#ef4444" />
+        <Kpi label="Novos (30 dias)" value={`${novos30.toLocaleString('pt-BR')}${leadsCapped ? '+' : ''}`} icon="ti-user-plus" cor="#0ea5e9" />
+        <Kpi label="Perdidos" value={perdidos.toLocaleString('pt-BR')} icon="ti-user-x" cor="#ef4444" />
         <Kpi label="Taxa de conversão" value={`${conv}%`} icon="ti-percentage" cor="#0d9488" />
-        <Kpi label="Em pipeline" value={String(ativos)} icon="ti-progress-check" />
+        <Kpi label="Em pipeline" value={ativos.toLocaleString('pt-BR')} icon="ti-progress-check" />
       </div>
+
+      {leadsCapped && (
+        <div style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 12px' }}>
+          <i className="ti ti-info-circle" /> Total e funil consideram todos os {total.toLocaleString('pt-BR')} leads. Gráficos por <b>tipo</b>/<b>origem</b>, <b>quentes</b> e <b>novos</b> usam a amostra dos {leads.length.toLocaleString('pt-BR')} mais recentes.
+        </div>
+      )}
 
       <div className="dash-grid" style={{ marginBottom: 16 }}>
         <div className="dash-w"><h4><i className="ti ti-filter-cog" /> Funil de conversão</h4><BarList rows={funilRows} /></div>
-        <div className="dash-w"><h4><i className="ti ti-route" /> Leads por origem</h4><BarList rows={origRows} /></div>
-        <div className="dash-w"><h4><i className="ti ti-tag" /> Leads por tipo (produto)</h4><BarList rows={tipoRows} /></div>
+        <div className="dash-w"><h4><i className="ti ti-route" /> Leads por origem{leadsCapped ? ' (amostra)' : ''}</h4><BarList rows={origRows} /></div>
+        <div className="dash-w"><h4><i className="ti ti-tag" /> Leads por tipo (produto){leadsCapped ? ' (amostra)' : ''}</h4><BarList rows={tipoRows} /></div>
       </div>
 
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -314,11 +331,19 @@ function Captacao({
 }
 
 // ─── FUNIL ───
-function Funil({ leads, etapas }: { leads: ExpLead[]; etapas: ExpEtapa[] }) {
+function Funil({ leads, etapas, totaisPorEtapa, leadsCapped }: {
+  leads: ExpLead[]; etapas: ExpEtapa[]; totaisPorEtapa: Record<string, number>; leadsCapped: boolean
+}) {
   const [filtroTipo, setFiltroTipo] = useState<string>('Todos')
-  const visiveis = filtroTipo === 'Todos' ? leads : leads.filter((l) => l.tipo_lead === filtroTipo)
+  const semFiltro = filtroTipo === 'Todos'
+  const visiveis = semFiltro ? leads : leads.filter((l) => l.tipo_lead === filtroTipo)
   const etapasFunil = etapas.filter((e) => e.nome !== 'Perdido')
-  const counts = etapasFunil.map((e) => ({ etapa: e, c: visiveis.filter((l) => l.etapa_id === e.id).length }))
+  // Sem filtro de tipo, usa a CONTAGEM EXATA por etapa (não cai no teto). Com filtro
+  // de tipo, só temos a amostra (não há count exato por tipo) — sinalizamos isso.
+  const counts = etapasFunil.map((e) => ({
+    etapa: e,
+    c: semFiltro ? (totaisPorEtapa[e.id] ?? 0) : visiveis.filter((l) => l.etapa_id === e.id).length,
+  }))
   const max = Math.max(1, ...counts.map((c) => c.c))
   const tiposBtn = ['Todos', ...TIPOS_LEAD.map((t) => t.label)]
 
@@ -330,7 +355,10 @@ function Funil({ leads, etapas }: { leads: ExpLead[]; etapas: ExpEtapa[] }) {
         ))}
       </div>
       <div className="rel-card">
-        <div className="rel-card-h" style={{ marginBottom: 12 }}><span><i className="ti ti-filter-cog flt" /> Pipeline por etapa</span></div>
+        <div className="rel-card-h" style={{ marginBottom: 12 }}>
+          <span><i className="ti ti-filter-cog flt" /> Pipeline por etapa</span>
+          {!semFiltro && leadsCapped && <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>amostra dos {leads.length.toLocaleString('pt-BR')} mais recentes</span>}
+        </div>
         {counts.map(({ etapa, c }) => (
           <div key={etapa.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
             <div style={{ width: 160, fontSize: 12.5, color: 'var(--text-2)' }}>{etapa.nome}</div>
@@ -343,7 +371,10 @@ function Funil({ leads, etapas }: { leads: ExpLead[]; etapas: ExpEtapa[] }) {
       </div>
 
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="rel-card-h" style={{ padding: '14px 18px' }}><span><i className="ti ti-list flt" /> Leads ({visiveis.length})</span></div>
+        <div className="rel-card-h" style={{ padding: '14px 18px' }}>
+          <span><i className="ti ti-list flt" /> Leads ({visiveis.length.toLocaleString('pt-BR')})</span>
+          {semFiltro && leadsCapped && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>exibindo {visiveis.length.toLocaleString('pt-BR')} de {counts.reduce((s, c) => s + c.c, 0).toLocaleString('pt-BR')}+ leads</span>}
+        </div>
         <div className="cli-scroll">
           <table className="cli-table">
             <thead><tr><th>Nome</th><th>Telefone</th><th>Tipo</th><th>Etapa</th><th>Temperatura</th><th>Origem</th></tr></thead>
@@ -427,92 +458,29 @@ function Leads({
   )
 }
 
-// ─── CONVERSAS (inbox estilo WhatsApp Web) ─── legado expWhats (8646)
-function Conversas({ leads }: { leads: ExpLead[] }) {
-  const FILTROS = ['Todas', '🤖 Bot', '⏳ Aguardando', '✅ Atendido']
-  const [filtro, setFiltro] = useState(0)
-  const convos = leads.slice(0, 8)
-  const [aberta, setAberta] = useState(0)
-  const ativo = convos[aberta] || convos[0]
-
-  if (convos.length === 0) {
-    return (
-      <div>
-        <div className="rel-legend">
-          Atendimento estilo <b>WhatsApp Web</b> integrado via <b>Z-API / UAZAPI</b>. Toda conversa iniciada vira um lead no funil de Expansão. Use a aba <Link href="/expansao/disparos" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Disparos</Link> para iniciar campanhas.
-        </div>
-        <EmptyState texto="Sem conversas ainda. As conversas aparecem aqui quando os candidatos respondem aos disparos." />
-      </div>
-    )
-  }
-
+// ─── CONVERSAS ───
+// As conversas reais de WhatsApp ficam em sac_whatsapp_chats / sac_whatsapp_mensagens
+// e são atendidas na Triagem WhatsApp (SAC). Esta aba NÃO tem fonte de conversas própria,
+// então direciona para o relatório real (Expansão · WhatsApp CRM) e para a Triagem — em vez
+// de exibir uma caixa de entrada fictícia. Sem dados inventados.
+function Conversas() {
   return (
     <div>
       <div className="rel-legend">
-        Atendimento estilo <b>WhatsApp Web</b> integrado via <b>Z-API / UAZAPI</b>. Abas Todas / 🤖 Bot / ⏳ Aguardando / ✅ Atendido. Toda conversa vira um lead no funil de Expansão.
+        As conversas de <b>WhatsApp</b> da rede são registradas e atendidas na <b>Triagem WhatsApp</b> (SAC). Cada respondente de disparo vira um lead no funil de Expansão. Para iniciar campanhas, use a aba <Link href="/expansao/disparos" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Disparos</Link>.
       </div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-        {FILTROS.map((f, i) => (
-          <button key={f} className={`btn ${i === filtro ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '6px 12px' }} onClick={() => setFiltro(i)}>{f}</button>
-        ))}
-      </div>
-      <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', minHeight: 380 }}>
-          {/* lista de conversas */}
-          <div style={{ width: 300, borderRight: '1px solid var(--line)' }}>
-            {convos.map((l, i) => (
-              <div key={l.id} onClick={() => setAberta(i)} style={{ display: 'flex', gap: 10, padding: 10, borderBottom: '1px solid var(--line)', cursor: 'pointer', background: i === aberta ? 'var(--surface-2)' : undefined }}>
-                <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#E7ECFA', color: '#2f44a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{(l.nome || '?')[0]}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <b style={{ fontSize: 13 }}>{l.nome || 'Lead'}</b>
-                    <span style={{ fontSize: 10.5, color: 'var(--text-3)' }}>{(i * 3 + 2)}min</span>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i % 2 ? `Tenho interesse na ${l.tipo_lead || 'franquia'}` : 'Pode me enviar a COF?'}</div>
-                </div>
-                {i < 2 && <span style={{ background: '#10b981', color: '#fff', fontSize: 10, borderRadius: 10, padding: '0 6px', alignSelf: 'center', height: 16 }}>{i + 1}</span>}
-              </div>
-            ))}
-          </div>
-          {/* thread + responder */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{ativo.nome || 'Lead'}{ativo.telefone ? ` · ${ativo.telefone}` : ''}</span>
-              <Link href="/expansao/disparos" className="btn btn-ghost" style={{ padding: '4px 10px', textDecoration: 'none' }}><i className="ti ti-settings" /> Z-API</Link>
-            </div>
-            <div style={{ flex: 1, padding: 14, background: 'var(--surface-2)', minHeight: 240 }}>
-              <div style={{ maxWidth: '72%', background: '#fff', borderRadius: 10, padding: '8px 11px', fontSize: 13, marginBottom: 8 }}>
-                Olá! Vi o anúncio da franquia {ativo.tipo_lead || 'Laser&Co'}. Como funciona o investimento?
-              </div>
-              <div style={{ maxWidth: '72%', marginLeft: 'auto', background: '#d1f7c4', borderRadius: 10, padding: '8px 11px', fontSize: 13, marginBottom: 8 }}>
-                Oi {ativo.nome || ''}! Que bom o interesse 😊 Vou te enviar a <b>COF</b> e podemos agendar uma reunião. Qual a melhor cidade pra você? <span style={{ fontSize: 10, color: '#16a34a' }}>✓✓</span>
-              </div>
-            </div>
-            <Responder />
-          </div>
+      <div className="rel-card" style={{ textAlign: 'center', padding: 32 }}>
+        <i className="ti ti-brand-whatsapp" style={{ fontSize: 34, color: '#25D366' }} />
+        <p style={{ margin: '10px 0 4px', fontWeight: 700, fontSize: 15 }}>Atendimento de conversas no WhatsApp CRM</p>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 520, margin: '0 auto 16px' }}>
+          O resumo gerencial das conversas (total, não lidas, em atendimento, no bot) está no relatório <b>Expansão · WhatsApp CRM</b>. Para ler e responder mensagens com atribuição de atendente, use a <b>Triagem WhatsApp</b> em SAC.
+        </p>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/expansao/whatsapp" className="btn btn-primary" style={{ textDecoration: 'none' }}><i className="ti ti-chart-pie" /> Abrir WhatsApp CRM</Link>
+          <Link href="/sac/triagem" className="btn btn-ghost" style={{ textDecoration: 'none' }}><i className="ti ti-messages" /> Triagem WhatsApp (SAC)</Link>
+          <Link href="/expansao/disparos" className="btn btn-ghost" style={{ textDecoration: 'none' }}><i className="ti ti-send" /> Disparos</Link>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Responder() {
-  const [texto, setTexto] = useState('')
-  function enviar() {
-    if (!texto.trim()) return
-    alert('Integração de envio Z-API/UAZAPI conectada via Disparos. Mensagem registrada: ' + texto.trim())
-    setTexto('')
-  }
-  return (
-    <div style={{ padding: 10, borderTop: '1px solid var(--line)', display: 'flex', gap: 8 }}>
-      <input
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') enviar() }}
-        placeholder="Mensagem..."
-        style={{ flex: 1, border: '1px solid var(--line)', borderRadius: 8, padding: '9px 11px', fontFamily: 'inherit', fontSize: 13 }}
-      />
-      <button className="btn btn-primary" onClick={enviar}><i className="ti ti-send" /></button>
     </div>
   )
 }

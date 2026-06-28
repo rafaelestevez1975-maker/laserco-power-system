@@ -1,11 +1,12 @@
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
-import { VendasIframe } from '@/components/dashboards/VendasIframe'
+import { VendasReal, type VendasSP } from '@/components/dashboards/VendasReal'
 
 export const dynamic = 'force-dynamic'
 
 // Menu: "vendas-geral" (badge ADMIN). Dashboards de Vendas são restritos à franqueadora.
-export default async function VendasPage() {
-  const ctx = await getSessionContext()
-  return <VendasIframe slug="vendas-geral" podeVer={ehAdmin(ctx?.papel)} />
+// Dado real do ERP (OS fechadas) — substitui o antigo iframe que apontava p/ outro projeto Supabase.
+export default async function VendasPage({ searchParams }: { searchParams: Promise<VendasSP> }) {
+  const [ctx, sp] = await Promise.all([getSessionContext(), searchParams])
+  return <VendasReal slug="vendas-geral" sp={sp} podeVer={ehAdmin(ctx?.papel)} />
 }

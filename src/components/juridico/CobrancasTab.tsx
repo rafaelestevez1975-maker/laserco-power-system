@@ -30,6 +30,14 @@ export type NotifRow = {
   criado_em: string | null
 }
 
+/** KPIs reais (count/sum server-side), NÃO derivados do array .limit da lista. */
+export type CobrancasKpis = {
+  pendentes: number
+  enviadas: number
+  valorPendente: number
+  unidadesAtraso: number
+}
+
 function Kpi({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <div className="metric-box" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -129,16 +137,15 @@ function NotifCard({ n }: { n: NotifRow }) {
   )
 }
 
-export function CobrancasTab({ notificacoes, migrationPendente }: { notificacoes: NotifRow[]; migrationPendente: boolean }) {
+export function CobrancasTab({ notificacoes, kpis, migrationPendente }: { notificacoes: NotifRow[]; kpis: CobrancasKpis; migrationPendente: boolean }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
+  // Listas exibidas (capadas a 500 pela página) — apenas para renderizar os cards.
   const pend = useMemo(() => notificacoes.filter((n) => n.status === 'pendente'), [notificacoes])
   const enviadas = useMemo(() => notificacoes.filter((n) => n.status === 'enviada'), [notificacoes])
-  const totPend = useMemo(() => pend.reduce((a, n) => a + (Number(n.valor) || 0), 0), [pend])
-  const unidadesAtraso = useMemo(() => new Set(pend.map((n) => n.unidade_nome)).size, [pend])
 
   async function onSync() {
     setBusy(true)
@@ -159,12 +166,12 @@ export function CobrancasTab({ notificacoes, migrationPendente }: { notificacoes
         do débito, vencimento e dias em atraso). Revise, ajuste se quiser e clique em <b>OK — Enviar</b>.
       </div>
 
-      {/* 4 KPIs (jurCobrancas 4956) */}
+      {/* 4 KPIs (jurCobrancas 4956) — totais REAIS (count/sum server-side), não derivados da lista capada. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '0 0 18px' }}>
-        <Kpi label="Notificações pendentes" value={String(pend.length)} icon="ti-bell" />
-        <Kpi label="Valor em cobrança" value={moedaBR(totPend)} icon="ti-cash" />
-        <Kpi label="Já enviadas" value={String(enviadas.length)} icon="ti-mail-check" />
-        <Kpi label="Unidades em atraso" value={String(unidadesAtraso)} icon="ti-building-store" />
+        <Kpi label="Notificações pendentes" value={String(kpis.pendentes)} icon="ti-bell" />
+        <Kpi label="Valor em cobrança" value={moedaBR(kpis.valorPendente)} icon="ti-cash" />
+        <Kpi label="Já enviadas" value={String(kpis.enviadas)} icon="ti-mail-check" />
+        <Kpi label="Unidades em atraso" value={String(kpis.unidadesAtraso)} icon="ti-building-store" />
       </div>
 
       <div className="rel-acts" style={{ margin: '0 0 14px' }}>
@@ -176,18 +183,32 @@ export function CobrancasTab({ notificacoes, migrationPendente }: { notificacoes
       {msg && <div className="sim-msg ok" style={{ marginBottom: 10 }}><i className="ti ti-check" /> {msg}</div>}
       {erro && <div className="sim-msg err" style={{ marginBottom: 10 }}><i className="ti ti-alert-triangle" /> {erro}</div>}
 
-      {pend.length ? (
+      {kpis.pendentes ? (
         <>
-          <div className="set-sec" style={{ marginTop: 4 }}>Pendentes de envio</div>
+          <div className="set-sec" style={{ marginTop: 4 }}>
+            Pendentes de envio
+            {pend.length < kpis.pendentes && (
+              <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-3)', marginLeft: 8 }}>
+                mostrando {pend.length} de {kpis.pendentes}
+              </span>
+            )}
+          </div>
           {pend.map((n) => <NotifCard key={n.id} n={n} />)}
         </>
       ) : (
         <div className="sim-msg ok"><i className="ti ti-check" /> Nenhuma cobrança pendente no Jurídico.</div>
       )}
 
-      {enviadas.length > 0 && (
+      {kpis.enviadas > 0 && (
         <>
-          <div className="set-sec">Notificações enviadas</div>
+          <div className="set-sec">
+            Notificações enviadas
+            {enviadas.length < kpis.enviadas && (
+              <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-3)', marginLeft: 8 }}>
+                mostrando {enviadas.length} de {kpis.enviadas}
+              </span>
+            )}
+          </div>
           {enviadas.map((n) => <NotifCard key={n.id} n={n} />)}
         </>
       )}

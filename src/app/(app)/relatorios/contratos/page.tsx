@@ -29,6 +29,8 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   inadimplente: { label: 'Inadimplente', cls: 'os-cancelada' },
 }
 
+const LISTA_MAX = 1000
+
 /**
  * Contratos — réplica do REL_DEFS.contratos do legado (legacy/index.html ~4311).
  * Lê da tabela `contratos` (migration scripts/migrations/relatorios.sql). KPIs: contratos
@@ -44,6 +46,8 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
   const range = resolveRelRange(periodo, sp.di, sp.df)
 
   // A tabela pode não existir ainda → tratamos o erro p/ mostrar banner de migration.
+  // Lista capada (LISTA_MAX) só para exibição; os KPIs/breakdowns abaixo usam contagens
+  // EXATAS (count: 'exact', head: true) p/ não mentir o total numa rede com >1000 contratos.
   let rows: ContratoRow[] = []
   let tabelaAusente = false
   {
@@ -51,36 +55,74 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
       .from('contratos')
       .select('id, cliente_nome, plano, status, valor_mensal, criado_em, assinado_em')
       .order('criado_em', { ascending: false })
-      .limit(1000)
+      .limit(LISTA_MAX)
     if (unidadeId) q = q.eq('unidade_id', unidadeId)
     const { data, error } = await q
     if (error) tabelaAusente = true
     else rows = (data ?? []) as ContratoRow[]
   }
 
-  // KPIs.
-  const ativos = rows.filter((r) => r.status === 'ativo').length
-  const inadimplentes = rows.filter((r) => r.status === 'inadimplente').length
-  const assinadosPeriodo = rows.filter(
-    (r) => r.assinado_em && (!range.ini || r.assinado_em >= range.ini) && (!range.fim || r.assinado_em < range.fim),
-  ).length
-  // Valor contratado = MRR dos contratos ativos.
-  const valorContratado = rows.filter((r) => r.status === 'ativo').reduce((a, r) => a + (Number(r.valor_mensal) || 0), 0)
+  // Builder estrutural mínimo p/ COUNT (evita TS2589 dos generics profundos do PostgREST).
+  type CountQ = {
+    eq: (c: string, v: unknown) => CountQ
+    gte: (c: string, v: unknown) => CountQ
+    lt: (c: string, v: unknown) => CountQ
+    is: (c: string, v: unknown) => CountQ
+    not: (c: string, op: string, v: unknown) => CountQ
+  } & Promise<{ count: number | null; error: unknown }>
 
-  // Breakdown por plano (contratos ativos).
-  const porPlano = new Map<string, number>()
-  for (const r of rows) {
-    if (r.status !== 'ativo') continue
-    const k = r.plano || '—'
-    porPlano.set(k, (porPlano.get(k) || 0) + 1)
+  // Helper de contagem exata escopada por unidade (mesmo padrão do SAC Kanban).
+  const contar = async (apply?: (q: CountQ) => void) => {
+    if (tabelaAusente) return 0
+    let q = sb.from('contratos').select('id', { count: 'exact', head: true }) as unknown as CountQ
+    if (unidadeId) q = q.eq('unidade_id', unidadeId)
+    if (apply) apply(q)
+    const { count, error } = await q
+    if (error) return 0
+    return count ?? 0
   }
-  const barPlano: BarRow[] = [...porPlano.entries()]
-    .map(([k, v]) => ({ label: k, value: v, display: v.toLocaleString('pt-BR') }))
+
+  // KPIs — contagens REAIS (não derivadas da lista capada).
+  const planosUnicos = [...new Set(rows.filter((r) => r.status === 'ativo').map((r) => r.plano || '—'))]
+  const [total, ativos, inadimplentes, assinadosPeriodo, encerrados, cancelados, planoCounts] = await Promise.all([
+    contar(),
+    contar((q) => q.eq('status', 'ativo')),
+    contar((q) => q.eq('status', 'inadimplente')),
+    contar((q) => {
+      if (range.ini) q.gte('assinado_em', range.ini)
+      if (range.fim) q.lt('assinado_em', range.fim)
+      else q.not('assinado_em', 'is', null)
+      return q
+    }),
+    contar((q) => q.eq('status', 'encerrado')),
+    contar((q) => q.eq('status', 'cancelado')),
+    Promise.all(planosUnicos.map((p) => contar((q) => (p === '—' ? q.is('plano', null) : q.eq('plano', p)).eq('status', 'ativo')))),
+  ])
+
+  // Valor contratado = MRR dos contratos ATIVOS (soma paginada — robusta a >1000 ativos).
+  let valorContratado = 0
+  if (!tabelaAusente) {
+    const PAGE = 1000
+    for (let from = 0; from < 50000; from += PAGE) {
+      let vq = sb.from('contratos').select('valor_mensal').eq('status', 'ativo')
+      if (unidadeId) vq = vq.eq('unidade_id', unidadeId)
+      const { data, error } = await vq.range(from, from + PAGE - 1)
+      if (error) break
+      const batch = (data ?? []) as { valor_mensal: number | null }[]
+      valorContratado += batch.reduce((a, r) => a + (Number(r.valor_mensal) || 0), 0)
+      if (batch.length < PAGE) break
+    }
+  }
+
+  // Breakdown por plano (contratos ativos) — contagens exatas.
+  const barPlano: BarRow[] = planosUnicos
+    .map((p, i) => ({ label: p, value: planoCounts[i], display: planoCounts[i].toLocaleString('pt-BR') }))
     .sort((a, b) => b.value - a.value)
 
-  // Breakdown por status.
+  // Breakdown por status — contagens exatas.
+  const statusCount: Record<string, number> = { ativo: ativos, encerrado: encerrados, cancelado: cancelados, inadimplente: inadimplentes }
   const barStatus: BarRow[] = Object.keys(STATUS_META).map((k) => {
-    const c = rows.filter((r) => r.status === k).length
+    const c = statusCount[k] ?? 0
     return { label: STATUS_META[k].label, value: c, display: c.toLocaleString('pt-BR') }
   })
 
@@ -138,7 +180,9 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
           <span>
             <i className="ti ti-file-description" /> Contratos
           </span>
-          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{rows.length.toLocaleString('pt-BR')} contrato(s)</span>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+            {total.toLocaleString('pt-BR')} contrato(s){rows.length < total ? ` · exibindo ${rows.length.toLocaleString('pt-BR')}` : ''}
+          </span>
         </div>
         <div className="cli-scroll">
           <table className="cli-table">

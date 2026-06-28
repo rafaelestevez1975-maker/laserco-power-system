@@ -43,6 +43,8 @@ type Props = {
   unidades: UnidadeFiscal[]
   conectadas: number
   notas: NotaRow[]
+  listaTotal: number
+  valorCapped: boolean
   kpis: { emitidas: number; valorTotal: number; canceladas: number; processando: number }
   clientes: Cliente[]
   activeUnitId: string | null
@@ -53,7 +55,7 @@ type Props = {
 export function NotasView(props: Props) {
   const {
     semTabela, podeAdministrar, politica, porSessao, unidades, conectadas, notas,
-    kpis, clientes, activeUnitId, activeUnitName, filtros,
+    listaTotal, valorCapped, kpis, clientes, activeUnitId, activeUnitName, filtros,
   } = props
   const router = useRouter()
   const [erro, setErro] = useState('')
@@ -204,12 +206,24 @@ export function NotasView(props: Props) {
         ))}
       </div>
 
+      {valorCapped && (
+        <div className="sim-msg warn-msg" style={{ marginBottom: 14 }}>
+          <i className="ti ti-alert-triangle" /> Volume alto: o <b>Valor total</b> considera as primeiras notas autorizadas do recorte. Filtre por competência ou unidade para o total exato.
+        </div>
+      )}
+
       {/* ── Filtros de notas emitidas ── */}
       <NotasFiltros unidades={unidades} filtros={filtros} />
 
       {/* ── Notas emitidas ── */}
       <div className="rel-card-h" style={{ padding: '14px 4px' }}>
         <span><i className="ti ti-file-invoice flt" /> Notas emitidas</span>
+        {!semTabela && listaTotal > 0 && (
+          <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600, marginLeft: 10 }}>
+            {notas.length.toLocaleString('pt-BR')}
+            {listaTotal > notas.length ? ` de ${listaTotal.toLocaleString('pt-BR')}` : ''} nota(s)
+          </span>
+        )}
         {podeAdministrar && (
           <button
             className="btn btn-primary"

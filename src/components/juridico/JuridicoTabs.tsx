@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { CobrancasTab, type NotifRow } from '@/components/juridico/CobrancasTab'
+import { useState } from 'react'
+import { CobrancasTab, type NotifRow, type CobrancasKpis } from '@/components/juridico/CobrancasTab'
 import { UnidadesTab, type UnidadeJur } from '@/components/juridico/UnidadesTab'
 import { ModelosTab, type ModeloRow } from '@/components/juridico/ModelosTab'
 import { JuridicoManager, type DocRow } from '@/components/juridico/JuridicoManager'
@@ -25,6 +25,7 @@ type Props = {
   activeUnitName: string
   unidades: Unidade[]
   notificacoes: NotifRow[]
+  cobrancasKpis: CobrancasKpis
   modelos: ModeloRow[]
   unidadesJur: UnidadeJur[]
   assinatura: AssinaturaProps
@@ -40,11 +41,11 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
 ]
 
 export function JuridicoTabs(props: Props) {
-  const { migrationPendente, notificacoes, modelos, unidadesJur, assinatura, activeUnitId, activeUnitName, unidades } = props
+  const { migrationPendente, notificacoes, cobrancasKpis, modelos, unidadesJur, assinatura, activeUnitId, activeUnitName, unidades } = props
   const [tab, setTab] = useState<TabKey>('cobrancas')
 
-  // Badge dinâmico: nº de notificações pendentes (jurUpdateBadge 4913 / jurNotifPend 4912).
-  const pendentes = useMemo(() => notificacoes.filter((n) => n.status === 'pendente').length, [notificacoes])
+  // Badge dinâmico: nº REAL de notificações pendentes (count server-side, não derivado do array .limit).
+  const pendentes = cobrancasKpis.pendentes
 
   return (
     <div className="view active">
@@ -95,7 +96,7 @@ export function JuridicoTabs(props: Props) {
       )}
 
       {tab === 'cobrancas' && (
-        <CobrancasTab notificacoes={notificacoes} migrationPendente={migrationPendente} />
+        <CobrancasTab notificacoes={notificacoes} kpis={cobrancasKpis} migrationPendente={migrationPendente} />
       )}
 
       {tab === 'unidades' && (

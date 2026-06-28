@@ -51,6 +51,11 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
   const canceladas = rows.filter((r) => r.status === 'cancelada').length
   const valorTotal = rows.filter((r) => r.status !== 'cancelada').reduce((a, r) => a + (Number(r.total) || 0), 0)
 
+  // Quando o pull é truncado (capped), TODO número derivado também é parcial → marca '+'
+  // para não exibir contadores fechados que não somam o total exibido.
+  const cap = capped ? '+' : ''
+  const nfmt = (n: number) => n.toLocaleString('pt-BR') + cap
+
   // Breakdown por origem.
   const porOrigem = new Map<string, number>()
   for (const r of rows) {
@@ -58,13 +63,13 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
     porOrigem.set(k, (porOrigem.get(k) || 0) + 1)
   }
   const barOrigem: BarRow[] = [...porOrigem.entries()]
-    .map(([k, v]) => ({ label: ORIGEM_LABEL[k] ?? k, value: v, display: v.toLocaleString('pt-BR') }))
+    .map(([k, v]) => ({ label: ORIGEM_LABEL[k] ?? k, value: v, display: nfmt(v) }))
     .sort((a, b) => b.value - a.value)
 
   const barStatus: BarRow[] = [
-    { label: 'Finalizadas', value: finalizadas, display: finalizadas.toLocaleString('pt-BR') },
-    { label: 'Em aberto', value: abertas, display: abertas.toLocaleString('pt-BR') },
-    { label: 'Canceladas', value: canceladas, display: canceladas.toLocaleString('pt-BR') },
+    { label: 'Finalizadas', value: finalizadas, display: nfmt(finalizadas) },
+    { label: 'Em aberto', value: abertas, display: nfmt(abertas) },
+    { label: 'Canceladas', value: canceladas, display: nfmt(canceladas) },
   ]
 
   // Lista detalhada.
@@ -72,10 +77,10 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
   const nomesC = await nomesClientes(sb, detalhe.map((r) => r.cliente_id || '').filter(Boolean))
 
   const kpis: RelKpi[] = [
-    { label: 'OS no período', value: total.toLocaleString('pt-BR') + (capped ? '+' : ''), icon: 'ti-clipboard-list' },
-    { label: 'Finalizadas', value: finalizadas.toLocaleString('pt-BR'), icon: 'ti-circle-check', delta: total > 0 ? `${((finalizadas / total) * 100).toFixed(0)}% do total` : undefined, deltaTone: 'up' },
-    { label: 'Em aberto', value: abertas.toLocaleString('pt-BR'), icon: 'ti-clock' },
-    { label: 'Valor total', value: moedaBR(valorTotal), icon: 'ti-cash' },
+    { label: 'OS no período', value: nfmt(total), icon: 'ti-clipboard-list' },
+    { label: 'Finalizadas', value: nfmt(finalizadas), icon: 'ti-circle-check', delta: total > 0 ? `${((finalizadas / total) * 100).toFixed(0)}% da amostra` : undefined, deltaTone: 'up' },
+    { label: 'Em aberto', value: nfmt(abertas), icon: 'ti-clock' },
+    { label: 'Valor total', value: moedaBR(valorTotal) + cap, icon: 'ti-cash' },
   ]
 
   const csvRows = detalhe.map((r) => [
@@ -120,7 +125,7 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
           <span>
             <i className="ti ti-clipboard-list" /> Ordens de serviço
           </span>
-          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{total.toLocaleString('pt-BR')} OS{detalhe.length < total ? ` · exibindo ${detalhe.length}` : ''}</span>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{nfmt(total)} OS{detalhe.length < total ? ` · exibindo ${detalhe.length}` : ''}</span>
         </div>
         <div className="cli-scroll">
           <table className="cli-table">

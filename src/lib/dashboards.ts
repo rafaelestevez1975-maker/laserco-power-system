@@ -67,58 +67,9 @@ export function calcRoyalties(
   }
 }
 
-// ── Funil: segmentos Novos / Revenda / Todos (legado FUNIL_DATA L4450) ──
-export type FunilSeg = 'novos' | 'revenda' | 'todos'
-
-export type FunilSegData = {
-  lab: string
-  desc: string
-  /** agendamentos */
-  ag: number
-  /** comparecimento */
-  comp: number
-  /** conversão (vendas) */
-  conv: number
-  /** ticket médio formatado e numérico */
-  ticket: string
-  ticketN: number
-}
-
-/**
- * Estrutura/ratio dos 3 segmentos do funil (Novos × Revenda × Todos).
- * Os números absolutos do legado são ilustrativos; aqui usamos os RATIOS do legado
- * (comparecimento/agendamento e conversão/comparecimento) e tickets reais do segmento,
- * escalando pelos AGENDAMENTOS reais do período para refletir a operação da unidade.
- */
-export const FUNIL_RATIOS: Record<FunilSeg, { lab: string; desc: string; compRate: number; convRate: number; ticketN: number }> = {
-  novos: {
-    lab: 'Clientes novos',
-    desc: 'Nunca compraram — agendam uma avaliação e é feita a 1ª venda.',
-    compRate: 430 / 520, // legado: comp/ag
-    convRate: 268 / 430, // legado: conv/comp
-    ticketN: 1480,
-  },
-  revenda: {
-    lab: 'Já clientes (revenda)',
-    desc: 'Já compraram — retornam e fazem nova compra (revenda).',
-    compRate: 610 / 720,
-    convRate: 402 / 610,
-    ticketN: 690,
-  },
-  todos: {
-    lab: 'Todos (média dos dois)',
-    desc: 'Soma dos clientes novos + revenda; ticket é a média ponderada.',
-    compRate: 1040 / 1240,
-    convRate: 670 / 1040,
-    ticketN: 1010,
-  },
-}
-
-export const FUNIL_SEGS: { slug: FunilSeg; label: string; icon: string }[] = [
-  { slug: 'novos', label: 'Clientes novos', icon: 'ti-user-plus' },
-  { slug: 'revenda', label: 'Já clientes (revenda)', icon: 'ti-rotate' },
-  { slug: 'todos', label: 'Todos (média)', icon: 'ti-users-group' },
-]
+// ── Funil de vendas ──
+// (Os RATIOS/tickets HARDCODED do legado — compRate/convRate/ticketN, "Dashboard de Revenda"
+//  ilustrativo — foram REMOVIDOS: o funil usa dado real do ERP, agendamentos → OS fechadas → receita.)
 
 /** % inteiro a/b (réplica do pct() do legado). */
 export function pctInt(a: number, b: number): number {

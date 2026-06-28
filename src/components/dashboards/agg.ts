@@ -21,6 +21,18 @@ export type CountOpts = {
   unidadeCol?: string
 }
 
+/**
+ * Erro de agregação de dashboard — lançado quando o Supabase devolve `{ error }`.
+ * Garante que o dashboard NÃO mostre 0/valores parciais silenciosos (reclamação de
+ * "números que não batem"): a tela cai no error boundary com aviso real em vez de fingir zero.
+ */
+export class DashAggError extends Error {
+  constructor(public tabela: string, public causa: string) {
+    super(`Falha ao consultar "${tabela}": ${causa}`)
+    this.name = 'DashAggError'
+  }
+}
+
 /** Conta linhas de uma tabela aplicando filtros — head:true (zero linhas transferidas). */
 export async function contar(sb: SB, tabela: string, opts: CountOpts = {}): Promise<number> {
   let q = sb.from(tabela).select('id', { count: 'exact', head: true })
@@ -28,7 +40,8 @@ export async function contar(sb: SB, tabela: string, opts: CountOpts = {}): Prom
   if (opts.unidadeId) q = q.eq(opts.unidadeCol ?? 'unidade_id', opts.unidadeId)
   if (opts.dateCol && opts.gte) q = q.gte(opts.dateCol, opts.gte)
   if (opts.dateCol && opts.lt) q = q.lt(opts.dateCol, opts.lt)
-  const { count } = await q
+  const { count, error } = await q
+  if (error) throw new DashAggError(tabela, error.message)
   return count ?? 0
 }
 
@@ -93,7 +106,8 @@ export async function pullLancamentos(
     if (unidadeId) q = q.eq('unidade_id', unidadeId)
     if (iniYmd) q = q.gte('data_competencia', iniYmd)
     if (fimYmd) q = q.lt('data_competencia', fimYmd)
-    const { data } = await q.range(from, from + PAGE - 1)
+    const { data, error } = await q.range(from, from + PAGE - 1)
+    if (error) throw new DashAggError('lancamentos_financeiros', error.message)
     const batch = (data ?? []) as LancMin[]
     out.push(...batch)
     if (batch.length < PAGE) break
@@ -143,11 +157,12 @@ export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAg
     const chunk = osIds.slice(i, i + 800)
     let from = 0
     for (;;) {
-      const { data } = await sb
+      const { data, error } = await sb
         .from('os_servicos')
         .select('servico_id, quantidade, preco_total, total, servicos(nome)')
         .in('os_id', chunk)
         .range(from, from + PAGE - 1)
+      if (error) throw new DashAggError('os_servicos', error.message)
       const batch = (data ?? []) as Array<{
         servico_id: string | null
         quantidade: number | null

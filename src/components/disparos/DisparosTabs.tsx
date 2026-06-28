@@ -23,6 +23,7 @@ type Props = {
   canais: CanalOpt2[]
   apiCards: ApiCard[]
   campanhas: CampanhaRow[]
+  campanhasTotal: number
   bases: BaseRow[]
   vip: VipRow[]
   servicos: string[]
@@ -126,8 +127,11 @@ export function DisparosTabs(props: Props) {
 }
 
 // ─── Campanhas ───
-function TabCampanhas({ campanhas, canais, listas, templates, activeUnitId, podeEscrever, onReport, onExcluir, busy }: Props & { onReport: (id: string) => void; onExcluir: (id: string) => void; busy: boolean }) {
+function TabCampanhas({ campanhas, campanhasTotal, canais, listas, templates, activeUnitId, podeEscrever, onReport, onExcluir, busy }: Props & { onReport: (id: string) => void; onExcluir: (id: string) => void; busy: boolean }) {
   const agg = useMemo(() => campanhas.reduce((a, c) => ({ env: a.env + c.enviadas, entr: a.entr + c.entregues, lidas: a.lidas + c.lidas, resp: a.resp + c.respostas }), { env: 0, entr: 0, lidas: 0, resp: 0 }), [campanhas])
+  // total real vem do count exato (não do array capado em 100); se houver corte, os
+  // agregados abaixo somam só as exibidas — sinalizamos isso pra não "mentir" o número.
+  const capado = campanhasTotal > campanhas.length
   const composerCanais: CanalOpt[] = canais.map((c) => ({ nome: c.nome, label: c.label, escopo: c.escopo, unidadeId: null, delayMin: 20, delayMax: 45 }))
 
   return (
@@ -136,10 +140,10 @@ function TabCampanhas({ campanhas, canais, listas, templates, activeUnitId, pode
         Crie campanhas de disparo segmentadas. A base pode vir do próprio sistema (segmentos) ou de um arquivo externo importado. Cada campanha gera o seu próprio relatório de entrega, leitura e resposta.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
-        <div className="metric-box"><span>Campanhas</span><b>{campanhas.length}</b></div>
-        <div className="metric-box"><span>Mensagens enviadas</span><b>{agg.env.toLocaleString('pt-BR')}</b></div>
-        <div className="metric-box"><span>Taxa de leitura</span><b>{pct(agg.lidas, agg.entr)}</b></div>
-        <div className="metric-box"><span>Respostas</span><b>{agg.resp}</b></div>
+        <div className="metric-box"><span>Campanhas</span><b>{campanhasTotal.toLocaleString('pt-BR')}</b></div>
+        <div className="metric-box"><span>Mensagens enviadas{capado ? ' (últimas 100)' : ''}</span><b>{agg.env.toLocaleString('pt-BR')}</b></div>
+        <div className="metric-box"><span>Taxa de leitura{capado ? ' (últimas 100)' : ''}</span><b>{pct(agg.lidas, agg.entr)}</b></div>
+        <div className="metric-box"><span>Respostas{capado ? ' (últimas 100)' : ''}</span><b>{agg.resp}</b></div>
       </div>
 
       {/* Composer real (envio via UAZAPI) com seleção de base como público */}

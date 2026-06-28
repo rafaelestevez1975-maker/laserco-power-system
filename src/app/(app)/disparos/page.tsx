@@ -43,18 +43,24 @@ export default async function DisparosPage({ searchParams }: { searchParams: Pro
 
   // ── Campanhas / Bases / VIP do DB ──
   let campanhas: CampanhaRow[] = []
+  let campanhasTotal = 0
   let bases: BaseRow[] = []
   let vip: VipRow[] = []
   let semTabela = false
   try {
     let qCamp = sb.from('disparo_campanhas').select('id, nome, base_nome, canal_nome, status, enviadas, entregues, lidas, respostas, agendada_para, criado_em, unidade_id').order('criado_em', { ascending: false }).limit(100)
     if (unidadeId) qCamp = qCamp.eq('unidade_id', unidadeId)
-    const [rCamp, rBase, rVip] = await Promise.all([
+    // count exato do total (não derivado do array capado em .limit(100)) p/ o KPI "Campanhas".
+    let qCampCount = sb.from('disparo_campanhas').select('id', { count: 'exact', head: true })
+    if (unidadeId) qCampCount = qCampCount.eq('unidade_id', unidadeId)
+    const [rCamp, rCampCount, rBase, rVip] = await Promise.all([
       qCamp,
+      qCampCount,
       sb.from('disparo_bases').select('id, nome, tipo, contatos, criado_em').order('criado_em', { ascending: false }).limit(100),
       sb.from('vip_grupos').select('id, nome, data_convite, data_aquecimento, data_oferta_ini, data_oferta_fim, membros, status, link_publico').order('criado_em', { ascending: false }).limit(100),
     ])
     if (rCamp.error && /relation|does not exist|schema cache/i.test(rCamp.error.message)) semTabela = true
+    campanhasTotal = rCampCount.error ? 0 : (rCampCount.count ?? 0)
     campanhas = ((rCamp.data as CampDb[] | null) ?? []).map((c) => ({
       id: c.id, nome: c.nome, base: c.base_nome ?? '—', canal: c.canal_nome ?? '—', status: c.status,
       enviadas: c.enviadas, entregues: c.entregues, lidas: c.lidas, respostas: c.respostas,
@@ -86,6 +92,7 @@ export default async function DisparosPage({ searchParams }: { searchParams: Pro
         canais={canais}
         apiCards={apiCards}
         campanhas={campanhas}
+        campanhasTotal={campanhasTotal}
         bases={bases}
         vip={vip}
         servicos={servicos}
