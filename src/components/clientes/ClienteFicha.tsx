@@ -404,18 +404,8 @@ export function ClienteFicha({
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
             <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-stack" /> Documentos e termos</h3>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {DOCS.map((d) => (
-                <div key={d[0]} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
-                  <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--brand-500)' }}><i className={`ti ${d[2]}`} /></span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{d[0]}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{d[1]}</div>
-                  </div>
-                  <span className={`os-st ${d[3]}`}>{d[4]}</span>
-                  <span style={{ marginLeft: 8, color: 'var(--brand-500)', fontSize: 12.5, cursor: 'pointer' }}><i className="ti ti-external-link" /> Abrir</span>
-                </div>
-              ))}
+            <div style={{ color: 'var(--text-3)', fontSize: 13, padding: 6 }}>
+              Ainda não há documentos ou termos preenchidos por este cliente. Os preenchimentos de anamnese e assinaturas aparecerão aqui quando registrados.
             </div>
           </div>
 
@@ -485,18 +475,27 @@ export function ClienteFicha({
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
             <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-description" /> Contratos do cliente</h3>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
-                <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--brand-500)' }}><i className="ti ti-file-check" /></span>
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13.5 }}>Contrato de Prestação de Serviços</div><div style={{ fontSize: 12, color: 'var(--text-3)' }}>Assinatura registrada na contratação</div></div>
-                <span className="os-st os-fechada">Assinado</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
-                <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--brand-500)' }}><i className="ti ti-crown" /></span>
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 600, fontSize: 13.5 }}>Laser&Club · Plano Prata</div><div style={{ fontSize: 12, color: 'var(--text-3)' }}>R$ 149,90/mês · adesão de R$ 199,90</div></div>
-                <span className="os-st os-fechada">Ativo</span>
-              </div>
-            </div>
+            {contratos.length === 0
+              ? <div style={{ color: 'var(--text-3)', fontSize: 13, padding: 6 }}>Este cliente ainda não tem contratos/assinatura registrados.</div>
+              : (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {contratos.map((c) => {
+                    const meta = contratoStatusMeta(c.status)
+                    return (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
+                        <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--brand-500)' }}><i className="ti ti-crown" /></span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13.5 }}>{c.plano || 'Contrato'}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                            {moedaBR(c.valor_mensal)}/mês{c.assinado_em ? ` · assinado em ${dataBR(c.assinado_em)}` : (c.criado_em ? ` · criado em ${dataBR(c.criado_em)}` : '')}
+                          </div>
+                        </div>
+                        <span className={`os-st ${meta.cls}`}>{meta.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
           </div>
 
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
