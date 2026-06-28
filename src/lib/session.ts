@@ -25,14 +25,24 @@ export type SessionContext = {
 
 const ADMIN_PAPEL = 'admin_geral'
 
-/** Resolve os recursos do usuário: usuario_cargos → cargo_permissoes → permissoes.
- *  Usa service-role (server-only) para não depender de RLS nas tabelas de RBAC. */
-async function resolveRecursos(userId: string): Promise<string[]> {
+/** Busca os cargos do usuário (1 round-trip). Separado para rodar em PARALELO
+ *  com as demais consultas do contexto (perfil, unidades). */
+async function fetchCargoIds(userId: string): Promise<string[]> {
   try {
     const admin = adminClient()
     const { data: ucs } = await admin.from('usuario_cargos').select('cargo_id').eq('perfil_id', userId)
-    const cargoIds = (ucs ?? []).map((r: { cargo_id: string }) => r.cargo_id)
+    return (ucs ?? []).map((r: { cargo_id: string }) => r.cargo_id)
+  } catch {
+    return []
+  }
+}
+
+/** Resolve os recursos a partir dos cargos já buscados: cargo_permissoes → permissoes.
+ *  Usa service-role (server-only) para não depender de RLS nas tabelas de RBAC. */
+async function resolveRecursos(cargoIds: string[]): Promise<string[]> {
+  try {
     if (cargoIds.length === 0) return []
+    const admin = adminClient()
     const { data: cps } = await admin
       .from('cargo_permissoes')
       .select('permissoes(recurso_id)')
@@ -55,11 +65,28 @@ export async function getSessionContext(): Promise<SessionContext | null> {
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return null
 
-  const { data: perfil } = await sb
-    .from('perfis_usuario')
-    .select('nome_completo, email, papel, unidade_id')
-    .eq('id', user.id)
-    .single()
+  // As 3 consultas abaixo dependem só de user.id (não uma da outra) → rodam em PARALELO.
+  // Antes eram sequenciais (perfil → cargos → unidades), pagando 1 round-trip cada
+  // em TODA navegação autenticada. Em paralelo, o custo cai para ~1 round-trip + a
+  // resolução final de permissões.
+  const [perfilRes, cargoIds, unidadesRes] = await Promise.all([
+    sb
+      .from('perfis_usuario')
+      .select('nome_completo, email, papel, unidade_id')
+      .eq('id', user.id)
+      .single(),
+    fetchCargoIds(user.id),
+    // Unidades que o usuário enxerga (RLS aplica). Nomes vêm com lixo de migração
+    // (prefixo [INATIVA], espaços) → limpamos para exibição.
+    sb
+      .from('unidades')
+      .select('id, nome')
+      .eq('ativa', true)
+      .order('nome', { ascending: true }),
+  ])
+
+  const perfil = perfilRes.data
+  const unidadesRaw = unidadesRes.data
 
   const p = perfil as { nome_completo?: string; email?: string; papel?: string; unidade_id?: string | null } | null
   const nome = p?.nome_completo ?? user.email?.split('@')[0] ?? 'Usuário'
@@ -68,15 +95,7 @@ export async function getSessionContext(): Promise<SessionContext | null> {
   const isAdmin = papel === ADMIN_PAPEL
   const iniciais = nome.split(' ').slice(0, 2).map((s) => s[0]).join('').toUpperCase() || 'U'
 
-  const recursos = isAdmin ? [] : await resolveRecursos(user.id)
-
-  // Unidades que o usuário enxerga (RLS aplica). Nomes vêm com lixo de migração
-  // (prefixo [INATIVA], espaços)  limpamos para exibição.
-  const { data: unidadesRaw } = await sb
-    .from('unidades')
-    .select('id, nome')
-    .eq('ativa', true)
-    .order('nome', { ascending: true })
+  const recursos = isAdmin ? [] : await resolveRecursos(cargoIds)
 
   const unidades: Unidade[] = (unidadesRaw ?? [])
     .map((u: { id: string; nome: string }) => ({ id: u.id, nome: (u.nome ?? '').trim() }))
