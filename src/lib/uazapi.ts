@@ -183,6 +183,17 @@ export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, 
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL, ...lerEnvio(body) }
 }
 
+/** Baixa a mídia de uma mensagem recebida. A UAZAPI nem sempre manda `fileURL` no webhook —
+ *  POST /message/download (token da instância) com `return_link` devolve a URL pública + mimetype
+ *  (e gera MP3 para áudio). `id` = id INTERNO da UAZAPI da mensagem (msg.id no webhook).
+ *  Sem isso, imagem/áudio/vídeo recebidos ficam como "[image]" no chat. */
+export async function downloadMessage(token: string, id: string): Promise<{ ok: boolean; fileURL?: string; mimetype?: string }> {
+  const { ok, body } = await instPost('/message/download', token, { id, return_link: true, generate_mp3: true })
+  if (!ok) return { ok: false }
+  const b = (body || {}) as { fileURL?: string; mimetype?: string; message?: { fileURL?: string; mimetype?: string } }
+  return { ok: true, fileURL: b.fileURL ?? b.message?.fileURL, mimetype: b.mimetype ?? b.message?.mimetype }
+}
+
 /** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar.
  *  CRÍTICO: a UAZAPI é externa e precisa ALCANÇAR a URL — nunca pode ser localhost.
  *  Se NEXT_PUBLIC_APP_URL apontar pra localhost (dev), cai pro domínio público. */

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
-import { normTel, listInstances, sendText, resolverInstancia, type Instancia } from '@/lib/uazapi'
+import { normTel, listInstances, sendText, resolverInstancia, downloadMessage, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
 import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
 
@@ -162,11 +162,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Mídia recebida: a UAZAPI nem sempre manda `fileURL` no webhook. Quando não vem, baixa via
+  // /message/download (igual ao sistema antigo) usando o id interno da mensagem + token do canal
+  // de origem, e re-hospeda no bucket permanente `sac-midia` — resolve o "[image]"/áudio que não
+  // tocava E a expiração da URL temporária da UAZAPI (~2 dias).
+  let midiaUrl: string | null = null
+  let midiaMime: string | null = null
+  if (['image', 'audio', 'video', 'document', 'sticker'].includes(tipo)) {
+    let fonte = msg.fileURL || null
+    const dlToken = inst?.token || process.env.UAZAPI_TOKEN || ''
+    const midiaId = msg.id || msg.messageid || null
+    if (!fonte && midiaId && dlToken) {
+      const dl = await downloadMessage(dlToken, midiaId)
+      if (dl.ok) { fonte = dl.fileURL || null; midiaMime = dl.mimetype || null }
+    }
+    if (fonte) midiaUrl = await reHostMidia(fonte, { mime: midiaMime, prefixo: 'recebidas' })
+  }
+
   await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chat.id, wa_id: waId, direcao: fromMe ? 'saida' : 'entrada',
     autor: fromMe ? (msg.senderName || 'WhatsApp') : (msg.senderName || chat.nome || telefone),
     tipo, texto: texto || null,
-    midia_url: msg.fileURL ? await reHostMidia(msg.fileURL, { prefixo: 'recebidas' }) : null,
+    midia_url: midiaUrl, midia_mimetype: midiaMime,
     status: msg.status ?? null, criado_em: quando,
   })
 
