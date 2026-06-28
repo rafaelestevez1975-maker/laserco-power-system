@@ -61,7 +61,7 @@ export function Sidebar({
 function LeafLink({ leaf, pathname, onNavigate }: { leaf: Leaf; pathname: string; onNavigate?: () => void }) {
   const func = ehFuncional(leaf.href)
   return (
-    <Link href={leaf.href} onClick={onNavigate} className={`nav-item ${leafActive(leaf.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
+    <Link href={leaf.href} prefetch={false} onClick={onNavigate} className={`nav-item ${leafActive(leaf.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
       <i className={`ti ${leaf.icon} lead`} />
       {leaf.label}
       {func ? (leaf.badge && <BadgeTag badge={leaf.badge} />) : <span className="em-breve">prévia</span>}
@@ -90,7 +90,7 @@ function GroupEntry({
         {children.map((c) => {
           const func = ehFuncional(c.href)
           return (
-            <Link key={c.href} href={c.href} onClick={onNavigate} className={`sub-item ${leafActive(c.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
+            <Link key={c.href} href={c.href} prefetch={false} onClick={onNavigate} className={`sub-item ${leafActive(c.href, pathname) ? 'active' : ''} ${func ? '' : 'inativo'}`}>
               <i className={`ti ${c.icon}`} />
               {c.label}
               {func ? (c.badge && <BadgeTag badge={c.badge} />) : <span className="em-breve">prévia</span>}
