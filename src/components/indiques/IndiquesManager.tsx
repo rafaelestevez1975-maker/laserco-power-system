@@ -44,7 +44,8 @@ export function IndiquesManager(props: Props) {
 
   const uniNomeSel = filtroUni === TODAS ? activeUnitName : (uniNome[filtroUni] ?? activeUnitName)
   const link = indLink(uniNomeSel)
-  const premioNome = premio?.premio || '1 Rejuvenescimento Facial 4D (sessão completa)'
+  // Sem prêmio configurado em indique_config → estado honesto "a definir" (nada inventado).
+  const premioNome = premio?.premio?.trim() || ''
 
   // Filtra indicações pela unidade do filtro local.
   const indFiltradas = useMemo(
@@ -296,7 +297,7 @@ function SorteioTab({
             {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
           </select>
         </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-users" /> <b>{pool.length}</b> participantes · prêmio: <b>{premioNome}</b></div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-users" /> <b>{pool.length}</b> participantes · prêmio: <b>{premioNome || 'a definir'}</b></div>
         <button className="btn btn-primary" style={{ marginLeft: 'auto', padding: '11px 22px', fontSize: 15 }} disabled={running} onClick={sortear}><i className="ti ti-confetti" /> Sortear</button>
       </div>
       {err && <div className="rel-legend" style={{ color: 'var(--red)', marginBottom: 10 }}><i className="ti ti-alert-triangle" /> {err}</div>}
@@ -308,7 +309,7 @@ function SorteioTab({
         transition: 'box-shadow .6s',
       }}>
         <div style={{ fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', opacity: .8 }}>Indicação Premiada · {mesLabel()}</div>
-        <div style={{ fontSize: 15, opacity: .92, marginTop: 6 }}>🎁 {premioNome}</div>
+        <div style={{ fontSize: 15, opacity: .92, marginTop: 6 }}>🎁 {premioNome || 'Prêmio a definir'}</div>
         <div style={{ fontWeight: 800, fontSize: 'clamp(30px,6vw,64px)', margin: '26px 0 10px', minHeight: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', textShadow: '0 4px 24px rgba(0,0,0,.3)' }}>{display}</div>
         <div style={{ fontSize: 14, opacity: .85 }} dangerouslySetInnerHTML={{ __html: won ? '🎉 <b>GANHADOR(A) DO MÊS!</b>' : running ? 'Sorteando…' : 'Clique em <b>Sortear</b> para começar' }} />
       </div>
@@ -322,7 +323,7 @@ function SorteioTab({
               <div style={{ fontSize: 19, fontWeight: 800 }}>{winner.nome}</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-brand-whatsapp" style={{ color: '#25D366' }} /> {winner.whats} · {uniNomeSel}</div>
             </div>
-            <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: 'var(--text-3)' }}>Prêmio</div><div style={{ fontWeight: 700, color: 'var(--gold-600)' }}>{premioNome}</div></div>
+            <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: 'var(--text-3)' }}>Prêmio</div><div style={{ fontWeight: 700, color: 'var(--gold-600)' }}>{premioNome || 'A definir'}</div></div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
             <button className="btn btn-primary" disabled={notificado} onClick={notificar}><i className="ti ti-send" /> {notificado ? 'Notificado ✓' : 'Notificar ganhador(a) (e-mail + WhatsApp)'}</button>

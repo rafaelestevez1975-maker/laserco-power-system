@@ -36,7 +36,7 @@ export default async function ChamadosPage() {
 
   return (
     <div className="view active">
-      <ChamadosManager chamados={chamados} isAdmin={isAdmin} origemFranqueado={origemFranqueado} />
+      <ChamadosManager chamados={chamados} isAdmin={isAdmin} origemFranqueado={origemFranqueado} unidades={(ctx?.unidades ?? []).map((u) => u.nome)} />
     </div>
   )
 }

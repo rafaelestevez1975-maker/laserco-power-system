@@ -14,7 +14,7 @@ import {
 export type AutoCustom = { id: string; nome: string; gatilho: string; acao: string; categoria: string; ativa: boolean; escopo: 'rede' | 'unidade' }
 export type WaCanalInfo = { configurado: boolean; conectado: boolean; numero: string | null; nomeCanal: string | null }
 type NoShow = { ativa: boolean; primeira_apos: string; max_dia: number; intervalo: string; mensagem: string; reagenda_se_responde: boolean; exclui_se_sem_resposta: boolean; oculta_dia_seguinte: boolean }
-type Kpis = { ativas: number; total: number; enviadasMes: number; taxaResposta: number; recuperados: number }
+type Kpis = { ativas: number; total: number; enviadasMes: number | null; taxaResposta: number | null; recuperados: number | null }
 
 type Props = {
   catalogo: AutomacaoPadrao[]
@@ -138,9 +138,9 @@ export function AutomacoesView(props: Props) {
       {/* 4 KPIs (autosKpi 3928) */}
       <div className="metric-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div className="metric-box"><span>Automações ativas</span><b>{kpis.ativas} / {kpis.total}</b></div>
-        <div className="metric-box"><span>Mensagens enviadas (mês)</span><b>{kpis.enviadasMes.toLocaleString('pt-BR')}</b></div>
-        <div className="metric-box"><span>Taxa de resposta</span><b>{kpis.taxaResposta}%</b></div>
-        <div className="metric-box"><span>Agendamentos recuperados</span><b>{kpis.recuperados}</b></div>
+        <div className="metric-box"><span>Mensagens enviadas (mês)</span><b>{kpis.enviadasMes != null ? kpis.enviadasMes.toLocaleString('pt-BR') : '—'}</b></div>
+        <div className="metric-box"><span>Taxa de resposta</span><b>{kpis.taxaResposta != null ? `${kpis.taxaResposta}%` : '—'}</b></div>
+        <div className="metric-box"><span>Agendamentos recuperados</span><b>{kpis.recuperados != null ? kpis.recuperados : '—'}</b></div>
       </div>
 
       {/* Ações */}

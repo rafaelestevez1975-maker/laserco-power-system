@@ -17,12 +17,12 @@ const PLBL: Record<number, string> = { 1: 'mês', 2: 'quinzena', 3: 'dezena' }
  */
 export function MetasUnidadeSimulador({
   unidades,
-  mediaRede = 274,
-  mesAnterior = 305,
+  mediaRede = 0,
+  mesAnterior = 0,
 }: {
   unidades: { id: string; nome: string }[]
-  mediaRede?: number
-  mesAnterior?: number
+  mediaRede?: number   // média de agendamentos/unidade na rede (mês anterior) — real, vinda da page
+  mesAnterior?: number // agendamentos da unidade no mês anterior — real, vinda da page
 }) {
   const [div, setDiv] = useState<number>(1) // 1=mensal, 2=quinzenal, 3=decendial
   const [uniNome, setUniNome] = useState<string>(unidades[0]?.nome ?? '')
@@ -35,10 +35,12 @@ export function MetasUnidadeSimulador({
   const agendPer = agendMeta / div
   const novosPer = agendPer * 0.25
 
-  const [vendReal, setVendReal] = useState<number>(68500)
-  const [agReal, setAgReal] = useState<number>(210)
-  const [nvReal, setNvReal] = useState<number>(38)
-  const [indiques, setIndiques] = useState<number>(60)
+  // "Realizado" começa em 0 (o usuário ajusta nos sliders) — antes vinham valores
+  // inventados (68500/210/38) exibidos como vendido/agendado reais.
+  const [vendReal, setVendReal] = useState<number>(0)
+  const [agReal, setAgReal] = useState<number>(0)
+  const [nvReal, setNvReal] = useState<number>(0)
+  const [indiques, setIndiques] = useState<number>(60) // meta mensal de indicações (alvo configurável)
   const [indReal, setIndReal] = useState<number>(0) // indicações realizadas no mês até hoje
   const [saving, setSaving] = useState<string | null>(null)
 

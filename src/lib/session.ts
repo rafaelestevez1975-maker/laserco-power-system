@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { adminClient } from '@/lib/supabase/admin'
@@ -60,7 +61,10 @@ async function resolveRecursos(cargoIds: string[]): Promise<string[]> {
   }
 }
 
-export async function getSessionContext(): Promise<SessionContext | null> {
+// Memoizado por request (React cache): o layout, a página, o ComunicadosGate e qualquer
+// componente/action que chame getSessionContext no MESMO render compartilham UMA execução
+// (1 auth.getUser + 1 lote de queries) em vez de N. Era o maior gargalo de navegação.
+export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return null
@@ -112,4 +116,4 @@ export async function getSessionContext(): Promise<SessionContext | null> {
     : 'Todas as unidades'
 
   return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName }
-}
+})

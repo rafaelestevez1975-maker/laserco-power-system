@@ -124,8 +124,28 @@ export async function DashboardUnidade({ searchParams }: { searchParams: SP }) {
     mesRange,
   )
 
-  // Referência da rede (média por unidade) — números do legado como baseline visual.
-  const REDE = { ag: 980, comp: 764, compP: 78, conv: 480, convP: 49, ticket: 392 }
+  // Referência da rede = média por unidade, de dados REAIS (mesmas métricas do
+  // funil da unidade, agora SEM filtro de unidade; a RLS limita o que cada perfil
+  // enxerga). Antes eram números fixos do legado (mock 980/764/480/392).
+  const nUnits = Math.max(1, ctx?.unidades?.length ?? 1)
+  const [agRede, compRede, convRede, vendaRede] = await Promise.all([
+    countAg(sb, null, de, ate, (q) => q.not('status', 'in', '(cancelado)')),
+    countAg(sb, null, de, ate, (q) => q.in('status', ['concluido', 'em_atendimento'])),
+    (async () => {
+      const { count } = await sb.from('os').select('id', { count: 'exact', head: true })
+        .eq('status', 'fechada').gte('fechada_em', de).lt('fechada_em', ate)
+      return count ?? 0
+    })(),
+    metaUnidade(sb, null, mesRange.de, mesRange.ate),
+  ])
+  const REDE = {
+    ag: Math.round(agRede / nUnits),
+    comp: Math.round(compRede / nUnits),
+    compP: agRede > 0 ? Math.round((compRede / agRede) * 100) : 0,
+    conv: Math.round(convRede / nUnits),
+    convP: agRede > 0 ? Math.round((convRede / agRede) * 100) : 0,
+    ticket: convRede > 0 ? Math.round(vendaRede.vendido / convRede) : 0,
+  }
 
   return (
     <div className="view active">

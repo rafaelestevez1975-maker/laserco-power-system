@@ -79,12 +79,14 @@ export default async function AutomacoesPage() {
   // ── KPIs (autosKpi 3928): ativas = catálogo (default ou override) + personalizadas ativas ──
   const padraoAtivas = AUTOS_PADRAO.filter((a) => estadoMap.get(a.chave) ?? a.ativoDefault).length
   const customAtivas = custom.filter((c) => c.ativa).length
+  // enviadasMes/taxaResposta/recuperados: sem telemetria de envio/no-show no backend
+  // ainda → null = estado honesto "—" (antes eram 4820/38/64 inventados).
   const kpis = {
     ativas: padraoAtivas + customAtivas,
     total: AUTOS_TOTAL + custom.length,
-    enviadasMes: 4820,
-    taxaResposta: 38,
-    recuperados: 64,
+    enviadasMes: null,
+    taxaResposta: null,
+    recuperados: null,
   }
 
   return (

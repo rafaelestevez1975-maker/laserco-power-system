@@ -13,14 +13,9 @@ export type Chamado = {
 
 const PERIODOS = ['Hoje', 'Ontem', 'Semana passada', 'Últimos 30 dias', 'Mês atual', 'Mês passado', 'Este ano', 'Período…']
 const PARTES = ['Comercial', 'Marketing', 'Financeiro', 'Operações', 'SAC', 'Expansão', 'RH', 'Área Técnica']
-// CHAM_PARTIES (legado 6303): 8 departamentos + 3 entradas 'Franqueado · <unidade>'.
+// CHAM_PARTIES (legado 6303): 8 departamentos + as entradas 'Franqueado · <unidade>'.
 // Admin pode abrir chamado em nome de um franqueado e cair em "Recebidos".
-const FRANQUEADOS = [
-  'Franqueado · Florianópolis - Centro',
-  'Franqueado · São Paulo - Vila Olímpia',
-  'Franqueado · Porto Alegre - Iguatemi',
-]
-const CHAM_PARTIES = [...PARTES, ...FRANQUEADOS]
+// As unidades vêm REAIS do banco (ctx.unidades) — antes eram 3 nomes fixos fictícios.
 const ETIQUETAS = ['Solicitação', 'Suporte', 'Financeiro', 'Implantação', 'Projeto', 'Expansão']
 const DEPTS = ['Todos', ...PARTES]
 const TAGS_FILTRO = ['Todos', ...ETIQUETAS]
@@ -99,7 +94,10 @@ function PrazoCell({ c }: { c: Chamado }) {
   )
 }
 
-export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chamados: Chamado[]; isAdmin: boolean; origemFranqueado: string | null }) {
+export function ChamadosManager({ chamados, isAdmin, origemFranqueado, unidades = [] }: { chamados: Chamado[]; isAdmin: boolean; origemFranqueado: string | null; unidades?: string[] }) {
+  // Entradas "Franqueado · <unidade>" construídas das unidades REAIS do banco.
+  const franqueados = unidades.map((n) => `Franqueado · ${n}`)
+  const chamParties = [...PARTES, ...franqueados]
   const router = useRouter()
   const [box, setBox] = useState<'recebidos' | 'enviados'>('recebidos')
   const [fil, setFil] = useState({ periodo: 'Este ano', situacao: 'Todos', assunto: 'Todos', para: 'Todos' })
@@ -178,7 +176,7 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado }: { chama
         </table>
       </div></div>
 
-      {novo && <NovoChamado isAdmin={isAdmin} origemFranqueado={origemFranqueado} onClose={() => setNovo(false)} onSaved={(b) => { setNovo(false); setBox(b); router.refresh() }} onError={setMsg} />}
+      {novo && <NovoChamado isAdmin={isAdmin} origemFranqueado={origemFranqueado} chamParties={chamParties} franqueados={franqueados} onClose={() => setNovo(false)} onSaved={(b) => { setNovo(false); setBox(b); router.refresh() }} onError={setMsg} />}
     </>
   )
 }
@@ -260,10 +258,10 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
   )
 }
 
-function NovoChamado({ onClose, onSaved, onError, origemFranqueado, isAdmin }: { onClose: () => void; onSaved: (box: 'recebidos' | 'enviados') => void; onError: (m: string) => void; origemFranqueado: string | null; isAdmin: boolean }) {
-  // Admin escolhe "De" entre os 11 (CHAM_PARTIES, com 3 'Franqueado · <unidade>'); franqueado fica preso à sua unidade.
-  const opcoesDe = isAdmin ? CHAM_PARTIES : PARTES
-  const [f, setF] = useState<ChamadoForm>({ assunto: '', etiqueta: 'Solicitação', de_parte: origemFranqueado || (isAdmin ? FRANQUEADOS[0] : PARTES[0]), para_parte: 'Financeiro', prioridade: 'normal', descricao: '' })
+function NovoChamado({ onClose, onSaved, onError, origemFranqueado, isAdmin, chamParties, franqueados }: { onClose: () => void; onSaved: (box: 'recebidos' | 'enviados') => void; onError: (m: string) => void; origemFranqueado: string | null; isAdmin: boolean; chamParties: string[]; franqueados: string[] }) {
+  // Admin escolhe "De" entre os departamentos + 'Franqueado · <unidade>' (unidades reais); franqueado fica preso à sua unidade.
+  const opcoesDe = isAdmin ? chamParties : PARTES
+  const [f, setF] = useState<ChamadoForm>({ assunto: '', etiqueta: 'Solicitação', de_parte: origemFranqueado || (isAdmin ? (franqueados[0] ?? PARTES[0]) : PARTES[0]), para_parte: 'Financeiro', prioridade: 'normal', descricao: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   function salvar() {
@@ -290,7 +288,7 @@ function NovoChamado({ onClose, onSaved, onError, origemFranqueado, isAdmin }: {
                 ? <input value={origemFranqueado} disabled title="Sua unidade  definido pelo seu acesso" />
                 : <select value={f.de_parte} onChange={(e) => setF({ ...f, de_parte: e.target.value })}>{opcoesDe.map((p) => <option key={p}>{p}</option>)}</select>}
             </div>
-            <div className="mf"><label>Para</label><select value={f.para_parte} onChange={(e) => setF({ ...f, para_parte: e.target.value })}>{(isAdmin ? CHAM_PARTIES : PARTES).map((p) => <option key={p}>{p}</option>)}</select></div>
+            <div className="mf"><label>Para</label><select value={f.para_parte} onChange={(e) => setF({ ...f, para_parte: e.target.value })}>{(isAdmin ? chamParties : PARTES).map((p) => <option key={p}>{p}</option>)}</select></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Assunto (etiqueta)</label><select value={f.etiqueta} onChange={(e) => setF({ ...f, etiqueta: e.target.value })}>{ETIQUETAS.map((p) => <option key={p}>{p}</option>)}</select></div>
