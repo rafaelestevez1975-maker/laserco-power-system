@@ -2,25 +2,28 @@
 
 import { useEffect, useState } from 'react'
 import {
-  APP, APP_NEXT, APP_PKGS, APP_SERV, APP_UNITS, APP_REDEEM, APP_TABS,
-  APP_HISTORICO, APP_PROFISSIONAIS, APP_DATAS, APP_HORARIOS, APP_FEATS,
-  REGRAS_PONTOS, type AppPkg,
+  APP_TABS, APP_REDEEM, APP_DATAS, APP_HORARIOS, APP_FEATS, REGRAS_PONTOS,
+  type AppData, type AppProfile, type AppNext, type AppPkg, type AppServ, type AppUnit,
 } from '@/lib/app-cliente'
 
 /**
- * App do Cliente (mockup interativo) — paridade com buildAppCliente/appRender do
- * legado (legacy/index.html ~4711-4825). Tab bar de 5 abas navegáveis + telas
- * Início, Agendar, Serviços, Sessões, Fidelidade, Unidades e fluxo Indique&Ganhe.
- * Protótipo: as ações mostram feedback inline (sem persistência).
+ * App do Cliente (prévia navegável) — paridade com buildAppCliente/appRender do
+ * legado. Tab bar de 5 abas + telas Início, Agendar, Serviços, Sessões, Fidelidade,
+ * Unidades e fluxo Indique&Ganhe. Os DADOS são REAIS (vêm de `data`, montado no
+ * server a partir do banco); as AÇÕES dentro do telefone são demonstrativas
+ * (feedback inline, sem persistência).
  */
 
 type Friend = { nome: string; telefone: string; unidade: string }
 
-export function AppClienteMockup() {
+const PERFIL_VAZIO: AppProfile = { nome: 'Visitante', nomeCompleto: 'Visitante', pts: 0, nivel: 'Bronze', cash: 0, cashPct: REGRAS_PONTOS.cashback.Bronze }
+
+export function AppClienteMockup({ data }: { data: AppData }) {
   const [scr, setScr] = useState('home')
   const [clock, setClock] = useState('09:41')
-  // toast inline simples (substitui o showToast do legado)
   const [toast, setToast] = useState('')
+
+  const profile = data.profile ?? PERFIL_VAZIO
 
   // Relógio dinâmico (legado appClock L4717).
   useEffect(() => {
@@ -33,7 +36,6 @@ export function AppClienteMockup() {
     return () => clearInterval(id)
   }, [])
 
-  // Toast some sozinho.
   useEffect(() => {
     if (!toast) return
     const id = setTimeout(() => setToast(''), 3200)
@@ -48,7 +50,7 @@ export function AppClienteMockup() {
         <div className="ri"><i className="ti ti-device-mobile" /></div>
         <div>
           <h2>App do Cliente · Laser&amp;Co</h2>
-          <p>Protótipo do aplicativo (Android e iOS) entregue ao cliente · espelha o sistema</p>
+          <p>Prévia navegável do aplicativo (Android e iOS) com dados reais do sistema · ações demonstrativas</p>
         </div>
       </div>
 
@@ -65,7 +67,7 @@ export function AppClienteMockup() {
                 <i className="ti ti-check" /> {toast}
               </div>
             )}
-            <Screen scr={scr} go={go} toast={setToast} />
+            <Screen scr={scr} go={go} toast={setToast} data={data} profile={profile} />
           </div>
           <div className="phone-tabbar">
             {APP_TABS.map((t) => (
@@ -113,19 +115,19 @@ export function AppClienteMockup() {
 
 // ───────────────────────────── Telas ─────────────────────────────
 
-function Screen({ scr, go, toast }: { scr: string; go: (s: string) => void; toast: (m: string) => void }) {
-  if (scr === 'home') return <ScrHome go={go} toast={toast} />
-  if (scr === 'agendar') return <ScrAgendar toast={toast} />
-  if (scr === 'servicos') return <ScrServicos go={go} />
-  if (scr === 'sessoes') return <ScrSessoes />
-  if (scr === 'fidelidade') return <ScrFidelidade go={go} toast={toast} />
-  if (scr === 'unidades') return <ScrUnidades go={go} toast={toast} />
-  if (scr === 'indicar') return <ScrIndicar toast={toast} />
+function Screen({ scr, go, toast, data, profile }: { scr: string; go: (s: string) => void; toast: (m: string) => void; data: AppData; profile: AppProfile }) {
+  if (scr === 'home') return <ScrHome go={go} toast={toast} profile={profile} next={data.next} packages={data.packages} />
+  if (scr === 'agendar') return <ScrAgendar toast={toast} units={data.units} services={data.services} professionals={data.professionals} />
+  if (scr === 'servicos') return <ScrServicos go={go} services={data.services} />
+  if (scr === 'sessoes') return <ScrSessoes packages={data.packages} history={data.history} />
+  if (scr === 'fidelidade') return <ScrFidelidade go={go} toast={toast} profile={profile} />
+  if (scr === 'unidades') return <ScrUnidades go={go} toast={toast} units={data.units} />
+  if (scr === 'indicar') return <ScrIndicar toast={toast} units={data.units} profile={profile} />
   return null
 }
 
 function PkgCard({ pk }: { pk: AppPkg }) {
-  const pc = Math.round((pk.done / pk.total) * 100)
+  const pc = pk.total > 0 ? Math.round((pk.done / pk.total) * 100) : 0
   return (
     <div className="app-card">
       <div className="app-row">
@@ -141,36 +143,40 @@ function PkgCard({ pk }: { pk: AppPkg }) {
   )
 }
 
-function ScrHome({ go, toast }: { go: (s: string) => void; toast: (m: string) => void }) {
+function ScrHome({ go, toast, profile, next, packages }: { go: (s: string) => void; toast: (m: string) => void; profile: AppProfile; next: AppNext | null; packages: AppPkg[] }) {
   return (
     <div className="ascr">
       <div className="app-hero">
-        <h3>Olá, {APP.nome} 👋</h3>
-        <p>Bem-vinda de volta à Laser&amp;Co</p>
+        <h3>Olá, {profile.nome} 👋</h3>
+        <p>Bem-vindo(a) de volta à Laser&amp;Co</p>
         <div className="app-pts">
           <i className="ti ti-coin" style={{ fontSize: 22, color: 'var(--gold-400)' }} />
           <div>
-            <div className="v">{APP.pts.toLocaleString('pt-BR')} pts</div>
-            <div style={{ fontSize: 10.5, opacity: 0.9 }}>Clube {APP.nivel}</div>
+            <div className="v">{profile.pts.toLocaleString('pt-BR')} pts</div>
+            <div style={{ fontSize: 10.5, opacity: 0.9 }}>Clube {profile.nivel}</div>
           </div>
           <i className="ti ti-chevron-right" style={{ marginLeft: 'auto', cursor: 'pointer' }} onClick={() => go('fidelidade')} />
         </div>
       </div>
       <div className="app-sec-t">Próximo agendamento</div>
-      <div className="app-card">
-        <div className="app-row">
-          <div className="app-ic"><i className="ti ti-calendar-event" /></div>
-          <div style={{ flex: 1 }}>
-            <div className="app-tt">{APP_NEXT.serv}</div>
-            <div className="app-st">{APP_NEXT.data} · {APP_NEXT.prof}</div>
-            <div className="app-st">{APP_NEXT.unid}</div>
+      {next ? (
+        <div className="app-card">
+          <div className="app-row">
+            <div className="app-ic"><i className="ti ti-calendar-event" /></div>
+            <div style={{ flex: 1 }}>
+              <div className="app-tt">{next.serv}</div>
+              <div className="app-st">{next.data} · {next.prof}</div>
+              <div className="app-st">{next.unid}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 11 }}>
+            <button className="app-btn ghost" style={{ marginTop: 0, flex: 1, padding: 9 }} onClick={() => toast('Reagendamento solicitado')}>Reagendar</button>
+            <button className="app-btn" style={{ marginTop: 0, flex: 1, padding: 9 }} onClick={() => toast('Confirmado! Até lá 💜')}>Confirmar</button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 11 }}>
-          <button className="app-btn ghost" style={{ marginTop: 0, flex: 1, padding: 9 }} onClick={() => toast('Reagendamento solicitado')}>Reagendar</button>
-          <button className="app-btn" style={{ marginTop: 0, flex: 1, padding: 9 }} onClick={() => toast('Confirmado! Até lá 💜')}>Confirmar</button>
-        </div>
-      </div>
+      ) : (
+        <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Nenhum agendamento futuro.</div></div>
+      )}
       <div className="app-quick">
         <div className="app-q" onClick={() => go('agendar')}><i className="ti ti-calendar-plus" /><span>Agendar</span></div>
         <div className="app-q" onClick={() => go('servicos')}><i className="ti ti-sparkles" /><span>Serviços</span></div>
@@ -182,20 +188,22 @@ function ScrHome({ go, toast }: { go: (s: string) => void; toast: (m: string) =>
         <p>Indique 5 amigos, ganhe <b>50 pts</b> por indicação e concorra a um <b>pacote de laser todo mês</b>!</p>
       </div>
       <div className="app-sec-t">Meus pacotes <a onClick={() => go('sessoes')} style={{ cursor: 'pointer' }}>ver todos</a></div>
-      {APP_PKGS.slice(0, 2).map((pk) => <PkgCard key={pk.serv} pk={pk} />)}
+      {packages.length > 0
+        ? packages.slice(0, 2).map((pk) => <PkgCard key={pk.serv} pk={pk} />)
+        : <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Nenhum pacote contratado.</div></div>}
     </div>
   )
 }
 
-function ScrAgendar({ toast }: { toast: (m: string) => void }) {
+function ScrAgendar({ toast, units, services, professionals }: { toast: (m: string) => void; units: AppUnit[]; services: AppServ[]; professionals: string[] }) {
   const [data, setData] = useState(1)
   const [hora, setHora] = useState(3)
   return (
     <div className="ascr">
       <div className="app-sec-t" style={{ marginTop: 4 }}>Agendar sessão</div>
-      <div className="app-field"><label>Unidade</label><select>{APP_UNITS.map((u) => <option key={u.n}>{u.n}</option>)}</select></div>
-      <div className="app-field"><label>Serviço</label><select>{APP_SERV.map((s) => <option key={s.n}>{s.n}</option>)}</select></div>
-      <div className="app-field"><label>Profissional</label><select>{APP_PROFISSIONAIS.map((p) => <option key={p}>{p}</option>)}</select></div>
+      <div className="app-field"><label>Unidade</label><select>{units.map((u) => <option key={u.n}>{u.n}</option>)}</select></div>
+      <div className="app-field"><label>Serviço</label><select>{services.map((s) => <option key={s.n}>{s.n}</option>)}</select></div>
+      <div className="app-field"><label>Profissional</label><select>{professionals.map((p) => <option key={p}>{p}</option>)}</select></div>
       <div className="app-field"><label>Data</label><div>{APP_DATAS.map((d, i) => (
         <span key={d} className={`app-chip ${i === data ? 'on' : ''}`} onClick={() => setData(i)}>{d}</span>
       ))}</div></div>
@@ -207,11 +215,12 @@ function ScrAgendar({ toast }: { toast: (m: string) => void }) {
   )
 }
 
-function ScrServicos({ go }: { go: (s: string) => void }) {
+function ScrServicos({ go, services }: { go: (s: string) => void; services: AppServ[] }) {
   return (
     <div className="ascr">
       <div className="app-sec-t" style={{ marginTop: 4 }}>Serviços <a onClick={() => go('home')} style={{ cursor: 'pointer' }}>início</a></div>
-      {APP_SERV.map((s) => (
+      {services.length === 0 && <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Catálogo indisponível no momento.</div></div>}
+      {services.map((s) => (
         <div key={s.n} className="app-card">
           <div className="app-row">
             <div className="app-ic g"><i className={`ti ${s.ic}`} /></div>
@@ -225,25 +234,30 @@ function ScrServicos({ go }: { go: (s: string) => void }) {
   )
 }
 
-function ScrSessoes() {
-  const done = APP_PKGS.reduce((a, p) => a + p.done, 0)
-  const total = APP_PKGS.reduce((a, p) => a + p.total, 0)
+function ScrSessoes({ packages, history }: { packages: AppPkg[]; history: [string, string][] }) {
+  const done = packages.reduce((a, p) => a + p.done, 0)
+  const total = packages.reduce((a, p) => a + p.total, 0)
   return (
     <div className="ascr">
       <div className="app-sec-t" style={{ marginTop: 4 }}>Minhas sessões</div>
-      <div className="app-card" style={{ background: 'linear-gradient(135deg,#EFE9F7,#F6EACB)', border: 'none' }}>
-        <div className="app-row">
-          <div className="app-ic"><i className="ti ti-checkup-list" /></div>
-          <div>
-            <div className="app-tt">{done} de {total} sessões realizadas</div>
-            <div className="app-st">somando todos os pacotes contratados</div>
+      {packages.length > 0 ? (
+        <div className="app-card" style={{ background: 'linear-gradient(135deg,#EFE9F7,#F6EACB)', border: 'none' }}>
+          <div className="app-row">
+            <div className="app-ic"><i className="ti ti-checkup-list" /></div>
+            <div>
+              <div className="app-tt">{done} de {total} sessões realizadas</div>
+              <div className="app-st">somando todos os pacotes contratados</div>
+            </div>
           </div>
         </div>
-      </div>
-      {APP_PKGS.map((pk) => <PkgCard key={pk.serv} pk={pk} />)}
+      ) : (
+        <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Nenhum pacote contratado.</div></div>
+      )}
+      {packages.map((pk) => <PkgCard key={pk.serv} pk={pk} />)}
       <div className="app-sec-t">Histórico recente</div>
-      {APP_HISTORICO.map(([nome, info]) => (
-        <div key={nome} className="app-card">
+      {history.length === 0 && <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Sem sessões realizadas ainda.</div></div>}
+      {history.map(([nome, info], i) => (
+        <div key={`${nome}-${i}`} className="app-card">
           <div className="app-row">
             <div className="app-ic"><i className="ti ti-circle-check" /></div>
             <div style={{ flex: 1 }}><div className="app-tt">{nome}</div><div className="app-st">{info}</div></div>
@@ -255,17 +269,17 @@ function ScrSessoes() {
   )
 }
 
-function ScrFidelidade({ go, toast }: { go: (s: string) => void; toast: (m: string) => void }) {
+function ScrFidelidade({ go, toast, profile }: { go: (s: string) => void; toast: (m: string) => void; profile: AppProfile }) {
   return (
     <div className="ascr">
       <div className="app-hero" style={{ background: 'linear-gradient(135deg,var(--gold-600),var(--gold-400))' }}>
-        <h3 style={{ color: '#3A2A06' }}>Clube {APP.nivel}</h3>
+        <h3 style={{ color: '#3A2A06' }}>Clube {profile.nivel}</h3>
         <p style={{ color: '#5A4310' }}>Seu saldo de pontos</p>
         <div className="app-pts" style={{ background: 'rgba(255,255,255,.3)' }}>
           <i className="ti ti-coin" style={{ fontSize: 22, color: '#7A5A12' }} />
           <div>
-            <div className="v" style={{ color: '#3A2A06' }}>{APP.pts.toLocaleString('pt-BR')} pts</div>
-            <div style={{ fontSize: 10.5, color: '#5A4310' }}>vence em 12/2026</div>
+            <div className="v" style={{ color: '#3A2A06' }}>{profile.pts.toLocaleString('pt-BR')} pts</div>
+            <div style={{ fontSize: 10.5, color: '#5A4310' }}>validade {REGRAS_PONTOS.validadePontosMeses} meses</div>
           </div>
         </div>
       </div>
@@ -276,13 +290,13 @@ function ScrFidelidade({ go, toast }: { go: (s: string) => void; toast: (m: stri
             <div className="app-tt" style={{ color: '#fff' }}>Cashback disponível</div>
             <div className="app-st" style={{ color: 'rgba(255,255,255,.85)' }}>crédito em dinheiro para outras compras</div>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Playfair Display',serif" }}>R$ {APP.cash}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "'Playfair Display',serif" }}>R$ {profile.cash}</div>
         </div>
       </div>
       <div className="app-card">
         <div className="regra-h" style={{ color: 'var(--brand-500)', marginBottom: 8, fontSize: 12.5 }}><i className="ti ti-info-circle" /> Como você ganha</div>
         <div className="app-feat"><i className="ti ti-coin" style={{ color: 'var(--gold-600)' }} /><span><b>R$ {REGRAS_PONTOS.pontoPorReal} gasto = 1 ponto.</b> Pontos viram serviços e produtos no Clube ({REGRAS_PONTOS.pontosPorReal10} pts ≈ R$ 10). Validade {REGRAS_PONTOS.validadePontosMeses} meses.</span></div>
-        <div className="app-feat" style={{ marginTop: 8 }}><i className="ti ti-cash" style={{ color: 'var(--green)' }} /><span><b>Cashback {APP.cashPct}% (nível {APP.nivel}).</b> Parte de cada compra volta como crédito em dinheiro para outras compras. Bronze {REGRAS_PONTOS.cashback.Bronze}% · Prata {REGRAS_PONTOS.cashback.Prata}% · Ouro {REGRAS_PONTOS.cashback.Ouro}%. Validade {REGRAS_PONTOS.validadeCashbackMeses} meses.</span></div>
+        <div className="app-feat" style={{ marginTop: 8 }}><i className="ti ti-cash" style={{ color: 'var(--green)' }} /><span><b>Cashback {profile.cashPct}% (nível {profile.nivel}).</b> Parte de cada compra volta como crédito em dinheiro para outras compras. Bronze {REGRAS_PONTOS.cashback.Bronze}% · Prata {REGRAS_PONTOS.cashback.Prata}% · Ouro {REGRAS_PONTOS.cashback.Ouro}%. Validade {REGRAS_PONTOS.validadeCashbackMeses} meses.</span></div>
       </div>
       <div className="app-banner" onClick={() => go('indicar')}>
         <h4><i className="ti ti-gift" /> Indique &amp; Ganhe</h4>
@@ -291,10 +305,10 @@ function ScrFidelidade({ go, toast }: { go: (s: string) => void; toast: (m: stri
       <div className="app-sec-t">Resgate com seus pontos</div>
       {APP_REDEEM.map((r) => (
         <div key={r.n} className="app-redeem">
-          <div className={`app-ic ${r.p <= APP.pts ? 'g' : ''}`}><i className={`ti ${r.ic}`} /></div>
+          <div className={`app-ic ${r.p <= profile.pts ? 'g' : ''}`}><i className={`ti ${r.ic}`} /></div>
           <div style={{ flex: 1 }}>
             <div className="app-tt">{r.n}</div>
-            <div className="app-st">{r.p <= APP.pts ? 'Disponível para resgate' : `Faltam ${r.p - APP.pts} pts`}</div>
+            <div className="app-st">{r.p <= profile.pts ? 'Disponível para resgate' : `Faltam ${r.p - profile.pts} pts`}</div>
           </div>
           <div className="cost"><b>{r.p}</b><div style={{ fontSize: 9.5, color: 'var(--text-3)' }}>pts</div></div>
         </div>
@@ -304,18 +318,19 @@ function ScrFidelidade({ go, toast }: { go: (s: string) => void; toast: (m: stri
   )
 }
 
-function ScrUnidades({ go, toast }: { go: (s: string) => void; toast: (m: string) => void }) {
+function ScrUnidades({ go, toast, units }: { go: (s: string) => void; toast: (m: string) => void; units: AppUnit[] }) {
   return (
     <div className="ascr">
       <div className="app-sec-t" style={{ marginTop: 4 }}>Nossas unidades</div>
-      {APP_UNITS.map((u) => (
+      {units.length === 0 && <div className="app-card"><div className="app-st" style={{ padding: '6px 2px' }}>Nenhuma unidade cadastrada.</div></div>}
+      {units.map((u) => (
         <div key={u.n} className="app-card">
           <div className="app-row">
             <div className="app-ic"><i className="ti ti-building-store" /></div>
             <div style={{ flex: 1 }}>
               <div className="app-tt">{u.n}</div>
               <div className="app-st">{u.e}</div>
-              <div className="app-st"><i className="ti ti-phone" style={{ fontSize: 11 }} /> {u.t}</div>
+              {u.t && <div className="app-st"><i className="ti ti-map-pin" style={{ fontSize: 11 }} /> {u.t}</div>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -328,13 +343,14 @@ function ScrUnidades({ go, toast }: { go: (s: string) => void; toast: (m: string
   )
 }
 
-function ScrIndicar({ toast }: { toast: (m: string) => void }) {
-  const [friends, setFriends] = useState<Friend[]>([{ nome: '', telefone: '', unidade: APP_UNITS[0].n }])
+function ScrIndicar({ toast, units, profile }: { toast: (m: string) => void; units: AppUnit[]; profile: AppProfile }) {
+  const uniDefault = units[0]?.n ?? ''
+  const [friends, setFriends] = useState<Friend[]>([{ nome: '', telefone: '', unidade: uniDefault }])
   const [enviados, setEnviados] = useState<{ list: Friend[]; pts: number; unidades: string[] } | null>(null)
 
   function add() {
     if (friends.length >= REGRAS_PONTOS.maxAmigos) { toast(`Máximo de ${REGRAS_PONTOS.maxAmigos} indicações por vez`); return }
-    setFriends((f) => [...f, { nome: '', telefone: '', unidade: APP_UNITS[0].n }])
+    setFriends((f) => [...f, { nome: '', telefone: '', unidade: uniDefault }])
   }
   function patch(i: number, key: keyof Friend, val: string) {
     setFriends((f) => f.map((x, idx) => (idx === i ? { ...x, [key]: val } : x)))
@@ -357,7 +373,7 @@ function ScrIndicar({ toast }: { toast: (m: string) => void }) {
       </div>
       <div className="app-card" style={{ background: '#EFE9F7', border: 'none' }}>
         <div className="app-st" style={{ color: 'var(--brand-600)' }}>Indicado por</div>
-        <div className="app-tt">{APP.nomeCompleto} · Clube {APP.nivel}</div>
+        <div className="app-tt">{profile.nomeCompleto} · Clube {profile.nivel}</div>
       </div>
       <div className="app-sec-t">Seus amigos <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{friends.length}/{REGRAS_PONTOS.maxAmigos}</span></div>
       {friends.map((f, i) => (
@@ -372,7 +388,7 @@ function ScrIndicar({ toast }: { toast: (m: string) => void }) {
           </div>
           <div className="app-field" style={{ marginBottom: 0 }}>
             <label>Unidade</label>
-            <select value={f.unidade} onChange={(e) => patch(i, 'unidade', e.target.value)}>{APP_UNITS.map((u) => <option key={u.n}>{u.n}</option>)}</select>
+            <select value={f.unidade} onChange={(e) => patch(i, 'unidade', e.target.value)}>{units.map((u) => <option key={u.n}>{u.n}</option>)}</select>
           </div>
         </div>
       ))}

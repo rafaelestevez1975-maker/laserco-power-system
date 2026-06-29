@@ -1,61 +1,31 @@
 /**
- * App do Cliente (mockup interativo) — constantes portadas do legado
- * (legacy/index.html ~4683-4825). É um protótipo demonstrativo (phone mockup),
- * com dados de exemplo idênticos ao legado.
+ * App do Cliente — config de PROGRAMA (regras de pontos/cashback, abas, features,
+ * catálogo de resgates) + tipos. Os DADOS DE NEGÓCIO (cliente, serviços, unidades,
+ * profissionais, próximo agendamento, histórico, pacotes) vêm REAIS do banco via
+ * props (ver app-cliente/page.tsx). Antes este arquivo continha dados fictícios
+ * ("Mariana Costa", serviços/unidades inventados) — removidos.
  */
 
-export const APP = {
-  nome: 'Mariana',
-  nomeCompleto: 'Mariana Costa',
-  pts: 2480,
-  nivel: 'Ouro',
-  cash: 85,
-  cashPct: 8,
-}
-
-export const APP_NEXT = {
-  serv: 'PDRN e Exossomos',
-  data: 'Qui, 12/06 · 14:00',
-  prof: 'Karoline',
-  unid: 'Florianópolis - Centro',
-}
-
+// ── Tipos do payload real (montado no server e passado ao mockup) ──
+export type AppProfile = { nome: string; nomeCompleto: string; pts: number; nivel: string; cash: number; cashPct: number }
+export type AppNext = { serv: string; data: string; prof: string; unid: string }
 export type AppPkg = { serv: string; done: number; total: number }
-export const APP_PKGS: AppPkg[] = [
-  { serv: 'PDRN e Exossomos', done: 3, total: 6 },
-  { serv: 'Hollywood Peel', done: 5, total: 6 },
-  { serv: 'Melasma', done: 2, total: 4 },
-]
-
 export type AppServ = { n: string; d: string; p: string; ic: string }
-export const APP_SERV: AppServ[] = [
-  { n: 'PDRN e Exossomos', d: 'Bioestimulação e rejuvenescimento com PDRN + exossomos.', p: 'R$ 2.399', ic: 'ti-sparkles' },
-  { n: 'Hollywood Peel', d: 'Peeling de carbono para luminosidade e poros.', p: 'R$ 479', ic: 'ti-stars' },
-  { n: 'Melasma', d: 'Clareamento de manchas faciais com laser.', p: 'R$ 799', ic: 'ti-sun' },
-  { n: 'UltraCel - Abdômen', d: 'Ultrassom microfocado para firmeza corporal.', p: 'R$ 4.499', ic: 'ti-windmill' },
-  { n: 'Lip Glow', d: 'Hidratação e realce labial.', p: 'R$ 479', ic: 'ti-mood-smile' },
-  { n: 'Avaliação', d: 'Avaliação facial/corporal com a especialista.', p: 'Gratuita', ic: 'ti-clipboard-heart' },
-]
-
 export type AppUnit = { n: string; e: string; t: string }
-export const APP_UNITS: AppUnit[] = [
-  { n: 'Florianópolis - Centro', e: 'Rua Felipe Schmidt, 390 · Sala 1204 · Centro · Florianópolis/SC', t: '(48) 3333-1010' },
-  { n: 'São José', e: 'Av. Central, 1200 · Kobrasol · São José/SC', t: '(48) 99500-2210' },
-  { n: 'Porto Alegre - Iguatemi', e: "Av. João Wallig, 1800 · Passo d'Areia · Porto Alegre/RS", t: '(51) 2103-2816' },
-  { n: 'São Paulo - Vila Olímpia', e: 'Rua Fiandeiras, 929 · Vila Olímpia · São Paulo/SP', t: '(11) 94790-0641' },
-]
+export type AppData = {
+  profile: AppProfile | null
+  next: AppNext | null
+  services: AppServ[]
+  units: AppUnit[]
+  professionals: string[]
+  history: [string, string][]
+  packages: AppPkg[]
+}
 
 export type AppRedeem = { n: string; p: number; ic: string }
-export const APP_REDEEM: AppRedeem[] = [
-  { n: 'Avaliação + skincare', p: 300, ic: 'ti-clipboard-heart' },
-  { n: 'Gloss Laser&Co (brinde)', p: 500, ic: 'ti-gift' },
-  { n: 'Hidratação facial', p: 600, ic: 'ti-droplet' },
-  { n: 'Lip Glow', p: 800, ic: 'ti-mood-smile' },
-  { n: 'PDRN · 1 ampola', p: 1200, ic: 'ti-vaccine' },
-  { n: 'Hollywood Peel', p: 1500, ic: 'ti-stars' },
-]
-
 export type AppTab = { k: string; label: string; icon: string }
+
+// ── Abas do app (UI scaffolding) ──
 export const APP_TABS: AppTab[] = [
   { k: 'home', label: 'Início', icon: 'ti-home' },
   { k: 'agendar', label: 'Agendar', icon: 'ti-calendar-plus' },
@@ -64,20 +34,11 @@ export const APP_TABS: AppTab[] = [
   { k: 'unidades', label: 'Unidades', icon: 'ti-map-pin' },
 ]
 
-// Histórico recente da tela Sessões (legado L4761)
-export const APP_HISTORICO: [string, string][] = [
-  ['PDRN e Exossomos', '30/05 · Karoline'],
-  ['Hollywood Peel', '22/05 · Suzanne'],
-  ['Melasma', '14/05 · Rita de Cássia'],
-]
-
-// Profissionais do select de Agendar (legado L4745)
-export const APP_PROFISSIONAIS = ['Sem preferência', 'Karoline', 'Rita de Cássia', 'Suzanne']
-// Chips de data/horário (legado L4747-4748)
+// Chips de data/horário do formulário de Agendar (scaffolding do protótipo).
 export const APP_DATAS = ['Qua 11', 'Qui 12', 'Sex 13', 'Sáb 14', 'Seg 16']
 export const APP_HORARIOS = ['09:00', '10:20', '11:40', '14:00', '15:20', '16:40']
 
-// Features do painel "Sobre o app" (legado appFeats L4713)
+// Features do painel "Sobre o app" (descrição do produto).
 export const APP_FEATS = [
   'Agendamento de sessões em segundos',
   'Catálogo de serviços com preços',
@@ -87,7 +48,17 @@ export const APP_FEATS = [
   'Indique & Ganhe: 50 pts + sorteio mensal',
 ]
 
-// Regras de pontos/cashback (legado L4768-4769)
+// Catálogo de RESGATES do clube (config do programa de fidelidade).
+export const APP_REDEEM: AppRedeem[] = [
+  { n: 'Avaliação + skincare', p: 300, ic: 'ti-clipboard-heart' },
+  { n: 'Gloss Laser&Co (brinde)', p: 500, ic: 'ti-gift' },
+  { n: 'Hidratação facial', p: 600, ic: 'ti-droplet' },
+  { n: 'Lip Glow', p: 800, ic: 'ti-mood-smile' },
+  { n: 'PDRN · 1 ampola', p: 1200, ic: 'ti-vaccine' },
+  { n: 'Hollywood Peel', p: 1500, ic: 'ti-stars' },
+]
+
+// Regras de pontos/cashback (config do programa).
 export const REGRAS_PONTOS = {
   pontoPorReal: 1, // R$ 1 = 1 ponto
   pontosPorReal10: 100, // 100 pts ≈ R$ 10
@@ -96,4 +67,25 @@ export const REGRAS_PONTOS = {
   validadeCashbackMeses: 6,
   ptsPorIndicacao: 50, // +50 pts por amigo indicado
   maxAmigos: 5,
+}
+
+// Nível do clube a partir do saldo de pontos (regra do programa de fidelidade).
+export function nivelDePontos(pts: number): 'Bronze' | 'Prata' | 'Ouro' {
+  if (pts >= 3000) return 'Ouro'
+  if (pts >= 1000) return 'Prata'
+  return 'Bronze'
+}
+
+// Ícone do serviço por palavra-chave do nome/grupo (apenas estética).
+export function iconeServico(nome: string): string {
+  const n = (nome || '').toLowerCase()
+  if (/avalia/.test(n)) return 'ti-clipboard-heart'
+  if (/peel|hollywood|carbono/.test(n)) return 'ti-stars'
+  if (/lip|gloss|labial|boca/.test(n)) return 'ti-mood-smile'
+  if (/melasma|mancha|clarea/.test(n)) return 'ti-sun'
+  if (/ultra|cel|corpor|abdom|firmez/.test(n)) return 'ti-windmill'
+  if (/pdrn|exoss|bioestim|rejuven/.test(n)) return 'ti-sparkles'
+  if (/hidrat|skin|facial/.test(n)) return 'ti-droplet'
+  if (/depila|laser/.test(n)) return 'ti-bolt'
+  return 'ti-sparkles'
 }
