@@ -81,10 +81,6 @@ export function Topbar({
 
       <NotificacoesSino />
 
-      <div className="top-pop">
-        <button className="btn-venda" onClick={() => router.push('/pdv')} title="Abrir o PDV / Nova Venda"><i className="ti ti-shopping-cart-plus" /> Nova Venda</button>
-      </div>
-
       <div className="user" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setUserOpen((v) => !v)}>
         <div className="avatar">{user.iniciais}</div>
         <div>
