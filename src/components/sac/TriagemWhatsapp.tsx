@@ -253,7 +253,7 @@ export function TriagemWhatsapp({
     {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}
     {/* Altura travada na viewport: a thread rola DENTRO da coluna (scroll interno) em vez de
         empurrar a página inteira pra baixo. Offset ≈ topbar + paddings + rel-head + header. */}
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100vh - 250px)', minHeight: 360 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: chat && cliOpen ? '300px 1fr 340px' : '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100vh - 250px)', minHeight: 360 }}>
       {/* Lista de conversas — rel-card "Conversas (N)" do legado */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--line)' }}>Conversas ({totalReal})</div>
@@ -314,7 +314,8 @@ export function TriagemWhatsapp({
           <>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700 }}>{iniciais(chat.nome, chat.telefone)}</span>
-              <div>
+              {/* Clicar no nome/telefone abre o painel lateral do cliente (dados + métricas + ações). */}
+              <div onClick={abrirCliente} style={{ cursor: 'pointer', minWidth: 0 }} title="Ver dados, métricas e ações do cliente">
                 <b style={{ fontSize: 13 }}>{chat.nome || chat.telefone}</b>
                 <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>
                   {chat.telefone}
@@ -325,26 +326,10 @@ export function TriagemWhatsapp({
               </div>
               {/* Chip de status do legado (index.html:9068): "Aguardando triagem" enquanto não há chamado vinculado. */}
               {!chat.ticket_id && <span style={{ fontSize: 11, background: '#FBF3E2', color: '#B7791F', fontWeight: 700, padding: '2px 9px', borderRadius: 20 }}>Aguardando triagem</span>}
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <select value={STATUS_OPCOES.includes(stat as typeof STATUS_OPCOES[number]) ? stat : 'aberto'} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as typeof STATUS_OPCOES[number]), 'Status atualizado.')}
-                  style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }} title="Status da conversa">
-                  {STATUS_OPCOES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                </select>
-                <button className="btn" onClick={abrirCliente}><i className="ti ti-user-search" /> Cliente</button>
-                <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
-                {!chat.bot_ativo && <button className="btn" disabled={busy} onClick={() => acao(() => reativarIA(chat.id), 'IA reativada nesta conversa.')} title="Voltar o atendimento automático por IA">🤖 Reativar IA</button>}
-                {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
-                {chat.atendente_id && <button className="btn" disabled={busy} onClick={() => acao(() => devolverConversa(chat.id), 'Devolvida à fila.')}><i className="ti ti-arrow-back-up" /> Devolver</button>}
-                <select value={transfer} disabled={busy} onChange={(e) => { const v = e.target.value; setTransfer(''); if (v) acao(() => transferirConversa(chat.id, v), 'Conversa transferida.') }}
-                  style={{ padding: '6px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12 }}>
-                  <option value="">Transferir…</option>
-                  {atendentes.filter((a) => a.id !== chat.atendente_id).map((a) => <option key={a.id} value={a.id}>{a.id === operadorId ? 'Para mim' : a.nome}</option>)}
-                </select>
-                {chat.ticket_id
-                  ? <span className="os-st" style={{ background: 'var(--green-bg)', color: 'var(--green)' }}><i className="ti ti-headset" /> Chamado vinculado</span>
-                  : <button className="btn btn-primary" disabled={busy} onClick={abrirFluxoChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
-                <button className="btn" disabled={busy} onClick={descartar} title="Tirar a conversa da fila de triagem (status Fechado)" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /> Descartar</button>
-              </div>
+              {/* Ações movidas para o painel lateral do cliente (abre ao clicar no nome/telefone). */}
+              <button className="btn" style={{ marginLeft: 'auto' }} onClick={abrirCliente} title={cliOpen ? 'Fechar painel do cliente' : 'Abrir painel do cliente (dados, métricas e ações)'}>
+                <i className={`ti ${cliOpen ? 'ti-layout-sidebar-right-collapse' : 'ti-user-circle'}`} /> Cliente
+              </button>
             </div>
             {/* Área de bolhas: fundo var(--bg) como no legado (index.html:9069). */}
             <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg)' }}>
@@ -365,27 +350,7 @@ export function TriagemWhatsapp({
                 )
               })}
             </div>
-            {cliOpen && (
-              <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 10, maxHeight: 220, overflowY: 'auto' }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}><i className="ti ti-user-search" /> Cliente (identificado por telefone/CPF)</div>
-                {cliBusy && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Buscando no cadastro…</div>}
-                {!cliBusy && cli && !cli.achou && <div style={{ fontSize: 12, color: 'var(--amber)' }}>Não encontrei cadastro para este contato — pode ser não-cliente.</div>}
-                {!cliBusy && cli?.achou && (
-                  <div style={{ fontSize: 12.5, display: 'grid', gap: 4 }}>
-                    <div><b>{cli.nome}</b> {cli.ativo === false && <span style={{ color: 'var(--text-3)' }}>(inativo)</span>}{cli.verificado && <span style={{ color: 'var(--green)' }}> ✓ verificado</span>}</div>
-                    <div style={{ color: 'var(--text-2)' }}>{[cli.cpf && `CPF ${cli.cpf}`, cli.telefone, cli.email].filter(Boolean).join(' · ')}</div>
-                    {(cli.cidade || cli.estado) && <div style={{ color: 'var(--text-2)' }}>{[cli.cidade, cli.estado].filter(Boolean).join('/')}</div>}
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 2 }}>
-                      <span>📅 {cli.agendamentos ?? 0} agend.</span>
-                      <span>✅ {cli.concluidos ?? 0} sessões</span>
-                      <span>💳 créditos {cli.saldoCreditos ?? 0}</span>
-                      <span>⭐ {cli.saldoPontos ?? 0} pts</span>
-                      {cli.totalGasto != null && <span>💰 R$ {Math.round(cli.totalGasto).toLocaleString('pt-BR')}</span>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Ficha do cliente movida para o painel LATERAL (aside, 3ª coluna) — ver abaixo. */}
             {chamadoOpen && (
               <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 12, maxHeight: 300, overflowY: 'auto' }}>
                 {/* Card de fluxo idêntico ao legado (index.html:9070): borda pontilhada. */}
@@ -449,6 +414,70 @@ export function TriagemWhatsapp({
           </>
         )}
       </div>
+
+      {/* PAINEL LATERAL do cliente (3ª coluna, estilo ABV/WhatsApp Web): abre ao clicar no
+          nome/telefone do chat. Traz dados + métricas + as ações da conversa. */}
+      {chat && cliOpen && (
+        <aside className="rel-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: '50%', background: 'var(--brand-500)', color: '#fff', fontWeight: 700, fontSize: 15 }}>{iniciais(chat.nome, chat.telefone)}</span>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <b style={{ fontSize: 13.5, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chat.nome || chat.telefone}</b>
+              <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{chat.telefone}</div>
+            </div>
+            <button className="btn" style={{ padding: '4px 8px' }} onClick={() => setCliOpen(false)} title="Fechar painel"><i className="ti ti-x" /></button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* AÇÕES */}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Ações</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {chat.ticket_id
+                  ? <span className="os-st" style={{ background: 'var(--green-bg)', color: 'var(--green)', justifyContent: 'center' }}><i className="ti ti-headset" /> Chamado vinculado</span>
+                  : <button className="btn btn-primary" disabled={busy} onClick={abrirFluxoChamado}><i className="ti ti-headset" /> Abrir chamado</button>}
+                {!minha && <button className="btn" disabled={busy} onClick={() => acao(() => assumirConversa(chat.id), 'Conversa assumida por você.')}><i className="ti ti-hand-grab" /> Assumir</button>}
+                {chat.atendente_id && <button className="btn" disabled={busy} onClick={() => acao(() => devolverConversa(chat.id), 'Devolvida à fila.')}><i className="ti ti-arrow-back-up" /> Devolver à fila</button>}
+                {!chat.bot_ativo && <button className="btn" disabled={busy} onClick={() => acao(() => reativarIA(chat.id), 'IA reativada nesta conversa.')} title="Voltar o atendimento automático por IA">🤖 Reativar IA</button>}
+                <button className="btn" onClick={() => setNotasOpen((v) => !v)}><i className="ti ti-notes" /> Notas internas{notasSel.length ? ` (${notasSel.length})` : ''}</button>
+                <label style={{ fontSize: 11, color: 'var(--text-2)' }}>Status
+                  <select value={STATUS_OPCOES.includes(stat as typeof STATUS_OPCOES[number]) ? stat : 'aberto'} disabled={busy} onChange={(e) => acao(() => alterarStatusConversa(chat.id, e.target.value as typeof STATUS_OPCOES[number]), 'Status atualizado.')}
+                    style={{ width: '100%', padding: '7px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12, marginTop: 4 }}>
+                    {STATUS_OPCOES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                  </select>
+                </label>
+                <label style={{ fontSize: 11, color: 'var(--text-2)' }}>Transferir para
+                  <select value={transfer} disabled={busy} onChange={(e) => { const v = e.target.value; setTransfer(''); if (v) acao(() => transferirConversa(chat.id, v), 'Conversa transferida.') }}
+                    style={{ width: '100%', padding: '7px 8px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12, marginTop: 4 }}>
+                    <option value="">Selecionar atendente…</option>
+                    {atendentes.filter((a) => a.id !== chat.atendente_id).map((a) => <option key={a.id} value={a.id}>{a.id === operadorId ? 'Para mim' : a.nome}</option>)}
+                  </select>
+                </label>
+                <button className="btn" disabled={busy} onClick={descartar} title="Tirar a conversa da fila de triagem (status Fechado)" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /> Descartar</button>
+              </div>
+            </div>
+            {/* CLIENTE: dados + métricas */}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}><i className="ti ti-user-search" /> Cliente</div>
+              {cliBusy && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Buscando no cadastro…</div>}
+              {!cliBusy && cli && !cli.achou && <div style={{ fontSize: 12, color: 'var(--amber)' }}>Não encontrei cadastro para este contato — pode ser não-cliente.</div>}
+              {!cliBusy && cli?.achou && (
+                <div style={{ fontSize: 12.5, display: 'grid', gap: 6 }}>
+                  <div><b>{cli.nome}</b> {cli.ativo === false && <span style={{ color: 'var(--text-3)' }}>(inativo)</span>}{cli.verificado && <span style={{ color: 'var(--green)' }}> ✓ verificado</span>}</div>
+                  <div style={{ color: 'var(--text-2)' }}>{[cli.cpf && `CPF ${cli.cpf}`, cli.telefone, cli.email].filter(Boolean).join(' · ')}</div>
+                  {(cli.cidade || cli.estado) && <div style={{ color: 'var(--text-2)' }}>{[cli.cidade, cli.estado].filter(Boolean).join('/')}</div>}
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
+                    <span>📅 {cli.agendamentos ?? 0} agend.</span>
+                    <span>✅ {cli.concluidos ?? 0} sessões</span>
+                    <span>💳 créditos {cli.saldoCreditos ?? 0}</span>
+                    <span>⭐ {cli.saldoPontos ?? 0} pts</span>
+                    {cli.totalGasto != null && <span>💰 R$ {Math.round(cli.totalGasto).toLocaleString('pt-BR')}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
     </>
   )
