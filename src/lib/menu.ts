@@ -39,7 +39,7 @@ export const MENU: Section[] = [
     items: [
       { label: 'Dashboard', href: '/', icon: 'ti-layout-dashboard' },
       { label: 'Agenda', href: '/agenda', icon: 'ti-calendar-event' },
-      { label: 'PDV / Nova Venda', href: '/pdv', icon: 'ti-shopping-cart', perm: 'operacoes.os' },
+      // { label: 'PDV / Nova Venda', href: '/pdv', icon: 'ti-shopping-cart', perm: 'operacoes.os' },
       { label: 'Ordens de serviço', href: '/os', icon: 'ti-clipboard-list', perm: 'operacoes.os' },
     ],
   },
