@@ -10,7 +10,12 @@ import type { SB } from '@/lib/sb'
 
 export type DistribResult = { ok: boolean; error?: string; conversas?: number; tickets?: number; atendentes?: number }
 
-export type CriarAtendenteInput = { nome: string; email: string; senha: string; telefone?: string; unidadeId?: string | null }
+// Cargos do SAC que o "Novo atendente" pode atribuir (todos resolvem só para recursos sac.*,
+// então o usuário enxerga apenas o módulo SAC). Atendente = padrão. (Não exportar: este é um
+// módulo 'use server' — só funções async podem ser exportadas; o componente define o seu rótulo.)
+const SLUGS_SAC = new Set(['atendente_sac', 'supervisor_sac', 'consulta_sac'])
+
+export type CriarAtendenteInput = { nome: string; email: string; senha: string; telefone?: string; unidadeId?: string | null; cargoSlug?: string }
 
 const emailValido = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
 
@@ -78,7 +83,8 @@ export async function criarAcessoAtendente(input: CriarAtendenteInput): Promise<
   // 3) vincula o cargo "Atendente SAC" (recursos SÓ do SAC). SEM esse vínculo o atendente
   //    fica com recursos=[] e não enxerga NADA no menu — papel 'sac' sozinho não dá acesso.
   //    É o RBAC real (usuario_cargos → cargo_permissoes → permissoes) que libera o módulo SAC.
-  const { data: cargoRow } = await admin.from('cargos').select('id').eq('slug', 'atendente_sac').maybeSingle()
+  const cargoSlug = SLUGS_SAC.has(input.cargoSlug || '') ? (input.cargoSlug as string) : 'atendente_sac'
+  const { data: cargoRow } = await admin.from('cargos').select('id').eq('slug', cargoSlug).maybeSingle()
   const cargoId = (cargoRow as { id: string } | null)?.id
   if (cargoId) {
     const empresaId = await resolverEmpresa(admin, op.userId)

@@ -178,13 +178,14 @@ function NovoAtendenteModal({ unidades, onClose, onCriado }: { unidades: Unidade
   const [senha, setSenha] = useState(gerarSenha())
   const [telefone, setTelefone] = useState('')
   const [unidadeId, setUnidadeId] = useState('')
+  const [cargo, setCargo] = useState('atendente_sac')
   const [saving, setSaving] = useState(false)
   const [erro, setErro] = useState('')
   const [criado, setCriado] = useState<{ email: string; senha: string; nome: string } | null>(null)
 
   async function salvar() {
     setErro(''); setSaving(true)
-    const r = await criarAcessoAtendente({ nome, email, senha, telefone, unidadeId: unidadeId || null })
+    const r = await criarAcessoAtendente({ nome, email, senha, telefone, unidadeId: unidadeId || null, cargoSlug: cargo })
     setSaving(false)
     if (!r.ok) { setErro(r.error || 'Não foi possível criar o acesso.'); return }
     setCriado({ email: email.trim().toLowerCase(), senha, nome: nome.trim() })
@@ -248,6 +249,15 @@ function NovoAtendenteModal({ unidades, onClose, onCriado }: { unidades: Unidade
                   {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
               </div>
+            </div>
+            <div>
+              <label style={lbl}>Cargo no SAC *</label>
+              <select style={inp} value={cargo} onChange={(e) => setCargo(e.target.value)}>
+                <option value="atendente_sac">Atendente SAC — atende tickets e conversas</option>
+                <option value="supervisor_sac">Supervisor SAC — acesso total ao módulo SAC</option>
+                <option value="consulta_sac">Consulta SAC — somente leitura do SAC</option>
+              </select>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Todos enxergam apenas o módulo SAC e caem no Dashboard do SAC ao entrar.</div>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
               <i className="ti ti-info-circle" /> Para a ficha de RH completa (cargo, área, documentos), cadastre também em <b>Colaboradores</b> ligando ao mesmo e-mail.
