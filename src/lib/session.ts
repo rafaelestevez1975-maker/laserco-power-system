@@ -91,13 +91,13 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   // Antes eram sequenciais (perfil → cargos → unidades), pagando 1 round-trip cada
   // em TODA navegação autenticada. Em paralelo, o custo cai para ~1 round-trip + a
   // resolução final de permissões.
-  const [perfilRes, cargoIds, unidadesRes] = await Promise.all([
+  const [perfilRes, cargos, unidadesRes] = await Promise.all([
     sb
       .from('perfis_usuario')
       .select('nome_completo, email, papel, unidade_id')
       .eq('id', user.id)
       .single(),
-    fetchCargoIds(user.id),
+    fetchCargos(user.id),
     // Unidades que o usuário enxerga (RLS aplica). Nomes vêm com lixo de migração
     // (prefixo [INATIVA], espaços) → limpamos para exibição.
     sb
@@ -109,6 +109,7 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
 
   const perfil = perfilRes.data
   const unidadesRaw = unidadesRes.data
+  const cargoIds = cargos.ids
 
   const p = perfil as { nome_completo?: string; email?: string; papel?: string; unidade_id?: string | null } | null
   const nome = p?.nome_completo ?? user.email?.split('@')[0] ?? 'Usuário'
@@ -133,5 +134,5 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     ? unidades.find((u) => u.id === activeUnitId)?.nome ?? 'Unidade'
     : 'Todas as unidades'
 
-  return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName }
+  return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName, sacNivel: nivelSac(cargos.slugs) }
 })

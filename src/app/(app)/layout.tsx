@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         units={ctx.unidades}
         activeUnitId={ctx.activeUnitId}
         activeUnitName={ctx.activeUnitName}
+        sacNivel={ctx.sacNivel}
       >
         {children}
       </AppShell>

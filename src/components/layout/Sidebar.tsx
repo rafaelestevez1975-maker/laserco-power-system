@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { MENU, isGroup, ehFuncional, type Badge, type Group, type Item, type Leaf } from '@/lib/menu'
 
+type SacNivel = 'supervisor' | 'consulta' | 'atendente' | null
+
+// Sub-itens do SAC visíveis por nível. Supervisor vê TODOS (sem recorte). Atendente só o
+// operacional do dia a dia; Consulta as visões de leitura. (Hrefs do grupo SAC em menu.ts.)
+const SAC_ATENDENTE = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem'])
+const SAC_CONSULTA = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/ranking'])
+
 function leafActive(href: string, pathname: string) {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
 }
@@ -15,12 +22,17 @@ function hasPerm(perm: string, recursos: string[]) {
 }
 
 /** Regra de visibilidade: admin_geral vê tudo; senão, exige o recurso (ou nenhum = visível).
- *  sacOnly = usuário cujos recursos são SÓ sac.* (atendente/supervisor/consulta SAC): enxerga
- *  apenas o módulo SAC + utilitários, escondendo todo o resto (inclusive itens sem `perm`). */
-function canSee(item: Item, isAdmin: boolean, recursos: string[], sacOnly: boolean) {
+ *  - sacOnly: usuário só com recursos sac.* enxerga apenas o módulo SAC + utilitários.
+ *  - sacNivel: DENTRO do SAC, recorta os sub-itens por cargo (atendente/consulta < supervisor). */
+function canSee(item: Item, isAdmin: boolean, recursos: string[], sacOnly: boolean, sacNivel: SacNivel) {
   if (isAdmin) return true
+  const href = 'href' in item ? (item as { href?: string }).href ?? '' : ''
+  // Recorte por nível dentro do SAC (o grupo em si não tem href → passa; filtra os filhos /sac/*).
+  if (sacNivel && sacNivel !== 'supervisor' && href.startsWith('/sac')) {
+    const permitido = sacNivel === 'atendente' ? SAC_ATENDENTE : SAC_CONSULTA
+    if (!permitido.has(href)) return false
+  }
   if (sacOnly) {
-    const href = 'href' in item ? (item as { href?: string }).href ?? '' : ''
     if (item.perm) return item.perm.startsWith('sac') ? hasPerm(item.perm, recursos) : false
     if (href.startsWith('/sac')) return true
     return href === '/minha-conta' || href === '/ajuda'
@@ -55,19 +67,19 @@ function BadgeTag({ badge }: { badge: Badge }) {
 }
 
 export function Sidebar({
-  isAdmin, recursos, onNavigate,
-}: { isAdmin: boolean; recursos: string[]; onNavigate?: () => void }) {
+  isAdmin, recursos, sacNivel = null, onNavigate,
+}: { isAdmin: boolean; recursos: string[]; sacNivel?: SacNivel; onNavigate?: () => void }) {
   const pathname = usePathname()
   const sacOnly = ehSacOnly(isAdmin, recursos)
 
   return (
     <nav className="nav">
       {MENU.map((section, si) => {
-        const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly))
+        const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly, sacNivel))
         if (items.length === 0) return null
         return (
           <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
-            isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
+            isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
         )
       })}
     </nav>
@@ -77,8 +89,8 @@ export function Sidebar({
 /** Seção colapsável (ADMINISTRAÇÃO, REDE & CONTA, ...): aberta por padrão; reabre sozinha quando
  *  a tela atual está dentro dela; clicar no título recolhe/expande (chevron como nos grupos). */
 function SectionBlock({
-  title, items, pathname, isAdmin, recursos, sacOnly, onNavigate,
-}: { title: string; items: Item[]; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; onNavigate?: () => void }) {
+  title, items, pathname, isAdmin, recursos, sacOnly, sacNivel, onNavigate,
+}: { title: string; items: Item[]; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; sacNivel: SacNivel; onNavigate?: () => void }) {
   const ativo = secaoTemAtivo(items, pathname)
   const [open, setOpen] = useState(true)
   useEffect(() => { if (ativo) setOpen(true) }, [ativo])
@@ -92,7 +104,7 @@ function SectionBlock({
       </div>
       {open && items.map((item) =>
         isGroup(item) ? (
-          <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
+          <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
         ) : (
           <LeafLink key={item.href} leaf={item} pathname={pathname} onNavigate={onNavigate} />
         ),
@@ -113,9 +125,9 @@ function LeafLink({ leaf, pathname, onNavigate }: { leaf: Leaf; pathname: string
 }
 
 function GroupEntry({
-  group, pathname, isAdmin, recursos, sacOnly, onNavigate,
-}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; onNavigate?: () => void }) {
-  const children = group.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly))
+  group, pathname, isAdmin, recursos, sacOnly, sacNivel, onNavigate,
+}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; sacNivel: SacNivel; onNavigate?: () => void }) {
+  const children = group.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly, sacNivel))
   const childActive = children.some((c) => leafActive(c.href, pathname))
   const grupoFunc = children.some((c) => ehFuncional(c.href)) // grupo "aceso" se tiver ao menos 1 filho funcional
   const [open, setOpen] = useState(childActive)

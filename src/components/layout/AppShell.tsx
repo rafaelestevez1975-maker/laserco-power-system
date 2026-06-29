@@ -14,13 +14,14 @@ export type SessionUser = {
 export type Unidade = { id: string; nome: string }
 
 export function AppShell({
-  user, recursos, units, activeUnitId, activeUnitName, children,
+  user, recursos, units, activeUnitId, activeUnitName, sacNivel = null, children,
 }: {
   user: SessionUser
   recursos: string[]
   units: Unidade[]
   activeUnitId: string | null
   activeUnitName: string
+  sacNivel?: 'supervisor' | 'consulta' | 'atendente' | null
   children: React.ReactNode
 }) {
   const [mobOpen, setMobOpen] = useState(false)
