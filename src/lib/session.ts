@@ -22,20 +22,38 @@ export type SessionContext = {
   unidades: Unidade[]
   activeUnitId: string | null
   activeUnitName: string
+  /** Nível dentro do SAC (pelo cargo) p/ filtrar o submenu; null se não for cargo SAC. */
+  sacNivel: SacNivel
 }
 
 const ADMIN_PAPEL = 'admin_geral'
 
 /** Busca os cargos do usuário (1 round-trip). Separado para rodar em PARALELO
  *  com as demais consultas do contexto (perfil, unidades). */
-async function fetchCargoIds(userId: string): Promise<string[]> {
+async function fetchCargos(userId: string): Promise<{ ids: string[]; slugs: string[] }> {
   try {
     const admin = adminClient()
-    const { data: ucs } = await admin.from('usuario_cargos').select('cargo_id').eq('perfil_id', userId)
-    return (ucs ?? []).map((r: { cargo_id: string }) => r.cargo_id)
+    // Traz o slug do cargo no MESMO SELECT (embed) — sem round-trip extra — p/ derivar o nível SAC.
+    const { data: ucs } = await admin.from('usuario_cargos').select('cargo_id, cargos(slug)').eq('perfil_id', userId)
+    const rows = (ucs ?? []) as Array<{ cargo_id: string; cargos: { slug?: string } | { slug?: string }[] | null }>
+    const slugs = rows.flatMap((r) => {
+      const c = r.cargos
+      const arr = Array.isArray(c) ? c : c ? [c] : []
+      return arr.map((x) => x.slug).filter(Boolean) as string[]
+    })
+    return { ids: rows.map((r) => r.cargo_id), slugs }
   } catch {
-    return []
+    return { ids: [], slugs: [] }
   }
+}
+
+export type SacNivel = 'supervisor' | 'consulta' | 'atendente' | null
+/** Nível dentro do SAC pelo cargo (supervisor vê tudo; atendente só o operacional; consulta leitura). */
+function nivelSac(slugs: string[]): SacNivel {
+  if (slugs.includes('supervisor_sac')) return 'supervisor'
+  if (slugs.includes('atendente_sac')) return 'atendente'
+  if (slugs.includes('consulta_sac')) return 'consulta'
+  return null
 }
 
 /** Resolve os recursos a partir dos cargos já buscados: cargo_permissoes → permissoes.
