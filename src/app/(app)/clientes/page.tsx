@@ -41,7 +41,9 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
 
   // ── KPIs reais (head:true → só count, sem puxar linhas) ──
   const scoped = (cols: string) => {
-    let qy = sb.from('clientes').select(cols, { count: 'exact', head: true })
+    // 'estimated' usa a estatística do Postgres (instantâneo) — 'exact' fazia COUNT(*)
+    // completo sobre ~347k clientes e travava a tela (16s). KPI aproximado é aceitável.
+    let qy = sb.from('clientes').select(cols, { count: 'estimated', head: true })
     if (unidadeFiltro) qy = qy.eq('unidade_origem_id', unidadeFiltro)
     return qy
   }
@@ -64,7 +66,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   // ── Lista paginada server-side ──
   let query = sb
     .from('clientes')
-    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'exact' })
+    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'estimated' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
