@@ -163,6 +163,9 @@ export const MENU: Section[] = [
           { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados' },
           { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban' },
           { label: 'Conversa', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Conversa' },
+          // Atalho p/ a tela de Canais (WhatsApp) DENTRO do SAC. perm 'sac.canal' → visível p/ todos
+          // os cargos SAC (inclusive atendente), já que /canais fica fora do SAC no menu principal.
+          { label: 'Canais WhatsApp', href: '/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais WhatsApp' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes' },
