@@ -34,9 +34,10 @@ export async function moverTicketFase(ticketId: string, fase: string): Promise<{
   if ((tk.fase || 'Novo') === fase) return { ok: true }
 
   // Coerência fase↔status (paridade sacAvancar): Concluído → resolvido; reabrir → aberto.
+  // Marca/limpa concluido_em para alimentar o "Tempo médio de resolução" do dashboard (J.02).
   const patch: Record<string, unknown> = { fase }
-  if (fase === FASE_FINAL) patch.status = 'resolvido'
-  else if ((tk.fase || '') === FASE_FINAL) patch.status = 'aberto'
+  if (fase === FASE_FINAL) { patch.status = 'resolvido'; patch.concluido_em = new Date().toISOString() }
+  else if ((tk.fase || '') === FASE_FINAL) { patch.status = 'aberto'; patch.concluido_em = null }
 
   let upd = sb.from('sac_tickets').update(patch).eq('id', ticketId)
   upd = scopeUnidade(upd, unidadeId)

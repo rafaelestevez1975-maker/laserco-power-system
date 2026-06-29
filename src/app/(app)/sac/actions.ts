@@ -133,7 +133,12 @@ export async function atualizarChamado(id: string, dados: EditChamadoInput): Pro
   if (dados.unidade_id !== undefined) patch.unidade_id = dados.unidade_id || null
   if (dados.motivo_label !== undefined) patch.motivo_label = dados.motivo_label.trim() || null
   if (dados.prioridade) patch.prioridade = dados.prioridade
-  if (dados.fase) patch.fase = dados.fase
+  if (dados.fase) {
+    patch.fase = dados.fase
+    // Coerência fase↔status + tempo de resolução (J.02), igual ao moverTicketFase do Kanban.
+    if (dados.fase === 'Concluído') { patch.status = 'resolvido'; patch.concluido_em = new Date().toISOString() }
+    else { patch.status = 'aberto'; patch.concluido_em = null }
+  }
   if (dados.atribuido_para !== undefined) patch.atribuido_para = dados.atribuido_para || null
   if (dados.area_reclamada !== undefined) patch.area_reclamada = dados.area_reclamada.trim() || null
   if (dados.valor_pago !== undefined) patch.valor_pago = parseNum(dados.valor_pago)
