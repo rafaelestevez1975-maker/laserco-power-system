@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { MENU, isGroup, ehFuncional, type Badge, type Group, type Item, type Leaf } from '@/lib/menu'
@@ -35,6 +35,15 @@ function ehSacOnly(isAdmin: boolean, recursos: string[]) {
   return !isAdmin && recursos.length > 0 && recursos.every((r) => r.startsWith('sac'))
 }
 
+/** A rota atual está em ALGUM item da seção (leaf ou filho de grupo)? → mantém a seção aberta. */
+function secaoTemAtivo(items: Item[], pathname: string) {
+  return items.some((it) =>
+    isGroup(it)
+      ? it.children.some((c) => leafActive(c.href, pathname))
+      : 'href' in it ? leafActive((it as { href: string }).href, pathname) : false,
+  )
+}
+
 function BadgeTag({ badge }: { badge: Badge }) {
   const admin = badge === 'ADMIN'
   return (
@@ -56,19 +65,38 @@ export function Sidebar({
         const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly))
         if (items.length === 0) return null
         return (
-          <div key={si}>
-            <div className="nav-section">{section.title}</div>
-            {items.map((item) =>
-              isGroup(item) ? (
-                <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
-              ) : (
-                <LeafLink key={item.href} leaf={item} pathname={pathname} onNavigate={onNavigate} />
-              ),
-            )}
-          </div>
+          <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
+            isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
         )
       })}
     </nav>
+  )
+}
+
+/** Seção colapsável (ADMINISTRAÇÃO, REDE & CONTA, ...): aberta por padrão; reabre sozinha quando
+ *  a tela atual está dentro dela; clicar no título recolhe/expande (chevron como nos grupos). */
+function SectionBlock({
+  title, items, pathname, isAdmin, recursos, sacOnly, onNavigate,
+}: { title: string; items: Item[]; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; onNavigate?: () => void }) {
+  const ativo = secaoTemAtivo(items, pathname)
+  const [open, setOpen] = useState(true)
+  useEffect(() => { if (ativo) setOpen(true) }, [ativo])
+
+  return (
+    <div>
+      <div className="nav-section" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        onClick={() => setOpen((v) => !v)}>
+        <span>{title}</span>
+        <i className="ti ti-chevron-right" style={{ fontSize: 13, opacity: 0.7, transition: 'transform .2s', transform: open ? 'rotate(90deg)' : 'none' }} />
+      </div>
+      {open && items.map((item) =>
+        isGroup(item) ? (
+          <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
+        ) : (
+          <LeafLink key={item.href} leaf={item} pathname={pathname} onNavigate={onNavigate} />
+        ),
+      )}
+    </div>
   )
 }
 
@@ -90,6 +118,9 @@ function GroupEntry({
   const childActive = children.some((c) => leafActive(c.href, pathname))
   const grupoFunc = children.some((c) => ehFuncional(c.href)) // grupo "aceso" se tiver ao menos 1 filho funcional
   const [open, setOpen] = useState(childActive)
+  // Quando a navegação entra numa tela DESTE grupo, abre o submenu automaticamente
+  // (o usuário ainda pode recolher manualmente). Resolve "estar dentro e o menu vir fechado".
+  useEffect(() => { if (childActive) setOpen(true) }, [childActive])
   if (children.length === 0) return null
 
   return (
