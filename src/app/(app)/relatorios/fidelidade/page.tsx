@@ -33,7 +33,8 @@ async function contar(
   unidadeId: string | null,
   build: (q: CountQuery) => CountQuery,
 ): Promise<number | null> {
-  let base = sb.from('clientes').select('id', { count: 'exact', head: true }) as unknown as CountQuery
+  // 'estimated' = estatística do Postgres (instantâneo); 'exact' varria ~347k clientes (9s).
+  let base = sb.from('clientes').select('id', { count: 'estimated', head: true }) as unknown as CountQuery
   if (unidadeId) base = base.eq('unidade_origem_id', unidadeId)
   const { count } = await build(base)
   return count

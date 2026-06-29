@@ -25,7 +25,9 @@ async function contar(
   sb: Awaited<ReturnType<typeof createClient>>,
   build: (q: CountQuery) => CountQuery,
 ): Promise<number> {
-  const base = sb.from('clientes').select('id', { count: 'exact', head: true }) as unknown as CountQuery
+  // 'estimated' = estatística do Postgres (instantâneo). 'exact' fazia COUNT(*) completo
+  // sobre ~347k clientes, e aqui são 10 counts → a tela travava (13s). KPI aproximado.
+  const base = sb.from('clientes').select('id', { count: 'estimated', head: true }) as unknown as CountQuery
   const { count } = await build(base)
   return count ?? 0
 }
