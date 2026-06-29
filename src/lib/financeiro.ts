@@ -39,15 +39,6 @@ export const FIN_ADQUIRENTES: Adquirente[] = [
   { nome: 'Rede', deb: 1.19, cred: 2.69, parc: 3.29, pix: 0.59, prazo: 30 },
 ]
 
-export const FIN_BANCO_DEFAULT = {
-  nome: 'Banco do Brasil',
-  agencia: '1234-5',
-  conta: '45.678-9',
-  convenio: 'Convênio 1234567 · Carteira 17 · CNAB 240',
-  login: 'laserco.financeiro',
-  autoBaixa: true,
-}
-
 export const ROYALTY_PCT_DEFAULT = 10
 export const FUNDO_PCT_DEFAULT = 2
 export const VENC_DIA_DEFAULT = 10

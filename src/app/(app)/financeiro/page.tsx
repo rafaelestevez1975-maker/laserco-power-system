@@ -3,7 +3,7 @@ import { getSessionContext } from '@/lib/session'
 import { temPapel } from '@/lib/rbac'
 import { FinanceiroTabs } from '@/components/financeiro/FinanceiroTabs'
 import {
-  FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES, FIN_BANCO_DEFAULT,
+  FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES,
   ROYALTY_PCT_DEFAULT, FUNDO_PCT_DEFAULT, VENC_DIA_DEFAULT,
   calcDiasAtraso,
 } from '@/lib/financeiro'
@@ -107,7 +107,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   // Config com defaults do legado quando não houver linha salva.
   const cfg: FinConfig = config ?? {
     royalty_pct: ROYALTY_PCT_DEFAULT, fundo_pct: FUNDO_PCT_DEFAULT, venc_dia: VENC_DIA_DEFAULT,
-    banco: { ...FIN_BANCO_DEFAULT }, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
+    banco: {}, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
   }
 
   return (
