@@ -24,6 +24,15 @@ async function audit(userId: string, acao: string, label: string): Promise<void>
   } catch { /* auditoria é secundária */ }
 }
 
+/** Empresa do operador (1ª vinculada em usuario_cargos) → fallback empresa raiz (lkii tem 1). */
+async function resolverEmpresa(admin: ReturnType<typeof adminClient>, userId: string): Promise<string | null> {
+  const { data: uc } = await admin.from('usuario_cargos').select('empresa_id').eq('perfil_id', userId).not('empresa_id', 'is', null).limit(1)
+  const emp = ((uc ?? []) as { empresa_id: string | null }[])[0]?.empresa_id
+  if (emp) return emp
+  const { data: empresas } = await admin.from('empresas').select('id').limit(1)
+  return ((empresas ?? []) as { id: string }[])[0]?.id ?? null
+}
+
 /** Cria o ACESSO de login de uma atendente SAC: usuário de autenticação (auth) +
  *  perfil com papel 'sac' (mesmo id). É o fluxo que o ADMIN usa para liberar o login
  *  das consultoras (o trigger handle_new_user já cria o perfil por metadata; o upsert
@@ -64,6 +73,24 @@ export async function criarAcessoAtendente(input: CriarAtendenteInput): Promise<
   if (ePerfil) {
     await admin.auth.admin.deleteUser(uid).catch(() => {}) // sem perfil o login é inútil → desfaz
     return { ok: false, error: msgErro(ePerfil.message, 'criar o perfil da atendente') }
+  }
+
+  // 3) vincula o cargo "Atendente SAC" (recursos SÓ do SAC). SEM esse vínculo o atendente
+  //    fica com recursos=[] e não enxerga NADA no menu — papel 'sac' sozinho não dá acesso.
+  //    É o RBAC real (usuario_cargos → cargo_permissoes → permissoes) que libera o módulo SAC.
+  const { data: cargoRow } = await admin.from('cargos').select('id').eq('slug', 'atendente_sac').maybeSingle()
+  const cargoId = (cargoRow as { id: string } | null)?.id
+  if (cargoId) {
+    const empresaId = await resolverEmpresa(admin, op.userId)
+    const { error: eCargo } = await admin.from('usuario_cargos').insert({
+      perfil_id: uid, cargo_id: cargoId, empresa_id: empresaId,
+      unidade_id: input.unidadeId || null, ativo: true, atribuido_por: op.userId,
+    })
+    if (eCargo && !/duplicate|already|unique/i.test(eCargo.message)) {
+      console.error('criarAcessoAtendente: vínculo do cargo Atendente SAC falhou:', eCargo.message)
+    }
+  } else {
+    console.error('criarAcessoAtendente: cargo slug "atendente_sac" não encontrado — atendente ficará sem acesso até receber um cargo.')
   }
 
   await audit(op.userId, 'sac.atendente.criar', `Criou acesso SAC de ${nome}`)

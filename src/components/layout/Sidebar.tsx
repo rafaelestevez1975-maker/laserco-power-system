@@ -14,12 +14,25 @@ function hasPerm(perm: string, recursos: string[]) {
   return perm.endsWith('.') ? recursos.some((r) => r.startsWith(perm)) : recursos.includes(perm)
 }
 
-/** Regra de visibilidade: admin_geral vê tudo; senão, exige o recurso (ou nenhum = visível). */
-function canSee(item: Item, isAdmin: boolean, recursos: string[]) {
+/** Regra de visibilidade: admin_geral vê tudo; senão, exige o recurso (ou nenhum = visível).
+ *  sacOnly = usuário cujos recursos são SÓ sac.* (atendente/supervisor/consulta SAC): enxerga
+ *  apenas o módulo SAC + utilitários, escondendo todo o resto (inclusive itens sem `perm`). */
+function canSee(item: Item, isAdmin: boolean, recursos: string[], sacOnly: boolean) {
   if (isAdmin) return true
+  if (sacOnly) {
+    const href = 'href' in item ? (item as { href?: string }).href ?? '' : ''
+    if (item.perm) return item.perm.startsWith('sac') ? hasPerm(item.perm, recursos) : false
+    if (href.startsWith('/sac')) return true
+    return href === '/minha-conta' || href === '/ajuda'
+  }
   if (item.perm) return hasPerm(item.perm, recursos)
   if ('admin' in item && item.admin) return false // admin-only sem recurso mapeado
   return true
+}
+
+/** Usuário "SAC-only": tem recursos e TODOS começam com 'sac' (cargo do SAC, não-admin). */
+function ehSacOnly(isAdmin: boolean, recursos: string[]) {
+  return !isAdmin && recursos.length > 0 && recursos.every((r) => r.startsWith('sac'))
 }
 
 function BadgeTag({ badge }: { badge: Badge }) {
@@ -35,18 +48,19 @@ export function Sidebar({
   isAdmin, recursos, onNavigate,
 }: { isAdmin: boolean; recursos: string[]; onNavigate?: () => void }) {
   const pathname = usePathname()
+  const sacOnly = ehSacOnly(isAdmin, recursos)
 
   return (
     <nav className="nav">
       {MENU.map((section, si) => {
-        const items = section.items.filter((i) => canSee(i, isAdmin, recursos))
+        const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly))
         if (items.length === 0) return null
         return (
           <div key={si}>
             <div className="nav-section">{section.title}</div>
             {items.map((item) =>
               isGroup(item) ? (
-                <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} onNavigate={onNavigate} />
+                <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} onNavigate={onNavigate} />
               ) : (
                 <LeafLink key={item.href} leaf={item} pathname={pathname} onNavigate={onNavigate} />
               ),
@@ -70,9 +84,9 @@ function LeafLink({ leaf, pathname, onNavigate }: { leaf: Leaf; pathname: string
 }
 
 function GroupEntry({
-  group, pathname, isAdmin, recursos, onNavigate,
-}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; onNavigate?: () => void }) {
-  const children = group.children.filter((c) => canSee(c, isAdmin, recursos))
+  group, pathname, isAdmin, recursos, sacOnly, onNavigate,
+}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; onNavigate?: () => void }) {
+  const children = group.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly))
   const childActive = children.some((c) => leafActive(c.href, pathname))
   const grupoFunc = children.some((c) => ehFuncional(c.href)) // grupo "aceso" se tiver ao menos 1 filho funcional
   const [open, setOpen] = useState(childActive)
