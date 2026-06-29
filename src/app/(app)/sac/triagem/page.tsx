@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 const LISTA_MAX = 300
 
 /**
- * Triagem WhatsApp — caixa de entrada do SAC.
+ * Conversa — caixa de entrada do SAC.
  *
  * Escopo por unidade: o modelo do projeto exige escopo por unidade_id (como em /sac/chamados).
  * Porém sac_whatsapp_chats é alimentada pelo webhook da UAZAPI (src/app/api/webhooks/uazapi)

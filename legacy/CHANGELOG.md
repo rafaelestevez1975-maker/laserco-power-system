@@ -18,7 +18,7 @@
 
 ## 2026-06-16  PWA + link compartilhável
 - **PWA instalável**: `manifest.webmanifest` real (tema bordô #230A10), ícones próprios (192/512/maskable/apple-touch), `sw.js` (service worker network-first com fallback offline) e botão **“Instalar app”**.
-- **SAC nativo** com filtros (dashboard/chamados), Triagem WhatsApp com fluxo, Ranking, integração com Colaboradores e Matriz de Comissões.
+- **SAC nativo** com filtros (dashboard/chamados), Conversa com fluxo, Ranking, integração com Colaboradores e Matriz de Comissões.
 - **SAC → Pagamentos**: acordos parcelados (1º pgto após dia 15), OK do gestor, **espelho automático em Contas a Pagar**, observação ao credor e **encerramento automático do chamado** ao pagar.
 - **Reembolso automático** no SAC (busca contrato/sessões, multa 30% editável/isenta).
 - **Financeiro**: status **Suspenso** (fora dos totais em aberto e dashboards) + filtro; importação Excel em Pagar/Receber.

@@ -6,7 +6,7 @@ import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/i
 
 /**
  * Webhook de entrada da UAZAPI. Grava as mensagens recebidas em
- * sac_whatsapp_chats + sac_whatsapp_mensagens (alimenta a Triagem WhatsApp).
+ * sac_whatsapp_chats + sac_whatsapp_mensagens (alimenta a Conversa).
  * Auth: `?secret=` / header x-webhook-secret == UAZAPI_WEBHOOK_SECRET, OU body.token == UAZAPI_TOKEN.
  * Configurar na UAZAPI: https://<dominio>/api/webhooks/uazapi?secret=<UAZAPI_WEBHOOK_SECRET>
  *

@@ -247,7 +247,7 @@ export function TriagemWhatsapp({
     <>
     {/* Header idêntico ao legado (sacTriagem, index.html:9065): título + subtítulo. */}
     <div className="rel-card" style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-      <b><i className="ti ti-brand-whatsapp" style={{ color: '#0F6B3A' }} /> Triagem WhatsApp</b>
+      <b><i className="ti ti-brand-whatsapp" style={{ color: '#0F6B3A' }} /> Conversa</b>
       <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Veja as conversas e abra o chamado com 1 clique</span>
     </div>
     {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}

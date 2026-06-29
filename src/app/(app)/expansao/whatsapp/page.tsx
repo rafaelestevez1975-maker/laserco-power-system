@@ -166,7 +166,7 @@ export default async function ExpansaoWhatsappPage() {
       <div className="crm-note">
         <i className="ti ti-brand-whatsapp" /> Conversas de <b>WhatsApp</b> da rede — respondentes de disparos e
         clientes que escrevem entram aqui e alimentam o CRM, onde a equipe segue o fluxo de fechamento. Use a{' '}
-        <b>Triagem WhatsApp</b> (SAC) para responder; este painel é o resumo gerencial das conversas.
+        <b>Conversa</b> (SAC) para responder; este painel é o resumo gerencial das conversas.
       </div>
 
       {semFonte ? (
@@ -333,7 +333,7 @@ export default async function ExpansaoWhatsappPage() {
           <div className="crm-note" style={{ marginTop: 14 }}>
             <i className="ti ti-affiliate" /> Cada respondente vira um lead no CRM como <b>Disparo WhatsApp</b> para a
             equipe seguir o fluxo de fechamento. Para responder e atribuir atendentes, use a{' '}
-            <b>Triagem WhatsApp</b> em SAC. Última atualização:{' '}
+            <b>Conversa</b> em SAC. Última atualização:{' '}
             <b>{chats[0]?.ultima_msg_em ? dataHoraBR(chats[0].ultima_msg_em) : '—'}</b>.
           </div>
         </>

@@ -38,7 +38,7 @@ Legenda:
 - ⚙️ Colunas extras "Atendente" e "SLA"; filtros "Fase"/"Situação"; paginação — features reais (manter).
 
 ## 6. Triagem ⏳
-- ⏳ 🎨 Falta o **header** `.rel-card` "Triagem WhatsApp" + "Veja as conversas e abra o chamado com 1 clique".
+- ⏳ 🎨 Falta o **header** `.rel-card` "Conversa" + "Veja as conversas e abra o chamado com 1 clique".
 - ⏳ 🎨 Grid `320px 1fr` → **`300px 1fr`** + `gap:14`.
 - ⏳ 🎨 Bolha de **saída**: `#DCF8C6` → `var(--brand-500)`, **sem border**, texto branco; `max-width 72%` → **78%**.
 - ⏳ 🎨 Card "Fluxo inicial": borda `solid` topo → **`1px dashed` em volta**.

@@ -160,7 +160,7 @@ Os apps RH/SAC legados continuam existindo como origem do schema, mas a homologa
 | SAC-7 | Reembolso/Acordo | Calcula multa % → cria espelho no Financeiro + move p/ "Em pagamento" | ⬜ | lançamento criado | regra de negócio P0 | |
 | SAC-8 | Escopo | Franquia só seus; rede todos | ⬜ | | | |
 
-### 6. SAC  Triagem WhatsApp  (`/sac/triagem`)   P0
+### 6. SAC  Conversa  (`/sac/triagem`)   P0
 | # | Funcionalidade | Comportamento esperado | Status | Evidência | Observações | Responsável |
 |---|---|---|---|---|---|---|
 | TRI-1 | Janela de conversas | Lista conversas reais estilo WhatsApp Web | ⬜ | | alimentada pelo webhook | |

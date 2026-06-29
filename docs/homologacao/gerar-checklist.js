@@ -334,7 +334,7 @@ const SECOES = [
 ['SAC  Chamados (listar/filtrar)','Lista com filtros (motivo, atendente, unidade, canal, status, período) e busca ao vivo.','Funcional.'],
 ['SAC  criar/editar chamado','Form (cliente, CPF, WhatsApp, e-mail, canal, unidade, motivo, prioridade, responsável, fase, datas, valor, reembolso, observações); salvar gera protocolo.','Validação: só o nome do cliente bloqueia.'],
 ['SAC  Kanban','Quadro por fases (Novo→Concluído) com cards por prioridade; avançar fase; ao concluir muda o status.','Só avança (sem voltar/arrastar).'],
-['SAC  Triagem WhatsApp','Lista de conversas (WhatsApp/Instagram) com bot; abrir chamado a partir da conversa (valida nome+unidade) ou descartar.','PROTÓTIPO: conversas seed; sem WhatsApp real.'],
+['SAC  Conversa','Lista de conversas (WhatsApp/Instagram) com bot; abrir chamado a partir da conversa (valida nome+unidade) ou descartar.','PROTÓTIPO: conversas seed; sem WhatsApp real.'],
 ['SAC  Relatórios','Gráficos por canal/motivo/unidade e tabela de reembolsos.','PROTÓTIPO: filtro de período e "Aplicar" só dão toast (não refiltram).'],
 ['SAC  Atendentes','Performance por atendente (chamados, resolvidos, SLA%); botões "Cadastrar no Colaboradores" e "Matriz de Comissões".','Integrações de navegação (não criam/sincronizam).'],
 ['SAC  Ranking/premiação','Ranking por pontos (resolvidos×10 + bônus sem atraso + SLA), medalhas e destaque do mês.','Cálculo local; só atendentes ativos.'],

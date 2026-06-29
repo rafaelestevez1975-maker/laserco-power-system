@@ -460,24 +460,24 @@ function Leads({
 
 // ─── CONVERSAS ───
 // As conversas reais de WhatsApp ficam em sac_whatsapp_chats / sac_whatsapp_mensagens
-// e são atendidas na Triagem WhatsApp (SAC). Esta aba NÃO tem fonte de conversas própria,
+// e são atendidas na Conversa (SAC). Esta aba NÃO tem fonte de conversas própria,
 // então direciona para o relatório real (Expansão · WhatsApp CRM) e para a Triagem — em vez
 // de exibir uma caixa de entrada fictícia. Sem dados inventados.
 function Conversas() {
   return (
     <div>
       <div className="rel-legend">
-        As conversas de <b>WhatsApp</b> da rede são registradas e atendidas na <b>Triagem WhatsApp</b> (SAC). Cada respondente de disparo vira um lead no funil de Expansão. Para iniciar campanhas, use a aba <Link href="/expansao/disparos" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Disparos</Link>.
+        As conversas de <b>WhatsApp</b> da rede são registradas e atendidas na <b>Conversa</b> (SAC). Cada respondente de disparo vira um lead no funil de Expansão. Para iniciar campanhas, use a aba <Link href="/expansao/disparos" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Disparos</Link>.
       </div>
       <div className="rel-card" style={{ textAlign: 'center', padding: 32 }}>
         <i className="ti ti-brand-whatsapp" style={{ fontSize: 34, color: '#25D366' }} />
         <p style={{ margin: '10px 0 4px', fontWeight: 700, fontSize: 15 }}>Atendimento de conversas no WhatsApp CRM</p>
         <p style={{ fontSize: 13, color: 'var(--text-3)', maxWidth: 520, margin: '0 auto 16px' }}>
-          O resumo gerencial das conversas (total, não lidas, em atendimento, no bot) está no relatório <b>Expansão · WhatsApp CRM</b>. Para ler e responder mensagens com atribuição de atendente, use a <b>Triagem WhatsApp</b> em SAC.
+          O resumo gerencial das conversas (total, não lidas, em atendimento, no bot) está no relatório <b>Expansão · WhatsApp CRM</b>. Para ler e responder mensagens com atribuição de atendente, use a <b>Conversa</b> em SAC.
         </p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/expansao/whatsapp" className="btn btn-primary" style={{ textDecoration: 'none' }}><i className="ti ti-chart-pie" /> Abrir WhatsApp CRM</Link>
-          <Link href="/sac/triagem" className="btn btn-ghost" style={{ textDecoration: 'none' }}><i className="ti ti-messages" /> Triagem WhatsApp (SAC)</Link>
+          <Link href="/sac/triagem" className="btn btn-ghost" style={{ textDecoration: 'none' }}><i className="ti ti-messages" /> Conversa (SAC)</Link>
           <Link href="/expansao/disparos" className="btn btn-ghost" style={{ textDecoration: 'none' }}><i className="ti ti-send" /> Disparos</Link>
         </div>
       </div>

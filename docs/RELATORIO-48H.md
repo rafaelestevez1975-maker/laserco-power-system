@@ -12,7 +12,7 @@ As **10 telas** do SAC estão funcionais e equivalentes ao sistema antigo:
 - **Dashboard** — KPIs + gráficos (por canal, fase, motivo), reembolsos do período e chamados recentes, com filtros de período e atendente.
 - **Chamados** — busca avançada (cliente/protocolo/CPF/telefone) + filtros (motivo, unidade, canal, fase, período) + **edição do chamado** (clique na linha) + paginação.
 - **Kanban** — 7 fases, arrastar e soltar.
-- **Triagem WhatsApp** — atendimento ao vivo (IA + fila + transferência + mídia).
+- **Conversa** — atendimento ao vivo (IA + fila + transferência + mídia).
 - **Atendentes** — equipe + carga + **distribuição automática igualitária**.
 - **Reembolso & Acordo** — cálculo de multa de rescisão, **ficha do cliente** (sessões/histórico), e **acordo parcelado** que espelha em Contas a Pagar e encerra o chamado ao quitar.
 - **Premiação/Ranking** — pontuação configurável (resolvidos, SLA, reversões) + prêmios.
