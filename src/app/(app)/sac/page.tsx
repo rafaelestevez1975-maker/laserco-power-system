@@ -64,7 +64,10 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   try {
     const PAGE = 1000
     for (let offset = 0; ; offset += PAGE) {
-      let q = sb.from('sac_tickets').select('fase, canal, motivo_label, sla_violado, valor_devolucao, pago, criado_em, concluido_em')
+      // NÃO selecionar concluido_em: a migration scripts/migrations/sac_concluido_em.sql ainda NÃO
+      // foi aplicada no lkii → a coluna não existe e o SELECT quebrava o dashboard p/ todos (42703).
+      // Sem o dado, "Tempo médio de resolução" fica "—". Reincluir quando a coluna existir no banco.
+      let q = sb.from('sac_tickets').select('fase, canal, motivo_label, sla_violado, valor_devolucao, pago, criado_em')
       if (activeUnit) q = q.eq('unidade_id', activeUnit)
       if (atSel.length) q = q.in('atribuido_para', atSel)
       if (ini) q = q.gte('criado_em', ini)
