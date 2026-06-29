@@ -191,11 +191,14 @@ export function MateriaisRede(props: Props) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 12 }}>
             {arquivos.map((f) => {
               const { icon, canva } = mktFileIcon(f.nome)
+              // Só abre quando há fonte real (link_url). Materiais binários não têm
+              // storage no backend ainda → botão desabilitado (sem fingir download).
+              const temArquivo = !!f.link_url
               const baixar = () => {
-                if (canva && f.link_url) { window.open(f.link_url, '_blank'); return }
+                if (!temArquivo) return
                 // Legado mktBaixar (8357): só admin baixa; demais visualizam.
                 if (!isAdmin) { setMsg('Download liberado pelo administrador. Material visível para uso da unidade.'); setTimeout(() => setMsg(''), 3000); return }
-                setMsg(`Baixando "${f.nome}"…`); setTimeout(() => setMsg(''), 2500)
+                window.open(f.link_url!, '_blank')
               }
               return (
                 <div key={f.id} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 13, background: 'var(--surface)', display: 'flex', gap: 11, alignItems: 'center' }}>
@@ -205,8 +208,8 @@ export function MateriaisRede(props: Props) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.nome}</div>
                   </div>
-                  <button className="btn btn-ghost" style={{ padding: '4px 9px' }} onClick={baixar} title={canva ? 'Abrir' : 'Baixar'}>
-                    <i className={`ti ti-${canva ? 'external-link' : 'download'}`} />
+                  <button className="btn btn-ghost" style={{ padding: '4px 9px' }} onClick={baixar} disabled={!temArquivo} title={temArquivo ? (canva ? 'Abrir' : 'Baixar') : 'Sem arquivo disponível para download'}>
+                    <i className={`ti ti-${!temArquivo ? 'file-off' : canva ? 'external-link' : 'download'}`} />
                   </button>
                 </div>
               )

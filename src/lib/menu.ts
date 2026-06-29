@@ -162,7 +162,7 @@ export const MENU: Section[] = [
           { label: 'Dashboard', href: '/sac', icon: 'ti-layout-dashboard', title: 'SAC · Dashboard', badge: 'NOVO' },
           { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados', badge: 'NOVO' },
           { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban', badge: 'NOVO' },
-          { label: 'Triagem WhatsApp', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Triagem WhatsApp', badge: 'NOVO' },
+          { label: 'Conversa', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Conversa', badge: 'NOVO' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios', badge: 'NOVO' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos', badge: 'NOVO' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes', badge: 'NOVO' },
@@ -235,8 +235,19 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   // Administração · Financeiro Franqueadora
   '/financeiro', '/financeiro/dre', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
   '/juridico', '/auditoria',
-  // Rede & Conta (minha-unidade: 4/5 abas stub; app-cliente: protótipo sem persistência → prévia)
-  '/unidades', '/minha-conta', '/exportacoes', '/ajuda',
+  // Rede & Conta
+  '/unidades', '/minha-conta', '/exportacoes', '/ajuda', '/minha-unidade', '/app-cliente',
+  // Re-classificação 2026-06-29 (certificação botão-a-botão, 6 agentes): estas telas já estão
+  // funcionais (queries reais / empty-state honesto) e antes apareciam apagadas como "prévia".
+  // Dashboards de vendas (migrados p/ VendasReal):
+  '/dashboards/vendas-geral', '/dashboards/vendas-mes', '/dashboards/vendas-comparativo', '/dashboards/vendas-historico',
+  // Expansão (CRM de franquias + sub-abas):
+  '/expansao/captacao', '/expansao/funil', '/expansao/leads', '/expansao/tipos', '/expansao/whatsapp',
+  // Relatórios (todos com dado real do Supabase ou estado vazio honesto):
+  '/relatorios/anamnese', '/relatorios/assinaturas', '/relatorios/atendimentos', '/relatorios/avaliacoes',
+  '/relatorios/credito-dinheiro', '/relatorios/credito-recorrente', '/relatorios/crm', '/relatorios/estatisticas',
+  '/relatorios/exportacoes', '/relatorios/fidelidade', '/relatorios/financeiro', '/relatorios/notas-fiscais',
+  '/relatorios/ocorrencias', '/relatorios/pacotes', '/relatorios/perfis-acesso', '/relatorios/whatsapp',
 ])
 
 /** A rota (sem querystring) corresponde a uma tela funcional? Usado pelo Sidebar p/ acender/apagar. */
