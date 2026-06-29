@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { moedaBR, dataBR } from '@/lib/fmt'
 import {
   STATUS_PILL, PRIO_PILL, FIN_CATS_REC, finPct, finFranqEmail, proximoPassoRegua,
-  SALDO_INICIAL_PROJ, type ReguaPasso,
+  mesRefBR, type ReguaPasso,
 } from '@/lib/financeiro'
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
@@ -27,8 +27,6 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
   { k: 'cobranca', label: 'Cobrança & Jurídico', icon: 'ti-gavel' },
   { k: 'config', label: 'Configurações', icon: 'ti-settings' },
 ]
-
-const FIN_MESREF = 'Maio/2026'
 
 // helpers de soma
 const sum = <T,>(arr: T[], f: (x: T) => number | null | undefined) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0)
@@ -84,7 +82,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
-      {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} />}
+      {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
       {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
       {tab === 'config' && <ConfigTab config={config} />}
     </div>
@@ -157,7 +155,7 @@ function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Re
 
   return (
     <div>
-      <div className="rel-legend">Visão consolidada da <b>franqueadora</b> — separada do contas a pagar/receber das unidades. Reúne os recebíveis da rede (royalties, taxas, aluguéis) e as despesas da matriz e das lojas. Competência <b>{FIN_MESREF}</b>.</div>
+      <div className="rel-legend">Visão consolidada da <b>franqueadora</b> — separada do contas a pagar/receber das unidades. Reúne os recebíveis da rede (royalties, taxas, aluguéis) e as despesas da matriz e das lojas. Competência <b>{mesRefBR(hojeISO)}</b>.</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
         {kpis.map((k) => (
           <div key={k.lbl} className="rel-card" style={{ padding: '15px 16px' }}>
@@ -229,15 +227,15 @@ function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Re
         </div>
       </div>
 
-      <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} />
+      <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} hojeISO={hojeISO} />
     </div>
   )
 }
 
 // Projeção de caixa próximos N dias (finProxSemanaHTML L5124)
-function ProjecaoCaixa({ recebiveis, contasPagar }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
+function ProjecaoCaixa({ recebiveis, contasPagar, hojeISO }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; hojeISO: string }) {
   const [dias, setDias] = useState(7)
-  const base = new Date(2026, 5, 13) // data-base 13/06/2026 (legado)
+  const base = new Date(hojeISO + 'T00:00:00') // data-base = hoje (servidor)
   const N = dias
   const lista: Date[] = []
   for (let k = 1; k <= N; k++) { const d = new Date(base); d.setDate(base.getDate() + k); lista.push(d) }
@@ -249,7 +247,10 @@ function ProjecaoCaixa({ recebiveis, contasPagar }: { recebiveis: Recebivel[]; c
   const recDiaUtil = aReceberOpen / nBiz
   const parseV = (iso: string | null) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d.getTime()) ? '' : fmt(d) }
 
-  let saldo = SALDO_INICIAL_PROJ
+  // Saldo inicial = posição de caixa realizada (recebido − pago), não número inventado.
+  const saldoRealizado = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
+    - sum(contasPagar.filter((p) => p.status === 'pago'), (p) => p.valor)
+  let saldo = saldoRealizado
   const rows = lista.map((d) => {
     const tag = fmt(d)
     const entrada = isBiz(d) ? recDiaUtil : recDiaUtil * 0.15
@@ -606,7 +607,7 @@ function ConciliacaoTab({ conciliacao }: { conciliacao: Conciliacao[] }) {
 // =============================================================================
 // AUTOMAÇÃO DE ROYALTIES (finRoyaltiesHTML L5333)
 // =============================================================================
-function RoyaltiesTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: FinConfig }) {
+function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]; config: FinConfig; hojeISO: string }) {
   const router = useRouter()
   const [log, setLog] = useState<string[]>([])
   const [busy, setBusy] = useState('')
@@ -648,7 +649,7 @@ function RoyaltiesTab({ recebiveis, config }: { recebiveis: Recebivel[]; config:
       <div className="rel-legend">Automação de cobrança de <b>royalties</b> — sempre <b>{config.royalty_pct}% do faturamento bruto</b>, com vencimento <b>todo dia {config.venc_dia}</b> do mês seguinte. O sistema gera o boleto, lança o crédito a receber, envia ao franqueado e agenda a baixa no retorno bancário.</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12, marginBottom: 14 }}>
         <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Banco de cobrança</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}><i className="ti ti-building-bank" style={{ color: 'var(--brand-500)' }} /> {banco.nome}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Ag. {banco.agencia} · C/C {banco.conta}</div></div>
-        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{FIN_MESREF}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Vencimento dia {config.venc_dia}</div></div>
+        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{mesRefBR(hojeISO)}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Vencimento dia {config.venc_dia}</div></div>
         <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Total de royalties</div><div style={{ fontSize: 15, fontWeight: 800, marginTop: 3, color: '#0f6b3a' }}>{moedaBR(totRoy)}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{pend.length} unidade(s) · {semBoleto} sem boleto</div></div>
       </div>
       <div className="rel-card" style={{ marginBottom: 4 }}>

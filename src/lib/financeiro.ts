@@ -51,8 +51,15 @@ export const FIN_BANCO_DEFAULT = {
 export const ROYALTY_PCT_DEFAULT = 10
 export const FUNDO_PCT_DEFAULT = 2
 export const VENC_DIA_DEFAULT = 10
-export const SALDO_INICIAL_FLUXO = 412000 // saldoIni do finFluxoHTML L5161
-export const SALDO_INICIAL_PROJ = 320000 // saldo projetado do finProxSemanaHTML L5138
+// Competência (mês de referência) a partir de uma data ISO — ex.: "Junho/2026".
+// Substitui o antigo FIN_MESREF chumbado ('Maio/2026'). Saldo inicial das projeções
+// agora vem da posição realizada real (recebido − pago), não de número inventado.
+const MESES_BR = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+export function mesRefBR(hojeISO?: string): string {
+  const d = hojeISO ? new Date(hojeISO + (hojeISO.length <= 10 ? 'T00:00:00' : '')) : new Date()
+  if (isNaN(d.getTime())) return ''
+  return `${MESES_BR[d.getMonth()]}/${d.getFullYear()}`
+}
 
 // ── Prioridade padrão por categoria (finPrioPadrao L5113) ──
 const PRIO_ALTA = ['Salários', 'Impostos', 'Aluguel', 'Pró-labore']
