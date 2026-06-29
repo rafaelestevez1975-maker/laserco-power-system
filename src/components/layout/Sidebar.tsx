@@ -45,6 +45,7 @@ function secaoTemAtivo(items: Item[], pathname: string) {
 }
 
 function BadgeTag({ badge }: { badge: Badge }) {
+  if (badge === 'NOVO') return null // cliente pediu p/ remover os selos "NOVO" do menu (mantém ADMIN/BASE)
   const admin = badge === 'ADMIN'
   return (
     <span className="badge" style={admin ? { background: 'var(--brand-500)', color: '#fff' } : undefined}>
