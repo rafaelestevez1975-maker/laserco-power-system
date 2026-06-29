@@ -7,7 +7,10 @@ type Row = { id: string; titulo: string; mensagem: string; prioridade: string; a
  *  publicados que o usuário ainda NÃO confirmou e exibe o gate de "ciente". */
 export async function ComunicadosGate() {
   const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
+  // getSession() lê o token localmente (sem round-trip ao Auth): o middleware já validou a
+  // sessão deste request. Evita um 3º auth.getUser() de rede em TODA navegação.
+  const { data: { session } } = await sb.auth.getSession()
+  const user = session?.user
   if (!user) return null
 
   const { data: obrig } = await sb.from('comunicados')

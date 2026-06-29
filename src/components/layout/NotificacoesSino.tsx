@@ -18,10 +18,17 @@ export function NotificacoesSino() {
 
   useEffect(() => {
     let vivo = true
-    const carregar = () => carregarNotificacoes().then((r) => { if (vivo) { setItens(r.itens); setTotal(r.total) } })
+    // Só consulta quando a aba está visível: evita carga de fundo constante no servidor
+    // (antes: 1 round-trip de auth + queries a cada 60s em TODA aba aberta, mesmo minimizada).
+    const carregar = () => {
+      if (document.visibilityState !== 'visible') return
+      carregarNotificacoes().then((r) => { if (vivo) { setItens(r.itens); setTotal(r.total) } })
+    }
     carregar()
-    const t = setInterval(carregar, 60000) // atualiza a cada 1 min
-    return () => { vivo = false; clearInterval(t) }
+    const t = setInterval(carregar, 60000) // atualiza a cada 1 min (só com a aba visível)
+    const onVis = () => { if (document.visibilityState === 'visible') carregar() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { vivo = false; clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
   }, [])
 
   function ir(href: string) { setOpen(false); router.push(href) }
