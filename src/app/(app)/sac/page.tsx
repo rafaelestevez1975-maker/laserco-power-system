@@ -57,13 +57,14 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   let total = 0, concluidos = 0, emAtraso = 0
   let slaViol = 0
   let reembTotal = 0, reembQtd = 0, reembPagos = 0
+  let tempoResoMs = 0, tempoResoQtd = 0 // tempo médio de resolução (J.02): só chamados concluídos com carimbo
   const canalMap = new Map<string, number>()
   const faseMap = new Map<string, number>()
   const motivoMap = new Map<string, number>()
   try {
     const PAGE = 1000
     for (let offset = 0; ; offset += PAGE) {
-      let q = sb.from('sac_tickets').select('fase, canal, motivo_label, sla_violado, valor_devolucao, pago')
+      let q = sb.from('sac_tickets').select('fase, canal, motivo_label, sla_violado, valor_devolucao, pago, criado_em, concluido_em')
       if (activeUnit) q = q.eq('unidade_id', activeUnit)
       if (atSel.length) q = q.in('atribuido_para', atSel)
       if (ini) q = q.gte('criado_em', ini)
@@ -73,10 +74,16 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
       const rows = (data ?? []) as {
         fase: string | null; canal: string | null; motivo_label: string | null
         sla_violado: boolean | null; valor_devolucao: number | null; pago: boolean | null
+        criado_em: string | null; concluido_em: string | null
       }[]
       for (const r of rows) {
         total++
         if (r.fase === 'Concluído') concluidos++
+        // Tempo de resolução: só conta concluídos COM carimbo (chamados antigos sem concluido_em ficam de fora — honesto).
+        if (r.fase === 'Concluído' && r.concluido_em && r.criado_em) {
+          const dt = new Date(r.concluido_em).getTime() - new Date(r.criado_em).getTime()
+          if (dt >= 0) { tempoResoMs += dt; tempoResoQtd++ }
+        }
         if (r.sla_violado) { slaViol++; if (r.fase !== 'Concluído') emAtraso++ }
         if (r.canal) canalMap.set(r.canal, (canalMap.get(r.canal) ?? 0) + 1)
         if (r.fase) faseMap.set(r.fase, (faseMap.get(r.fase) ?? 0) + 1)
@@ -94,6 +101,12 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   const emAndamento = Math.max(0, total - concluidos - emAtraso)
   // Taxa SLA cumprido: igual ao legado/relatorios — (total - violados) / total.
   const slaPct = total ? Math.round(((total - slaViol) / total) * 100) : 100
+  // Tempo médio de resolução em dias (J.02): média de (concluido_em - criado_em) dos concluídos
+  // carimbados no recorte. "—" enquanto não houver nenhum (não inventamos valor, como o legado fazia).
+  const tempoMedioDias = tempoResoQtd ? tempoResoMs / tempoResoQtd / 86400000 : null
+  const tempoMedioLabel = tempoMedioDias == null
+    ? '—'
+    : `${tempoMedioDias.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} dias`
   const canalCounts = CANAIS.map((k) => canalMap.get(k) ?? 0)
   const faseCounts = FASES.map((f) => faseMap.get(f) ?? 0)
   const motivoCounts = motivos.map((m) => motivoMap.get(m) ?? 0)
@@ -125,15 +138,16 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
 
   // KPIs (paridade 1:1, 6 cards serifados via rel-kpi):
   // Total / Em andamento / Concluídos / Em atraso / Tempo médio resolução / Taxa SLA cumprido.
-  // "Tempo médio de resolução" não tem dado real: a coluna concluido_em não é gravada para
-  // tickets do SAC (actions.ts só grava status/fase). Mostramos estado honesto ("—") em vez
-  // de valor falso (o legado exibia "3,2 dias" hardcoded — dado MOCK).
+  // "Tempo médio de resolução" agora é REAL: média de (concluido_em - criado_em) dos chamados
+  // concluídos carimbados (J.02). Chamados concluídos antes desta feature não têm carimbo e
+  // ficam de fora — por isso pode aparecer "—" até novos chamados serem concluídos (honesto;
+  // o legado exibia "3,2 dias" hardcoded — dado MOCK).
   const kpis = [
     { label: 'Total de chamados', value: total.toLocaleString('pt-BR'), icon: 'ti-headset' },
     { label: 'Em andamento', value: emAndamento.toLocaleString('pt-BR'), icon: 'ti-progress' },
     { label: 'Concluídos', value: concluidos.toLocaleString('pt-BR'), icon: 'ti-circle-check' },
     { label: 'Em atraso', value: emAtraso.toLocaleString('pt-BR'), icon: 'ti-alert-triangle' },
-    { label: 'Tempo médio resolução', value: '—', icon: 'ti-clock' },
+    { label: 'Tempo médio resolução', value: tempoMedioLabel, icon: 'ti-clock' },
     { label: 'Taxa SLA cumprido', value: `${slaPct}%`, icon: 'ti-shield-check' },
   ]
 
