@@ -10,7 +10,7 @@ import {
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
-  gerarCobrancaRoyalties, processarRetornoBancario, rodarReguaAtraso,
+  gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig } from '@/app/(app)/financeiro/page'
@@ -612,6 +612,9 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
   const [log, setLog] = useState<string[]>([])
   const [busy, setBusy] = useState('')
   const banco = config.banco as { nome?: string; agencia?: string; conta?: string }
+  // Competência padrão = mês anterior (fechado). O faturamento real vem do BEMP via apuração.
+  const d0 = new Date(hojeISO + 'T12:00:00'); d0.setMonth(d0.getMonth() - 1)
+  const [comp, setComp] = useState(`${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}`)
 
   const pend = recebiveis.filter((r) => r.categoria === 'Royalties' && (r.status === 'aberto' || r.status === 'atrasado'))
   const semBoleto = pend.filter((r) => !r.boleto).length
@@ -625,6 +628,16 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
     if (!r.geradas) { addLog('Nenhum royalty pendente de boleto.'); return }
     addLog(`✓ ${r.geradas} boletos gerados no ${banco.nome} — total ${moedaBR(r.total || 0)}`, '✓ Crédito a receber lançado no financeiro da franqueadora', `✓ Enviado por e-mail e WhatsApp aos franqueados (${r.geradas} destinatários)`)
+    router.refresh()
+  }
+  const apurar = async () => {
+    const [a, m] = comp.split('-').map(Number)
+    if (!a || !m) { addLog('✗ Selecione a competência.'); return }
+    setBusy('apurar')
+    const r = await gerarRoyaltiesDoFaturamento(a, m); setBusy('')
+    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
+    addLog(`✓ Apuração ${comp}: faturamento BEMP ${moedaBR(r.faturamento || 0)} em ${r.unidades || 0} unidade(s)`,
+      r.geradas ? `✓ ${r.geradas} recebível(is) gerado(s) — Royalties (${config.royalty_pct}%) + Fundo de marketing` : 'Já estava apurado nesta competência (nada novo a lançar).')
     router.refresh()
   }
   const baixar = async () => {
@@ -661,8 +674,15 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
             </div>
           ))}
         </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '10px 12px', background: 'var(--green-bg)', borderRadius: 10, marginBottom: 10 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: '#0f6b3a' }}><i className="ti ti-calculator" /> 1) Apurar do faturamento real (BEMP)</span>
+          <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
+          <input type="month" value={comp} onChange={(e) => setComp(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+          <button className="btn btn-primary" disabled={!!busy} onClick={apurar}>{busy === 'apurar' ? 'Apurando…' : <><i className="ti ti-calculator" /> Apurar royalties do mês</>}</button>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>soma o faturamento do mês no BEMP e lança Royalties + Fundo por unidade</span>
+        </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-primary" disabled={!!busy} onClick={gerar}><i className="ti ti-robot" /> Gerar cobrança de royalties ({semBoleto})</button>
+          <button className="btn btn-primary" disabled={!!busy} onClick={gerar}><i className="ti ti-robot" /> 2) Gerar cobrança de royalties ({semBoleto})</button>
           <button className="btn btn-ghost" disabled={!!busy} onClick={baixar}><i className="ti ti-building-bank" /> Processar retorno bancário (baixa)</button>
           <button className="btn btn-ghost" disabled={!!busy} onClick={regua}><i className="ti ti-clock-exclamation" /> Rodar régua de atraso</button>
         </div>

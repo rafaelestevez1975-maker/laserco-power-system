@@ -10,6 +10,8 @@ import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _recebe
 const PAPEIS_FIN = ['financeiro', 'gestor']
 type R = { ok: boolean; error?: string }
 
+const MESES_BR = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
 /** Empresa default (1ª) — o financeiro da franqueadora é consolidado da matriz. */
 async function empresaId(sb: SB): Promise<string | null> {
   const { data } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
@@ -211,6 +213,64 @@ export async function gerarCobrancaRoyalties(): Promise<R & { geradas?: number; 
   }
   revalidatePath('/financeiro')
   return { ok: true, geradas: alvo.length, total }
+}
+
+/** Gera os royalties REAIS de uma competência a partir do FATURAMENTO do BEMP.
+ *  Faturamento por unidade = soma de bemp_billings.total no mês (função fin_faturamento_por_salon),
+ *  casado por unidades.bemp_salon_id. Por unidade-franquia com faturamento, cria 2 recebíveis:
+ *  Royalties (royalty_pct% do bruto) e Fundo de marketing (fundo_pct%), com vencimento no dia X do
+ *  mês seguinte. Idempotente por competência (não duplica). Espelha a regra do legado
+ *  (royaltiesUnidade ~L4582): % sobre o faturamento, só franquias (unidade com salon BEMP). */
+export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Promise<R & { geradas?: number; faturamento?: number; unidades?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para gerar royalties.' }
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
+
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const ini = `${ano}-${p2(mes)}-01`
+  const proxMes = mes === 12 ? 1 : mes + 1
+  const proxAno = mes === 12 ? ano + 1 : ano
+  const fim = `${proxAno}-${p2(proxMes)}-01`
+  const competencia = `${MESES_BR[mes - 1]}/${ano}`
+
+  // 1) Faturamento real por salon (BEMP) no mês
+  const { data: fatRaw, error: eFat } = await op.sb.rpc('fin_faturamento_por_salon', { p_ini: ini, p_fim: fim })
+  if (eFat) return { ok: false, error: msgErro(eFat.message, 'apurar o faturamento do BEMP') }
+  const fatPorSalon = new Map<number, number>()
+  for (const r of (fatRaw ?? []) as { salon: number; faturamento: number }[]) fatPorSalon.set(Number(r.salon), Number(r.faturamento) || 0)
+
+  // 2) Unidades-franquia (têm bemp_salon_id) + config (pct/vencimento)
+  const [{ data: unisRaw }, { data: cfg }] = await Promise.all([
+    op.sb.from('unidades').select('id, nome, bemp_salon_id').not('bemp_salon_id', 'is', null),
+    op.sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+  ])
+  const unidades = (unisRaw ?? []) as { id: string; nome: string; bemp_salon_id: number }[]
+  const royaltyPct = Number((cfg as { royalty_pct?: number } | null)?.royalty_pct) || 10
+  const fundoPct = Number((cfg as { fundo_pct?: number } | null)?.fundo_pct) || 2
+  const vencDia = Number((cfg as { venc_dia?: number } | null)?.venc_dia) || 10
+  const vencimento = `${proxAno}-${p2(proxMes)}-${p2(Math.min(28, Math.max(1, vencDia)))}`
+
+  // 3) Idempotência: pula unidade/categoria que já tem recebível nesta competência
+  const { data: existRaw } = await op.sb.from('fin_recebiveis').select('unidade_nome, categoria').eq('competencia', competencia).in('categoria', ['Royalties', 'Fundo de marketing'])
+  const jaTem = new Set(((existRaw ?? []) as { unidade_nome: string; categoria: string }[]).map((r) => `${r.unidade_nome}|${r.categoria}`))
+
+  const emp = await empresaId(op.sb)
+  const rows: Record<string, unknown>[] = []
+  let faturamento = 0, comFat = 0
+  for (const u of unidades) {
+    const fat = fatPorSalon.get(Number(u.bemp_salon_id)) || 0
+    if (fat <= 0) continue
+    const bruto = Math.round(fat)
+    faturamento += bruto; comFat++
+    if (!jaTem.has(`${u.nome}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: Math.round(bruto * royaltyPct) / 100, vencimento, status: 'aberto' })
+    if (!jaTem.has(`${u.nome}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: Math.round(bruto * fundoPct) / 100, vencimento, status: 'aberto' })
+  }
+  if (rows.length === 0) return { ok: true, geradas: 0, faturamento, unidades: comFat }
+  const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
+  if (eIns) return { ok: false, error: msgErro(eIns.message, 'gerar os royalties') }
+  revalidatePath('/financeiro')
+  return { ok: true, geradas: rows.length, faturamento, unidades: comFat }
 }
 
 /** Processa retorno bancário / baixa em lote (finBaixaLote L5370): baixa boletos em aberto sem atraso. */
