@@ -3,8 +3,6 @@ import { getSessionContext } from '@/lib/session'
 import { listAtendentesSac } from '@/lib/pessoas'
 import { rangePeriodo } from '@/lib/periodo'
 import { moedaBR, dataBR } from '@/lib/fmt'
-import { temPapel } from '@/lib/rbac'
-import { PremiacaoConfig } from '@/components/sac/PremiacaoConfig'
 import { RankingFiltros } from '@/components/sac/RankingFiltros'
 import { PREM_DEFAULT, premioValor, type PremMonetaria, type PremMetricas } from '@/lib/sac'
 
@@ -79,9 +77,6 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
   linhas.sort((a, b) => b.premio - a.premio || b.m.con - a.m.con)
   const top = linhas[0]
 
-  // RBAC: admin/gestor/sac configuram a premiação (mesmo guard server-side em config/actions).
-  const podeEditar = temPapel(ctx?.papel, 'sac', 'gestor')
-
   // Rótulo honesto do recorte aplicado (paridade com o cabeçalho de contexto do Dashboard).
   const periodoLabel = (() => {
     const map: Record<string, string> = { '': 'Todo o histórico', hoje: 'Hoje', ontem: 'Ontem', semana: 'Última semana', mes: 'Mês atual', mes_passado: 'Mês passado', custom: 'Período' }
@@ -92,7 +87,6 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
 
   return (
     <div className="view active">
-      <PremiacaoConfig prem={prem} podeEditar={podeEditar} />
 
       <RankingFiltros />
 

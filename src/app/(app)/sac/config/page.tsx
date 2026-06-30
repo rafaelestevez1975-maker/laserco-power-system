@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { SacConfigManager, type Motivo, type Tag, type CanalUso } from '@/components/sac/SacConfigManager'
+import { PremiacaoConfig } from '@/components/sac/PremiacaoConfig'
+import { PREM_DEFAULT, type PremMonetaria } from '@/lib/sac'
 import { SLA_HORAS_DEFAULT } from '@/lib/sac-config'
 
 // Canais canônicos (mesma lista do write path / dashboard / kanban). Aqui só servem de
@@ -35,6 +37,9 @@ export default async function SacConfigPage() {
   const slaRaw = (cfgRes.data as { pesos?: { slaHoras?: number } } | null)?.pesos?.slaHoras
   const slaHoras = Number.isFinite(Number(slaRaw)) && Number(slaRaw) > 0 ? Number(slaRaw) : SLA_HORAS_DEFAULT
 
+  // Regras de premiação do SAC (mesma fonte sac_premiacao_config.pesos) — vivem AQUI na config.
+  const prem: PremMonetaria = { ...PREM_DEFAULT, ...((cfgRes.data as { pesos?: Partial<PremMonetaria> } | null)?.pesos ?? {}) }
+
   const canais: CanalUso[] = CANAIS.map((nome, i) => ({ nome, n: canaisRes[i].count ?? 0 }))
 
   const podeEditar = !!(ctx?.isAdmin || ctx?.papel === 'sac' || ctx?.papel === 'gestor')
@@ -61,6 +66,9 @@ export default async function SacConfigPage() {
         unidadeAtiva={ctx?.activeUnitName ?? 'Todas as unidades'}
         podeEditar={podeEditar}
       />
+      <div style={{ marginTop: 14 }}>
+        <PremiacaoConfig prem={prem} podeEditar={podeEditar} />
+      </div>
     </div>
   )
 }
