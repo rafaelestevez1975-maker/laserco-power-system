@@ -252,8 +252,9 @@ export function TriagemWhatsapp({
     </div>
     {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}
     {/* Altura travada na viewport: a thread rola DENTRO da coluna (scroll interno) em vez de
-        empurrar a página inteira pra baixo. Offset ≈ topbar + paddings + rel-head + header. */}
-    <div style={{ display: 'grid', gridTemplateColumns: chat && cliOpen ? '300px 1fr 340px' : '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100vh - 250px)', minHeight: 360 }}>
+        empurrar a página inteira pra baixo. Offset = topbar + paddings + header "Conversa" (≈165px)
+        — ajustado p/ o chat ocupar quase toda a altura, sem sobra embaixo. */}
+    <div style={{ display: 'grid', gridTemplateColumns: chat && cliOpen ? '300px 1fr 340px' : '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100dvh - 165px)', minHeight: 360 }}>
       {/* Lista de conversas — rel-card "Conversas (N)" do legado */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--line)' }}>Conversas ({totalReal})</div>
