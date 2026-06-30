@@ -198,7 +198,6 @@ export const MENU: Section[] = [
       { label: 'Minha conta', href: '/minha-conta', icon: 'ti-user-circle' },
       { label: 'App do Cliente', href: '/app-cliente', icon: 'ti-device-mobile' },
       { label: 'Exportações', href: '/exportacoes', icon: 'ti-download' },
-      { label: 'Ajuda e Suporte', href: '/ajuda', icon: 'ti-help-circle', badge: 'BASE' },
     ],
   },
 ]

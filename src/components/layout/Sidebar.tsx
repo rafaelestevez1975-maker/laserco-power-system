@@ -47,6 +47,16 @@ function ehSacOnly(isAdmin: boolean, recursos: string[]) {
   return !isAdmin && recursos.length > 0 && recursos.every((r) => r.startsWith('sac'))
 }
 
+/** Acha um leaf do MENU pelo href (em seções ou dentro de grupos). Usado p/ trazer "Minha conta"
+ *  pra dentro da seção SAC no menu achatado do SAC. */
+function acharLeaf(href: string): Leaf | null {
+  for (const s of MENU) for (const it of s.items) {
+    if (isGroup(it)) { const c = it.children.find((x) => x.href === href); if (c) return c }
+    else if ((it as Leaf).href === href) return it as Leaf
+  }
+  return null
+}
+
 /** A rota atual está em ALGUM item da seção (leaf ou filho de grupo)? → mantém a seção aberta. */
 function secaoTemAtivo(items: Item[], pathname: string) {
   return items.some((it) =>
@@ -78,16 +88,20 @@ export function Sidebar({
         const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly, sacNivel))
         if (items.length === 0) return null
         // Usuário SAC: achata o grupo SAC numa SEÇÃO "SAC" — sem o guarda-chuva "ADMINISTRAÇÃO"
-        // e sem o submenu aninhado (pedido do cliente). Os itens do SAC vêm direto na seção.
+        // e sem o submenu aninhado. "Minha conta" entra no fim do SAC; as outras seções não
+        // aparecem (Rede & Conta vira parte do SAC). Pedido do cliente.
         if (sacOnly) {
           const g = items.find((i) => isGroup(i) && i.children.some((c) => (c.href ?? '').startsWith('/sac')))
           if (g && isGroup(g)) {
             const filhos = g.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly, sacNivel))
+            const minhaConta = acharLeaf('/minha-conta')
+            const itensSac = minhaConta ? [...filhos, minhaConta] : filhos
             return (
-              <SectionBlock key={si} title="SAC" items={filhos} pathname={pathname}
+              <SectionBlock key={si} title="SAC" items={itensSac} pathname={pathname}
                 isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
             )
           }
+          return null // demais seções não aparecem pro SAC (Minha conta foi pra seção SAC)
         }
         return (
           <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
