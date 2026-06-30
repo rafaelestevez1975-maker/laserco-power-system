@@ -6,6 +6,7 @@ import { rangePeriodo } from '@/lib/periodo'
 import { SacFiltros } from '@/components/sac/SacFiltros'
 import { NovoChamado } from '@/components/sac/NovoChamado'
 import { ChamadosTabela, type ChamadoRow } from '@/components/sac/ChamadosTabela'
+import { ingestSacBestEffort } from '@/lib/sac-ingest'
 
 const PAGE_SIZE = 30
 
@@ -16,6 +17,9 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const { canal, fase, situacao, q, atendente, motivo, unidade, periodo, di, df, page: pageRaw } = spv
   const ctx = await getSessionContext()
   const sb = await createClient()
+  // Formulários de SAC do site viram chamado na franqueadora automaticamente — sem "rotear".
+  // Best-effort + throttle (1x/min): garante o "automático" mesmo sem o cron do Vercel rodar.
+  await ingestSacBestEffort()
   const uniNome: Record<string, string> = Object.fromEntries((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
 
   const [atendentesFull, { data: motivosRaw }] = await Promise.all([

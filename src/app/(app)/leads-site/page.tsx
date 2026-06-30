@@ -46,9 +46,14 @@ export default async function LeadsSitePage() {
     })
   }
 
+  // Os formulários de SAC do site NÃO aparecem aqui (inbox do comercial): eles viram
+  // chamado na franqueadora automaticamente (ver lib/sac-ingest) e a atendente os trata
+  // direto em SAC › Chamados. Aqui ficam só os leads comerciais (CRM) e currículos (RH).
+  const leadsComercial = leads.filter((l) => (l.tipo ?? '').toLowerCase() !== 'sac')
+
   return (
     <div className="view active">
-      <SiteLeadsInbox leads={leads} unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
+      <SiteLeadsInbox leads={leadsComercial} unidades={ctx?.unidades ?? []} activeUnitId={ctx?.activeUnitId ?? null} />
     </div>
   )
 }

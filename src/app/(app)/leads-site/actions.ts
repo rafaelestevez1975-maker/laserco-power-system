@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { siteClient } from '@/lib/supabase/site'
+import { FRANQUEADORA_EMPRESA_ID } from '@/lib/sac-ingest'
 
 export type RouteResult = { ok: boolean; error?: string; destino?: 'CRM' | 'SAC' | 'RH' }
 
@@ -82,21 +83,30 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     await marcarRoteado(destino, novoId); return { ok: true, destino }
   }
 
-  if (!unidadeId) return { ok: false, error: 'Selecione a unidade de destino.' }
-  const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
-  const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
-  if (!empresa_id) return { ok: false, error: 'Unidade sem empresa vinculada.' }
-
+  // SAC é CENTRALIZADO na FRANQUEADORA (não existe SAC em franquia): empresa = franqueadora,
+  // unidade_id = null. Não exige unidade — diferente de CRM/RH. (No fluxo normal o SAC nem
+  // chega aqui: é ingerido automaticamente por lib/sac-ingest; isto é só o caminho manual.)
   if (parsed.tipo === 'sac') {
     destino = 'SAC'
     const { data: ins, error } = await sb.from('sac_tickets').insert({
-      empresa_id, unidade_id: unidadeId, nome_cliente: parsed.nome, email_cliente: parsed.email, telefone_cliente: parsed.tel,
+      empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: null,
+      nome_cliente: parsed.nome, email_cliente: parsed.email, telefone_cliente: parsed.tel,
       assunto: parsed.area || 'Atendimento (site)', canal: 'formulario', status: 'aberto', prioridade: 'media',
       area_reclamada: parsed.area, observacoes: parsed.mensagem,
     }).select('id').single()
     if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão p/ criar chamado.' : error.message }
     novoId = (ins as { id?: string })?.id
-  } else {
+    await marcarRoteado(destino, novoId)
+    return { ok: true, destino }
+  }
+
+  // CRM (demais tipos comerciais) — exige unidade de destino.
+  if (!unidadeId) return { ok: false, error: 'Selecione a unidade de destino.' }
+  const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
+  const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
+  if (!empresa_id) return { ok: false, error: 'Unidade sem empresa vinculada.' }
+
+  {
     destino = 'CRM'
     // Etapa inicial DO FUNIL DE CLIENTES (pipeline='cliente') — a migration 050 criou
     // etapas de 'franquia' com a mesma ordem 1..6, então sem o filtro o .single()
