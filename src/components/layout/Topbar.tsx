@@ -65,8 +65,6 @@ export function Topbar({
         </div>
       </div>
 
-      <button className="icon-btn" title="Exportar a tela atual (CSV)"><i className="ti ti-download" /></button>
-
       {/* Seletor de unidade ativa — escondido no SAC (centralizado na franqueadora, sem franquia) */}
       {user.papel !== 'sac' && (
       <div className="unit-wrap" style={{ position: 'relative' }}>
