@@ -40,13 +40,13 @@ export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: bo
       await sb.from('sac_acordos').update({ status: 'pago' }).eq('id', parcela.acordo_id)
       const { data: ac } = await sb.from('sac_acordos').select('ticket_id').eq('id', parcela.acordo_id).single()
       const tid = (ac as { ticket_id?: string } | null)?.ticket_id
-      if (tid) { await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', tid); concluiuChamado = true }
+      if (tid) { await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate, concluido_em: agora }).eq('id', tid); concluiuChamado = true }
     }
     revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac/pagamentos')
   } else if (lanc.origem_ref_id) {
     const { data: tk } = await sb.from('sac_tickets').select('id').eq('id', lanc.origem_ref_id).maybeSingle()
     if (tk) {
-      await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate }).eq('id', lanc.origem_ref_id)
+      await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate, concluido_em: agora }).eq('id', lanc.origem_ref_id)
       concluiuChamado = true
       revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados')
     }
