@@ -234,7 +234,7 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/expansao', '/expansao/disparos', '/implantacao',
   // Administração · SAC
   '/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/pagamentos',
-  '/sac/atendentes', '/sac/ranking', '/sac/importar', '/sac/config',
+  '/sac/atendentes', '/sac/ranking', '/sac/importar', '/sac/config', '/sac/canais',
   // Administração · Financeiro Franqueadora
   '/financeiro', '/financeiro/dre', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
   '/juridico', '/auditoria',

@@ -24,7 +24,8 @@ const conectado = (s: string) => s === 'connected'
 type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string; cta?: string }
 const ORIGENS: Origem[] = [
   { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'O formulário de SAC do site vira chamado no SAC.', href: '/sac/chamados?canal=formulario', cta: 'Ver chamados' },
-  { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  // Integrações futuras (ocultas por enquanto — reativar quando entrarem):
+  // { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
 ]
@@ -123,15 +124,19 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
                 <b><i className="ti ti-alert-triangle" /> Restrição do WhatsApp{c.restritoAte ? ` até ${new Date(c.restritoAte).toLocaleDateString('pt-BR')}` : ''}.</b> Este número não pode <b>iniciar</b> conversas novas pelo sistema (anti-spam de número recém-ativado). <b>Responder</b> quem te escreve funciona. Pra iniciar, use um número já estabelecido ou aguarde liberar.
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {conectado(c.status)
-                ? <>
-                    <button className="btn" disabled={busy === c.name} onClick={() => sincronizar(c.name)} title="Reaplica o webhook — garante que as mensagens recebidas apareçam na Triagem em tempo real"><i className="ti ti-refresh" /> Sincronizar</button>
-                    <button className="btn" disabled={busy === c.name} onClick={() => desconectar(c.name)}><i className="ti ti-plug-off" /> Desconectar</button>
-                  </>
-                : <button className="btn btn-primary" disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
-              <button className="btn" onClick={() => setEditar(c)}><i className="ti ti-settings" /> {c.vinculado ? 'Editar' : 'Vincular'}</button>
-              <button className="btn" disabled={busy === c.name} onClick={() => excluir(c.name)} title="Excluir o canal de vez" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /></button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {conectado(c.status)
+                  ? <>
+                      <button className="btn" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => sincronizar(c.name)} title="Reaplica o webhook — garante que as mensagens recebidas apareçam na Triagem em tempo real"><i className="ti ti-refresh" /> Sincronizar</button>
+                      <button className="btn" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => desconectar(c.name)}><i className="ti ti-plug-off" /> Desconectar</button>
+                    </>
+                  : <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn" style={{ flex: 1 }} onClick={() => setEditar(c)}><i className="ti ti-settings" /> {c.vinculado ? 'Editar' : 'Vincular'}</button>
+                <button className="btn" disabled={busy === c.name} onClick={() => excluir(c.name)} title="Excluir o canal de vez" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /></button>
+              </div>
             </div>
           </div>
         ))}
@@ -259,11 +264,16 @@ function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeU
               </div>
             </>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="mf"><label>Delay mín. (s)</label><input type="number" value={dMin} onChange={(e) => setDMin(e.target.value)} /></div>
-            <div className="mf"><label>Delay máx. (s)</label><input type="number" value={dMax} onChange={(e) => setDMax(e.target.value)} /></div>
-          </div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>O delay (anti-ban) é aplicado aos disparos deste canal.</div>
+          {/* Delay (anti-ban) é só pra DISPAROS/campanha — não faz sentido no SAC (recebe/responde). */}
+          {!central && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="mf"><label>Delay mín. (s)</label><input type="number" value={dMin} onChange={(e) => setDMin(e.target.value)} /></div>
+                <div className="mf"><label>Delay máx. (s)</label><input type="number" value={dMax} onChange={(e) => setDMax(e.target.value)} /></div>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>O delay (anti-ban) é aplicado aos disparos deste canal.</div>
+            </>
+          )}
         </div>
         <div className="modal-foot"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? 'Salvando…' : (editando ? 'Salvar' : 'Criar canal')}</button></div>
       </div>
