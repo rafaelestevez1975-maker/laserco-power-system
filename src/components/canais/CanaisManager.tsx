@@ -15,6 +15,16 @@ export type Unidade = { id: string; nome: string }
 
 const conectado = (s: string) => s === 'connected'
 
+// Origens de leads exibidas como cards (além das instâncias de WhatsApp). O Site já recebe
+// leads do formulário do site; os demais entram conforme as integrações forem ativadas.
+type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string }
+const ORIGENS: Origem[] = [
+  { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'Leads do formulário do site caem aqui automaticamente.', href: '/leads-site' },
+  { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
+]
+
 export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeUnitName }: {
   canais: Canal[]; unidades: Unidade[]; isAdmin: boolean; activeUnitId: string | null; activeUnitName: string
 }) {
@@ -72,8 +82,12 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
         <button className="btn btn-primary" onClick={() => setNovo(true)}><i className="ti ti-plus" /> Novo canal</button>
       </div>
 
+      <div style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
+        <i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos/leads. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>Site</b> já recebe leads automaticamente.
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: 14 }}>
-        {canais.length === 0 && <div style={{ color: 'var(--text-3)', fontSize: 13 }}>Nenhum canal Laser ainda. Crie o primeiro.</div>}
+        {canais.length === 0 && <div style={{ color: 'var(--text-3)', fontSize: 13, gridColumn: '1 / -1' }}>WhatsApp ainda não conectado — clique em “Novo canal” e depois em “Conectar (QR)”.</div>}
         {canais.map((c) => (
           <div key={c.name} className="rel-card" style={{ padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -100,6 +114,20 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
                 : <button className="btn btn-primary" disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
               <button className="btn" onClick={() => setEditar(c)}><i className="ti ti-settings" /> {c.vinculado ? 'Editar' : 'Vincular'}</button>
             </div>
+          </div>
+        ))}
+        {/* Origens de leads (Site ativo + integrações futuras) — pedido do Julio: Canais = de onde vêm os leads. */}
+        {ORIGENS.map((o) => (
+          <div key={o.nome} className="rel-card" style={{ padding: 16, opacity: o.status === 'breve' ? 0.7 : 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <i className={`ti ${o.icon}`} style={{ fontSize: 22, color: o.status === 'ativo' ? 'var(--green)' : 'var(--text-3)' }} />
+              <b style={{ flex: 1, fontSize: 13.5 }}>{o.nome}</b>
+              <span style={pill(o.status === 'ativo' ? '#E7F0EC' : '#EEF1F4', o.status === 'ativo' ? '#15803D' : '#64748B')}>{o.status === 'ativo' ? 'Ativo' : 'Em breve'}</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10, lineHeight: 1.4 }}>{o.desc}</div>
+            {o.href && o.status === 'ativo'
+              ? <button className="btn" onClick={() => router.push(o.href!)}><i className="ti ti-arrow-right" /> Ver leads</button>
+              : <button className="btn" disabled style={{ opacity: 0.6 }}>Em breve</button>}
           </div>
         ))}
       </div>
