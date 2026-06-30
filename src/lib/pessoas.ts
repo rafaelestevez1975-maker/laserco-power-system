@@ -7,8 +7,10 @@
  */
 import type { SB } from '@/lib/sb'
 
-/** Papéis que atuam no SAC (recebem conversas/tickets). */
-export const PAPEIS_SAC = ['sac', 'admin_geral']
+/** Atendentes do SAC = papel 'sac' (cargos atendente/supervisor/consulta). O admin_geral NÃO
+ *  entra: tem acesso total ao SAC, mas não é "atendente" → fora do ranking/premiação e da fila
+ *  de distribuição (pedido do Julio, 29/06). */
+export const PAPEIS_SAC = ['sac']
 
 export type Pessoa = {
   id: string            // perfis_usuario.id — é a CHAVE de atribuição (sac_tickets.atribuido_para / sac_whatsapp_chats.atendente_id)
