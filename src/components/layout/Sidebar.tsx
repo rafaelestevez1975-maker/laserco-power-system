@@ -77,6 +77,18 @@ export function Sidebar({
       {MENU.map((section, si) => {
         const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly, sacNivel))
         if (items.length === 0) return null
+        // Usuário SAC: achata o grupo SAC numa SEÇÃO "SAC" — sem o guarda-chuva "ADMINISTRAÇÃO"
+        // e sem o submenu aninhado (pedido do cliente). Os itens do SAC vêm direto na seção.
+        if (sacOnly) {
+          const g = items.find((i) => isGroup(i) && i.children.some((c) => (c.href ?? '').startsWith('/sac')))
+          if (g && isGroup(g)) {
+            const filhos = g.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly, sacNivel))
+            return (
+              <SectionBlock key={si} title="SAC" items={filhos} pathname={pathname}
+                isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
+            )
+          }
+        }
         return (
           <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
             isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
