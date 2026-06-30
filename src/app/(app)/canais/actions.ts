@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { msgErro as rlsMsg } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { getSessionContext } from '@/lib/session'
@@ -55,6 +56,7 @@ async function tokenPorNome(nome: string): Promise<string | null> {
 export async function criarCanal(form: CanalForm): Promise<{ ok: boolean; error?: string }> {
   const ctx = await getSessionContext()
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }
+  if (!temPapel(ctx.papel, ...PAPEIS_CANAL)) return { ok: false, error: 'Você não tem permissão para gerenciar canais.' }
   const n = (form.nome || '').trim()
   if (!n) return { ok: false, error: 'Informe o nome do canal.' }
 
@@ -68,7 +70,9 @@ export async function criarCanal(form: CanalForm): Promise<{ ok: boolean; error?
   const res = await createInstance(finalName)
   if (!res.ok) return { ok: false, error: res.error }
 
-  const { error } = await sb.from('canais_whatsapp').insert({
+  // Write com service role: a RLS de canais_whatsapp não libera SAC, mas a autorização (papel +
+  // resolverDestino) já foi feita acima. Mesma abordagem do webhook (admin client server-only).
+  const { error } = await adminClient().from('canais_whatsapp').insert({
     instancia_nome: finalName, escopo, unidade_id, atendente_id,
     rotulo: form.rotulo?.trim() || null,
     delay_min: Math.max(1, form.delayMin ?? 20),
@@ -102,6 +106,7 @@ function resolverDestino(form: CanalForm, ctx: { isAdmin: boolean; activeUnitId:
 export async function salvarVinculo(form: CanalForm & { id?: string }): Promise<{ ok: boolean; error?: string }> {
   const ctx = await getSessionContext()
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }
+  if (!temPapel(ctx.papel, ...PAPEIS_CANAL)) return { ok: false, error: 'Você não tem permissão para gerenciar canais.' }
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   const { escopo, unidade_id, atendente_id, erro } = resolverDestino(form, ctx, user?.id ?? null)
@@ -113,7 +118,8 @@ export async function salvarVinculo(form: CanalForm & { id?: string }): Promise<
     delay_max: Math.max(Math.max(1, form.delayMin ?? 20), form.delayMax ?? 45),
     criado_por: user?.id ?? null,
   }
-  const { error } = await sb.from('canais_whatsapp').upsert(row, { onConflict: 'instancia_nome' })
+  // service role: RLS de canais_whatsapp não libera SAC; autorização já feita acima.
+  const { error } = await adminClient().from('canais_whatsapp').upsert(row, { onConflict: 'instancia_nome' })
   if (error) return { ok: false, error: rlsMsg(error.message, 'salvar o vínculo') }
   revalidatePath('/canais'); revalidatePath('/sac/canais'); revalidatePath('/expansao/disparos')
   return { ok: true }
@@ -165,8 +171,8 @@ export async function excluirCanal(nome: string): Promise<{ ok: boolean; error?:
   const g = await guardCanalAlvo(nome)
   if (!g.ok) return { ok: false, error: g.error }
   await deleteInstance(g.alvo.token).catch(() => null)
-  const sb = await createClient()
-  await sb.from('canais_whatsapp').delete().eq('instancia_nome', nome)
+  // service role: RLS de canais_whatsapp não libera SAC; autorização já feita por guardCanalAlvo.
+  await adminClient().from('canais_whatsapp').delete().eq('instancia_nome', nome)
   revalidatePath('/canais'); revalidatePath('/sac/canais'); revalidatePath('/expansao/disparos')
   return { ok: true }
 }
