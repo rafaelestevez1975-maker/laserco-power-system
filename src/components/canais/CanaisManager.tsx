@@ -16,14 +16,17 @@ export type Unidade = { id: string; nome: string }
 
 const conectado = (s: string) => s === 'connected'
 
-// Origens de leads exibidas como cards (além das instâncias de WhatsApp). O Site já recebe
-// leads do formulário do site; os demais entram conforme as integrações forem ativadas.
-type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string }
+// Origens de atendimento exibidas como cards (além das instâncias de WhatsApp).
+// O "Site" aqui é o FORMULÁRIO DE SAC do site: ele vira CHAMADO no SAC (canal='formulario'),
+// que a atendente/consultora abre direto em Chamados — NÃO a caixa de leads do comercial.
+// Reclame Aqui / Instagram / E-mail ficam OCULTOS por enquanto (pedido do Julio); reativar
+// é só descomentar o item correspondente.
+type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string; cta?: string }
 const ORIGENS: Origem[] = [
-  { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'Leads do formulário do site caem aqui automaticamente.', href: '/leads-site' },
-  { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
-  { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
-  { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'O formulário de SAC do site vira chamado no SAC.', href: '/sac/chamados?canal=formulario', cta: 'Ver chamados' },
+  // { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  // { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  // { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
 ]
 
 export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, activeUnitId, activeUnitName }: {
@@ -84,7 +87,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
       </div>
 
       <div style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
-        <i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos/leads. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>Site</b> já recebe leads automaticamente.
+        <i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: 14 }}>
@@ -128,7 +131,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10, lineHeight: 1.4 }}>{o.desc}</div>
             {o.href && o.status === 'ativo'
-              ? <button className="btn" onClick={() => router.push(o.href!)}><i className="ti ti-arrow-right" /> Ver leads</button>
+              ? <button className="btn" onClick={() => router.push(o.href!)}><i className="ti ti-arrow-right" /> {o.cta ?? 'Ver leads'}</button>
               : <button className="btn" disabled style={{ opacity: 0.6 }}>Em breve</button>}
           </div>
         ))}
