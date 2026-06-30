@@ -87,7 +87,7 @@ export function DisparoComposer({ canais, activeUnitId, templates, listas }: { c
   if (canais.length === 0) {
     return (
       <div className="rel-card" style={{ padding: 16 }}>
-        Nenhum canal de WhatsApp <b>conectado</b>. Conecte o número da sua unidade em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais WhatsApp</a> antes de disparar.
+        Nenhum canal de WhatsApp <b>conectado</b>. Conecte o número da sua unidade em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais</a> antes de disparar.
       </div>
     )
   }

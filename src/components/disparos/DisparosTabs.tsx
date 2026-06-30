@@ -302,7 +302,7 @@ function TabConfig({ apiCards, uazapiConfigurado }: { apiCards: ApiCard[]; uazap
   return (
     <div>
       <div className="rel-legend" style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 12 }}>
-        <b>Cada unidade tem o seu próprio número e credenciais</b> de WhatsApp. A gestão completa (criar instância, QR de pareamento, status, delay anti-ban) fica em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais WhatsApp</a>.
+        <b>Cada unidade tem o seu próprio número e credenciais</b> de WhatsApp. A gestão completa (criar instância, QR de pareamento, status, delay anti-ban) fica em <a href="/canais" style={{ color: 'var(--brand-600)', fontWeight: 600 }}>Canais</a>.
       </div>
       <div style={{ marginBottom: 14 }}><a className="btn btn-primary" href="/canais"><i className="ti ti-plus" /> Conectar / gerenciar canais</a></div>
       {!uazapiConfigurado ? (

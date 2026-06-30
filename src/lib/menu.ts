@@ -118,7 +118,7 @@ export const MENU: Section[] = [
       { label: 'Disparos WhatsApp API', href: '/disparos', icon: 'ti-brand-whatsapp', perm: 'marketing.campanha' },
       { label: 'CRM', href: '/crm', icon: 'ti-affiliate', perm: 'crm.lead' },
       { label: 'Leads do Site', href: '/leads-site', icon: 'ti-inbox', perm: 'crm.lead' },
-      { label: 'Canais WhatsApp', href: '/canais', icon: 'ti-brand-whatsapp' },
+      { label: 'Canais', href: '/canais', icon: 'ti-brand-whatsapp', title: 'Canais' },
       { label: 'Gestão de Indiques', href: '/indiques', icon: 'ti-gift', perm: 'crm.lead' },
       {
         label: 'Recursos Humanos', icon: 'ti-briefcase', key: 'rh', perm: 'rh.', children: [
@@ -165,7 +165,7 @@ export const MENU: Section[] = [
           { label: 'Conversa', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Conversa' },
           // Atalho p/ a tela de Canais (WhatsApp) DENTRO do SAC. perm 'sac.canal' → visível p/ todos
           // os cargos SAC (inclusive atendente), já que /canais fica fora do SAC no menu principal.
-          { label: 'Canais WhatsApp', href: '/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais WhatsApp' },
+          { label: 'Canais', href: '/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes' },
