@@ -39,7 +39,7 @@ export function AppShell({
             </div>
           </div>
         </div>
-        <Sidebar isAdmin={user.isAdmin} recursos={recursos} onNavigate={() => setMobOpen(false)} />
+        <Sidebar isAdmin={user.isAdmin} recursos={recursos} sacNivel={sacNivel} onNavigate={() => setMobOpen(false)} />
         <div className="sidebar-foot"><i className="ti ti-settings" /> Configurações &amp; suporte</div>
       </aside>
 

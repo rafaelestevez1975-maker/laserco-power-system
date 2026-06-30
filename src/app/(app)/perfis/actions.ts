@@ -96,17 +96,36 @@ export async function salvarPermissoesCargo(
     permsDoPar.set(k, [...(permsDoPar.get(k) ?? []), p.id])
   }
 
+  // O que o cargo JÁ tem nesses pares — p/ preservar o escopo existente e NUNCA escalar.
+  // (A matriz é binária: concede/revoga. Ela não deve regredir nem escalar o escopo de
+  //  um par já concedido com escopo 'unidade'/'proprio' para 'global'.)
+  const allPermIds = perms.map((p) => p.id)
+  const paresJaConcedidos = new Set<string>()
+  if (allPermIds.length > 0) {
+    const { data: atuaisRaw, error: eAtuais } = await admin
+      .from('cargo_permissoes').select('permissao_id').eq('cargo_id', cargoId).in('permissao_id', allPermIds)
+    if (eAtuais) return { ok: false, error: 'Falha ao carregar as permissões atuais do cargo.' }
+    const jaTem = new Set((atuaisRaw ?? []).map((r) => (r as { permissao_id: string }).permissao_id))
+    for (const p of perms) if (jaTem.has(p.id)) paresJaConcedidos.add(`${p.recurso_id}|${p.acao_id}`)
+  }
+
   const idsRemover: string[] = []
   const idsInserir: string[] = []
+  let puladas = 0
   for (const c of limpos) {
-    const todosDoPar = permsDoPar.get(`${c.recurso_id}|${c.acao_id}`) ?? []
-    if (todosDoPar.length === 0) return { ok: false, error: `Par recurso/ação sem permissão cadastrada: ${c.recurso_id}/${c.acao_id}.` }
-    // remove todos os escopos desse par (depois reinsere só o escolhido)
-    for (const id of todosDoPar) idsRemover.push(id)
+    const par = `${c.recurso_id}|${c.acao_id}`
+    const todosDoPar = permsDoPar.get(par) ?? []
+    // Par sem permissão cadastrada (checkbox-fantasma): pula a célula, NÃO aborta o cargo inteiro.
+    if (todosDoPar.length === 0) { puladas++; continue }
     if (c.escopo) {
-      const pid = permId.get(`${c.recurso_id}|${c.acao_id}|${c.escopo}`)
-      if (!pid) return { ok: false, error: `Permissão inexistente: ${c.recurso_id}/${c.acao_id}/${c.escopo}.` }
+      // CONCEDER: só concede ('global') se o par ainda NÃO está concedido — preserva o escopo de quem já tem.
+      if (paresJaConcedidos.has(par)) continue
+      const pid = permId.get(`${par}|${c.escopo}`)
+      if (!pid) { puladas++; continue } // escopo pedido inexistente no schema → pula
       idsInserir.push(pid)
+    } else {
+      // REVOGAR: remove todos os escopos do par para este cargo.
+      for (const id of todosDoPar) idsRemover.push(id)
     }
   }
 

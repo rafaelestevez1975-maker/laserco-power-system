@@ -13,8 +13,8 @@ const MOD_LABEL: Record<string, string> = {
 }
 
 /** Matriz de permissões estilo ABV: recurso × ação (linhas, por módulo colapsável) × cargos (colunas).
- *  Marcar = concede o escopo 'global' do par; desmarcar = remove. Salva por cargo (diff) via
- *  salvarPermissoesCargo — a action valida, persiste e audita. */
+ *  Marcar = concede o par (escopo 'global' se for NOVO; preserva o escopo atual de quem já tem);
+ *  desmarcar = remove. Salva por cargo (só o diff) via salvarPermissoesCargo — valida, persiste e audita. */
 export function MatrizPermissoes({ cargos, acoes, acaoLabel, modulos, checked }: {
   cargos: Cargo[]; acoes: string[]; acaoLabel: Record<string, string>; modulos: Modulo[]; checked: Record<string, string[]>
 }) {

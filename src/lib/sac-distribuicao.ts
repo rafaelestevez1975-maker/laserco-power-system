@@ -16,7 +16,10 @@ export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null):
   // Candidatas: papel sac, ONLINE, ativas — com o cargo embutido p/ filtrar operacional.
   const { data } = await sb
     .from('perfis_usuario')
-    .select('id, unidade_id, usuario_cargos(cargos(slug))')
+    // Desambiguar o embed: usuario_cargos tem 2 FKs p/ perfis_usuario (perfil_id e
+    // atribuido_por). Sem a FK explícita o PostgREST devolve PGRST201 e a query falha
+    // INTEIRA — por isso a auto-distribuição não escolhia ninguém.
+    .select('id, unidade_id, usuario_cargos!usuario_cargos_perfil_id_fkey(cargos(slug))')
     .eq('papel', 'sac')
     .eq('sac_online', true)
     .eq('ativo', true)
