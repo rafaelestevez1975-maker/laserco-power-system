@@ -10,6 +10,7 @@ export type SessionUser = {
   iniciais: string
   papel: string
   isAdmin: boolean
+  sacOnline?: boolean
 }
 export type Unidade = { id: string; nome: string }
 

@@ -104,6 +104,17 @@ export async function criarAcessoAtendente(input: CriarAtendenteInput): Promise<
   return { ok: true }
 }
 
+/** Liga/desliga a presença SAC do PRÓPRIO operador. Online = recebe conversas automaticamente
+ *  (entra na auto-distribuição); Offline = não recebe. Pedido do Julio (toggle no menu do nome). */
+export async function definirPresencaSac(online: boolean): Promise<{ ok: boolean; online?: boolean; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  const { error: e } = await adminClient().from('perfis_usuario').update({ sac_online: !!online }).eq('id', op.userId)
+  if (e) return { ok: false, error: msgErro(e.message, 'atualizar a presença') }
+  revalidatePath('/sac/triagem'); revalidatePath('/sac/atendentes')
+  return { ok: true, online: !!online }
+}
+
 /** Ativa/Desativa uma atendente (perfis_usuario.ativo). Atendente desativada não
  *  recebe mais distribuição e fica fora do ranking, mas continua listada na gestão.
  *  Paridade com o legado (a.ativo ? 'Ativo' : 'Inativo' + ação de alternar). Admin-only. */

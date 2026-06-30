@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <AppShell
-        user={{ nome: ctx.nome, email: ctx.email, iniciais: ctx.iniciais, papel: ctx.papel, isAdmin: ctx.isAdmin }}
+        user={{ nome: ctx.nome, email: ctx.email, iniciais: ctx.iniciais, papel: ctx.papel, isAdmin: ctx.isAdmin, sacOnline: ctx.sacOnline }}
         recursos={ctx.recursos}
         units={ctx.unidades}
         activeUnitId={ctx.activeUnitId}

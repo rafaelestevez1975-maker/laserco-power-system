@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { normTel, listInstances, sendText, resolverInstancia, downloadMessage, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
+import { escolherAtendenteOnline } from '@/lib/sac-distribuicao'
 import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
 
 /**
@@ -27,7 +28,7 @@ type WebhookBody = {
   instance?: string; token?: string; owner?: string
 }
 type ChatRow = { id: string; nome: string | null; nao_lidas: number; bot_ativo?: boolean | null; atendente_id?: string | null }
-type CanalBinding = { instancia_nome: string; unidade_id: string | null }
+type CanalBinding = { instancia_nome: string; unidade_id: string | null; atendente_id?: string | null }
 
 function classificarTipo(mt?: string): string {
   const t = (mt ?? '').toLowerCase()
@@ -120,13 +121,14 @@ export async function POST(req: NextRequest) {
   const instancias = await listInstances().catch(() => [] as Instancia[])
   const inst = resolverInstancia(instancias, { instance: body.instance, token: body.token, owner: msg.owner ?? body.owner })
   let unidadeOrigem: string | null = null
+  let canalAtendenteId: string | null = null // canal de número PRÓPRIO de uma atendente (modelo híbrido)
   const canalNome: string | null = inst?.name ?? null
   if (inst?.name) {
-    // Vínculo confiável canal⟷unidade (colunas confirmadas em canais_whatsapp).
+    // Vínculo confiável canal⟷unidade/atendente (colunas confirmadas em canais_whatsapp).
     const { data: bind } = await sb.from('canais_whatsapp')
-      .select('instancia_nome, unidade_id').eq('instancia_nome', inst.name).maybeSingle()
+      .select('instancia_nome, unidade_id, atendente_id').eq('instancia_nome', inst.name).maybeSingle()
     const b = bind as CanalBinding | null
-    if (b) unidadeOrigem = b.unidade_id ?? null
+    if (b) { unidadeOrigem = b.unidade_id ?? null; canalAtendenteId = b.atendente_id ?? null }
   }
 
   // Insert com escopo (unidade_id/canal_nome). Se as colunas não existirem no schema,
@@ -160,6 +162,19 @@ export async function POST(req: NextRequest) {
     if (upd.error && isColMissing(upd.error.message)) {
       upd = await sb.from('sac_whatsapp_chats').update(basePatch).eq('id', chat.id)
     }
+  }
+
+  // ── Auto-distribuição (pedido do Julio): conversa de cliente SEM dono cai automaticamente.
+  // Canal de número PRÓPRIO → vai pra dona; canal compartilhado → atendente ONLINE menos carregada.
+  // Se ninguém online, fica na fila (e a IA atende). Atribui só uma vez (não reatribui).
+  if (!fromMe && chat && !chat.atendente_id) {
+    try {
+      const alvo = canalAtendenteId ?? await escolherAtendenteOnline(sb, unidadeOrigem)
+      if (alvo) {
+        const { error: eAtr } = await sb.from('sac_whatsapp_chats').update({ atendente_id: alvo }).eq('id', chat.id)
+        if (!eAtr) chat.atendente_id = alvo
+      }
+    } catch (e) { console.error('webhook auto-distribuição:', (e as Error).message) }
   }
 
   // Mídia recebida: a UAZAPI nem sempre manda `fileURL` no webhook. Quando não vem, baixa via

@@ -24,6 +24,8 @@ export type SessionContext = {
   activeUnitName: string
   /** Nível dentro do SAC (pelo cargo) p/ filtrar o submenu; null se não for cargo SAC. */
   sacNivel: SacNivel
+  /** Presença SAC: online recebe conversas automaticamente; offline não recebe. */
+  sacOnline: boolean
 }
 
 const ADMIN_PAPEL = 'admin_geral'
@@ -94,7 +96,7 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   const [perfilRes, cargos, unidadesRes] = await Promise.all([
     sb
       .from('perfis_usuario')
-      .select('nome_completo, email, papel, unidade_id')
+      .select('nome_completo, email, papel, unidade_id, sac_online')
       .eq('id', user.id)
       .single(),
     fetchCargos(user.id),
@@ -111,7 +113,7 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   const unidadesRaw = unidadesRes.data
   const cargoIds = cargos.ids
 
-  const p = perfil as { nome_completo?: string; email?: string; papel?: string; unidade_id?: string | null } | null
+  const p = perfil as { nome_completo?: string; email?: string; papel?: string; unidade_id?: string | null; sac_online?: boolean } | null
   const nome = p?.nome_completo ?? user.email?.split('@')[0] ?? 'Usuário'
   const email = p?.email ?? user.email ?? ''
   const papel = p?.papel ?? 'colaborador'
@@ -134,5 +136,5 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     ? unidades.find((u) => u.id === activeUnitId)?.nome ?? 'Unidade'
     : 'Todas as unidades'
 
-  return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName, sacNivel: nivelSac(cargos.slugs) }
+  return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName, sacNivel: nivelSac(cargos.slugs), sacOnline: !!p?.sac_online }
 })
