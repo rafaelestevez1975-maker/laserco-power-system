@@ -8,6 +8,7 @@ export type Canal = {
   name: string; status: string; owner?: string
   vinculado: boolean; bindingId?: string
   escopo?: Escopo; unidadeId?: string | null; unidadeNome?: string | null
+  atendenteId?: string | null; atendenteNome?: string | null
   rotulo?: string | null; delayMin?: number; delayMax?: number
   restrito?: boolean; restritoAte?: string | null
 }
@@ -25,8 +26,8 @@ const ORIGENS: Origem[] = [
   { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
 ]
 
-export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeUnitName }: {
-  canais: Canal[]; unidades: Unidade[]; isAdmin: boolean; activeUnitId: string | null; activeUnitName: string
+export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, activeUnitId, activeUnitName }: {
+  canais: Canal[]; unidades: Unidade[]; atendentes?: { id: string; nome: string }[]; isAdmin: boolean; activeUnitId: string | null; activeUnitName: string
 }) {
   const router = useRouter()
   const [qr, setQr] = useState<{ nome: string; img?: string; status: string } | null>(null)
@@ -97,6 +98,7 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
               {escopoBadge(c)}
+              {c.atendenteNome && <span style={pill('#E7EEFB', '#1E3A8A')}><i className="ti ti-user" /> {c.atendenteNome}</span>}
               {c.vinculado && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>delay {c.delayMin}–{c.delayMax}s</span>}
             </div>
             {c.owner && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>{c.owner}</div>}
@@ -134,7 +136,7 @@ export function CanaisManager({ canais, unidades, isAdmin, activeUnitId, activeU
 
       {(novo || editar) && (
         <CanalModal
-          base={editar} isAdmin={isAdmin} unidades={unidades} activeUnitId={activeUnitId} activeUnitName={activeUnitName}
+          base={editar} isAdmin={isAdmin} unidades={unidades} atendentes={atendentes} activeUnitId={activeUnitId} activeUnitName={activeUnitName}
           onClose={() => { setNovo(false); setEditar(null) }}
           onSaved={(m) => { setNovo(false); setEditar(null); setMsg(m); router.refresh() }}
         />
@@ -159,8 +161,8 @@ function pill(bg: string, color: string): React.CSSProperties {
   return { fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color, display: 'inline-flex', alignItems: 'center', gap: 4 }
 }
 
-function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onClose, onSaved }: {
-  base: Canal | null; isAdmin: boolean; unidades: Unidade[]; activeUnitId: string | null; activeUnitName: string
+function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeUnitName, onClose, onSaved }: {
+  base: Canal | null; isAdmin: boolean; unidades: Unidade[]; atendentes: { id: string; nome: string }[]; activeUnitId: string | null; activeUnitName: string
   onClose: () => void; onSaved: (msg: string) => void
 }) {
   const editando = !!base // vincular/editar instância existente
@@ -168,6 +170,7 @@ function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onC
   const [escopo, setEscopo] = useState<Escopo>(base?.escopo ?? (isAdmin ? 'unidade' : 'unidade'))
   const [unidadeId, setUnidadeId] = useState(base?.unidadeId ?? activeUnitId ?? unidades[0]?.id ?? '')
   const [rotulo, setRotulo] = useState(base?.rotulo ?? '')
+  const [atendenteId, setAtendenteId] = useState(base?.atendenteId ?? '')
   const [dMin, setDMin] = useState(String(base?.delayMin ?? 20))
   const [dMax, setDMax] = useState(String(base?.delayMax ?? 45))
   const [busy, setBusy] = useState(false)
@@ -181,7 +184,7 @@ function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onC
     if (!Number.isFinite(min) || min < 1) { setErr('Delay mínimo inválido (use ≥ 1 segundo).'); return }
     if (!Number.isFinite(max) || max < min) { setErr('O delay máximo deve ser maior ou igual ao mínimo.'); return }
     setBusy(true)
-    const form = { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: min, delayMax: max }
+    const form = { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: min, delayMax: max, atendenteId: atendenteId || null }
     const res = editando ? await salvarVinculo({ ...form, id: base!.bindingId }) : await criarCanal(form)
     setBusy(false)
     if (!res.ok) { setErr(res.error || 'Erro ao salvar.'); return }
@@ -212,6 +215,13 @@ function CanalModal({ base, isAdmin, unidades, activeUnitId, activeUnitName, onC
               </select>
             </div>
           )}
+          <div className="mf"><label>Número de quem? (modelo híbrido)</label>
+            <select value={atendenteId} onChange={(e) => setAtendenteId(e.target.value)}>
+              <option value="">Compartilhado da unidade (vai pra fila/distribuição)</option>
+              {atendentes.map((a) => <option key={a.id} value={a.id}>Número próprio de {a.nome} (cai só pra ela)</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Se for o WhatsApp pessoal de uma atendente, as conversas desse número caem direto pra ela.</div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Delay mín. (s)</label><input type="number" value={dMin} onChange={(e) => setDMin(e.target.value)} /></div>
             <div className="mf"><label>Delay máx. (s)</label><input type="number" value={dMax} onChange={(e) => setDMax(e.target.value)} /></div>

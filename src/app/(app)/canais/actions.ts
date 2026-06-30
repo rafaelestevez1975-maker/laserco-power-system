@@ -36,7 +36,7 @@ async function guardCanalAlvo(nome: string): Promise<{ ok: true; alvo: CanalAlvo
 }
 
 export type Escopo = 'unidade' | 'geral'
-export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number }
+export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number; atendenteId?: string | null }
 
 // rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
@@ -71,6 +71,7 @@ export async function criarCanal(form: CanalForm): Promise<{ ok: boolean; error?
   const { data: { user } } = await sb.auth.getUser()
   const { error } = await sb.from('canais_whatsapp').insert({
     instancia_nome: finalName, escopo, unidade_id,
+    atendente_id: form.atendenteId || null, // número PRÓPRIO de uma atendente (modelo híbrido)
     rotulo: form.rotulo?.trim() || null,
     delay_min: Math.max(1, form.delayMin ?? 20),
     delay_max: Math.max(Math.max(1, form.delayMin ?? 20), form.delayMax ?? 45),
@@ -96,7 +97,8 @@ export async function salvarVinculo(form: CanalForm & { id?: string }): Promise<
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   const row = {
-    instancia_nome: form.nome, escopo, unidade_id, rotulo: form.rotulo?.trim() || null,
+    instancia_nome: form.nome, escopo, unidade_id, atendente_id: form.atendenteId || null,
+    rotulo: form.rotulo?.trim() || null,
     delay_min: Math.max(1, form.delayMin ?? 20),
     delay_max: Math.max(Math.max(1, form.delayMin ?? 20), form.delayMax ?? 45),
     criado_por: user?.id ?? null,

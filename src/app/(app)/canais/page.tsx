@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
+import { listAtendentesSac } from '@/lib/pessoas'
 import { listInstances, limitesEnvio, uazapiConfigurado } from '@/lib/uazapi'
 import { CanaisManager, type Canal } from '@/components/canais/CanaisManager'
 
-type Binding = { id: string; instancia_nome: string; escopo: 'unidade' | 'geral'; unidade_id: string | null; rotulo: string | null; delay_min: number; delay_max: number }
+type Binding = { id: string; instancia_nome: string; escopo: 'unidade' | 'geral'; unidade_id: string | null; rotulo: string | null; delay_min: number; delay_max: number; atendente_id: string | null }
 
 export default async function CanaisPage() {
   const ctx = await getSessionContext()
@@ -12,6 +13,7 @@ export default async function CanaisPage() {
   const isAdmin = ctx?.isAdmin ?? false
   const activeUnitId = ctx?.activeUnitId ?? null
   let canais: Canal[] = []
+  let atendentes: { id: string; nome: string }[] = []
   let erro = ''
 
   if (!uazapiConfigurado()) {
@@ -20,11 +22,14 @@ export default async function CanaisPage() {
     try {
       const todas = (await listInstances()).filter((i) => /laser/i.test(i.name))
       const sb = await createClient()
-      const { data } = await sb.from('canais_whatsapp').select('id, instancia_nome, escopo, unidade_id, rotulo, delay_min, delay_max')
+      const [{ data }, atFull] = await Promise.all([
+        sb.from('canais_whatsapp').select('id, instancia_nome, escopo, unidade_id, rotulo, delay_min, delay_max, atendente_id'),
+        listAtendentesSac(sb, false),
+      ])
+      atendentes = atFull.map((a) => ({ id: a.id, nome: a.nome }))
+      const atNome = new Map(atendentes.map((a) => [a.id, a.nome]))
       const byNome = new Map<string, Binding>(((data ?? []) as Binding[]).map((b) => [b.instancia_nome, b]))
       // Escopo por unidade: admin vê tudo; o gestor só vê canais GERAIS ou da SUA unidade ativa.
-      // Instâncias ainda NÃO vinculadas só aparecem para o admin (evita um gestor conectar/
-      // desconectar o número de outra unidade ou um canal sem dono definido).
       const all = isAdmin ? todas : todas.filter((i) => {
         const b = byNome.get(i.name)
         if (!b) return false
@@ -45,6 +50,8 @@ export default async function CanaisPage() {
           escopo: b?.escopo,
           unidadeId: b?.unidade_id ?? null,
           unidadeNome: b?.unidade_id ? uniNome.get(b.unidade_id) ?? '' : null,
+          atendenteId: b?.atendente_id ?? null,
+          atendenteNome: b?.atendente_id ? (atNome.get(b.atendente_id) ?? '') : null,
           rotulo: b?.rotulo ?? null,
           delayMin: b?.delay_min ?? 20,
           delayMax: b?.delay_max ?? 45,
@@ -60,7 +67,7 @@ export default async function CanaisPage() {
     <div className="view active">
       {erro
         ? <div className="rel-card" style={{ padding: 16, color: 'var(--red)' }}>{erro}</div>
-        : <CanaisManager canais={canais} unidades={unidades} isAdmin={isAdmin} activeUnitId={activeUnitId} activeUnitName={ctx?.activeUnitName ?? ''} />}
+        : <CanaisManager canais={canais} unidades={unidades} atendentes={atendentes} isAdmin={isAdmin} activeUnitId={activeUnitId} activeUnitName={ctx?.activeUnitName ?? ''} />}
     </div>
   )
 }
