@@ -157,7 +157,7 @@ export async function distribuirFila(): Promise<DistribResult> {
   const ctx = await getSessionContext()
   const unidadeId = ctx?.activeUnitId ?? null
 
-  const atendentes = await listAtendentesSac(sb)
+  const atendentes = await listAtendentesSac(sb, false, true) // só operacionais (exclui Consulta SAC)
   if (atendentes.length === 0) return { ok: false, error: 'Nenhum atendente SAC ativo para distribuir.' }
 
   const carga = await cargaPorAtendente(sb, atendentes.map((a) => a.id), unidadeId)

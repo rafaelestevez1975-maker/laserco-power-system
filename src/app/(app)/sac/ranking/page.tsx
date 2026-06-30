@@ -24,7 +24,7 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
 
   const [{ data: cfgRaw }, atendentes] = await Promise.all([
     sb.from('sac_premiacao_config').select('pesos').limit(1).maybeSingle(),
-    listAtendentesSac(sb),
+    listAtendentesSac(sb, false, true), // ranking/premiação: só operacionais (exclui Consulta SAC)
   ])
   const cfg = cfgRaw as { pesos?: Partial<PremMonetaria> } | null
   const prem: PremMonetaria = { ...PREM_DEFAULT, ...(cfg?.pesos ?? {}) }

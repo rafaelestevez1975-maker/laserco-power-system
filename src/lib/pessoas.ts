@@ -42,12 +42,35 @@ async function enriquecer(sb: SB, perfis: PerfilRow[]): Promise<Pessoa[]> {
  *  Por padrão só ATIVOS (distribuição/ranking só consideram quem opera). Passe
  *  `incluirInativos=true` para a gestão de atendentes, que precisa listar e
  *  reativar quem foi desativado (paridade com o legado, que mostra Ativo/Inativo). */
-export async function listAtendentesSac(sb: SB, incluirInativos = false): Promise<Pessoa[]> {
+export async function listAtendentesSac(sb: SB, incluirInativos = false, somenteOperacionais = false): Promise<Pessoa[]> {
   let q = sb
     .from('perfis_usuario')
     .select('id, nome_completo, email, papel, unidade_id, ativo')
     .in('papel', PAPEIS_SAC)
   if (!incluirInativos) q = q.eq('ativo', true)
   const { data } = await q.order('nome_completo')
-  return enriquecer(sb, (data ?? []) as PerfilRow[])
+  let perfis = (data ?? []) as PerfilRow[]
+
+  // somenteOperacionais: exclui quem é SÓ "Consulta SAC" — esse cargo VÊ o SAC mas não entra na
+  // fila de distribuição nem no ranking/premiação (pedido do Julio). Operacional = atendente/supervisor.
+  if (somenteOperacionais && perfis.length) {
+    const ids = perfis.map((p) => p.id)
+    const { data: ucs } = await sb.from('usuario_cargos').select('perfil_id, cargos(slug)').in('perfil_id', ids)
+    const slugs = new Map<string, Set<string>>()
+    for (const r of (ucs ?? []) as Array<{ perfil_id: string; cargos: { slug?: string } | { slug?: string }[] | null }>) {
+      const c = r.cargos
+      const arr = Array.isArray(c) ? c : c ? [c] : []
+      const set = slugs.get(r.perfil_id) ?? new Set<string>()
+      for (const x of arr) if (x.slug) set.add(x.slug)
+      slugs.set(r.perfil_id, set)
+    }
+    perfis = perfis.filter((p) => {
+      const s = slugs.get(p.id)
+      if (!s) return true // sem cargo identificado → mantém (não some por falta de dado)
+      const operacional = s.has('atendente_sac') || s.has('supervisor_sac')
+      return !(s.has('consulta_sac') && !operacional) // consulta-only fica de fora
+    })
+  }
+
+  return enriquecer(sb, perfis)
 }
