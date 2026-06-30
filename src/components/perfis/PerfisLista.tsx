@@ -92,6 +92,11 @@ export function PerfisLista({
             </span>
           )}
           {isAdmin && (
+            <Link className="btn" href="/perfis/matriz" title="Editar todos os cargos numa matriz única (recurso × ação × cargos)">
+              <i className="ti ti-table" /> Matriz
+            </Link>
+          )}
+          {isAdmin && (
             <button className="btn btn-primary" onClick={() => { setMsg(null); setNovoAberto(true) }}>
               <i className="ti ti-plus" /> Novo
             </button>
