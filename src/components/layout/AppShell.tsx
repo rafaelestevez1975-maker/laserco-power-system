@@ -40,7 +40,6 @@ export function AppShell({
           </div>
         </div>
         <Sidebar isAdmin={user.isAdmin} recursos={recursos} sacNivel={sacNivel} onNavigate={() => setMobOpen(false)} />
-        <div className="sidebar-foot"><i className="ti ti-settings" /> Configurações &amp; suporte</div>
       </aside>
 
       <div className={`mob-backdrop ${mobOpen ? 'open' : ''}`} onClick={() => setMobOpen(false)} />

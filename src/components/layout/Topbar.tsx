@@ -67,7 +67,8 @@ export function Topbar({
 
       <button className="icon-btn" title="Exportar a tela atual (CSV)"><i className="ti ti-download" /></button>
 
-      {/* Seletor de unidade ativa (dados reais; troca via cookie) */}
+      {/* Seletor de unidade ativa — escondido no SAC (centralizado na franqueadora, sem franquia) */}
+      {user.papel !== 'sac' && (
       <div className="unit-wrap" style={{ position: 'relative' }}>
         <div className="unit-pill" onClick={() => setUnitOpen((v) => !v)}>
           <i className="ti ti-building-store" /> <span>{activeUnitName}</span> <i className="ti ti-chevron-down" />
@@ -91,6 +92,7 @@ export function Topbar({
           </>
         )}
       </div>
+      )}
 
       <NotificacoesSino />
 

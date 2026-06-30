@@ -163,9 +163,9 @@ export const MENU: Section[] = [
           { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados' },
           { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban' },
           { label: 'Conversa', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Conversa' },
-          // Atalho p/ a tela de Canais (WhatsApp) DENTRO do SAC. perm 'sac.canal' → visível p/ todos
-          // os cargos SAC (inclusive atendente), já que /canais fica fora do SAC no menu principal.
-          { label: 'Canais', href: '/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais' },
+          // Canais do SAC — tela PRÓPRIA, central (franqueadora). perm 'sac.canal' → todos os cargos
+          // SAC (inclusive atendente, p/ conectar o próprio número no login dela). Isolada de /canais (Gestão).
+          { label: 'Canais', href: '/sac/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
           { label: 'Pagamentos', href: '/sac/pagamentos', icon: 'ti-cash', title: 'SAC · Pagamentos' },
           { label: 'Atendentes', href: '/sac/atendentes', icon: 'ti-users', title: 'SAC · Atendentes' },
@@ -198,7 +198,7 @@ export const MENU: Section[] = [
       { label: 'Minha conta', href: '/minha-conta', icon: 'ti-user-circle' },
       { label: 'App do Cliente', href: '/app-cliente', icon: 'ti-device-mobile' },
       { label: 'Exportações', href: '/exportacoes', icon: 'ti-download' },
-      { label: 'Ajuda', href: '/ajuda', icon: 'ti-help-circle', badge: 'BASE' },
+      { label: 'Ajuda e Suporte', href: '/ajuda', icon: 'ti-help-circle', badge: 'BASE' },
     ],
   },
 ]

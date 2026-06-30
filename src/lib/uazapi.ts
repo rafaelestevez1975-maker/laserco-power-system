@@ -112,6 +112,12 @@ export async function disconnectInstance(token: string): Promise<{ ok: boolean }
   return { ok }
 }
 
+/** Apaga a instância de vez (desconecta o aparelho e remove do banco da UAZAPI). */
+export async function deleteInstance(token: string): Promise<{ ok: boolean }> {
+  const r = await fetch(`${BASE}/instance`, { method: 'DELETE', headers: { token } })
+  return { ok: r.ok }
+}
+
 export function normTel(raw: string): string {
   const d = (raw || '').replace(/\D/g, '')
   return d.startsWith('55') ? d : '55' + d

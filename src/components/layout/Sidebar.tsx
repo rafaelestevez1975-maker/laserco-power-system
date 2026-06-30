@@ -9,8 +9,8 @@ type SacNivel = 'supervisor' | 'consulta' | 'atendente' | null
 
 // Sub-itens do SAC visíveis por nível. Supervisor vê TODOS (sem recorte). Atendente só o
 // operacional do dia a dia; Consulta as visões de leitura. (Hrefs do grupo SAC em menu.ts.)
-const SAC_ATENDENTE = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem'])
-const SAC_CONSULTA = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/ranking'])
+const SAC_ATENDENTE = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/canais'])
+const SAC_CONSULTA = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/ranking', '/sac/canais'])
 
 function leafActive(href: string, pathname: string) {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')

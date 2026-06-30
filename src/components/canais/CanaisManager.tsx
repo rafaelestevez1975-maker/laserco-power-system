@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { criarCanal, salvarVinculo, conectarCanal, statusCanal, desconectarCanal, sincronizarCanal, type Escopo } from '@/app/(app)/canais/actions'
+import { criarCanal, salvarVinculo, conectarCanal, statusCanal, desconectarCanal, sincronizarCanal, excluirCanal, type Escopo } from '@/app/(app)/canais/actions'
 
 export type Canal = {
   name: string; status: string; owner?: string
@@ -24,13 +24,15 @@ const conectado = (s: string) => s === 'connected'
 type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string; cta?: string }
 const ORIGENS: Origem[] = [
   { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'O formulário de SAC do site vira chamado no SAC.', href: '/sac/chamados?canal=formulario', cta: 'Ver chamados' },
-  // { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
+  { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
 ]
 
-export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, activeUnitId, activeUnitName }: {
+export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, activeUnitId, activeUnitName, central = false }: {
   canais: Canal[]; unidades: Unidade[]; atendentes?: { id: string; nome: string }[]; isAdmin: boolean; activeUnitId: string | null; activeUnitName: string
+  // `central` = contexto do SAC: canal único da franqueadora, sem unidade/franquia (pedido do Julio).
+  central?: boolean
 }) {
   const router = useRouter()
   const [qr, setQr] = useState<{ nome: string; img?: string; status: string } | null>(null)
@@ -66,6 +68,11 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
   }
   function fecharQr() { if (poll.current) clearInterval(poll.current); setQr(null) }
   async function desconectar(nome: string) { if (!confirm(`Desconectar o canal "${nome}"?`)) return; setBusy(nome); await desconectarCanal(nome); setBusy(null); router.refresh() }
+  async function excluir(nome: string) {
+    if (!confirm(`Excluir o canal "${nome}"? O número é desconectado e o canal é removido de vez.`)) return
+    setBusy(nome); const r = await excluirCanal(nome); setBusy(null)
+    setMsg(r.ok ? `Canal "${nome}" excluído.` : (r.error || 'Falha ao excluir.')); router.refresh()
+  }
   async function sincronizar(nome: string) {
     setBusy(nome); setMsg('')
     const r = await sincronizarCanal(nome)
@@ -75,6 +82,10 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
 
   function escopoBadge(c: Canal) {
     if (!c.vinculado) return <span style={pill('#FBE9EB', '#D85563')}>sem vínculo</span>
+    if (central) {
+      // SAC central: ou é o número central (fila), ou o número próprio de uma atendente (badge da linha de baixo).
+      return c.atendenteId ? null : <span style={pill('#FBF3DF', '#9A7B12')}><i className="ti ti-broadcast" /> Central do SAC</span>
+    }
     if (c.escopo === 'geral') return <span style={pill('#FBF3DF', '#9A7B12')}><i className="ti ti-broadcast" /> Geral</span>
     return <span style={pill('#EFE9F7', '#6b1f3a')}><i className="ti ti-building-store" /> {c.unidadeNome || 'Unidade'}</span>
   }
@@ -87,7 +98,9 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
       </div>
 
       <div style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
-        <i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.
+        {central
+          ? <><i className="ti ti-info-circle" /> O SAC é <b>centralizado na franqueadora</b> (não há canal por franquia). Conecte o <b>WhatsApp central do SAC</b> via QR — tudo cai na <b>Conversa</b>. Cada atendente também pode conectar o <b>próprio número</b> aqui (cai só pra ela). O <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.</>
+          : <><i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.</>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: 14 }}>
@@ -118,6 +131,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
                   </>
                 : <button className="btn btn-primary" disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
               <button className="btn" onClick={() => setEditar(c)}><i className="ti ti-settings" /> {c.vinculado ? 'Editar' : 'Vincular'}</button>
+              <button className="btn" disabled={busy === c.name} onClick={() => excluir(c.name)} title="Excluir o canal de vez" style={{ color: 'var(--red)' }}><i className="ti ti-trash" /></button>
             </div>
           </div>
         ))}
@@ -139,7 +153,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
 
       {(novo || editar) && (
         <CanalModal
-          base={editar} isAdmin={isAdmin} unidades={unidades} atendentes={atendentes} activeUnitId={activeUnitId} activeUnitName={activeUnitName}
+          base={editar} isAdmin={isAdmin} unidades={unidades} atendentes={atendentes} activeUnitId={activeUnitId} activeUnitName={activeUnitName} central={central}
           onClose={() => { setNovo(false); setEditar(null) }}
           onSaved={(m) => { setNovo(false); setEditar(null); setMsg(m); router.refresh() }}
         />
@@ -164,16 +178,18 @@ function pill(bg: string, color: string): React.CSSProperties {
   return { fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color, display: 'inline-flex', alignItems: 'center', gap: 4 }
 }
 
-function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeUnitName, onClose, onSaved }: {
+function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeUnitName, central = false, onClose, onSaved }: {
   base: Canal | null; isAdmin: boolean; unidades: Unidade[]; atendentes: { id: string; nome: string }[]; activeUnitId: string | null; activeUnitName: string
-  onClose: () => void; onSaved: (msg: string) => void
+  central?: boolean; onClose: () => void; onSaved: (msg: string) => void
 }) {
   const editando = !!base // vincular/editar instância existente
   const [nome, setNome] = useState(base?.name ?? '')
-  const [escopo, setEscopo] = useState<Escopo>(base?.escopo ?? (isAdmin ? 'unidade' : 'unidade'))
+  const [escopo, setEscopo] = useState<Escopo>(base?.escopo ?? 'unidade')
   const [unidadeId, setUnidadeId] = useState(base?.unidadeId ?? activeUnitId ?? unidades[0]?.id ?? '')
   const [rotulo, setRotulo] = useState(base?.rotulo ?? '')
   const [atendenteId, setAtendenteId] = useState(base?.atendenteId ?? '')
+  // SAC central: o número é o "central do SAC" (fila) ou o "meu número pessoal" (cai só pra mim).
+  const [meuNumero, setMeuNumero] = useState(!!base?.atendenteId)
   const [dMin, setDMin] = useState(String(base?.delayMin ?? 20))
   const [dMax, setDMax] = useState(String(base?.delayMax ?? 45))
   const [busy, setBusy] = useState(false)
@@ -182,16 +198,19 @@ function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeU
   async function salvar() {
     setErr('')
     if (!editando && !nome.trim()) { setErr('Informe o nome do canal.'); return }
-    if (escopo === 'unidade' && isAdmin && !unidadeId) { setErr('Selecione a unidade.'); return }
+    if (!central && escopo === 'unidade' && isAdmin && !unidadeId) { setErr('Selecione a unidade.'); return }
     const min = Number(dMin), max = Number(dMax)
     if (!Number.isFinite(min) || min < 1) { setErr('Delay mínimo inválido (use ≥ 1 segundo).'); return }
     if (!Number.isFinite(max) || max < min) { setErr('O delay máximo deve ser maior ou igual ao mínimo.'); return }
     setBusy(true)
-    const form = { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: min, delayMax: max, atendenteId: atendenteId || null }
+    // No SAC central: escopo é sempre franqueadora; quem decide o "dono" é o servidor (meuNumero → o próprio login).
+    const form = central
+      ? { nome: editando ? base!.name : nome, escopo: 'geral' as Escopo, unidadeId: '', rotulo, delayMin: min, delayMax: max, atendenteId: null, central: true, meuNumero }
+      : { nome: editando ? base!.name : nome, escopo, unidadeId, rotulo, delayMin: min, delayMax: max, atendenteId: atendenteId || null }
     const res = editando ? await salvarVinculo({ ...form, id: base!.bindingId }) : await criarCanal(form)
     setBusy(false)
     if (!res.ok) { setErr(res.error || 'Erro ao salvar.'); return }
-    onSaved(editando ? 'Vínculo do canal salvo.' : 'Canal criado. Clique em "Conectar (QR)" para parear.')
+    onSaved(editando ? 'Canal salvo.' : 'Canal criado. Clique em "Conectar (QR)" para parear.')
   }
 
   return (
@@ -200,38 +219,53 @@ function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeU
         <div className="modal-head"><h3><i className="ti ti-brand-whatsapp" /> {editando ? `Canal: ${base!.name}` : 'Novo canal'}</h3><button className="modal-close" onClick={onClose}>×</button></div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
-          {!editando && <div className="mf"><label>Nome do canal</label><input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Suzano (será 'Laser - …')" /></div>}
-          <div className="mf"><label>Rótulo (opcional)</label><input value={rotulo} onChange={(e) => setRotulo(e.target.value)} placeholder="Ex.: WhatsApp Vendas Suzano" /></div>
-          <div className="mf"><label>Escopo</label>
-            {isAdmin ? (
-              <select value={escopo} onChange={(e) => setEscopo(e.target.value as Escopo)}>
-                <option value="unidade">Unidade (número da franquia)</option>
-                <option value="geral">Geral (franqueadora)</option>
+          {!editando && <div className="mf"><label>Nome do canal</label><input value={nome} onChange={(e) => setNome(e.target.value)} placeholder={central ? "Ex.: SAC Central (será 'Laser - …')" : "Ex.: Suzano (será 'Laser - …')"} /></div>}
+          <div className="mf"><label>Apelido (opcional)</label><input value={rotulo} onChange={(e) => setRotulo(e.target.value)} placeholder={central ? 'Ex.: WhatsApp do SAC' : 'Ex.: WhatsApp Vendas Suzano'} /></div>
+
+          {central ? (
+            <div className="mf"><label>Tipo do número</label>
+              <select value={meuNumero ? 'meu' : 'central'} onChange={(e) => setMeuNumero(e.target.value === 'meu')}>
+                <option value="central">Central do SAC (vai pra fila / distribuição)</option>
+                <option value="meu">Meu número pessoal (cai só pra mim)</option>
               </select>
-            ) : <input value={`Unidade  ${activeUnitName}`} disabled />}
-          </div>
-          {escopo === 'unidade' && isAdmin && (
-            <div className="mf"><label>Unidade</label>
-              <select value={unidadeId} onChange={(e) => setUnidadeId(e.target.value)}>
-                <option value="">Selecione…</option>
-                {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
-              </select>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                {meuNumero ? 'As conversas deste número caem direto pra você.' : 'Tudo deste número entra na fila central do SAC e é distribuído entre as atendentes online.'}
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="mf"><label>Escopo</label>
+                {isAdmin ? (
+                  <select value={escopo} onChange={(e) => setEscopo(e.target.value as Escopo)}>
+                    <option value="unidade">Unidade (número da franquia)</option>
+                    <option value="geral">Geral (franqueadora)</option>
+                  </select>
+                ) : <input value={`Unidade  ${activeUnitName}`} disabled />}
+              </div>
+              {escopo === 'unidade' && isAdmin && (
+                <div className="mf"><label>Unidade</label>
+                  <select value={unidadeId} onChange={(e) => setUnidadeId(e.target.value)}>
+                    <option value="">Selecione…</option>
+                    {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="mf"><label>Número de quem? (modelo híbrido)</label>
+                <select value={atendenteId} onChange={(e) => setAtendenteId(e.target.value)}>
+                  <option value="">Compartilhado da unidade (vai pra fila/distribuição)</option>
+                  {atendentes.map((a) => <option key={a.id} value={a.id}>Número próprio de {a.nome} (cai só pra ela)</option>)}
+                </select>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Se for o WhatsApp pessoal de uma atendente, as conversas desse número caem direto pra ela.</div>
+              </div>
+            </>
           )}
-          <div className="mf"><label>Número de quem? (modelo híbrido)</label>
-            <select value={atendenteId} onChange={(e) => setAtendenteId(e.target.value)}>
-              <option value="">Compartilhado da unidade (vai pra fila/distribuição)</option>
-              {atendentes.map((a) => <option key={a.id} value={a.id}>Número próprio de {a.nome} (cai só pra ela)</option>)}
-            </select>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Se for o WhatsApp pessoal de uma atendente, as conversas desse número caem direto pra ela.</div>
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="mf"><label>Delay mín. (s)</label><input type="number" value={dMin} onChange={(e) => setDMin(e.target.value)} /></div>
             <div className="mf"><label>Delay máx. (s)</label><input type="number" value={dMax} onChange={(e) => setDMax(e.target.value)} /></div>
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>O delay (anti-ban) é aplicado aos disparos deste canal.</div>
         </div>
-        <div className="modal-foot"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? 'Salvando…' : (editando ? 'Salvar vínculo' : 'Criar canal')}</button></div>
+        <div className="modal-foot"><button className="btn" onClick={onClose}>Cancelar</button><button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? 'Salvando…' : (editando ? 'Salvar' : 'Criar canal')}</button></div>
       </div>
     </div>
   )

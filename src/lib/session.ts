@@ -132,9 +132,14 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
   let activeUnitId: string | null = ck && allowed.has(ck) ? ck : p?.unidade_id ?? null
   if (activeUnitId && !allowed.has(activeUnitId)) activeUnitId = null
 
+  // SAC é CENTRALIZADO na franqueadora — NUNCA filtra por franquia. Ignora cookie/unidade do
+  // perfil e enxerga tudo centralmente (pedido do Julio: SAC não tem unidade/Suzano).
+  const ehSac = papel === 'sac'
+  if (ehSac) activeUnitId = null
+
   const activeUnitName = activeUnitId
     ? unidades.find((u) => u.id === activeUnitId)?.nome ?? 'Unidade'
-    : 'Todas as unidades'
+    : (ehSac ? 'Franqueadora' : 'Todas as unidades')
 
   return { nome, email, iniciais, papel, isAdmin, recursos, unidades, activeUnitId, activeUnitName, sacNivel: nivelSac(cargos.slugs), sacOnline: !!p?.sac_online }
 })

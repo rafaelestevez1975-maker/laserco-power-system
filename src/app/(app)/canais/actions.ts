@@ -5,10 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 import { msgErro as rlsMsg } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { getSessionContext } from '@/lib/session'
-import { listInstances, createInstance, connectInstance, getStatus, disconnectInstance, configurarWebhook, urlWebhook, type ConnState } from '@/lib/uazapi'
+import { listInstances, createInstance, connectInstance, getStatus, disconnectInstance, deleteInstance, configurarWebhook, urlWebhook, type ConnState } from '@/lib/uazapi'
 
-// Papéis que operam canais (admin_geral sempre passa via temPapel).
-const PAPEIS_CANAL = ['gestor', 'operacoes'] as const
+// Papéis que operam canais (admin_geral sempre passa via temPapel). 'sac' opera os canais
+// CENTRAIS do SAC (a checagem de escopo abaixo limita SAC a canais 'geral' da franqueadora).
+const PAPEIS_CANAL = ['gestor', 'operacoes', 'sac'] as const
 
 type CanalAlvo = { token: string; binding: { escopo: 'unidade' | 'geral'; unidade_id: string | null } | null }
 
@@ -36,7 +37,10 @@ async function guardCanalAlvo(nome: string): Promise<{ ok: true; alvo: CanalAlvo
 }
 
 export type Escopo = 'unidade' | 'geral'
-export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number; atendenteId?: string | null }
+export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | null; rotulo?: string; delayMin?: number; delayMax?: number; atendenteId?: string | null
+  // SAC central (franqueadora, sem unidade): `central` força escopo geral; `meuNumero` vincula
+  // o canal ao próprio usuário logado (cai só pra ele) em vez da fila compartilhada.
+  central?: boolean; meuNumero?: boolean }
 
 // rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
 
@@ -54,50 +58,56 @@ export async function criarCanal(form: CanalForm): Promise<{ ok: boolean; error?
   const n = (form.nome || '').trim()
   if (!n) return { ok: false, error: 'Informe o nome do canal.' }
 
-  let escopo: Escopo = form.escopo === 'geral' ? 'geral' : 'unidade'
-  let unidade_id: string | null = null
-  if (escopo === 'geral') {
-    if (!ctx.isAdmin) return { ok: false, error: 'Apenas o administrador cria o canal geral.' }
-  } else {
-    unidade_id = ctx.isAdmin ? (form.unidadeId || null) : (ctx.activeUnitId || null)
-    if (!unidade_id) return { ok: false, error: 'Selecione a unidade do canal.' }
-  }
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+
+  const { escopo, unidade_id, atendente_id, erro } = resolverDestino(form, ctx, user?.id ?? null)
+  if (erro) return { ok: false, error: erro }
 
   const finalName = /laser/i.test(n) ? n : `Laser - ${n}`
   const res = await createInstance(finalName)
   if (!res.ok) return { ok: false, error: res.error }
 
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
   const { error } = await sb.from('canais_whatsapp').insert({
-    instancia_nome: finalName, escopo, unidade_id,
-    atendente_id: form.atendenteId || null, // número PRÓPRIO de uma atendente (modelo híbrido)
+    instancia_nome: finalName, escopo, unidade_id, atendente_id,
     rotulo: form.rotulo?.trim() || null,
     delay_min: Math.max(1, form.delayMin ?? 20),
     delay_max: Math.max(Math.max(1, form.delayMin ?? 20), form.delayMax ?? 45),
     criado_por: user?.id ?? null,
   })
   if (error) return { ok: false, error: rlsMsg(error.message, 'vincular o canal') }
-  revalidatePath('/canais'); revalidatePath('/expansao/disparos')
+  revalidatePath('/canais'); revalidatePath('/sac/canais'); revalidatePath('/expansao/disparos')
   return { ok: true }
+}
+
+/** Resolve escopo/unidade/atendente do canal a partir do form + sessão.
+ *  - SAC central (form.central): franqueadora (geral, sem unidade); "meu número" → vincula ao próprio login.
+ *  - geral (franqueadora): só admin.  - unidade: admin (qualquer) ou gestor (a própria unidade ativa). */
+function resolverDestino(form: CanalForm, ctx: { isAdmin: boolean; activeUnitId: string | null }, userId: string | null):
+  { escopo: Escopo; unidade_id: string | null; atendente_id: string | null; erro?: string } {
+  if (form.central) {
+    return { escopo: 'geral', unidade_id: null, atendente_id: form.meuNumero ? userId : null }
+  }
+  const escopo: Escopo = form.escopo === 'geral' ? 'geral' : 'unidade'
+  if (escopo === 'geral') {
+    if (!ctx.isAdmin) return { escopo, unidade_id: null, atendente_id: null, erro: 'Apenas o administrador cria o canal geral.' }
+    return { escopo, unidade_id: null, atendente_id: form.atendenteId || null }
+  }
+  const unidade_id = ctx.isAdmin ? (form.unidadeId || null) : (ctx.activeUnitId || null)
+  if (!unidade_id) return { escopo, unidade_id: null, atendente_id: null, erro: 'Selecione a unidade do canal.' }
+  return { escopo, unidade_id, atendente_id: form.atendenteId || null }
 }
 
 /** Vincula uma instância já existente na UAZAPI a uma unidade/geral (ou edita o vínculo). */
 export async function salvarVinculo(form: CanalForm & { id?: string }): Promise<{ ok: boolean; error?: string }> {
   const ctx = await getSessionContext()
   if (!ctx) return { ok: false, error: 'Sessão expirada.' }
-  let escopo: Escopo = form.escopo === 'geral' ? 'geral' : 'unidade'
-  let unidade_id: string | null = null
-  if (escopo === 'geral') {
-    if (!ctx.isAdmin) return { ok: false, error: 'Apenas o administrador define o canal geral.' }
-  } else {
-    unidade_id = ctx.isAdmin ? (form.unidadeId || null) : (ctx.activeUnitId || null)
-    if (!unidade_id) return { ok: false, error: 'Selecione a unidade do canal.' }
-  }
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
+  const { escopo, unidade_id, atendente_id, erro } = resolverDestino(form, ctx, user?.id ?? null)
+  if (erro) return { ok: false, error: erro }
   const row = {
-    instancia_nome: form.nome, escopo, unidade_id, atendente_id: form.atendenteId || null,
+    instancia_nome: form.nome, escopo, unidade_id, atendente_id,
     rotulo: form.rotulo?.trim() || null,
     delay_min: Math.max(1, form.delayMin ?? 20),
     delay_max: Math.max(Math.max(1, form.delayMin ?? 20), form.delayMax ?? 45),
@@ -105,7 +115,7 @@ export async function salvarVinculo(form: CanalForm & { id?: string }): Promise<
   }
   const { error } = await sb.from('canais_whatsapp').upsert(row, { onConflict: 'instancia_nome' })
   if (error) return { ok: false, error: rlsMsg(error.message, 'salvar o vínculo') }
-  revalidatePath('/canais'); revalidatePath('/expansao/disparos')
+  revalidatePath('/canais'); revalidatePath('/sac/canais'); revalidatePath('/expansao/disparos')
   return { ok: true }
 }
 
@@ -145,5 +155,18 @@ export async function desconectarCanal(nome: string): Promise<{ ok: boolean; err
   if (!g.ok) return { ok: false, error: g.error }
   await disconnectInstance(g.alvo.token)
   revalidatePath('/canais')
+  return { ok: true }
+}
+
+/** Exclui o canal de vez: apaga a instância na UAZAPI e remove o vínculo. Mesma autorização
+ *  de operar o canal (admin sempre; demais só no próprio escopo). Self-service — evita depender
+ *  do desenvolvedor pra remover um número. */
+export async function excluirCanal(nome: string): Promise<{ ok: boolean; error?: string }> {
+  const g = await guardCanalAlvo(nome)
+  if (!g.ok) return { ok: false, error: g.error }
+  await deleteInstance(g.alvo.token).catch(() => null)
+  const sb = await createClient()
+  await sb.from('canais_whatsapp').delete().eq('instancia_nome', nome)
+  revalidatePath('/canais'); revalidatePath('/sac/canais'); revalidatePath('/expansao/disparos')
   return { ok: true }
 }
