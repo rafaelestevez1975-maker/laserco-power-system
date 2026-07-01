@@ -44,9 +44,10 @@ export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null):
   if (cands.length === 0) return null
   if (cands.length === 1) return cands[0]
 
-  // Menos carregada: menor nº de conversas atualmente atribuídas.
+  // Menos carregada: menor nº de conversas ABERTAS atualmente atribuídas (carga viva).
+  // Contar também as resolvidas puniria quem já fechou muitos casos e desbalancearia a fila.
   const carga = new Map<string, number>(cands.map((id) => [id, 0]))
-  const { data: chats } = await sb.from('sac_whatsapp_chats').select('atendente_id').in('atendente_id', cands)
+  const { data: chats } = await sb.from('sac_whatsapp_chats').select('atendente_id').in('atendente_id', cands).eq('status', 'aberto')
   for (const r of (chats ?? []) as { atendente_id: string | null }[]) {
     if (r.atendente_id) carga.set(r.atendente_id, (carga.get(r.atendente_id) ?? 0) + 1)
   }

@@ -115,6 +115,53 @@ export async function definirPresencaSac(online: boolean): Promise<{ ok: boolean
   return { ok: true, online: !!online }
 }
 
+/** Admin liga/desliga a presença SAC de OUTRO atendente. Resolve o "tudo cai numa pessoa só"
+ *  quando as demais esqueceram de ficar online (a auto-distribuição só sorteia quem está online). */
+export async function definirPresencaAtendente(id: string, online: boolean): Promise<{ ok: boolean; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!ehAdmin(op.papel)) return { ok: false, error: 'Apenas o administrador pode alterar a presença de outro atendente.' }
+  if (!id) return { ok: false, error: 'Atendente inválida.' }
+  const admin = adminClient()
+  const { data: perfil } = await admin.from('perfis_usuario').select('nome_completo').eq('id', id).maybeSingle()
+  if (!perfil) return { ok: false, error: 'Atendente não encontrada.' }
+  const { error: e } = await admin.from('perfis_usuario').update({ sac_online: !!online }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'atualizar a presença') }
+  await audit(op.userId, online ? 'sac.atendente.online' : 'sac.atendente.offline', `${online ? 'Ativou' : 'Desativou'} a presença de ${(perfil as { nome_completo?: string }).nome_completo || 'atendente'}`)
+  revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
+/** Admin troca o CARGO SAC de um atendente (Atendente ⇄ Supervisor ⇄ Consulta). Remove os
+ *  vínculos SAC anteriores e cria o novo. Muda o que a pessoa vê e se entra na distribuição
+ *  (consulta_sac fica de fora). O menu da pessoa só reflete após novo login (RBAC em cache). */
+export async function definirCargoAtendente(id: string, cargoSlug: string): Promise<{ ok: boolean; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!ehAdmin(op.papel)) return { ok: false, error: 'Apenas o administrador pode alterar o cargo do atendente.' }
+  if (!id) return { ok: false, error: 'Atendente inválida.' }
+  if (!SLUGS_SAC.has(cargoSlug)) return { ok: false, error: 'Cargo inválido.' }
+  const admin = adminClient()
+  const { data: cargoRow } = await admin.from('cargos').select('id').eq('slug', cargoSlug).maybeSingle()
+  const novoCargoId = (cargoRow as { id: string } | null)?.id
+  if (!novoCargoId) return { ok: false, error: 'Cargo não encontrado.' }
+  // Remove só os cargos SAC operacionais/consulta anteriores (preserva outros vínculos, ex.: admin_sac).
+  const { data: sacCargos } = await admin.from('cargos').select('id').in('slug', [...SLUGS_SAC])
+  const sacIds = ((sacCargos ?? []) as { id: string }[]).map((c) => c.id)
+  if (sacIds.length) await admin.from('usuario_cargos').delete().eq('perfil_id', id).in('cargo_id', sacIds)
+  const { data: perfil } = await admin.from('perfis_usuario').select('nome_completo, unidade_id').eq('id', id).maybeSingle()
+  const p = perfil as { nome_completo?: string; unidade_id?: string | null } | null
+  const empresaId = await resolverEmpresa(admin, op.userId)
+  const { error: e } = await admin.from('usuario_cargos').insert({
+    perfil_id: id, cargo_id: novoCargoId, empresa_id: empresaId,
+    unidade_id: p?.unidade_id ?? null, ativo: true, atribuido_por: op.userId,
+  })
+  if (e && !/duplicate|already|unique/i.test(e.message)) return { ok: false, error: msgErro(e.message, 'alterar o cargo') }
+  await audit(op.userId, 'sac.atendente.cargo', `Alterou cargo de ${p?.nome_completo || 'atendente'} → ${cargoSlug}`)
+  revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
 /** Ativa/Desativa uma atendente (perfis_usuario.ativo). Atendente desativada não
  *  recebe mais distribuição e fica fora do ranking, mas continua listada na gestão.
  *  Paridade com o legado (a.ativo ? 'Ativo' : 'Inativo' + ação de alternar). Admin-only. */
@@ -145,7 +192,8 @@ async function cargaPorAtendente(sb: SB, ids: string[], unidadeId: string | null
   const carga = new Map<string, number>()
   await Promise.all(ids.map(async (id) => {
     // Filtro de unidade inline (o generic de scopeUnidade estoura a profundidade do tipo — TS2589).
-    let qConv = sb.from('sac_whatsapp_chats').select('id', { count: 'exact', head: true }).eq('atendente_id', id)
+    // Só conversas ABERTAS entram na carga (as resolvidas não são trabalho vivo).
+    let qConv = sb.from('sac_whatsapp_chats').select('id', { count: 'exact', head: true }).eq('atendente_id', id).eq('status', 'aberto')
     if (unidadeId) qConv = qConv.eq('unidade_id', unidadeId)
     let qTick = sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', id).neq('fase', 'Concluído')
     if (unidadeId) qTick = qTick.eq('unidade_id', unidadeId)

@@ -3,14 +3,22 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo } from '@/app/(app)/sac/atendentes/actions'
+import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente } from '@/app/(app)/sac/atendentes/actions'
 
 export type AtendenteRow = {
   id: string; nome: string; papel: string; cargo: string | null; area: string | null
   unidadeNome: string | null; email: string | null; ativo: boolean; conversas: number; tickets: number
   chamadosTotal: number; resolvidos: number; slaPct: number | null; premio: number
+  sacOnline: boolean; cargoSac: string | null
 }
 export type UnidadeOpt = { id: string; nome: string }
+
+// Cargos SAC editáveis pelo admin (mesmos do "Novo atendente"). Consulta = só leitura, fica FORA da distribuição.
+const SAC_CARGOS: { slug: string; label: string }[] = [
+  { slug: 'atendente_sac', label: 'Atendente' },
+  { slug: 'supervisor_sac', label: 'Supervisor' },
+  { slug: 'consulta_sac', label: 'Consulta' },
+]
 
 const pill = (bg: string, color: string): React.CSSProperties => ({ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: bg, color })
 const brl = (n: number) => `R$ ${Math.round(Number(n) || 0).toLocaleString('pt-BR')}`
@@ -57,11 +65,30 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
   }
 
   async function alternarAtivo(a: AtendenteRow) {
-    setToggling(a.id); setMsg('')
+    setToggling(a.id + ':ativo'); setMsg('')
     const r = await setAtendenteAtivo(a.id, !a.ativo)
     setToggling(null)
     if (!r.ok) { setMsg(r.error || 'Não foi possível alterar o status.'); return }
     setMsg(`${a.nome} ${a.ativo ? 'desativada' : 'reativada'}.`)
+    router.refresh()
+  }
+
+  async function alternarOnline(a: AtendenteRow) {
+    setToggling(a.id + ':online'); setMsg('')
+    const r = await definirPresencaAtendente(a.id, !a.sacOnline)
+    setToggling(null)
+    if (!r.ok) { setMsg(r.error || 'Não foi possível alterar a presença.'); return }
+    setMsg(`${a.nome} ${a.sacOnline ? 'ficou offline (fora da distribuição)' : 'ficou online (entra na distribuição)'}.`)
+    router.refresh()
+  }
+
+  async function trocarCargo(a: AtendenteRow, slug: string) {
+    if (!slug || slug === a.cargoSac) return
+    setToggling(a.id + ':cargo'); setMsg('')
+    const r = await definirCargoAtendente(a.id, slug)
+    setToggling(null)
+    if (!r.ok) { setMsg(r.error || 'Não foi possível alterar o cargo.'); return }
+    setMsg(`Cargo de ${a.nome} atualizado. (o menu dela reflete no próximo login)`)
     router.refresh()
   }
 
@@ -99,7 +126,8 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
           <table className="cli-table">
             <thead>
               <tr>
-                <th>Atendente</th><th>Cargo (RH)</th><th>Papel</th><th>Unidade</th>
+                <th>Atendente</th><th>Cargo (RH)</th><th>Cargo SAC</th>
+                <th style={{ textAlign: 'center' }}>Online</th><th>Unidade</th>
                 <th style={{ textAlign: 'center' }}>Conversas</th><th style={{ textAlign: 'center' }}>Em aberto</th>
                 <th style={{ textAlign: 'center' }}>Carga</th><th style={{ textAlign: 'center' }}>Resolvidos</th>
                 <th style={{ textAlign: 'center' }}>SLA</th><th style={{ textAlign: 'right' }}>Prêmio (mês)</th>
@@ -108,7 +136,7 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
             </thead>
             <tbody>
               {atendentes.length === 0 && (
-                <tr><td colSpan={podeCriar ? 12 : 11} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum atendente SAC. {podeCriar ? 'Use “Novo atendente” para criar o primeiro acesso.' : 'Cadastre colaboradores com papel SAC.'}</td></tr>
+                <tr><td colSpan={podeCriar ? 13 : 12} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum atendente SAC. {podeCriar ? 'Use “Novo atendente” para criar o primeiro acesso.' : 'Cadastre colaboradores com papel SAC.'}</td></tr>
               )}
               {atendentes.map((a) => {
                 const carga = a.conversas + a.tickets
@@ -117,7 +145,29 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                   <tr key={a.id} style={a.ativo ? undefined : { opacity: 0.6 }}>
                     <td><b>{a.nome}</b>{a.email && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.email}</div>}</td>
                     <td>{a.cargo || <span style={{ color: 'var(--text-3)' }}>— sem ficha RH</span>}{a.area && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.area}</div>}</td>
-                    <td><span style={pill('#EFE9F7', '#6b1f3a')}>{a.papel}</span></td>
+                    <td>
+                      {podeCriar ? (
+                        <select value={a.cargoSac ?? ''} disabled={toggling === a.id + ':cargo'} onChange={(e) => trocarCargo(a, e.target.value)}
+                          style={{ padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, fontFamily: 'inherit' }}
+                          title="Trocar o cargo SAC (Consulta fica fora da distribuição)">
+                          {!a.cargoSac && <option value="">— sem cargo —</option>}
+                          {SAC_CARGOS.map((c) => <option key={c.slug} value={c.slug}>{c.label}</option>)}
+                        </select>
+                      ) : (
+                        <span style={pill('#EFE9F7', '#6b1f3a')}>{SAC_CARGOS.find((c) => c.slug === a.cargoSac)?.label ?? a.papel}</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {podeCriar ? (
+                        <button className="btn btn-icon" disabled={toggling === a.id + ':online' || !a.ativo} onClick={() => alternarOnline(a)}
+                          title={!a.ativo ? 'Atendente inativa' : a.sacOnline ? 'Online — recebe conversas. Clique para tirar da distribuição.' : 'Offline — não recebe. Clique para pôr na distribuição.'}
+                          style={{ color: a.sacOnline ? '#15803D' : 'var(--text-3)' }}>
+                          <i className={`ti ${toggling === a.id + ':online' ? 'ti-loader' : a.sacOnline ? 'ti-circle-filled' : 'ti-circle'}`} />
+                        </button>
+                      ) : (
+                        <span style={a.sacOnline ? pill('#E7F0EC', '#15803D') : pill('#EEEEEE', '#888888')}>{a.sacOnline ? 'Online' : 'Offline'}</span>
+                      )}
+                    </td>
                     <td>{a.unidadeNome || <span style={{ color: 'var(--text-3)' }}>Rede</span>}</td>
                     <td style={{ textAlign: 'center' }}>{a.conversas}</td>
                     <td style={{ textAlign: 'center' }}>{a.tickets}</td>
@@ -128,9 +178,9 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                     <td><span style={a.ativo ? pill('#E7F0EC', '#15803D') : pill('#FBE9EB', '#D85563')}>{a.ativo ? 'Ativo' : 'Inativo'}</span></td>
                     {podeCriar && (
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-icon" disabled={toggling === a.id} onClick={() => alternarAtivo(a)}
+                        <button className="btn btn-icon" disabled={toggling === a.id + ':ativo'} onClick={() => alternarAtivo(a)}
                           title={a.ativo ? 'Desativar (deixa de receber distribuição)' : 'Reativar atendente'}>
-                          <i className={`ti ${toggling === a.id ? 'ti-loader' : a.ativo ? 'ti-user-off' : 'ti-user-check'}`} />
+                          <i className={`ti ${toggling === a.id + ':ativo' ? 'ti-loader' : a.ativo ? 'ti-user-off' : 'ti-user-check'}`} />
                         </button>
                       </td>
                     )}
@@ -163,7 +213,8 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
       </div>
 
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). A distribuição atribui a fila (conversas e chamados sem dono) ao atendente de menor carga. SLA% = casos no prazo ÷ total atendido.
+        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). <b>Conversas novas caem automaticamente só em quem está <span style={{ color: '#15803D' }}>Online</span></b> — e sempre no de menor carga (contando só conversas <b>abertas</b>). Se só uma pessoa está online, tudo cai nela: {podeCriar ? 'ponha as demais online na coluna Online.' : 'peça ao admin para pôr as demais online.'} <b>Consulta</b> fica de fora da distribuição. SLA% = casos no prazo ÷ total atendido.
+        {podeCriar && <> Como admin, você pode <b>pôr online</b>, <b>trocar o cargo</b> e ativar/desativar cada atendente aqui.</>}
         {podeDistribuir && !podeCriar && <> Gestor/SAC pode distribuir a fila; apenas o administrador cria, ativa ou desativa acessos.</>}
       </div>
 
