@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
-import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso } from '@/lib/financeiro'
+import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
 import { postLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
+import { adminClient } from '@/lib/supabase/admin'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -356,6 +357,74 @@ export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R
   return { ok: true, unidades: uni.size, lancamentos: lanc.inseridos, faturamento }
 }
 
+/** Apura as DESPESAS configuráveis (imposto/comissão/taxa de cartão) sobre a receita real já
+ *  lançada no razão. As regras vêm de fin_config (o contador ajusta em Config, não é chumbado).
+ *  Semântica de SUBSTITUIÇÃO: apaga as despesas de config da competência e regrava — assim,
+ *  quando o % muda, o razão reflete o novo valor (idempotência simples colidiria e não atualizaria). */
+export async function apurarDespesasDaCompetencia(ano: number, mes: number): Promise<R & { unidades?: number; lancamentos?: number; imposto?: number; comissao?: number; taxaCartao?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para apurar despesas.' }
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
+
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const ini = `${ano}-${p2(mes)}-01`
+  const competencia = `${MESES_BR[mes - 1]}/${ano}`
+
+  // Regras configuráveis (% ≥ 0; 0 = não lança essa despesa).
+  const { data: cfg } = await op.sb.from('fin_config').select('imposto_pct, comissao_pct, comissao_base, taxa_cartao_pct').order('atualizado_em', { ascending: false }).limit(1).maybeSingle()
+  const impPct = Number((cfg as { imposto_pct?: number } | null)?.imposto_pct) || 0
+  const comPct = Number((cfg as { comissao_pct?: number } | null)?.comissao_pct) || 0
+  const txPct = Number((cfg as { taxa_cartao_pct?: number } | null)?.taxa_cartao_pct) || 0
+  const comBase = ((cfg as { comissao_base?: string } | null)?.comissao_base || 'faturamento') as ComissaoBase
+
+  const emp = await empresaId(op.sb)
+  const mapa = await mapaFinanceiro(op.sb)
+  // Contas de destino das despesas (plano de contas).
+  const contaImposto = mapa.planoPorCodigo.get('4.1.04') ?? null   // Impostos sobre vendas
+  const contaComissao = mapa.planoPorCodigo.get('4.1.01') ?? null  // Comissões
+  const contaTaxa = mapa.planoPorCodigo.get('4.1.05') ?? null      // Taxa de meio de pagamento
+  // Contas que compõem a BASE da comissão (null = todo o faturamento).
+  const baseCodigos = COMISSAO_BASE_OPCOES.find((o) => o.valor === comBase)?.contas ?? null
+  const baseContaIds = baseCodigos ? new Set(baseCodigos.map((c) => mapa.planoPorCodigo.get(c)).filter(Boolean) as string[]) : null
+
+  // Receita real (BEMP) já no razão nesta competência → base de cálculo das despesas.
+  const { data: recRaw } = await op.sb.from('fin_lancamento')
+    .select('centro_custo_id, plano_conta_id, valor')
+    .eq('origem', 'bemp').eq('natureza', 'receita').eq('competencia', ini).limit(5000)
+  const receitas = (recRaw ?? []) as { centro_custo_id: string | null; plano_conta_id: string | null; valor: number }[]
+
+  // Agrupa por centro (unidade): faturamento total e base da comissão.
+  const porCentro = new Map<string, { fat: number; base: number }>()
+  for (const r of receitas) {
+    if (!r.centro_custo_id) continue
+    const v = Number(r.valor) || 0
+    const acc = porCentro.get(r.centro_custo_id) ?? { fat: 0, base: 0 }
+    acc.fat += v
+    if (!baseContaIds || (r.plano_conta_id && baseContaIds.has(r.plano_conta_id))) acc.base += v
+    porCentro.set(r.centro_custo_id, acc)
+  }
+
+  const eventos: LancamentoEvento[] = []
+  let totImp = 0, totCom = 0, totTax = 0
+  for (const [centro, { fat, base }] of porCentro) {
+    const imposto = Math.round(fat * impPct) / 100
+    const comissao = Math.round(base * comPct) / 100
+    const taxa = Math.round(fat * txPct) / 100
+    totImp += imposto; totCom += comissao; totTax += taxa
+    if (imposto > 0) eventos.push({ empresaId: emp, centroCustoId: centro, planoContaId: contaImposto, natureza: 'despesa', competencia: ini, valor: imposto, origem: 'despesa_config', origemRef: `${centro}:imposto`, idemKey: `despesa_config:${ini}:${centro}:imposto`, status: 'realizado', historico: `Impostos sobre vendas ${competencia}` })
+    if (comissao > 0) eventos.push({ empresaId: emp, centroCustoId: centro, planoContaId: contaComissao, natureza: 'despesa', competencia: ini, valor: comissao, origem: 'despesa_config', origemRef: `${centro}:comissao`, idemKey: `despesa_config:${ini}:${centro}:comissao`, status: 'realizado', historico: `Comissões ${competencia}` })
+    if (taxa > 0) eventos.push({ empresaId: emp, centroCustoId: centro, planoContaId: contaTaxa, natureza: 'despesa', competencia: ini, valor: taxa, origem: 'despesa_config', origemRef: `${centro}:taxa_cartao`, idemKey: `despesa_config:${ini}:${centro}:taxa_cartao`, status: 'realizado', historico: `Taxa de meio de pagamento ${competencia}` })
+  }
+
+  // SUBSTITUI: apaga as despesas de config desta competência antes de regravar (service role — RLS bloqueia write).
+  const { error: eDel } = await adminClient().from('fin_lancamento').delete().eq('origem', 'despesa_config').eq('competencia', ini)
+  if (eDel) return { ok: false, error: msgErro(eDel.message, 'atualizar as despesas') }
+  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão despesas:', (e as Error).message); return { inseridos: 0 } })
+  revalidatePath('/financeiro')
+  return { ok: true, unidades: porCentro.size, lancamentos: lanc.inseridos, imposto: totImp, comissao: totCom, taxaCartao: totTax }
+}
+
 /** Processa retorno bancário / baixa em lote (finBaixaLote L5370): baixa boletos em aberto sem atraso. */
 export async function processarRetornoBancario(): Promise<R & { baixados?: number; total?: number }> {
   const { op, error } = await requireOperador()
@@ -416,6 +485,7 @@ export async function rodarConciliacao(): Promise<R & { cruzados?: number }> {
 // =============================================================================
 export async function salvarConfig(input: {
   royalty_pct: number; fundo_pct: number; venc_dia: number
+  imposto_pct?: number; imposto_regime?: string; comissao_pct?: number; comissao_base?: string; taxa_cartao_pct?: number
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: ReguaPasso[]
 }): Promise<R> {
   const { op, error } = await requireOperador()
@@ -429,6 +499,17 @@ export async function salvarConfig(input: {
   if (!Number.isFinite(royalty) || royalty < 0) return { ok: false, error: 'Percentual de royalties inválido.' }
   if (!Number.isFinite(fundo) || fundo < 0) return { ok: false, error: 'Percentual do fundo inválido.' }
 
+  // Regras de despesa configuráveis — todas são % ≥ 0 (0 = não lança). Limite 100% de sanidade.
+  const pctDesp = (v: unknown, nome: string): number | { erro: string } => {
+    const n = Number(v ?? 0)
+    if (!Number.isFinite(n) || n < 0 || n > 100) return { erro: `Percentual de ${nome} inválido (0 a 100).` }
+    return n
+  }
+  const imp = pctDesp(input.imposto_pct, 'imposto'); if (typeof imp === 'object') return { ok: false, error: imp.erro }
+  const com = pctDesp(input.comissao_pct, 'comissão'); if (typeof com === 'object') return { ok: false, error: com.erro }
+  const tx = pctDesp(input.taxa_cartao_pct, 'taxa de cartão'); if (typeof tx === 'object') return { ok: false, error: tx.erro }
+  const base = COMISSAO_BASE_OPCOES.some((o) => o.valor === input.comissao_base) ? input.comissao_base! : 'faturamento'
+
   const emp = await empresaId(op.sb)
   if (!emp) return { ok: false, error: 'Empresa não encontrada.' }
   const { error: e } = await op.sb.from('fin_config').upsert({
@@ -436,6 +517,11 @@ export async function salvarConfig(input: {
     royalty_pct: royalty,
     fundo_pct: fundo,
     venc_dia: vencDia,
+    imposto_pct: imp,
+    imposto_regime: (input.imposto_regime || 'Simples Nacional').slice(0, 60),
+    comissao_pct: com,
+    comissao_base: base,
+    taxa_cartao_pct: tx,
     banco: input.banco,
     adquirentes: input.adquirentes,
     categorias: input.categorias,

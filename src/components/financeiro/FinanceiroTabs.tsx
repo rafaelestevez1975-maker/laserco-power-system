@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { moedaBR, dataBR } from '@/lib/fmt'
 import {
   STATUS_PILL, PRIO_PILL, FIN_CATS_REC, finPct, finFranqEmail, proximoPassoRegua,
-  mesRefBR, type ReguaPasso,
+  mesRefBR, type ReguaPasso, COMISSAO_BASE_OPCOES,
 } from '@/lib/financeiro'
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
-  gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, processarRetornoBancario, rodarReguaAtraso,
+  gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig, dreDaCompetencia,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
@@ -638,12 +638,19 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     setBusy('apurar')
     const rf = await apurarFaturamentoBemp(a, m)         // 1) receita real (BEMP) no razão
     const r = await gerarRoyaltiesDoFaturamento(a, m)    // 2) royalties + fundo no razão
+    const rd = await apurarDespesasDaCompetencia(a, m)   // 3) despesas config (imposto/comissão/taxa) no razão
     setBusy('')
     if (!rf.ok) { addLog('✗ ' + (rf.error || 'Erro no faturamento')); return }
     if (!r.ok) { addLog('✗ ' + (r.error || 'Erro nos royalties')); return }
     addLog(
       `✓ Apuração ${comp} — faturamento BEMP ${moedaBR(rf.faturamento || 0)} em ${rf.unidades || 0} unidade(s) → ${rf.lancamentos || 0} lançamento(s) de receita no razão`,
       r.geradas ? `✓ Royalties (${config.royalty_pct}%) + Fundo: ${r.geradas} recebível(is) e ${r.lancamentos || 0} lançamento(s) no razão` : 'Royalties já apurados nesta competência.')
+    if (rd.ok) {
+      const totDesp = (rd.imposto || 0) + (rd.comissao || 0) + (rd.taxaCartao || 0)
+      addLog(totDesp > 0
+        ? `✓ Despesas: imposto ${moedaBR(rd.imposto || 0)} + comissão ${moedaBR(rd.comissao || 0)} + taxa cartão ${moedaBR(rd.taxaCartao || 0)} → ${rd.lancamentos || 0} lançamento(s) no razão`
+        : 'Despesas: nenhuma regra configurada (defina % em Configurações → Regras de despesa).')
+    } else addLog('⚠ Despesas: ' + (rd.error || 'não apuradas'))
     router.refresh()
   }
   const baixar = async () => {
@@ -937,6 +944,11 @@ function ConfigTab({ config }: { config: FinConfig }) {
   const [royalty, setRoyalty] = useState(config.royalty_pct)
   const [fundo, setFundo] = useState(config.fundo_pct)
   const [vencDia, setVencDia] = useState(config.venc_dia)
+  const [imposto, setImposto] = useState(config.imposto_pct)
+  const [impostoRegime, setImpostoRegime] = useState(config.imposto_regime)
+  const [comissao, setComissao] = useState(config.comissao_pct)
+  const [comissaoBase, setComissaoBase] = useState(config.comissao_base)
+  const [taxaCartao, setTaxaCartao] = useState(config.taxa_cartao_pct)
   const [banco, setBanco] = useState(config.banco as Record<string, string | boolean>)
   const [cats, setCats] = useState<string[]>(config.categorias)
   const [novaCat, setNovaCat] = useState('')
@@ -950,7 +962,7 @@ function ConfigTab({ config }: { config: FinConfig }) {
 
   const salvar = async () => {
     setBusy(true); setMsg('')
-    const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, banco, adquirentes: adq, categorias: cats, regua })
+    const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, imposto_pct: imposto, imposto_regime: impostoRegime, comissao_pct: comissao, comissao_base: comissaoBase, taxa_cartao_pct: taxaCartao, banco, adquirentes: adq, categorias: cats, regua })
     setBusy(false)
     setMsg(r.ok ? 'Configurações salvas.' : (r.error || 'Erro ao salvar.'))
     if (r.ok) router.refresh()
@@ -988,6 +1000,22 @@ function ConfigTab({ config }: { config: FinConfig }) {
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, cursor: 'pointer' }}>
             <input type="checkbox" checked={!!banco.autoBaixa} onChange={(e) => setBanco({ ...banco, autoBaixa: e.target.checked })} /> Baixa automática pelo retorno bancário
           </label>
+        </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Regras de despesa <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— alimentam o DRE e o Fluxo pelo razão</span></div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 12px' }}>Percentuais aplicados sobre o <b>faturamento real do BEMP</b> ao apurar o mês (Royalties → Apurar mês). <b>0 = não lança</b> a despesa. Ajuste conforme seu contador — o DRE recalcula na próxima apuração.</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 12 }}>
+          <div className="mf full"><label>Imposto — regime</label><input value={impostoRegime} onChange={(e) => setImpostoRegime(e.target.value)} placeholder="Simples Nacional" /></div>
+          <div className="mf full"><label>Imposto — alíquota efetiva (%)</label><input type="number" step="0.1" min={0} max={100} value={imposto} onChange={(e) => setImposto(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Comissão (%)</label><input type="number" step="0.1" min={0} max={100} value={comissao} onChange={(e) => setComissao(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Comissão — base de cálculo</label>
+            <select value={comissaoBase} onChange={(e) => setComissaoBase(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
+              {COMISSAO_BASE_OPCOES.map((o) => <option key={o.valor} value={o.valor}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="mf full"><label>Taxa de cartão — MDR médio (%)</label><input type="number" step="0.1" min={0} max={100} value={taxaCartao} onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)} /></div>
         </div>
       </div>
 

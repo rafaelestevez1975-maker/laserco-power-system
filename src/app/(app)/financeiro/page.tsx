@@ -5,6 +5,7 @@ import { FinanceiroTabs } from '@/components/financeiro/FinanceiroTabs'
 import {
   FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES,
   ROYALTY_PCT_DEFAULT, FUNDO_PCT_DEFAULT, VENC_DIA_DEFAULT,
+  IMPOSTO_PCT_DEFAULT, IMPOSTO_REGIME_DEFAULT, COMISSAO_PCT_DEFAULT, COMISSAO_BASE_DEFAULT, TAXA_CARTAO_PCT_DEFAULT,
   calcDiasAtraso,
 } from '@/lib/financeiro'
 
@@ -26,6 +27,7 @@ export type Conciliacao = {
 }
 export type FinConfig = {
   royalty_pct: number; fundo_pct: number; venc_dia: number
+  imposto_pct: number; imposto_regime: string; comissao_pct: number; comissao_base: string; taxa_cartao_pct: number
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: { dias: number; acao: string; canal: string }[]
 }
 // DRE derivado do RAZÃO (fin_lancamento) — cada linha é uma conta do plano de contas somada.
@@ -90,7 +92,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     const [{ data: pagRaw, count: pagCount }, { data: concRaw, count: concCount }, { data: cfgRaw }] = await Promise.all([
       sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade', { count: 'exact' }).order('vencimento', { ascending: true, nullsFirst: false }).limit(LIM_PAG),
       sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao', { count: 'exact' }).order('data', { ascending: true, nullsFirst: false }).limit(LIM_CONC),
-      sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+      sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, imposto_pct, imposto_regime, comissao_pct, comissao_base, taxa_cartao_pct, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     ])
     contasPagar = (pagRaw ?? []) as ContaPagar[]
     conciliacao = (concRaw ?? []) as Conciliacao[]
@@ -109,6 +111,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   // Config com defaults do legado quando não houver linha salva.
   const cfg: FinConfig = config ?? {
     royalty_pct: ROYALTY_PCT_DEFAULT, fundo_pct: FUNDO_PCT_DEFAULT, venc_dia: VENC_DIA_DEFAULT,
+    imposto_pct: IMPOSTO_PCT_DEFAULT, imposto_regime: IMPOSTO_REGIME_DEFAULT,
+    comissao_pct: COMISSAO_PCT_DEFAULT, comissao_base: COMISSAO_BASE_DEFAULT, taxa_cartao_pct: TAXA_CARTAO_PCT_DEFAULT,
     banco: {}, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
   }
 

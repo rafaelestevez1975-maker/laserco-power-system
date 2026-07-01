@@ -42,6 +42,22 @@ export const FIN_ADQUIRENTES: Adquirente[] = [
 export const ROYALTY_PCT_DEFAULT = 10
 export const FUNDO_PCT_DEFAULT = 2
 export const VENC_DIA_DEFAULT = 10
+
+// Regras de DESPESA configuráveis (o contador ajusta em Config → não é chumbado).
+// Default 0 = não lança nada até o cliente configurar (nunca "chuta" despesa).
+export const IMPOSTO_PCT_DEFAULT = 0
+export const IMPOSTO_REGIME_DEFAULT = 'Simples Nacional'
+export const COMISSAO_PCT_DEFAULT = 0
+export const COMISSAO_BASE_DEFAULT = 'faturamento'
+export const TAXA_CARTAO_PCT_DEFAULT = 0
+// Base de cálculo da comissão → contas de receita do plano de contas.
+export type ComissaoBase = 'faturamento' | 'servicos' | 'pacotes' | 'servicos_pacotes'
+export const COMISSAO_BASE_OPCOES: { valor: ComissaoBase; label: string; contas: string[] | null }[] = [
+  { valor: 'faturamento', label: 'Todo o faturamento', contas: null },
+  { valor: 'servicos', label: 'Só serviços', contas: ['3.1.01'] },
+  { valor: 'pacotes', label: 'Só pacotes', contas: ['3.1.03'] },
+  { valor: 'servicos_pacotes', label: 'Serviços + pacotes', contas: ['3.1.01', '3.1.03'] },
+]
 // Competência (mês de referência) a partir de uma data ISO — ex.: "Junho/2026".
 // Substitui o antigo FIN_MESREF chumbado ('Maio/2026'). Saldo inicial das projeções
 // agora vem da posição realizada real (recebido − pago), não de número inventado.
