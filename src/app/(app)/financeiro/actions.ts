@@ -5,8 +5,7 @@ import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
-import { postLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
-import { adminClient } from '@/lib/supabase/admin'
+import { postLancamento, repostLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -260,9 +259,10 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   const vencDia = Number((cfg as { venc_dia?: number } | null)?.venc_dia) || 10
   const vencimento = `${proxAno}-${p2(proxMes)}-${p2(Math.min(28, Math.max(1, vencDia)))}`
 
-  // 3) Idempotência: pula unidade/categoria que já tem recebível nesta competência
-  const { data: existRaw } = await op.sb.from('fin_recebiveis').select('unidade_nome, categoria').eq('competencia', competencia).in('categoria', ['Royalties', 'Fundo de marketing'])
-  const jaTem = new Set(((existRaw ?? []) as { unidade_nome: string; categoria: string }[]).map((r) => `${r.unidade_nome}|${r.categoria}`))
+  // 3) Idempotência: pula unidade/categoria que já tem recebível nesta competência.
+  //    Chaveia por unidade_id (não por nome) — renomear a unidade não pode duplicar o recebível.
+  const { data: existRaw } = await op.sb.from('fin_recebiveis').select('unidade_id, categoria').eq('competencia', competencia).in('categoria', ['Royalties', 'Fundo de marketing'])
+  const jaTem = new Set(((existRaw ?? []) as { unidade_id: string; categoria: string }[]).map((r) => `${r.unidade_id}|${r.categoria}`))
 
   const emp = await empresaId(op.sb)
   const compISO = ini // 1º dia do mês da competência ('2026-04-01')
@@ -278,8 +278,8 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
     const valFun = Math.round(bruto * fundoPct) / 100
     const centroUni = mapa.centroPorUnidade.get(u.id) ?? null
     // Projeção antiga (a tela "A Receber" ainda lê daqui) — mantida até migrar pro razão.
-    if (!jaTem.has(`${u.nome}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
-    if (!jaTem.has(`${u.nome}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
+    if (!jaTem.has(`${u.id}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
+    if (!jaTem.has(`${u.id}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
     // RAZÃO (fonte da verdade): royalty/fundo = RECEITA da rede + DESPESA da unidade (mesmo fato, 2 centros).
     eventos.push(
       { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.05') ?? null, natureza: 'receita', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:rec`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}` },
@@ -288,8 +288,10 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
       { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.03') ?? null, natureza: 'despesa', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:desp`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
     )
   }
-  // Grava no RAZÃO (idempotente) — a fonte única da verdade.
-  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão royalties:', (e as Error).message); return { inseridos: 0 } })
+  // Grava no RAZÃO (fonte única) — SUBSTITUI a competência (reflete correções do BEMP); erro propagado.
+  let lanc: { inseridos: number }
+  try { lanc = await repostLancamento('royalty', compISO, eventos) }
+  catch (e) { return { ok: false, error: msgErro((e as Error).message, 'lançar os royalties no razão') } }
   // Projeção antiga (compat) — enquanto a tela "A Receber" não lê do razão.
   if (rows.length > 0) {
     const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
@@ -322,7 +324,7 @@ export async function dreDaCompetencia(ano: number, mes: number, escopo: string 
 /** Apura o FATURAMENTO real do BEMP como RECEITA no razão, por unidade e por tipo de venda
  *  (pacotes/serviços/assinaturas/produtos → contas de receita). Idempotente por
  *  (unidade, tipo, competência). É o principal produtor de receita → alimenta DRE e Fluxo. */
-export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R & { unidades?: number; lancamentos?: number; faturamento?: number }> {
+export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R & { unidades?: number; lancamentos?: number; faturamento?: number; semCentro?: number }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para apurar o faturamento.' }
@@ -348,17 +350,23 @@ export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R
   const emp = await empresaId(op.sb)
   const eventos: LancamentoEvento[] = []
   const uni = new Set<string>()
+  const semCentro = new Set<string>()
   let faturamento = 0
   for (const r of (fatRaw ?? []) as { salon: number; entidade: string; total: number }[]) {
     const u = uniPorSalon.get(Number(r.salon)); if (!u) continue
     const val = Math.round(Number(r.total) || 0); if (val <= 0) continue
     faturamento += val; uni.add(u.id)
+    const centro = mapa.centroPorUnidade.get(u.id) ?? null
+    if (!centro) semCentro.add(u.id) // sem centro → despesas de config não incidem sobre essa receita (avisar)
     const codigo = CONTA_POR_ENTIDADE[r.entidade] ?? '3.1.01'
-    eventos.push({ empresaId: emp, centroCustoId: mapa.centroPorUnidade.get(u.id) ?? null, planoContaId: mapa.planoPorCodigo.get(codigo) ?? null, natureza: 'receita', competencia: ini, valor: val, origem: 'bemp', origemRef: `${u.id}:${r.entidade}`, idemKey: `bemp:${ini}:${u.id}:${r.entidade}`, status: 'realizado', historico: `Faturamento ${competencia} · ${r.entidade} · ${u.nome}` })
+    eventos.push({ empresaId: emp, centroCustoId: centro, planoContaId: mapa.planoPorCodigo.get(codigo) ?? null, natureza: 'receita', competencia: ini, valor: val, origem: 'bemp', origemRef: `${u.id}:${r.entidade}`, idemKey: `bemp:${ini}:${u.id}:${r.entidade}`, status: 'realizado', historico: `Faturamento ${competencia} · ${r.entidade} · ${u.nome}` })
   }
-  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão faturamento:', (e as Error).message); return { inseridos: 0 } })
+  // SUBSTITUI (reapurável): reflete correções posteriores no BEMP; erro é propagado, não engolido.
+  let lanc: { inseridos: number }
+  try { lanc = await repostLancamento('bemp', ini, eventos) }
+  catch (e) { return { ok: false, error: msgErro((e as Error).message, 'apurar o faturamento no razão') } }
   revalidatePath('/financeiro')
-  return { ok: true, unidades: uni.size, lancamentos: lanc.inseridos, faturamento }
+  return { ok: true, unidades: uni.size, lancamentos: lanc.inseridos, faturamento, semCentro: semCentro.size }
 }
 
 /** Apura as DESPESAS configuráveis (imposto/comissão/taxa de cartão) sobre a receita real já
@@ -391,6 +399,10 @@ export async function apurarDespesasDaCompetencia(ano: number, mes: number): Pro
   // Contas que compõem a BASE da comissão (null = todo o faturamento).
   const baseCodigos = COMISSAO_BASE_OPCOES.find((o) => o.valor === comBase)?.contas ?? null
   const baseContaIds = baseCodigos ? new Set(baseCodigos.map((c) => mapa.planoPorCodigo.get(c)).filter(Boolean) as string[]) : null
+  // Guard: comissão ligada com base restrita, mas nenhuma conta da base existe no plano → zeraria
+  // a comissão silenciosamente. Falha alto (é erro de configuração), não devolve número errado.
+  if (comPct > 0 && baseCodigos && baseContaIds && baseContaIds.size === 0)
+    return { ok: false, error: 'Configuração de comissão inválida: as contas da base não foram encontradas no plano de contas.' }
 
   // Receita real (BEMP) já no razão nesta competência → base de cálculo das despesas.
   const { data: recRaw } = await op.sb.from('fin_lancamento')
@@ -421,10 +433,11 @@ export async function apurarDespesasDaCompetencia(ano: number, mes: number): Pro
     if (taxa > 0) eventos.push({ empresaId: emp, centroCustoId: centro, planoContaId: contaTaxa, natureza: 'despesa', competencia: ini, valor: taxa, origem: 'despesa_config', origemRef: `${centro}:taxa_cartao`, idemKey: `despesa_config:${ini}:${centro}:taxa_cartao`, status: 'realizado', historico: `Taxa de meio de pagamento ${competencia}` })
   }
 
-  // SUBSTITUI: apaga as despesas de config desta competência antes de regravar (service role — RLS bloqueia write).
-  const { error: eDel } = await adminClient().from('fin_lancamento').delete().eq('origem', 'despesa_config').eq('competencia', ini)
-  if (eDel) return { ok: false, error: msgErro(eDel.message, 'atualizar as despesas') }
-  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão despesas:', (e as Error).message); return { inseridos: 0 } })
+  // SUBSTITUI (reapurável): apaga as despesas de config da competência e regrava; erro propagado
+  // (nunca engolir após o DELETE — apagaria e reportaria sucesso, inflando o lucro no DRE).
+  let lanc: { inseridos: number }
+  try { lanc = await repostLancamento('despesa_config', ini, eventos) }
+  catch (e) { return { ok: false, error: msgErro((e as Error).message, 'atualizar as despesas (as anteriores foram removidas — reapure)') } }
   revalidatePath('/financeiro')
   return { ok: true, unidades: porCentro.size, lancamentos: lanc.inseridos, imposto: totImp, comissao: totCom, taxaCartao: totTax }
 }

@@ -57,6 +57,22 @@ export async function postLancamento(eventos: LancamentoEvento | LancamentoEvent
   return { inseridos: data?.length ?? 0 }
 }
 
+/**
+ * SUBSTITUI os lançamentos de uma (origem, competência): apaga os antigos e regrava os novos.
+ * É a semântica correta para "reapurar" (o valor muda quando o dado-fonte ou o % muda).
+ *
+ * IMPORTANTE: NÃO engole erro. O PostgREST não dá transação cross-request, então o DELETE
+ * comita antes do INSERT; se o post falhar, LANÇAMOS o erro para o chamador sinalizar e o
+ * operador reapurar (self-heal na próxima execução — o DELETE seguinte não acha nada e o post
+ * grava). Engolir aqui (como no best-effort de produtores que só inserem) apagaria os dados e
+ * reportaria sucesso — inflando o resultado no DRE. */
+export async function repostLancamento(origem: string, competencia: string, eventos: LancamentoEvento[]): Promise<{ inseridos: number }> {
+  const sb = adminClient()
+  const { error } = await sb.from('fin_lancamento').delete().eq('origem', origem).eq('competencia', competencia)
+  if (error) throw new Error(error.message)
+  return postLancamento(eventos)
+}
+
 /** Mapas de apoio: centro de custo por unidade (+ o da rede) e plano de contas por código. */
 export async function mapaFinanceiro(sb: SB): Promise<{
   centroPorUnidade: Map<string, string>; centroRede: string | null; planoPorCodigo: Map<string, string>

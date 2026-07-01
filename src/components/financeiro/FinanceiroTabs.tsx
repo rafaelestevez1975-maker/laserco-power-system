@@ -645,6 +645,7 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     addLog(
       `✓ Apuração ${comp} — faturamento BEMP ${moedaBR(rf.faturamento || 0)} em ${rf.unidades || 0} unidade(s) → ${rf.lancamentos || 0} lançamento(s) de receita no razão`,
       r.geradas ? `✓ Royalties (${config.royalty_pct}%) + Fundo: ${r.geradas} recebível(is) e ${r.lancamentos || 0} lançamento(s) no razão` : 'Royalties já apurados nesta competência.')
+    if (rf.semCentro && rf.semCentro > 0) addLog(`⚠ ${rf.semCentro} unidade(s) sem centro de custo — a receita entra no consolidado, mas as despesas de config não incidem sobre elas. Verifique o cadastro.`)
     if (rd.ok) {
       const totDesp = (rd.imposto || 0) + (rd.comissao || 0) + (rd.taxaCartao || 0)
       addLog(totDesp > 0
