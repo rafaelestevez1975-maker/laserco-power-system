@@ -5,7 +5,7 @@ import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase, janelaFluxo, normalizaFluxo, type FluxoSerie, type FluxoResumo, type FluxoComp } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
-import { postLancamento, repostLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
+import { postLancamento, repostLancamento, conciliarLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -55,8 +55,8 @@ export async function darBaixaRecebivel(id: string): Promise<R> {
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para dar baixa.' }
 
-  const { data: rec } = await op.sb.from('fin_recebiveis').select('status, boleto').eq('id', id).maybeSingle()
-  const r = rec as { status?: string; boleto?: string | null } | null
+  const { data: rec } = await op.sb.from('fin_recebiveis').select('status, boleto, lancamento_id').eq('id', id).maybeSingle()
+  const r = rec as { status?: string; boleto?: string | null; lancamento_id?: string | null } | null
   if (!r) return { ok: false, error: 'Recebível não encontrado.' }
   if (r.status === 'pago') return { ok: false, error: 'Este recebível já está pago.' }
   if (!r.boleto) return { ok: false, error: 'Gere o boleto antes de dar baixa (retorno bancário).' }
@@ -64,6 +64,8 @@ export async function darBaixaRecebivel(id: string): Promise<R> {
   const hoje = new Date().toISOString().slice(0, 10)
   const { error: e } = await op.sb.from('fin_recebiveis').update({ status: 'pago', jur_id: null, dias_atraso: 0, data_pagamento: hoje }).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'dar baixa') }
+  // Ponte pro razão: registra o CAIXA (o 'recebido' do Fluxo passa a refletir esta baixa).
+  if (r.lancamento_id) await conciliarLancamento(r.lancamento_id, hoje).catch((err) => console.error('conciliar razão (baixa):', (err as Error).message))
   revalidatePath('/financeiro')
   return { ok: true }
 }
@@ -148,6 +150,10 @@ export async function pagarDespesa(id: string): Promise<R> {
   if (r.status === 'pago') return { ok: false, error: 'Esta conta já está paga.' }
   const { error: e } = await op.sb.from('fin_contas_pagar').update({ status: 'pago' }).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'pagar') }
+  // Ponte pro razão: concilia a despesa manual correspondente (o 'pago' do Fluxo reflete).
+  const { data: lanc } = await op.sb.from('fin_lancamento').select('id').eq('origem', 'manual').eq('origem_ref', id).maybeSingle()
+  const lid = (lanc as { id?: string } | null)?.id
+  if (lid) await conciliarLancamento(lid, new Date().toISOString().slice(0, 10)).catch((err) => console.error('conciliar razão (pagar):', (err as Error).message))
   revalidatePath('/financeiro')
   return { ok: true }
 }
@@ -178,7 +184,7 @@ export async function novaDespesa(input: {
   if (!input.vencimento) return { ok: false, error: 'Informe o vencimento.' }
 
   const emp = await empresaId(op.sb)
-  const { error: e } = await op.sb.from('fin_contas_pagar').insert({
+  const { data: ins, error: e } = await op.sb.from('fin_contas_pagar').insert({
     empresa_id: emp,
     categoria,
     descricao: (input.descricao || '').trim() || null,
@@ -187,8 +193,18 @@ export async function novaDespesa(input: {
     vencimento: input.vencimento,
     status: 'aberto',
     prioridade: ['alta', 'media', 'baixa'].includes(input.prioridade) ? input.prioridade : 'media',
-  })
+  }).select('id').single()
   if (e) return { ok: false, error: msgErro(e.message, 'lançar despesa') }
+  // Ponte pro razão: despesa da franqueadora (centro da rede, conta 4.2.99 Outras despesas),
+  // ligada ao contas a pagar por origem_ref. Alimenta DRE e Fluxo (competência do vencimento).
+  const contaId = (ins as { id: string }).id
+  const mapa = await mapaFinanceiro(op.sb)
+  await postLancamento({
+    empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('4.2.99') ?? null,
+    natureza: 'despesa', competencia: `${input.vencimento.slice(0, 7)}-01`, valor, origem: 'manual', origemRef: contaId,
+    idemKey: `manual:${contaId}`, dataPrevista: input.vencimento, status: 'previsto',
+    historico: `${categoria}${(input.descricao || '').trim() ? ' · ' + (input.descricao || '').trim() : ''}`,
+  }).catch((err) => console.error('razão nova despesa:', (err as Error).message))
   revalidatePath('/financeiro')
   return { ok: true }
 }
@@ -292,8 +308,18 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   let lanc: { inseridos: number }
   try { lanc = await repostLancamento('royalty', compISO, eventos) }
   catch (e) { return { ok: false, error: msgErro((e as Error).message, 'lançar os royalties no razão') } }
-  // Projeção antiga (compat) — enquanto a tela "A Receber" não lê do razão.
+  // Sub-livro "A Receber": grava os recebíveis JÁ LIGADOS ao lançamento do razão (lancamento_id),
+  // para a baixa conciliar o caixa. Casa por (unidade, conta de receita) na competência.
   if (rows.length > 0) {
+    const { data: lancs } = await op.sb.from('fin_lancamento').select('id, origem_ref, plano_conta_id')
+      .eq('origem', 'royalty').eq('natureza', 'receita').eq('competencia', compISO)
+    const idPorChave = new Map<string, string>()
+    for (const l of (lancs ?? []) as { id: string; origem_ref: string | null; plano_conta_id: string | null }[]) idPorChave.set(`${l.origem_ref}:${l.plano_conta_id}`, l.id)
+    const contaRoy = mapa.planoPorCodigo.get('3.1.05') ?? null, contaFun = mapa.planoPorCodigo.get('3.1.06') ?? null
+    for (const row of rows) {
+      const conta = row.categoria === 'Royalties' ? contaRoy : contaFun
+      row.lancamento_id = idPorChave.get(`${row.unidade_id}:${conta}`) ?? null
+    }
     const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
     if (eIns) return { ok: false, error: msgErro(eIns.message, 'gerar os royalties') }
   }

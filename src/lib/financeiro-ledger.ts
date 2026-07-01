@@ -73,6 +73,14 @@ export async function repostLancamento(origem: string, competencia: string, even
   return postLancamento(eventos)
 }
 
+/** Concilia um lançamento (sub-livro A Receber/A Pagar → razão): marca 'conciliado' + data de caixa.
+ *  É a ponte do caixa: quando a baixa/pagamento acontece no sub-livro, o razão registra o caixa
+ *  (o 'recebido/pago' do Fluxo passa a refletir a realidade). Service role (RLS bloqueia write). */
+export async function conciliarLancamento(lancamentoId: string, dataCaixa: string): Promise<void> {
+  const { error } = await adminClient().from('fin_lancamento').update({ status: 'conciliado', data_caixa: dataCaixa }).eq('id', lancamentoId)
+  if (error) throw new Error(error.message)
+}
+
 /** Mapas de apoio: centro de custo por unidade (+ o da rede) e plano de contas por código. */
 export async function mapaFinanceiro(sb: SB): Promise<{
   centroPorUnidade: Map<string, string>; centroRede: string | null; planoPorCodigo: Map<string, string>
