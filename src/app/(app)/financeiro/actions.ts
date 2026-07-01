@@ -5,6 +5,7 @@ import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
+import { postLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -221,7 +222,7 @@ export async function gerarCobrancaRoyalties(): Promise<R & { geradas?: number; 
  *  Royalties (royalty_pct% do bruto) e Fundo de marketing (fundo_pct%), com vencimento no dia X do
  *  mês seguinte. Idempotente por competência (não duplica). Espelha a regra do legado
  *  (royaltiesUnidade ~L4582): % sobre o faturamento, só franquias (unidade com salon BEMP). */
-export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Promise<R & { geradas?: number; faturamento?: number; unidades?: number }> {
+export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Promise<R & { geradas?: number; faturamento?: number; unidades?: number; lancamentos?: number }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para gerar royalties.' }
@@ -241,9 +242,10 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   for (const r of (fatRaw ?? []) as { salon: number; faturamento: number }[]) fatPorSalon.set(Number(r.salon), Number(r.faturamento) || 0)
 
   // 2) Unidades-franquia (têm bemp_salon_id) + config (pct/vencimento)
-  const [{ data: unisRaw }, { data: cfg }] = await Promise.all([
+  const [{ data: unisRaw }, { data: cfg }, mapa] = await Promise.all([
     op.sb.from('unidades').select('id, nome, bemp_salon_id').not('bemp_salon_id', 'is', null),
     op.sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+    mapaFinanceiro(op.sb),
   ])
   const unidades = (unisRaw ?? []) as { id: string; nome: string; bemp_salon_id: number }[]
   const royaltyPct = Number((cfg as { royalty_pct?: number } | null)?.royalty_pct) || 10
@@ -256,21 +258,38 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   const jaTem = new Set(((existRaw ?? []) as { unidade_nome: string; categoria: string }[]).map((r) => `${r.unidade_nome}|${r.categoria}`))
 
   const emp = await empresaId(op.sb)
+  const compISO = ini // 1º dia do mês da competência ('2026-04-01')
   const rows: Record<string, unknown>[] = []
+  const eventos: LancamentoEvento[] = []
   let faturamento = 0, comFat = 0
   for (const u of unidades) {
     const fat = fatPorSalon.get(Number(u.bemp_salon_id)) || 0
     if (fat <= 0) continue
     const bruto = Math.round(fat)
     faturamento += bruto; comFat++
-    if (!jaTem.has(`${u.nome}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: Math.round(bruto * royaltyPct) / 100, vencimento, status: 'aberto' })
-    if (!jaTem.has(`${u.nome}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: Math.round(bruto * fundoPct) / 100, vencimento, status: 'aberto' })
+    const valRoy = Math.round(bruto * royaltyPct) / 100
+    const valFun = Math.round(bruto * fundoPct) / 100
+    const centroUni = mapa.centroPorUnidade.get(u.id) ?? null
+    // Projeção antiga (a tela "A Receber" ainda lê daqui) — mantida até migrar pro razão.
+    if (!jaTem.has(`${u.nome}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
+    if (!jaTem.has(`${u.nome}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
+    // RAZÃO (fonte da verdade): royalty/fundo = RECEITA da rede + DESPESA da unidade (mesmo fato, 2 centros).
+    eventos.push(
+      { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.05') ?? null, natureza: 'receita', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:rec`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}` },
+      { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.02') ?? null, natureza: 'despesa', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:desp`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}` },
+      { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.06') ?? null, natureza: 'receita', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:rec`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
+      { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.03') ?? null, natureza: 'despesa', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:desp`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
+    )
   }
-  if (rows.length === 0) return { ok: true, geradas: 0, faturamento, unidades: comFat }
-  const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
-  if (eIns) return { ok: false, error: msgErro(eIns.message, 'gerar os royalties') }
+  // Grava no RAZÃO (idempotente) — a fonte única da verdade.
+  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão royalties:', (e as Error).message); return { inseridos: 0 } })
+  // Projeção antiga (compat) — enquanto a tela "A Receber" não lê do razão.
+  if (rows.length > 0) {
+    const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
+    if (eIns) return { ok: false, error: msgErro(eIns.message, 'gerar os royalties') }
+  }
   revalidatePath('/financeiro')
-  return { ok: true, geradas: rows.length, faturamento, unidades: comFat }
+  return { ok: true, geradas: rows.length, faturamento, unidades: comFat, lancamentos: lanc.inseridos }
 }
 
 /** Processa retorno bancário / baixa em lote (finBaixaLote L5370): baixa boletos em aberto sem atraso. */

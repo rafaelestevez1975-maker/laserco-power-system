@@ -1,0 +1,308 @@
+================================================================
+  LASER&CO — POWER SYSTEM
+  Documentação detalhada: TODAS as telas e botões (por seção do menu)
+  Extraído do legado: legacy/index.html (SPA, 9.993 linhas) + portal-rh.html
+================================================================
+
+Legenda: ADMIN = só franqueadora · NOVO = módulo novo · "placeholder/clone visual" = tela
+ainda sem ação real. O legado é um protótipo: muita lógica funciona em memória (sem backend),
+com auditoria/persistência local; alguns botões são só visuais — indicado em cada caso.
+
+
+################################################################
+# 1. ACOMPANHAMENTO  (operação do dia a dia)
+################################################################
+
+== DASHBOARD ==
+Tela inicial: saudação (usuário, unidade, período) + 3 KPIs + funil + rankings + simulação.
+- 3 cards KPI: (1) Agendamentos·hoje (com comparativo vs ontem, clientes novos, avaliações e flags de meta); (2) Agendamentos·próximos 7 dias (barra de meta); (3) Meta da unidade·mês (barra de progresso + projeção).
+- Funil de vendas da unidade vs média da rede (Agendamentos→Comparecimentos→Conversões→Ticket) + posição na rede.
+- Simulação de crescimento (quanto ganharia se subir comparecimento/conversão/ticket).
+- Corridinha de Vendas (ranking diário) e Ranking de agendamentos do mês.
+Botões: Select "Período" (Hoje/Ontem/Semana/Mês/Mês anterior/30 dias/Personalizado) repinta KPI e funil; "Período personalizado" abre datas. Sem exportar. (Números do dashboard são mockados.)
+
+== AGENDA ==
+Grade diária por profissional (colunas = profissionais, linhas = horários).
+- Banner de ocupação (% da agenda, meta com sobreposição, lógica de no-show).
+- Banda de eventos da rede acima da grade. Legenda de status (Bloqueio/Agendado/Confirmado/Em atendimento/Finalizado/Evento da rede).
+Botões: ‹ Dia anterior / Dia seguinte ›; label do dia abre mini-calendário; checkbox "Mostrar eventos na agenda"; "Novo evento" (só admin) abre modal de evento da rede; clicar num horário livre abre "Novo agendamento" (cliente + cadastro rápido, serviços recalculam duração, recorrência, alerta de sobreposição). No modal: Salvar; Confirmar agendamento / Cliente confirmou (muda status p/ confirmado); Criar bloqueio (decorativo); Voltar.
+
+== PDV / NOVA VENDA ==
+Ponto de venda: catálogo à esquerda, carrinho à direita; finaliza gerando OS.
+- Painel de Alçadas & cortesias (desconto máx por cargo, teto de cortesia/mês; editável só por Proprietário/Gerente de Campo).
+Botões: busca do catálogo; abas Serviços/Pacotes/Produtos; clicar item adiciona ao carrinho; −/+ e X por item; campo cliente; Desconto % (acima da alçada → "Solicitar aprovação ao gestor"); forma de pagamento (PIX/Dinheiro/Débito/Crédito/Link/Crédito Recorrente) e parcelas; checkbox "Emitir NFS-e"; "Finalizar venda" (valida carrinho+cliente, aplica regra de cortesia, cria OS fechada, registra venda + auditoria).
+(Obs.: "Nova Venda" da topbar é separado → Venda de Pacote / Venda de Assinatura.)
+
+== ORDENS DE SERVIÇO ==
+Lista filtrável de OS em tabela, com painel de filtros recolhível (Período criação/fechamento/cancelamento, Status, Unidade(s), Origem, Pagamento, Desconto, Colaborador, Serviço, etc. — só Status e Unidade filtram de verdade; o resto é visual).
+Tabela: Cliente, Unidade, Comanda, Origem, Status, datas, Desconto, Total, Ações.
+Botões: toggle do painel de filtros; "Pesquisar" (aplica); "Exportar" (decorativo); "Visualizar" por linha abre o detalhe da OS — em vendas inclui Contrato (Emitir e enviar por e-mail+WhatsApp; Reenviar; Registrar assinatura; "Finalizar OS" bloqueada até o contrato assinado).
+
+
+################################################################
+# 2. CADASTROS
+################################################################
+
+== Cadastros básicos (submenu) ==
+
+-- Anamnese / Ficha Técnica --
+Lista de documentos/fichas digitais do cliente (8 modelos: Anamnese, Termo de Sessão, Autorização de Menor/Imagem, Cancelamento, Transferência de Pacotes, Troca por Crédito, Pós-Laser). Tabela: Documento, Tipo, Unidades com acesso, Obrigatório, Status, Atualizado, Ações.
+Botões: Novo documento (abre editor); Editar; Inativar/Ativar. Editor: nome/tipo/descrição, grade de Unidades com acesso, checkbox "acumulativo de sessões", Adicionar seção/pergunta, Pré-visualizar, Inativar, Salvar; cada pergunta tem tipo (Sim/Não, texto, número, seleção, consentimento, assinatura, imagem) + Obrig./Inviabiliza.
+
+-- Categorias de Contas a pagar --
+Editor em ÁRVORE (grupos: Impostos, Custos Fixos/Variáveis, Pessoal…). Cada item: nome editável + checkbox Ativo + excluir.
+Botões: Novo grupo; editar/excluir grupo; Adicionar categoria; editar/ativar/excluir categoria; Salvar alterações (audita).
+
+-- Categorias de Contas a receber --
+Idêntico ao de pagar, mas para entradas (grupo "Vendas das Unidades"). Mesmos botões.
+
+-- Parcerias --
+Parcerias com lojas/influencers (desconto % ou cashback R$), por unidade, respeitando teto + alçada. Tabela: Parceiro, Tipo, Valor, Aplica a, Unidade, Validade, Ativo, Ações.
+Botões: Nova parceria (modal: parceiro, tipo, valor, aplica a, unidade, contato, validade; valida teto); Editar; Excluir; Ativo (toggle).
+
+-- Formas de pagamento --
+Lista de formas (a Taxa% vira despesa automática em Contas a Pagar). Tabela: Nome, Tipo, Taxa%, Taxa a descontar na comissão%, Ativo, Ações.
+Botões: Nova forma (modal: nome, tipo, taxa, taxa comissão; "Crédito Recorrente" abre bloco PagoLivre); Editar; Inativar/Ativar.
+
+-- Grupo de serviços --
+Listagem estática (Depilação, Estético, Ultrassom). "Novo" é só toast (sem formulário); sem editar/excluir. [clone visual]
+
+-- Matriz de comissões --
+Configuração da premiação por categoria (Gerente, Sub Gerente, Saúde, Consultoras, Atendente SAC) com SIMULADOR ao vivo. Parte 1 (adicional por faixa de meta por dezena) + Parte 2 (fechamento do mês). Seletor Mensal/Quinzenal/Decendial.
+Botões: Nova categoria; nome editável; checkboxes/% de premiação; Remover categoria; simulador (escolhe colaborador/unidade/categoria + sliders → recalcula).
+
+-- Metas --
+Metas da unidade (aparecem no Dashboard): venda (mín R$100k + supermeta), agendamentos, clientes novos/avaliações (25%), indicações. Cálculo dinâmico.
+Botões: período (Mensal/Quinzenal/Decendial); inputs/sliders recalculam ao vivo; Salvar metas (publica no Dashboard).
+
+-- Modelos de contrato --
+Lista de modelos (Laser&Club/Prestação). Tabela: Nome, Quando emite, Enviar p/ assinatura, Arquivo, Ativo, Ações. Tem editor (título + termos + anexo).
+Botões: "Novo" é só toast (não cria) [placeholder]; Editar abre editor; no editor: Voltar, Pré-visualizar, Inativar, Salvar (nome + anexo).
+
+-- Motivos de cancelamento --
+Lista de motivos (padrão do sistema com cadeado × personalizados). + bloco "Automação de não comparecimento (WhatsApp)".
+Botões: Novo motivo (prompt); Editar (prompt); Inativar/Ativar; Excluir (só personalizados).
+
+-- Planos de Assinatura --
+Listagem estática (Bronze/Prata/Ouro). Colunas: Nome, Adesão, Mensalidade, Modo, Tipo de comissão, Identificador. "Novo" é só toast; sem ações por linha. [clone visual]
+
+-- Perfis de acesso (permissões) --
+Lista de perfis (12: Administradores, Gestores, Franqueados…). Tabela: Nome, Usuários, Última atualização, Ativo, Bate ponto, Ações. Tem editor com a grade completa de permissões (dezenas de grupos × ações).
+Botões: Novo (editor em branco); Editar; Inativar/Ativar; Excluir; "Bate ponto" (toggle). Editor: Marcar/Desmarcar todas, clicar no título do grupo (liga o grupo), Voltar, Salvar perfil.
+
+-- Origens de Cliente --
+Lista (Geolocalizado, Passante, Indicação, Parcerias, Outros). Filtros reativos.
+Botões: Novo (prompt); Editar (prompt); Inativar/Ativar; Excluir.
+
+== Telas diretas ==
+
+-- Clientes --
+Listagem principal com filtros amplos (Ativo, Nome, E-mail, Telefone, Documento, Gênero, Verificado, App, Bloqueado, Cidade, Unidades). Mistura mock + importados (tag BEMP) + base na nuvem (Supabase). Clicar abre a Ficha do cliente (abas: Dados, Acompanhamento c/ fotos/câmera/sessões/cashback, Agendamentos, OS, Contratos, Carteira; detecta duplicados).
+Botões: Base na nuvem (carrega Supabase); Importar clientes (CSV/XLSX com mapeamento, prévia, dedup, modelo CSV); Novo; Pesquisar/Exportar; paginação; WhatsApp por linha. Na ficha: abas, Voltar, e-mail/WhatsApp do cliente, câmera/upload de fotos, Salvar, "Sugerir unificação" (duplicado).
+
+-- Colaboradores --
+Listagem (mescla sistema + RH, tag "via RH"). Regra: inativa quem não acessa há >15 dias. Tabela: Nome, Perfil, Telefone, Último acesso, Exibe na agenda, Ativo, Ações. Tem formulário com abas (Dados, Acesso, Agenda & Serviços, Registros RH).
+Botões: Novo colaborador; Editar; Reativar (inativos); Abrir no RH. Formulário: abas; serviços por grupo (Marcar todos/por grupo/item); RH (cargo/salário/contrato/endereço/documentos); Voltar; Salvar (espelha no RH + audita).
+
+-- Contas a pagar / receber --
+Toggle Pagar/Receber + filtros (Período, Status, Categoria, Fornecedor, Descrição). Tabela sempre vazia ("Nenhum registro"). "Novo lançamento" sem handler. [clone visual / placeholder]
+
+-- Pacotes --
+Listagem (Nome, Cobertura de créditos, Comissão na execução, Validade, Valor, Desc Máx%, Ativo, Pagar comissão na, Ações).
+Botões: Novo (modal: nome, cobertura, validade, preço, desc máx, pagar comissão, composição de serviços + sessões); Editar; Inativar/Reativar.
+
+-- Produtos --
+Listagem (Nome, Grupo, Preço, Desc Máx%, Ativo, Insumo, Ações).
+Botões: Novo (modal: nome, preço, desc máx); Editar; Inativar/Reativar.
+
+-- Serviços --
+Listagem ampla (Nome, Tipo de preço, Preço, Desc Máx%, Duração, Comissionável, Pagar comissão, Grupo, Encaixe, Ativo, Online, Ordem, Ações).
+Botões: Novo (modal: nome, preço, desc máx, duração, grupo, comissionável, pagar comissão); Editar; Inativar/Reativar.
+
+
+################################################################
+# 3. GESTÃO
+################################################################
+
+== RELATÓRIOS (submenu) ==
+Padrão único reaproveitado para os 25 relatórios: cabeçalho + Card de Filtros (Período com "Período…"→datas, multiunidade, combos, busca) + Ações (Pesquisar/Exportar — visuais) + faixa de KPIs + gráficos (barras) + tabela. TODOS com dados ilustrativos (mock), exceto onde indicado.
+- Assinaturas (abas Assinaturas/Pagamentos; MRR, churn).
+- Ocorrências e Intercorrências (classificação INTERATIVA — único com estado real).
+- Agendamentos (status/origem/no-show/ocupação).
+- Anamnese / Ficha Técnica (preenchimento, pendentes de assinatura).
+- Atendimentos (duração/ticket por profissional).
+- Avaliações (nota/NPS, comentários).
+- Clientes (8 abas: Aniversariantes, Ranking, Retornos, Novos, Abandonos, Atendidos, Origens, Duplicados c/ "Mesclar").
+- Contratos (ativos, assinados, inadimplentes).
+- Crédito em dinheiro (abas Situação/Movimentação).
+- CRM (abas Funil/Leads).
+- Crédito Recorrente (MRR, falhas de cobrança).
+- Descontos (R$ concedidos, % médio).
+- Estatísticas (abas Unidade/Colaborador).
+- Exportações (log das próprias exportações).
+- Faturamento (abas Vendas/Recorrência/Execução + tabela "Todas as unidades" c/ royalties).
+- Ranking de Vendas (top até 500).
+- Fidelidade (pontos em circulação/resgates).
+- Financeiro/Contábil (5 abas: DRE, Extrato, Contas a pagar, a receber, Vales).
+- Mensagens WhatsApp API (créditos, enviadas, erro).
+- Metas (meta × realizado × premiação).
+- Notas Fiscais (competência, tipo, status, ambiente).
+- Ordens de serviço (status/tipo/profissional).
+- Pacotes (sessões usadas/saldo/validade).
+- Pagamentos (= PREMIAÇÕES; cálculo real pela Matriz de Metas, regra "abaixo de 80% não premia", visão do colaborador).
+- Perfis de acesso (perfis/usuários ativos).
+
+== DASHBOARDS (submenu) ==
+- Financeiro/Contábil — Royalties automático (10% sobre o mês anterior, só franquia), KPIs a pagar/receber, gráficos de movimentação/categorias.
+- Gerencial — KPIs (faturamento, ticket, atendimentos, retorno) + BUSCA de serviço (mostra posição/% real) + 10 gráficos (top serviços, formas de pagamento, cancelamentos, origens, dia da semana, retorno, fidelidade).
+- Funil de Vendas — segmentação Novos/Revenda/Todos, "Apresentar por" Unidade×Colaborador (real), funil em SVG, dashboard de revenda embutido.
+- Vendas · Visão Geral / Mês / Comparativo / Histórico (ADMIN) — app SEPARADO (vendas-dashboards.html) embutido por iframe, dados ao vivo (Supabase), Chart.js. Botões do wrapper: Atualizar e Abrir em nova aba.
+
+== MÓDULOS ==
+
+-- Mensagens e Automações --
+Automações por WhatsApp da unidade (RBAC: rede só admin edita; unidade liga/desliga; personalizadas a unidade cria/edita/exclui).
+Botões: chips de categoria; switch por card (liga/desliga + audita); Editar/Excluir (personalizada); Editar padrão (admin); Nova automação (admin→padrão da rede; unidade→personalizada); "Segmentar base de clientes" (abre construtor de público → vai pra Disparos › Bases).
+
+-- Disparos WhatsApp API --
+5 abas: Campanhas · Conversas · Bases & Contatos · Config API · Grupo VIP.
+- Campanhas: "Nova campanha" (toast); Relatório (funil real Enviadas→Lidas→Conversões; "Enviar ao CRM" cria leads reais).
+- Conversas: central WhatsApp embutida (abrir conversa, "Abrir no CRM", enviar mensagem).
+- Bases: Importar (toast); "Criar base pelo sistema" (segmentação com contagem ao vivo).
+- Config API / Grupo VIP: botões só toast.
+
+-- CRM --
+Funil Kanban de leads da unidade (8 etapas) com drag-and-drop real, KPIs + alerta de SLA.
+Botões: select de quadro (visual); busca; arrastar card muda etapa; WhatsApp por card; "Personalizar funil" (adicionar/renomear/excluir etapa); "Novo lead" (modal).
+
+-- Gestão de Indiques --
+3 abas: Indicações (Kanban) · Prêmio & Link · Sorteio.
+- Indicações: metas/projeção, Kanban; select de status (sincroniza com CRM); "NOVO INDIQUE" (quem indica + até 5 indicados, mín 3 → cria leads no CRM); copiar link; "Enviar ao CRM".
+- Prêmio & Link: editar prêmio (admin), copiar link/mensagem.
+- Sorteio: "Sortear" (animado, entre quem indicou no mês), "Notificar ganhador", "Sortear de novo".
+
+-- Ponto Digital (GPS) --
+Ponto por geolocalização real (cerca virtual por raio, padrão 150m) + mapa.
+Botões: toggle Presencial/Home office; "Definir minha casa (GPS)"; marcações Entrada/Saída almoço/Retorno/Saída (valida distância); "Salvar configuração" (admin: chave Maps, raio, lat/long); espelho de ponto do dia.
+
+-- Recursos Humanos --
+É um APP React separado (portal-rh.html, ~690KB) embarcado por iframe; o sistema faz deep-link na sub-página. View tem "Atualizar" e "Abrir em nova aba". Sub-páginas:
+  - Dashboard (visão de pessoas/processos)
+  - Colaboradores (admissão/dados/cargo/contrato; ponte com a tela Colaboradores)
+  - Ponto (espelho/aprovação; integra o Ponto Digital)
+  - Recrutamento (vagas/candidatos/currículos)
+  - Folha de Pagamento (holerites)
+  - Férias e Ausências (atestados)
+  - Desempenho (avaliação)
+  - Regras da Rede (normas)
+
+-- Marketing --
+3 abas: Atualizações · Materiais · Notícias.
+- Atualizações: tabela de publicações (zera o badge); "Abrir pasta".
+- Materiais: navegador de pastas (Campanhas, Banco de Imagens/Vídeos, Físicos, Redes Sociais), breadcrumb, download por arquivo (não-admin bloqueado).
+- Notícias: "Publicar notícia" (só admin).
+
+-- Comunicados --
+Avisos oficiais com leitura obrigatória ("Estou ciente" persistido). KPIs (destinatários, cientes, taxa de leitura), abas de status, relatório de leitura por colaborador.
+Botões: "Estou ciente" (libera acesso); abas/filtros; "Pré-visualizar como o colaborador vê"; "Novo comunicado" (admin); por linha "Visualizar" (relatório c/ quem leu, Exportar CSV), "Gerenciar"/"Link" (stubs).
+
+-- Chamados --
+Solicitações entre departamentos (franqueadora ↔ franqueado), SLA 2 dias. Caixas Recebidos/Enviados, KPIs, thread de mensagens.
+Botões: abas de caixa; filtros; "Abrir chamado" (De/Para); "Abrir" por linha (detalhe); "Finalizar"/"Reabrir"; campo de retorno + enviar.
+
+-- Checklist de Indicadores --
+Avaliação por indicadores do funil (PDCA). 6 abas: Mensal · Esta semana · Ranking · Evolução · Modelos & Criar · Automação.
+- Mensal: checklist auto-preenchido + planos de ação; "Aplicar e enviar"/"Exportar PDF" (toast).
+- Modelos & Criar: CRUD real (Novo, Aplicar, Copiar, Editar, Excluir; builder com seções/itens/peso; Salvar).
+- Automação: "Executar agora", "Editar parâmetros" (toast).
+
+-- Universidade Corporativa --
+EAD por cargo (trilhas com vídeos YouTube + provas). 4 abas: Trilhas · Alunos & Notas · Dashboards · Gerenciar.
+Botões: abrir trilha/vídeo; "Prova"/"Refazer" (corrige, ≥7 aprova); "Gerar certificado" (HTML real, download/impressão); Gerenciar (admin): Nova trilha, Editar vídeos/provas, Excluir, Adicionar etapa.
+
+-- Disco Virtual --
+Drive da rede (pastas/arquivos) com vínculo opcional ao Google Drive. RBAC: escrita só admin.
+Botões: Vincular/Abrir/Importar/Desvincular Google Drive; Nova pasta; Enviar arquivo (upload real na sessão); abrir pasta; Baixar; excluir (admin); busca.
+
+-- Notas Fiscais --
+Config + listagem de NFS-e. MISTA: política de emissão e "por sessão" são reais; o resto (integração por unidade, lista, filtros, emissão manual) é clone visual.
+Botões: Política (Não emitir/Na venda/Na execução — real); checkbox "Calcular por sessão" (real); "Conectar/Gerenciar" por unidade (toast); "Pesquisar/Exportar XMLs" (sem handler); "Emitir NFS-e manual" (sem handler).
+
+
+################################################################
+# 4. ADMINISTRAÇÃO  (franqueadora)
+################################################################
+
+== EXPANSÃO (ADMIN) — CRM de venda de franquias ==
+7 abas. Pipeline de candidatos a franqueado (produtos Ultracell/Quanta/Franquia) até a COF.
+- Dashboard — 8 KPIs (leads, fechados, reunião agendada, quentes, novos 30d, perdidos, conversão, pipeline) + 3 gráficos + tabela (só leitura).
+- Captação (Geo + Site) — leads automáticos por geo e formulário do site (webhook). Botões: "Copiar endpoint"; "Simular novo lead" (cria lead real).
+- Funil — pipeline por etapa + tabela; filtros por tipo (visual).
+- Leads (Kanban/Lista) — toggle Kanban/Lista; "Adicionar Lead"/"Importar (.xlsx)" (visuais).
+- Disparos WhatsApp — disparador próprio (cada conversa vira lead). "Disparar"/"Importar lista" (toast).
+- WhatsApp CRM — atendimento estilo WhatsApp Web (Z-API), abas Todas/Bot/Aguardando/Atendido (visuais).
+- Tipo de Lead — cadastro das linhas de oferta; "Novo tipo"/"Editar" (visuais).
+
+== IMPLANTAÇÃO DE UNIDADE ==
+Checklist da implantação (início → inauguração). KPIs (progresso %, tarefas, etapa atual, dias até inaugurar), gráficos, etapas com tarefas (responsável/prazo/status). Só Proprietário edita.
+Botões: inputs de datas (recalcula); status por tarefa; Adicionar/Excluir tarefa; Adicionar/Excluir etapa.
+
+== SAC — Central de Atendimento ⭐ ==
+10 abas. Canais (WhatsApp, Sults, Blip, E-mail, Reclame Aqui, Procon, Instagram), motivos, fases do Kanban, prioridades, atendentes. Modais: chamado e acordo de pagamento.
+- Dashboard — filtros Período + Atendente; 6 KPIs (total, em andamento, concluídos, em atraso, tempo médio resolução, taxa SLA); gráficos por canal/motivo/Kanban + reembolsos; tabela recentes.
+- Chamados — tabela mestre com filtros densos (busca, motivo, atendente, unidade, canal, status, período). Botões: Limpar; Novo chamado; editar por linha.
+- Kanban — quadro por fase; botão "→" avança o chamado (marca Concluído no fim).
+- Conversa (triagem) — caixa de conversas (WhatsApp/Blip) + chat + form de triagem (Nome/CPF/WhatsApp/E-mail/Unidade/Motivo). Botões: "Abrir chamado automaticamente" (cria chamado da conversa); "Descartar".
+- Relatórios — período + gráficos por canal/motivo/unidade + tabela de reembolsos; "Aplicar".
+- Pagamentos — acordos/reembolsos parcelados. Botões: "Novo acordo"; "Validar (OK do gestor)" (só admin → espelha parcelas em Financeiro › Contas a Pagar, move chamado p/ "Em pagamento"); "Observação ao credor"; modal de acordo (chamado vinculado, valor, parcelas, 1º pagamento após dia 15, preview).
+- Atendentes — performance/premiação. Botões: "Cadastrar no Colaboradores"; link "Matriz de Comissões".
+- Ranking (premiação) — regras editáveis (R$ por atendimento/finalizado/reversão/SLA, % vendas, bônus pacote/zero-atraso/CSAT) + destaque + ranking com medalhas (reversão paga mais).
+- Importar Leads — importa .xlsx/.csv (Sults/Reclame Aqui/Procon) como chamados. Botões: "Baixar modelo"; "Selecionar planilha".
+- Configurações — SLA (horas), Canais ativos, Integrações (Blip/Sults/Reclame Aqui/Procon/Instagram), Motivos.
+- Modal "Chamado": campos completos + ficha do cliente ("Buscar contratos/pagamentos/sessões"); se Cancelamento/Reembolso → cálculo automático de reembolso (multa, saldo de sessões); "Gerar pedido de cancelamento"; "Criar acordo parcelado"; "Salvar chamado" (gera protocolo).
+  >> Integrações reais: SAC › Pagamentos espelha no Financeiro › Contas a Pagar; pagar lá encerra o chamado.
+
+== FINANCEIRO FRANQUEADORA (ADMIN; só admin/Financeiro) ==
+Fluxo de caixa da rede, cobrança das unidades, conciliação, royalties. Abas: Fluxo de Caixa, DRE, Cálculos, Contas a Receber (Modelo/Importar Excel/Editar filtros/Gerar cobrança automática), Contas a Pagar (recebe reembolsos do SAC), Conciliação Bancária, Automação de Royalties, Cobrança & Jurídico, Configurações.
+
+== JURÍDICO (ADMIN) ==
+Documentos contratuais por unidade + notificações extrajudiciais. Abas:
+- Cobranças (Financeiro) — unidade que atrasa entra com notificação pronta. Botões: "Sincronizar com o Financeiro"; "OK — Enviar notificação"; "Salvar ajuste"; "Descartar".
+- Unidades & Documentos — anexar Contrato de Franquia/Pré-contrato/COF. "Documentos", "Notificar", "Anexar/Substituir", remover, "Enviar notificação".
+- Modelos de Notificação — com merge fields {unidade}/{franqueado}/{cnpj}/{prazo}. "Novo modelo"; excluir; modal "Enviar".
+
+== AUDITORIA (ADMIN) ==
+"Tudo é rastreável, nada é apagado" (soft-delete). KPIs (eventos, hoje, usuários, política) + filtro por Ação + tabela (Data, Usuário, Perfil, Ação, Detalhe). Só leitura.
+
+
+################################################################
+# 5. REDE & CONTA
+################################################################
+
+== Minha Unidade ==
+Dados/config/parâmetros da unidade. Abas: Dados básicos (identificação, Franqueados c/ "Adicionar franqueado", Limites de desconto por cargo, GAP da agenda, taxa de faltas, endereço, campos custom), Horários, Bloqueios, Fotos, Cadastros básicos (vincular formas/descontos/pacotes/planos), Notas Fiscais (config NFS-e). Vários "Salvar" por aba.
+
+== Todas unidades ==
+Criação restrita a Proprietários. KPIs (Total/Ativas/Em teste/Inativas) + filtros + tabela de unidades + tabela de Escritórios.
+Botões: Pesquisar; Exportar; "Nova unidade" (modal, bloqueado se não Proprietário); chips de filtro; "Detalhes"; select de status (Ativa/Teste/Inativa — inativar corta acesso do franqueado); "Novo escritório"/"Editar".
+
+== Minha conta ==
+Config da organização + agendamento online. Abas: Dados básicos (nome, tema, subdomínio, validade de pontos, regras de OS, logos; "Salvar Organização"); Agendamento online (limites, site/cores, app; "Abrir App do Cliente"; "Salvar").
+
+== App do Cliente (NOVO) ==
+Protótipo do app num mockup de celular (espelha o sistema). Tabs: Início, Agendar, Sessões, Fidelidade, Unidades. Botões: Reagendar/Confirmar, atalhos, "Indique & Ganhe", chips de data/horário + "Confirmar agendamento" (tudo demonstrativo).
+
+== Exportações ==
+Placeholder ("Geração e download de exportações") — sem ações reais (módulo a desenvolver).
+
+== Ajuda ==
+Base de conhecimento (busca por assunto + tópicos por categoria, com "o que é / para que serve / como usar"). Só consulta.
+
+
+================================================================
+RESUMO: 5 seções, ~70 telas. O legado é um protótipo rico — boa parte funciona em memória
+(com auditoria/persistência local). Telas mais "vivas": SAC (com integração ao Financeiro),
+Comunicados, Universidade, Indiques, Disparos/CRM, Ponto Digital, Auditoria. Telas mais
+"visuais/placeholder": Grupo de serviços, Planos, Contas a pagar/receber, Notas Fiscais (parte),
+Exportações. RH é um app React à parte (portal-rh.html) embarcado por iframe.
+================================================================
