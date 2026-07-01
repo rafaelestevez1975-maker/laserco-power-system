@@ -13,7 +13,7 @@ import {
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig,
 } from '@/app/(app)/financeiro/actions'
-import type { Recebivel, ContaPagar, Conciliacao, FinConfig } from '@/app/(app)/financeiro/page'
+import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
 
 type TabKey = 'fluxo' | 'dre' | 'calc' | 'receber' | 'pagar' | 'conciliacao' | 'royalties' | 'cobranca' | 'config'
 const TABS: { k: TabKey; label: string; icon: string }[] = [
@@ -40,7 +40,7 @@ function PrioPill({ pr }: { pr: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
 }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -48,6 +48,8 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   conciliacao: Conciliacao[]
   config: FinConfig
   hojeISO: string
+  dre?: DreLinha[]
+  dreCompetencia?: string | null
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -77,7 +79,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       )}
 
       {tab === 'fluxo' && <FluxoTab recebiveis={recebiveis} contasPagar={contasPagar} config={config} hojeISO={hojeISO} />}
-      {tab === 'dre' && <DreTab recebiveis={recebiveis} contasPagar={contasPagar} />}
+      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
@@ -773,37 +775,56 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 // =============================================================================
 // DRE (finDreHTML L5642 — versão simplificada sobre os dados reais)
 // =============================================================================
-function DreTab({ recebiveis, contasPagar }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
-  // Receita = recebíveis não suspensos; Despesas = contas a pagar não suspensas.
-  const receitaBruta = sum(recebiveis.filter((r) => r.status !== 'suspenso'), (r) => r.valor)
-  const deducoes = 0
-  const receitaLiquida = receitaBruta - deducoes
-  const despesasOp = sum(contasPagar.filter((p) => p.status !== 'suspenso'), (p) => p.valor)
-  const resultado = receitaLiquida - despesasOp
-  const av = (v: number) => receitaBruta > 0 ? finPct((v / receitaBruta) * 100) : '—'
+const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | null }) {
+  // Fonte única: o RAZÃO. Agrupa por natureza (receita/custo/despesa) e soma por conta.
+  const receitas = dre.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
+  const custos = dre.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
+  const despesas = dre.filter((l) => l.natureza === 'despesa').sort((a, b) => a.ordem - b.ordem)
+  const totReceita = sum(receitas, (l) => l.total)
+  const totCusto = sum(custos, (l) => l.total)
+  const totDespesa = sum(despesas, (l) => l.total)
+  const resultado = totReceita - totCusto - totDespesa
+  const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : '—'
+  const compLabel = competencia ? `${MESES_DRE[Number(competencia.slice(5, 7)) - 1]}/${competencia.slice(0, 4)}` : '—'
 
-  const linhas: [string, number, boolean][] = [
-    ['Receita bruta da franqueadora', receitaBruta, true],
-    ['(-) Deduções', -deducoes, false],
-    ['= Receita líquida', receitaLiquida, true],
-    ['(-) Despesas operacionais', -despesasOp, false],
-    ['= Resultado do período', resultado, true],
-  ]
+  if (dre.length === 0) {
+    return (
+      <div>
+        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Ainda não há competência apurada — vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties no razão; o DRE aparece aqui automaticamente.</div>
+      </div>
+    )
+  }
+
+  const linhaConta = (l: DreLinha, sinal: number) => (
+    <tr key={l.natureza + l.conta}>
+      <td style={{ paddingLeft: 22, color: 'var(--text-2)' }}>{l.conta}</td>
+      <td className="num-r" style={{ color: sinal < 0 ? 'var(--red)' : undefined }}>{moedaBR(sinal * l.total)}</td>
+      <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(l.total)}</td>
+    </tr>
+  )
+  const linhaTotal = (lbl: string, v: number) => (
+    <tr style={{ background: 'var(--surface-2)' }}>
+      <td style={{ fontWeight: 700 }}>{lbl}</td>
+      <td className="num-r" style={{ fontWeight: 700, color: v < 0 ? 'var(--red)' : undefined }}>{moedaBR(v)}</td>
+      <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(Math.abs(v))}</td>
+    </tr>
+  )
 
   return (
     <div>
-      <div className="rel-legend">DRE gerencial da <b>franqueadora</b> sobre os recebíveis da rede e as despesas da matriz. Coluna <b>AV%</b> = análise vertical sobre a receita bruta. (As 30 linhas detalhadas e a segmentação por loja/UF do legado entram numa próxima entrega.)</div>
+      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única) — competência <b>{compLabel}</b>. Receitas e despesas agrupadas pelo <b>plano de contas</b>; <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
-          <thead><tr><th>Demonstração do resultado</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
+          <thead><tr><th>Demonstração do resultado — {compLabel}</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
           <tbody>
-            {linhas.map(([lbl, v, bold]) => (
-              <tr key={lbl} style={bold ? { background: 'var(--surface-2)' } : undefined}>
-                <td style={{ fontWeight: bold ? 700 : 400 }}>{lbl}</td>
-                <td className="num-r" style={{ fontWeight: bold ? 700 : 400, color: v < 0 ? 'var(--red)' : undefined }}>{moedaBR(v)}</td>
-                <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(Math.abs(v))}</td>
-              </tr>
-            ))}
+            {linhaTotal('Receita bruta', totReceita)}
+            {receitas.map((l) => linhaConta(l, 1))}
+            {custos.length > 0 && linhaTotal('(-) Custos', -totCusto)}
+            {custos.map((l) => linhaConta(l, -1))}
+            {despesas.length > 0 && linhaTotal('(-) Despesas', -totDespesa)}
+            {despesas.map((l) => linhaConta(l, -1))}
+            {linhaTotal('= Resultado do período', resultado)}
           </tbody>
         </table>
       </div></div>

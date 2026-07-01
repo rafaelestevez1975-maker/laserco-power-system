@@ -28,6 +28,8 @@ export type FinConfig = {
   royalty_pct: number; fundo_pct: number; venc_dia: number
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: { dias: number; acao: string; canal: string }[]
 }
+// DRE derivado do RAZÃO (fin_lancamento) — cada linha é uma conta do plano de contas somada.
+export type DreLinha = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
 
 const ABAS_VALIDAS = ['fluxo', 'dre', 'calc', 'receber', 'pagar', 'conciliacao', 'royalties', 'cobranca', 'config'] as const
 
@@ -110,6 +112,21 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     banco: {}, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
   }
 
+  // DRE derivado do RAZÃO (fonte única) — última competência apurada no razão.
+  let dre: DreLinha[] = []
+  let dreCompetencia: string | null = null
+  {
+    const { data: ultRaw } = await sb.rpc('fin_ultima_competencia')
+    const ult = (ultRaw as string | null) ?? null
+    if (ult) {
+      dreCompetencia = ult
+      const d = new Date(ult + 'T12:00:00'); d.setMonth(d.getMonth() + 1)
+      const fim = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+      const { data: dreRaw } = await sb.rpc('fin_dre', { p_ini: ult, p_fim: fim })
+      dre = (dreRaw ?? []) as DreLinha[]
+    }
+  }
+
   return (
     <div className="view active">
       <FinanceiroTabs
@@ -120,6 +137,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         conciliacao={conciliacao}
         config={cfg}
         hojeISO={hojeISO}
+        dre={dre}
+        dreCompetencia={dreCompetencia}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>
