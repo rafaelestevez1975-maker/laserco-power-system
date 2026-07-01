@@ -42,10 +42,13 @@ export async function postLancamento(eventos: LancamentoEvento | LancamentoEvent
     documento: e.documento ?? null, status: e.status ?? 'previsto',
   }))
   const keys = rows.map((r) => r.idem_key).filter(Boolean) as string[]
-  let jaTem = new Set<string>()
-  if (keys.length) {
-    const { data } = await sb.from('fin_lancamento').select('idem_key').in('idem_key', keys)
-    jaTem = new Set(((data ?? []) as { idem_key: string }[]).map((r) => r.idem_key))
+  // Dedup em LOTES de 100 — com centenas de chaves (royalties de dezenas de franquias) um
+  // único .in(keys) estoura o tamanho da URL (414). O índice único já barra duplicata, mas
+  // checar em lote evita reinserção desnecessária e mantém o request pequeno.
+  const jaTem = new Set<string>()
+  for (let i = 0; i < keys.length; i += 100) {
+    const { data } = await sb.from('fin_lancamento').select('idem_key').in('idem_key', keys.slice(i, i + 100))
+    for (const r of (data ?? []) as { idem_key: string }[]) jaTem.add(r.idem_key)
   }
   const novos = rows.filter((r) => !r.idem_key || !jaTem.has(r.idem_key))
   if (novos.length === 0) return { inseridos: 0 }
