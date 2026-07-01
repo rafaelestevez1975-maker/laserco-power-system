@@ -13,6 +13,12 @@ type R = { ok: boolean; error?: string }
 
 const MESES_BR = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+// Tipo de venda do BEMP (bemp_billings.entity) → conta de RECEITA do plano de contas (código).
+const CONTA_POR_ENTIDADE: Record<string, string> = {
+  packages: '3.1.03', services: '3.1.01', products: '3.1.02',
+  subscription_quotas: '3.1.04', subscriptions: '3.1.04', money_credits: '3.1.01',
+}
+
 /** Empresa default (1ª) — o financeiro da franqueadora é consolidado da matriz. */
 async function empresaId(sb: SB): Promise<string | null> {
   const { data } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
@@ -290,6 +296,48 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   }
   revalidatePath('/financeiro')
   return { ok: true, geradas: rows.length, faturamento, unidades: comFat, lancamentos: lanc.inseridos }
+}
+
+/** Apura o FATURAMENTO real do BEMP como RECEITA no razão, por unidade e por tipo de venda
+ *  (pacotes/serviços/assinaturas/produtos → contas de receita). Idempotente por
+ *  (unidade, tipo, competência). É o principal produtor de receita → alimenta DRE e Fluxo. */
+export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R & { unidades?: number; lancamentos?: number; faturamento?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para apurar o faturamento.' }
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
+
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const ini = `${ano}-${p2(mes)}-01`
+  const proxMes = mes === 12 ? 1 : mes + 1
+  const proxAno = mes === 12 ? ano + 1 : ano
+  const fim = `${proxAno}-${p2(proxMes)}-01`
+  const competencia = `${MESES_BR[mes - 1]}/${ano}`
+
+  const { data: fatRaw, error: eFat } = await op.sb.rpc('fin_faturamento_por_salon_entidade', { p_ini: ini, p_fim: fim })
+  if (eFat) return { ok: false, error: msgErro(eFat.message, 'apurar o faturamento do BEMP') }
+
+  const [{ data: unisRaw }, mapa] = await Promise.all([
+    op.sb.from('unidades').select('id, nome, bemp_salon_id').not('bemp_salon_id', 'is', null),
+    mapaFinanceiro(op.sb),
+  ])
+  const uniPorSalon = new Map<number, { id: string; nome: string }>()
+  for (const u of (unisRaw ?? []) as { id: string; nome: string; bemp_salon_id: number }[]) uniPorSalon.set(Number(u.bemp_salon_id), u)
+
+  const emp = await empresaId(op.sb)
+  const eventos: LancamentoEvento[] = []
+  const uni = new Set<string>()
+  let faturamento = 0
+  for (const r of (fatRaw ?? []) as { salon: number; entidade: string; total: number }[]) {
+    const u = uniPorSalon.get(Number(r.salon)); if (!u) continue
+    const val = Math.round(Number(r.total) || 0); if (val <= 0) continue
+    faturamento += val; uni.add(u.id)
+    const codigo = CONTA_POR_ENTIDADE[r.entidade] ?? '3.1.01'
+    eventos.push({ empresaId: emp, centroCustoId: mapa.centroPorUnidade.get(u.id) ?? null, planoContaId: mapa.planoPorCodigo.get(codigo) ?? null, natureza: 'receita', competencia: ini, valor: val, origem: 'bemp', origemRef: `${u.id}:${r.entidade}`, idemKey: `bemp:${ini}:${u.id}:${r.entidade}`, status: 'realizado', historico: `Faturamento ${competencia} · ${r.entidade} · ${u.nome}` })
+  }
+  const lanc = await postLancamento(eventos).catch((e) => { console.error('razão faturamento:', (e as Error).message); return { inseridos: 0 } })
+  revalidatePath('/financeiro')
+  return { ok: true, unidades: uni.size, lancamentos: lanc.inseridos, faturamento }
 }
 
 /** Processa retorno bancário / baixa em lote (finBaixaLote L5370): baixa boletos em aberto sem atraso. */

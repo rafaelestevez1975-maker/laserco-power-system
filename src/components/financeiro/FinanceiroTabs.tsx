@@ -10,7 +10,7 @@ import {
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
-  gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, processarRetornoBancario, rodarReguaAtraso,
+  gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig } from '@/app/(app)/financeiro/page'
@@ -634,10 +634,14 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     const [a, m] = comp.split('-').map(Number)
     if (!a || !m) { addLog('✗ Selecione a competência.'); return }
     setBusy('apurar')
-    const r = await gerarRoyaltiesDoFaturamento(a, m); setBusy('')
-    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
-    addLog(`✓ Apuração ${comp}: faturamento BEMP ${moedaBR(r.faturamento || 0)} em ${r.unidades || 0} unidade(s)`,
-      r.geradas ? `✓ ${r.geradas} recebível(is) gerado(s) — Royalties (${config.royalty_pct}%) + Fundo de marketing` : 'Já estava apurado nesta competência (nada novo a lançar).')
+    const rf = await apurarFaturamentoBemp(a, m)         // 1) receita real (BEMP) no razão
+    const r = await gerarRoyaltiesDoFaturamento(a, m)    // 2) royalties + fundo no razão
+    setBusy('')
+    if (!rf.ok) { addLog('✗ ' + (rf.error || 'Erro no faturamento')); return }
+    if (!r.ok) { addLog('✗ ' + (r.error || 'Erro nos royalties')); return }
+    addLog(
+      `✓ Apuração ${comp} — faturamento BEMP ${moedaBR(rf.faturamento || 0)} em ${rf.unidades || 0} unidade(s) → ${rf.lancamentos || 0} lançamento(s) de receita no razão`,
+      r.geradas ? `✓ Royalties (${config.royalty_pct}%) + Fundo: ${r.geradas} recebível(is) e ${r.lancamentos || 0} lançamento(s) no razão` : 'Royalties já apurados nesta competência.')
     router.refresh()
   }
   const baixar = async () => {
@@ -678,8 +682,8 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
           <span style={{ fontSize: 12.5, fontWeight: 600, color: '#0f6b3a' }}><i className="ti ti-calculator" /> 1) Apurar do faturamento real (BEMP)</span>
           <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
           <input type="month" value={comp} onChange={(e) => setComp(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
-          <button className="btn btn-primary" disabled={!!busy} onClick={apurar}>{busy === 'apurar' ? 'Apurando…' : <><i className="ti ti-calculator" /> Apurar royalties do mês</>}</button>
-          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>soma o faturamento do mês no BEMP e lança Royalties + Fundo por unidade</span>
+          <button className="btn btn-primary" disabled={!!busy} onClick={apurar}>{busy === 'apurar' ? 'Apurando…' : <><i className="ti ti-calculator" /> Apurar mês (faturamento + royalties)</>}</button>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>lança a receita do BEMP e os royalties + fundo no razão (fonte única do DRE/Fluxo)</span>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn btn-primary" disabled={!!busy} onClick={gerar}><i className="ti ti-robot" /> 2) Gerar cobrança de royalties ({semBoleto})</button>
