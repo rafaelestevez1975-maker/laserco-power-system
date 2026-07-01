@@ -6,6 +6,7 @@ import { temPapel, ehAdmin } from '@/lib/rbac'
 import { listAtendentesSac } from '@/lib/pessoas'
 import { adminClient } from '@/lib/supabase/admin'
 import { getSessionContext } from '@/lib/session'
+import { candidatosOnline } from '@/lib/sac-distribuicao'
 import type { SB } from '@/lib/sb'
 
 export type DistribResult = { ok: boolean; error?: string; conversas?: number; tickets?: number; atendentes?: number }
@@ -256,4 +257,56 @@ export async function distribuirFila(): Promise<DistribResult> {
 
   revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem'); revalidatePath('/sac/chamados')
   return { ok: true, conversas: nConv, tickets: nTick, atendentes: atendentes.length }
+}
+
+/** Reequilibra o BACKLOG: redistribui as conversas ABERTAS já atribuídas entre as atendentes
+ *  ONLINE, com MÍNIMA perturbação — cada uma mantém as suas até o alvo (total/nº online); só o
+ *  excedente e as conversas de quem não está online migram para as de menor carga. Idempotente. */
+export async function reequilibrarBacklog(): Promise<{ ok: boolean; movidas?: number; atendentes?: number; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, 'sac', 'gestor')) return { ok: false, error: 'Você não tem permissão para reequilibrar o atendimento.' }
+  const sb = op.sb
+  const ctx = await getSessionContext()
+  const unidadeId = ctx?.activeUnitId ?? null
+
+  const cands = await candidatosOnline(sb, unidadeId)
+  if (cands.length === 0) return { ok: false, error: 'Nenhuma atendente online para receber as conversas. Ponha ao menos uma online.' }
+  if (cands.length === 1) return { ok: false, error: 'Só há uma atendente online — não há entre quem dividir. Ponha outra online.' }
+
+  let qChats = sb.from('sac_whatsapp_chats').select('id, atendente_id').eq('status', 'aberto').not('atendente_id', 'is', null)
+  if (unidadeId) qChats = qChats.eq('unidade_id', unidadeId)
+  const { data: chatsRaw } = await qChats.limit(3000)
+  const chats = (chatsRaw ?? []) as { id: string; atendente_id: string | null }[]
+  const total = chats.length
+  if (total === 0) return { ok: true, movidas: 0, atendentes: cands.length }
+  const alvo = Math.ceil(total / cands.length)
+
+  // Mantém cada candidata até o alvo; o resto vai pro pool a redistribuir.
+  const carga = new Map<string, number>(cands.map((id) => [id, 0]))
+  const pool: string[] = []
+  for (const ch of chats) {
+    const dono = ch.atendente_id
+    if (dono && carga.has(dono) && (carga.get(dono) as number) < alvo) carga.set(dono, (carga.get(dono) as number) + 1)
+    else pool.push(ch.id)
+  }
+  const porAtendente = new Map<string, string[]>(cands.map((id) => [id, []]))
+  for (const chatId of pool) {
+    let best = cands[0], min = Infinity
+    for (const id of cands) { const c = carga.get(id) as number; if (c < min) { min = c; best = id } }
+    carga.set(best, (carga.get(best) as number) + 1)
+    ;(porAtendente.get(best) as string[]).push(chatId)
+  }
+
+  let movidas = 0
+  for (const [aid, ids] of porAtendente) {
+    for (let i = 0; i < ids.length; i += 200) {
+      const lote = ids.slice(i, i + 200)
+      const { error: e } = await sb.from('sac_whatsapp_chats').update({ atendente_id: aid }).in('id', lote)
+      if (!e) movidas += lote.length
+    }
+  }
+  if (movidas > 0) await audit(op.userId, 'sac.backlog.reequilibrar', `Reequilibrou ${movidas} conversa(s) entre ${cands.length} atendente(s) online`)
+  revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem')
+  return { ok: true, movidas, atendentes: cands.length }
 }

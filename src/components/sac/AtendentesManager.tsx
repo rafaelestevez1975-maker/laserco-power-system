@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente } from '@/app/(app)/sac/atendentes/actions'
+import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente, reequilibrarBacklog } from '@/app/(app)/sac/atendentes/actions'
 
 export type AtendenteRow = {
   id: string; nome: string; papel: string; cargo: string | null; area: string | null
@@ -73,6 +73,16 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
     router.refresh()
   }
 
+  async function reequilibrar() {
+    if (!window.confirm('Redistribuir as conversas ABERTAS entre as atendentes online, igualando a carga? As que já estão no lugar certo permanecem.')) return
+    setBusy(true); setMsg('')
+    const r = await reequilibrarBacklog()
+    setBusy(false)
+    if (!r.ok) { setMsg(r.error || 'Não foi possível reequilibrar.'); return }
+    setMsg((r.movidas ?? 0) > 0 ? `Backlog reequilibrado: ${r.movidas} conversa(s) redistribuída(s) entre ${r.atendentes} atendente(s) online.` : 'Já estava equilibrado — nada a mover.')
+    router.refresh()
+  }
+
   async function alternarOnline(a: AtendenteRow) {
     setToggling(a.id + ':online'); setMsg('')
     const r = await definirPresencaAtendente(a.id, !a.sacOnline)
@@ -111,6 +121,11 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
           {podeCriar && (
             <button className="btn" onClick={() => setNovo(true)} title="Criar o login de uma nova atendente (acesso SAC)">
               <i className="ti ti-user-plus" /> Novo atendente
+            </button>
+          )}
+          {podeDistribuir && (
+            <button className="btn" disabled={busy} onClick={reequilibrar} title="Redistribui as conversas JÁ ABERTAS entre as atendentes online, igualando a carga (tira peso de quem está sobrecarregada)">
+              <i className="ti ti-scale" /> Reequilibrar backlog
             </button>
           )}
           {podeDistribuir && (

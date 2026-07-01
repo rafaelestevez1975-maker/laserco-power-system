@@ -12,8 +12,9 @@ type PerfilCargo = {
   usuario_cargos: Array<{ cargos: { slug?: string } | { slug?: string }[] | null }> | null
 }
 
-export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null): Promise<string | null> {
-  // Candidatas: papel sac, ONLINE, ativas — com o cargo embutido p/ filtrar operacional.
+/** IDs das atendentes ONLINE + operacionais (atendente/supervisor; exclui consulta-only),
+ *  na unidade dada (ou rede). Base tanto da auto-distribuição quanto do reequilíbrio de backlog. */
+export async function candidatosOnline(sb: SB, unidadeId: string | null): Promise<string[]> {
   const { data } = await sb
     .from('perfis_usuario')
     // Desambiguar o embed: usuario_cargos tem 2 FKs p/ perfis_usuario (perfil_id e
@@ -24,7 +25,7 @@ export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null):
     .eq('sac_online', true)
     .eq('ativo', true)
 
-  const cands = ((data ?? []) as PerfilCargo[])
+  return ((data ?? []) as PerfilCargo[])
     .filter((p) => {
       const slugs = new Set<string>()
       for (const uc of p.usuario_cargos ?? []) {
@@ -40,7 +41,10 @@ export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null):
       return operacional
     })
     .map((p) => p.id)
+}
 
+export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null): Promise<string | null> {
+  const cands = await candidatosOnline(sb, unidadeId)
   if (cands.length === 0) return null
   if (cands.length === 1) return cands[0]
 
