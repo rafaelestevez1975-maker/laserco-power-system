@@ -11,7 +11,7 @@ import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig,
+  rodarConciliacao, salvarConfig, dreDaCompetencia,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
 
@@ -777,21 +777,42 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 // =============================================================================
 const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | null }) {
+  const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
+  const [linhas, setLinhas] = useState<DreLinha[]>(dre)
+  const [busy, setBusy] = useState(false)
+  async function trocarMes(v: string) {
+    setComp(v)
+    const [a, m] = v.split('-').map(Number)
+    if (!a || !m) return
+    setBusy(true)
+    const r = await dreDaCompetencia(a, m)
+    setBusy(false)
+    if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
+  }
   // Fonte única: o RAZÃO. Agrupa por natureza (receita/custo/despesa) e soma por conta.
-  const receitas = dre.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
-  const custos = dre.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
-  const despesas = dre.filter((l) => l.natureza === 'despesa').sort((a, b) => a.ordem - b.ordem)
+  const receitas = linhas.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
+  const custos = linhas.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
+  const despesas = linhas.filter((l) => l.natureza === 'despesa').sort((a, b) => a.ordem - b.ordem)
   const totReceita = sum(receitas, (l) => l.total)
   const totCusto = sum(custos, (l) => l.total)
   const totDespesa = sum(despesas, (l) => l.total)
   const resultado = totReceita - totCusto - totDespesa
   const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : '—'
-  const compLabel = competencia ? `${MESES_DRE[Number(competencia.slice(5, 7)) - 1]}/${competencia.slice(0, 4)}` : '—'
+  const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : '—'
 
-  if (dre.length === 0) {
+  const seletor = (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+      <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
+      <input type="month" value={comp} onChange={(e) => trocarMes(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+      {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
+    </div>
+  )
+
+  if (linhas.length === 0) {
     return (
       <div>
-        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Ainda não há competência apurada — vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties no razão; o DRE aparece aqui automaticamente.</div>
+        {seletor}
+        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Sem lançamentos em <b>{compLabel}</b> — vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties dessa competência; o DRE aparece aqui automaticamente.</div>
       </div>
     )
   }
@@ -813,6 +834,7 @@ function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | n
 
   return (
     <div>
+      {seletor}
       <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única) — competência <b>{compLabel}</b>. Receitas e despesas agrupadas pelo <b>plano de contas</b>; <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">

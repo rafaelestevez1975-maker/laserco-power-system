@@ -298,6 +298,22 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   return { ok: true, geradas: rows.length, faturamento, unidades: comFat, lancamentos: lanc.inseridos }
 }
 
+export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
+/** Carrega o DRE (do RAZÃO) de uma competência específica — usado pelo seletor de mês na aba DRE. */
+export async function dreDaCompetencia(ano: number, mes: number): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o DRE.' }
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const ini = `${ano}-${p2(mes)}-01`
+  const proxMes = mes === 12 ? 1 : mes + 1, proxAno = mes === 12 ? ano + 1 : ano
+  const fim = `${proxAno}-${p2(proxMes)}-01`
+  const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim })
+  if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE') }
+  return { ok: true, linhas: (data ?? []) as DreLinhaR[], competencia: ini }
+}
+
 /** Apura o FATURAMENTO real do BEMP como RECEITA no razão, por unidade e por tipo de venda
  *  (pacotes/serviços/assinaturas/produtos → contas de receita). Idempotente por
  *  (unidade, tipo, competência). É o principal produtor de receita → alimenta DRE e Fluxo. */
