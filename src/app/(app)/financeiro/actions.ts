@@ -300,17 +300,21 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
 }
 
 export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
-/** Carrega o DRE (do RAZÃO) de uma competência específica — usado pelo seletor de mês na aba DRE. */
-export async function dreDaCompetencia(ano: number, mes: number): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
+/** Carrega o DRE (do RAZÃO) de uma competência — com escopo: consolidado (rede+unidades),
+ *  franqueadora (só o centro da rede: royalties/fundo) ou unidades (só os centros das unidades).
+ *  Usado pelos seletores de mês e de escopo na aba DRE. */
+const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades'] as const
+export async function dreDaCompetencia(ano: number, mes: number, escopo: string = 'consolidado'): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o DRE.' }
   if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
+  const esc = (DRE_ESCOPOS as readonly string[]).includes(escopo) ? escopo : 'consolidado'
   const p2 = (n: number) => String(n).padStart(2, '0')
   const ini = `${ano}-${p2(mes)}-01`
   const proxMes = mes === 12 ? 1 : mes + 1, proxAno = mes === 12 ? ano + 1 : ano
   const fim = `${proxAno}-${p2(proxMes)}-01`
-  const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim })
+  const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim, p_escopo: esc })
   if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE') }
   return { ok: true, linhas: (data ?? []) as DreLinhaR[], competencia: ini }
 }

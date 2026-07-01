@@ -783,19 +783,26 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 // DRE (finDreHTML L5642 — versão simplificada sobre os dados reais)
 // =============================================================================
 const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const DRE_ESCOPOS: { valor: string; label: string; hint: string }[] = [
+  { valor: 'consolidado', label: 'Consolidado (rede)', hint: 'Toda a rede — franqueadora + unidades. Os royalties se anulam entre si.' },
+  { valor: 'franqueadora', label: 'Só franqueadora', hint: 'Resultado da franqueadora: royalties e fundo de marketing recebidos das unidades.' },
+  { valor: 'unidades', label: 'Só unidades', hint: 'Resultado agregado das unidades: faturamento menos royalties, fundo e despesas.' },
+]
 function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | null }) {
   const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
+  const [escopo, setEscopo] = useState('consolidado')
   const [linhas, setLinhas] = useState<DreLinha[]>(dre)
   const [busy, setBusy] = useState(false)
-  async function trocarMes(v: string) {
-    setComp(v)
-    const [a, m] = v.split('-').map(Number)
-    if (!a || !m) return
+  async function recarregar(vComp: string, vEscopo: string) {
+    const [a, m] = vComp.split('-').map(Number)
+    if (!a || !m) { setLinhas([]); return }
     setBusy(true)
-    const r = await dreDaCompetencia(a, m)
+    const r = await dreDaCompetencia(a, m, vEscopo)
     setBusy(false)
     if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
   }
+  const trocarMes = (v: string) => { setComp(v); recarregar(v, escopo) }
+  const trocarEscopo = (v: string) => { setEscopo(v); recarregar(comp, v) }
   // Fonte única: o RAZÃO. Agrupa por natureza (receita/custo/despesa) e soma por conta.
   const receitas = linhas.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
   const custos = linhas.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
@@ -807,10 +814,15 @@ function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | n
   const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : '—'
   const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : '—'
 
+  const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
   const seletor = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
       <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
       <input type="month" value={comp} onChange={(e) => trocarMes(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+      <label style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 6 }}>Visão:</label>
+      <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
+        {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
+      </select>
       {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
     </div>
   )
@@ -842,7 +854,7 @@ function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | n
   return (
     <div>
       {seletor}
-      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única) — competência <b>{compLabel}</b>. Receitas e despesas agrupadas pelo <b>plano de contas</b>; <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
+      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única) — competência <b>{compLabel}</b> · visão <b>{escSel.label}</b>. {escSel.hint} <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead><tr><th>Demonstração do resultado — {compLabel}</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
