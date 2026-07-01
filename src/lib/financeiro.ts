@@ -58,6 +58,34 @@ export const COMISSAO_BASE_OPCOES: { valor: ComissaoBase; label: string; contas:
   { valor: 'pacotes', label: 'Só pacotes', contas: ['3.1.03'] },
   { valor: 'servicos_pacotes', label: 'Serviços + pacotes', contas: ['3.1.01', '3.1.03'] },
 ]
+
+// ── Fluxo de caixa derivado do razão (tipos + helpers puros; a action async vive em financeiro/actions). ──
+export type FluxoSerie = { mes: string; entradas: number; saidas: number }
+export type FluxoResumo = { a_receber: number; recebido: number; vencido: number; a_pagar: number; pago: number }
+export type FluxoComp = { conta: string; total: number }
+export const FLUXO_ZERO: FluxoResumo = { a_receber: 0, recebido: 0, vencido: 0, a_pagar: 0, pago: 0 }
+
+/** Janela de 6 meses terminando no mês corrente (para a série do fluxo). */
+export function janelaFluxo(hoje: Date): { ini: string; fim: string } {
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const iniD = new Date(hoje.getFullYear(), hoje.getMonth() - 5, 1)
+  const fimD = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1)
+  return { ini: `${iniD.getFullYear()}-${p2(iniD.getMonth() + 1)}-01`, fim: `${fimD.getFullYear()}-${p2(fimD.getMonth() + 1)}-01` }
+}
+
+/** Converte a saída crua das RPCs (numeric vem como string no PostgREST) para números. */
+export function normalizaFluxo(serieRaw: unknown, resumoRaw: unknown, compRaw: unknown): { serie: FluxoSerie[]; resumo: FluxoResumo; composicao: FluxoComp[] } {
+  const serie = ((serieRaw ?? []) as { mes: string; entradas: string | number; saidas: string | number }[])
+    .map((s) => ({ mes: String(s.mes).slice(0, 7), entradas: Number(s.entradas) || 0, saidas: Number(s.saidas) || 0 }))
+  const r0 = ((resumoRaw ?? []) as Record<string, string | number>[])[0]
+  const resumo: FluxoResumo = r0 ? {
+    a_receber: Number(r0.a_receber) || 0, recebido: Number(r0.recebido) || 0, vencido: Number(r0.vencido) || 0,
+    a_pagar: Number(r0.a_pagar) || 0, pago: Number(r0.pago) || 0,
+  } : { ...FLUXO_ZERO }
+  const composicao = ((compRaw ?? []) as { conta: string; total: string | number }[])
+    .map((c) => ({ conta: c.conta, total: Number(c.total) || 0 })).filter((c) => c.total > 0).sort((a, b) => b.total - a.total)
+  return { serie, resumo, composicao }
+}
 // Competência (mês de referência) a partir de uma data ISO — ex.: "Junho/2026".
 // Substitui o antigo FIN_MESREF chumbado ('Maio/2026'). Saldo inicial das projeções
 // agora vem da posição realizada real (recebido − pago), não de número inventado.

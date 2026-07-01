@@ -6,12 +6,13 @@ import { moedaBR, dataBR } from '@/lib/fmt'
 import {
   STATUS_PILL, PRIO_PILL, FIN_CATS_REC, finPct, finFranqEmail, proximoPassoRegua,
   mesRefBR, type ReguaPasso, COMISSAO_BASE_OPCOES,
+  type FluxoSerie, type FluxoResumo, type FluxoComp, FLUXO_ZERO,
 } from '@/lib/financeiro'
 import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig, dreDaCompetencia,
+  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
 
@@ -40,7 +41,7 @@ function PrioPill({ pr }: { pr: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
 }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -50,6 +51,9 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   hojeISO: string
   dre?: DreLinha[]
   dreCompetencia?: string | null
+  fluxoSerie?: FluxoSerie[]
+  fluxoResumo?: FluxoResumo | null
+  fluxoComp?: FluxoComp[]
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -78,7 +82,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
         </div>
       )}
 
-      {tab === 'fluxo' && <FluxoTab recebiveis={recebiveis} contasPagar={contasPagar} config={config} hojeISO={hojeISO} />}
+      {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
@@ -94,70 +98,57 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
 // =============================================================================
 // FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
 // =============================================================================
-function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; config: FinConfig; hojeISO: string }) {
-  const aReceber = sum(recebiveis.filter((r) => r.status === 'aberto'), (r) => r.valor)
-  const recebido = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
-  const atrasado = sum(recebiveis.filter((r) => r.status === 'atrasado'), (r) => r.valor)
-  const aPagar = sum(contasPagar.filter((p) => p.status === 'aberto'), (p) => p.valor)
-  const pago = sum(contasPagar.filter((p) => p.status === 'pago'), (p) => p.valor)
-  const resultado = (aReceber + recebido) - (aPagar + pago)
-  const inadDen = aReceber + recebido + atrasado
-  const inadPct = inadDen > 0 ? (atrasado / inadDen) * 100 : 0
+function FluxoTab({ serie0, resumo0, comp0, hojeISO }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string }) {
+  const [escopo, setEscopo] = useState('consolidado')
+  const [serie, setSerie] = useState<FluxoSerie[]>(serie0)
+  const [resumo, setResumo] = useState<FluxoResumo>(resumo0 ?? FLUXO_ZERO)
+  const [comp, setComp] = useState<FluxoComp[]>(comp0)
+  const [busy, setBusy] = useState(false)
+  async function trocarEscopo(v: string) {
+    setEscopo(v); setBusy(true)
+    const r = await fluxoDoRazao(v); setBusy(false)
+    if (r.ok) { setSerie(r.serie ?? []); setResumo(r.resumo ?? FLUXO_ZERO); setComp(r.composicao ?? []) }
+  }
+  const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
 
+  // KPIs derivados do razão por status (previsto = a receber/pagar; realizado/conciliado = recebido/pago).
+  const resultado = (resumo.a_receber + resumo.recebido) - (resumo.a_pagar + resumo.pago)
+  const vencPct = resumo.a_receber > 0 ? (resumo.vencido / resumo.a_receber) * 100 : 0
   const kpis = [
-    { ic: 'ti-arrow-down-circle', cor: '#0f6b3a', bg: 'var(--green-bg)', lbl: 'A receber (em aberto)', val: aReceber, sub: 'Royalties, taxas e aluguéis do mês' },
-    { ic: 'ti-circle-check', cor: '#1565C0', bg: '#E3F2FD', lbl: 'Já recebido', val: recebido, sub: 'Boletos baixados no banco' },
-    { ic: 'ti-alert-triangle', cor: 'var(--red)', bg: '#FDECEC', lbl: 'Inadimplência', val: atrasado, sub: finPct(inadPct) + ' do total · régua ativa' },
-    { ic: 'ti-arrow-up-circle', cor: '#B26A00', bg: '#FFF3E0', lbl: 'A pagar', val: aPagar, sub: 'Folha, impostos, fornecedores' },
-    { ic: 'ti-wallet', cor: '#6A1B9A', bg: '#F3E5F5', lbl: 'Resultado projetado', val: resultado, sub: 'Entradas − saídas do mês' },
+    { ic: 'ti-arrow-down-circle', cor: '#0f6b3a', bg: 'var(--green-bg)', lbl: 'A receber', val: resumo.a_receber, sub: 'Receitas previstas (aguardando baixa)' },
+    { ic: 'ti-circle-check', cor: '#1565C0', bg: '#E3F2FD', lbl: 'Recebido', val: resumo.recebido, sub: 'Baixado / conciliado no razão' },
+    { ic: 'ti-alert-triangle', cor: 'var(--red)', bg: '#FDECEC', lbl: 'Vencido', val: resumo.vencido, sub: finPct(vencPct) + ' do a receber · sem baixa' },
+    { ic: 'ti-arrow-up-circle', cor: '#B26A00', bg: '#FFF3E0', lbl: 'A pagar', val: resumo.a_pagar, sub: 'Despesas previstas' },
+    { ic: 'ti-wallet', cor: '#6A1B9A', bg: '#F3E5F5', lbl: 'Resultado projetado', val: resultado, sub: 'Entradas − saídas' },
   ]
 
-  // Série 6 meses — agora 100% dos dados reais (recebíveis e contas a pagar),
-  // bucketizados pela data efetiva. Meses sem lançamento ficam em 0 (estado honesto),
-  // nunca números inventados. (Antes: Jan–Abr/Jun eram mock; só o mês atual era real.)
+  // Série de 6 meses terminando no mês corrente — preenche 0 nos meses sem lançamento (estado honesto).
   const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  const p2 = (n: number) => String(n).padStart(2, '0')
   const hoje = new Date(hojeISO + 'T00:00:00')
-  // janela: 6 meses terminando no mês corrente
   const janela = Array.from({ length: 6 }, (_v, k) => {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - k), 1)
-    return { ano: d.getFullYear(), mes: d.getMonth(), label: MES_ABREV[d.getMonth()], ent: 0, sai: 0 }
+    const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}`
+    const f = serie.find((s) => s.mes === key)
+    return { label: MES_ABREV[d.getMonth()], ano: d.getFullYear(), ent: f?.entradas ?? 0, sai: f?.saidas ?? 0 }
   })
-  const idxDe = (iso: string | null): number => {
-    if (!iso) return -1
-    const d = new Date(iso)
-    if (isNaN(d.getTime())) return -1
-    return janela.findIndex((b) => b.ano === d.getFullYear() && b.mes === d.getMonth())
-  }
-  // Entradas: data de pagamento quando baixado, senão vencimento (data prevista de entrada).
-  for (const r of recebiveis) {
-    if (r.status === 'suspenso') continue
-    const i = idxDe(r.data_pagamento || r.vencimento)
-    if (i >= 0) janela[i].ent += Number(r.valor) || 0
-  }
-  // Saídas: contas a pagar (não suspensas) pelo vencimento.
-  for (const p of contasPagar) {
-    if (p.status === 'suspenso') continue
-    const i = idxDe(p.vencimento)
-    if (i >= 0) janela[i].sai += Number(p.valor) || 0
-  }
-  const meses = janela.map((b) => b.label)
-  // mantém a escala dos gráficos em milhares (÷1000), como no layout original
-  const ent = janela.map((b) => b.ent / 1000)
-  const sai = janela.map((b) => b.sai / 1000)
   const semSerie = janela.every((b) => b.ent === 0 && b.sai === 0)
-  const max = Math.max(...ent, ...sai) * 1.1 || 1
-  // Saldo acumulado a partir do resultado real do período (sem saldo inicial inventado).
+  const maxV = Math.max(...janela.map((b) => Math.max(b.ent, b.sai)), 1)
   let acc = 0
-  const saldoSerie = janela.map((_b, i) => { acc += ent[i] - sai[i]; return acc })
-
-  // composição dos recebíveis (não pagos, não suspensos) por categoria
-  const naoFechados = recebiveis.filter((r) => r.status !== 'pago' && r.status !== 'suspenso')
-  const totComp = sum(naoFechados, (r) => r.valor) || 1
-  const composicao = FIN_CATS_REC.map((c) => ({ cat: c, v: sum(naoFechados.filter((r) => r.categoria === c), (r) => r.valor) })).filter((x) => x.v > 0)
+  const saldoSerie = janela.map((b) => { acc += b.ent - b.sai; return acc })
+  const totComp = sum(comp, (c) => c.total) || 1
 
   return (
     <div>
-      <div className="rel-legend">Visão consolidada da <b>franqueadora</b> — separada do contas a pagar/receber das unidades. Reúne os recebíveis da rede (royalties, taxas, aluguéis) e as despesas da matriz e das lojas. Competência <b>{mesRefBR(hojeISO)}</b>.</div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
+        <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Visão:</label>
+        <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
+          {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
+        </select>
+        {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
+      </div>
+      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única) — visão <b>{escSel.label}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. {escSel.hint}</div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
         {kpis.map((k) => (
           <div key={k.lbl} className="rel-card" style={{ padding: '15px 16px' }}>
@@ -175,33 +166,33 @@ function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Re
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Fluxo de caixa · 6 meses</div>
           {semSerie ? (
-            <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '24px 4px' }}>Sem lançamentos nos últimos 6 meses.</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '24px 4px' }}>Sem lançamentos nos últimos 6 meses nesta visão.</div>
           ) : (<>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 4px 0' }}>
-            {meses.map((m, i) => (
-              <div key={`${m}-${i}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120 }}>
-                  <div title={`Entradas ${moedaBR(ent[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#27AE60', height: Math.max(3, (ent[i] / max) * 120) }} />
-                  <div title={`Saídas ${moedaBR(sai[i] * 1000)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#E74C3C', height: Math.max(3, (sai[i] / max) * 120) }} />
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, padding: '8px 4px 0' }}>
+              {janela.map((b, i) => (
+                <div key={`${b.label}-${b.ano}-${i}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120 }}>
+                    <div title={`Entradas ${moedaBR(b.ent)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#27AE60', height: Math.max(3, (b.ent / maxV) * 120) }} />
+                    <div title={`Saídas ${moedaBR(b.sai)}`} style={{ width: 13, borderRadius: '4px 4px 0 0', background: '#E74C3C', height: Math.max(3, (b.sai / maxV) * 120) }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{b.label}</div>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{m}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontSize: 11.5, color: 'var(--text-2)' }}>
-            <span><i className="ti ti-square-rounded-filled" style={{ color: '#27AE60' }} /> Entradas</span>
-            <span><i className="ti ti-square-rounded-filled" style={{ color: '#E74C3C' }} /> Saídas</span>
-          </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontSize: 11.5, color: 'var(--text-2)' }}>
+              <span><i className="ti ti-square-rounded-filled" style={{ color: '#27AE60' }} /> Entradas</span>
+              <span><i className="ti ti-square-rounded-filled" style={{ color: '#E74C3C' }} /> Saídas</span>
+            </div>
           </>)}
         </div>
         <div className="rel-card">
-          <div className="set-sec" style={{ marginTop: 0 }}>Composição dos recebíveis</div>
-          {composicao.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Nenhum recebível em aberto.</div>}
-          {composicao.map((x) => (
-            <div key={x.cat} style={{ marginBottom: 9 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 3 }}><span>{x.cat}</span><b>{moedaBR(x.v)}</b></div>
+          <div className="set-sec" style={{ marginTop: 0 }}>Composição do &quot;a receber&quot;</div>
+          {comp.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Nenhuma entrada prevista nesta visão.</div>}
+          {comp.map((x) => (
+            <div key={x.conta} style={{ marginBottom: 9 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 3 }}><span>{x.conta}</span><b>{moedaBR(x.total)}</b></div>
               <div style={{ height: 7, background: 'var(--surface-2)', borderRadius: 6, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(x.v / totComp) * 100}%`, background: 'linear-gradient(90deg,#27AE60,#2ecc71)' }} />
+                <div style={{ height: '100%', width: `${(x.total / totComp) * 100}%`, background: 'linear-gradient(90deg,#27AE60,#2ecc71)' }} />
               </div>
             </div>
           ))}
@@ -209,105 +200,25 @@ function FluxoTab({ recebiveis, contasPagar, config, hojeISO }: { recebiveis: Re
       </div>
 
       <div className="rel-card">
-        <div className="set-sec" style={{ marginTop: 0 }}>Movimentação de caixa (mensal · realizado/previsto)</div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Movimentação de caixa (mensal · previsto/realizado)</div>
         <div className="cli-scroll">
           <table className="cli-table">
             <thead><tr><th>Mês</th><th className="num-r">Entradas</th><th className="num-r">Saídas</th><th className="num-r">Resultado</th><th className="num-r">Saldo acumulado</th></tr></thead>
             <tbody>
-              {semSerie && <tr><td colSpan={5} style={{ padding: 20, color: 'var(--text-3)' }}>Sem lançamentos nos últimos 6 meses.</td></tr>}
+              {semSerie && <tr><td colSpan={5} style={{ padding: 20, color: 'var(--text-3)' }}>Sem lançamentos nos últimos 6 meses nesta visão.</td></tr>}
               {!semSerie && janela.map((b, i) => (
-                <tr key={`${b.ano}-${b.mes}`}>
+                <tr key={`${b.label}-${b.ano}`}>
                   <td>{b.label}/{b.ano}</td>
-                  <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(ent[i] * 1000)}</td>
-                  <td className="num-r" style={{ color: 'var(--red)' }}>{moedaBR(sai[i] * 1000)}</td>
-                  <td className="num-r" style={{ fontWeight: 700, color: (ent[i] - sai[i]) >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR((ent[i] - sai[i]) * 1000)}</td>
-                  <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(saldoSerie[i] * 1000)}</td>
+                  <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(b.ent)}</td>
+                  <td className="num-r" style={{ color: 'var(--red)' }}>{moedaBR(b.sai)}</td>
+                  <td className="num-r" style={{ fontWeight: 700, color: (b.ent - b.sai) >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR(b.ent - b.sai)}</td>
+                  <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(saldoSerie[i])}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
-
-      <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} hojeISO={hojeISO} />
-    </div>
-  )
-}
-
-// Projeção de caixa próximos N dias (finProxSemanaHTML L5124)
-function ProjecaoCaixa({ recebiveis, contasPagar, hojeISO }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; hojeISO: string }) {
-  const [dias, setDias] = useState(7)
-  const base = new Date(hojeISO + 'T00:00:00') // data-base = hoje (servidor)
-  const N = dias
-  const lista: Date[] = []
-  for (let k = 1; k <= N; k++) { const d = new Date(base); d.setDate(base.getDate() + k); lista.push(d) }
-  const wd = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const fmt = (d: Date) => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')
-  const isBiz = (d: Date) => d.getDay() >= 1 && d.getDay() <= 5
-  const nBiz = lista.filter(isBiz).length || 1
-  const aReceberOpen = sum(recebiveis.filter((r) => r.status === 'aberto' || r.status === 'atrasado'), (r) => r.valor)
-  const recDiaUtil = aReceberOpen / nBiz
-  const parseV = (iso: string | null) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d.getTime()) ? '' : fmt(d) }
-
-  // Saldo inicial = posição de caixa realizada (recebido − pago), não número inventado.
-  const saldoRealizado = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
-    - sum(contasPagar.filter((p) => p.status === 'pago'), (p) => p.valor)
-  let saldo = saldoRealizado
-  const rows = lista.map((d) => {
-    const tag = fmt(d)
-    const entrada = isBiz(d) ? recDiaUtil : recDiaUtil * 0.15
-    const pagDia = contasPagar.filter((p) => p.status === 'aberto' && parseV(p.vencimento) === tag)
-    const saida = sum(pagDia, (p) => p.valor)
-    const saiAlta = sum(pagDia.filter((p) => p.prioridade === 'alta'), (p) => p.valor)
-    saldo += entrada - saida
-    return { tag, wd: wd[d.getDay()], entrada, saida, saiAlta, saldo, neg: saldo < 0 }
-  })
-  const totEnt = lista.reduce((s, d) => s + (isBiz(d) ? recDiaUtil : recDiaUtil * 0.15), 0)
-  const totSai = sum(contasPagar.filter((p) => p.status === 'aberto' && lista.some((d) => parseV(p.vencimento) === fmt(d))), (p) => p.valor)
-  const presets = [7, 10, 15, 30]
-
-  return (
-    <div className="rel-card" style={{ marginTop: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div className="set-sec" style={{ marginTop: 0, flex: 1 }}><i className="ti ti-calendar-due" /> Projeção de caixa — próximos {N} dias ({fmt(lista[0])} a {fmt(lista[lista.length - 1])})</div>
-        <div style={{ minWidth: 200 }}>
-          <label style={{ fontSize: 11, display: 'block' }}>Período da projeção</label>
-          <select value={presets.includes(N) ? N : 'custom'} onChange={(e) => {
-            if (e.target.value === 'custom') { const n = parseInt(prompt('Projetar o caixa para quantos dias à frente?', '20') || ''); if (n && n >= 1) setDias(Math.min(180, n)) }
-            else setDias(+e.target.value)
-          }} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit' }}>
-            <option value={7}>1 semana (7 dias) — padrão</option>
-            <option value={10}>10 dias</option>
-            <option value={15}>15 dias</option>
-            <option value={30}>30 dias</option>
-            <option value="custom">Personalizar…{!presets.includes(N) ? ` (${N} dias)` : ''}</option>
-          </select>
-        </div>
-      </div>
-      <div className="rel-legend" style={{ marginBottom: 10 }}>Projeção conforme <b>o que temos a receber</b> e a <b>expectativa de recebimento das lojas</b> (recebíveis em aberto diluídos nos dias úteis) versus os <b>pagamentos previstos</b>. A coluna <b>(prio. alta)</b> mostra o mínimo a honrar caso o caixa aperte.</div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-        {[['Entradas previstas', totEnt, '#0f6b3a'], ['Saídas previstas', totSai, 'var(--red)'], ['Resultado da semana', totEnt - totSai, (totEnt - totSai) >= 0 ? '#0f6b3a' : 'var(--red)']].map(([lbl, v, cor]) => (
-          <div key={lbl as string} className="rel-card" style={{ padding: '10px 14px', flex: 1, minWidth: 150 }}>
-            <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{lbl as string}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: cor as string }}>{moedaBR(v as number)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="cli-scroll">
-        <table className="cli-table">
-          <thead><tr><th>Dia</th><th className="num-r">Entradas (a receber + lojas)</th><th className="num-r">Saídas</th><th className="num-r">(prio. alta)</th><th className="num-r">Saldo projetado</th></tr></thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.tag} style={r.neg ? { background: '#FFF7F7' } : undefined}>
-                <td>{r.wd} {r.tag}</td>
-                <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(r.entrada)}</td>
-                <td className="num-r" style={{ color: 'var(--red)' }}>{r.saida ? moedaBR(r.saida) : ''}</td>
-                <td className="num-r" style={{ fontSize: 11, color: 'var(--red)' }}>{r.saiAlta ? moedaBR(r.saiAlta) : ''}</td>
-                <td className="num-r" style={{ fontWeight: 700, color: r.saldo >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR(r.saldo)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="rel-legend" style={{ marginTop: 10 }}>A <b>projeção diária</b> de caixa volta junto com a migração de <b>Contas a Pagar/Receber</b> para o razão (próxima etapa), que traz os vencimentos datados.</div>
       </div>
     </div>
   )

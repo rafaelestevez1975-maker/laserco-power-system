@@ -6,6 +6,7 @@ import {
   FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES,
   ROYALTY_PCT_DEFAULT, FUNDO_PCT_DEFAULT, VENC_DIA_DEFAULT,
   IMPOSTO_PCT_DEFAULT, IMPOSTO_REGIME_DEFAULT, COMISSAO_PCT_DEFAULT, COMISSAO_BASE_DEFAULT, TAXA_CARTAO_PCT_DEFAULT,
+  janelaFluxo, normalizaFluxo, type FluxoSerie, type FluxoResumo, type FluxoComp,
   calcDiasAtraso,
 } from '@/lib/financeiro'
 
@@ -131,6 +132,22 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     }
   }
 
+  // Fluxo de caixa DERIVADO do razão (fonte única) — visão inicial 'consolidado'; o seletor de
+  // escopo na aba refaz via server action. Série de 6 meses + KPIs por status + composição.
+  let fluxoSerie: FluxoSerie[] = []
+  let fluxoResumo: FluxoResumo | null = null
+  let fluxoComp: FluxoComp[] = []
+  {
+    const { ini, fim } = janelaFluxo(new Date())
+    const [serieR, resumoR, compR] = await Promise.all([
+      sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: 'consolidado' }),
+      sb.rpc('fin_fluxo_resumo', { p_escopo: 'consolidado' }),
+      sb.rpc('fin_fluxo_composicao', { p_escopo: 'consolidado' }),
+    ])
+    const norm = normalizaFluxo(serieR.data, resumoR.data, compR.data)
+    fluxoSerie = norm.serie; fluxoResumo = norm.resumo; fluxoComp = norm.composicao
+  }
+
   return (
     <div className="view active">
       <FinanceiroTabs
@@ -143,6 +160,9 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         hojeISO={hojeISO}
         dre={dre}
         dreCompetencia={dreCompetencia}
+        fluxoSerie={fluxoSerie}
+        fluxoResumo={fluxoResumo}
+        fluxoComp={fluxoComp}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>

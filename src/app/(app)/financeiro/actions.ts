@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
-import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase } from '@/lib/financeiro'
+import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase, janelaFluxo, normalizaFluxo, type FluxoSerie, type FluxoResumo, type FluxoComp } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
 import { postLancamento, repostLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
 
@@ -319,6 +319,24 @@ export async function dreDaCompetencia(ano: number, mes: number, escopo: string 
   const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim, p_escopo: esc })
   if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE') }
   return { ok: true, linhas: (data ?? []) as DreLinhaR[], competencia: ini }
+}
+
+/** Fluxo de caixa do razão para um escopo (consolidado/franqueadora/unidades) — série + KPIs + composição.
+ *  Os helpers janelaFluxo/normalizaFluxo vivem em @/lib/financeiro (módulo puro) porque um arquivo
+ *  'use server' só pode exportar funções async. */
+export async function fluxoDoRazao(escopo: string = 'consolidado'): Promise<R & { serie?: FluxoSerie[]; resumo?: FluxoResumo; composicao?: FluxoComp[] }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o fluxo de caixa.' }
+  const esc = (DRE_ESCOPOS as readonly string[]).includes(escopo) ? escopo : 'consolidado'
+  const { ini, fim } = janelaFluxo(new Date())
+  const [serieR, resumoR, compR] = await Promise.all([
+    op.sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc }),
+    op.sb.rpc('fin_fluxo_resumo', { p_escopo: esc }),
+    op.sb.rpc('fin_fluxo_composicao', { p_escopo: esc }),
+  ])
+  if (serieR.error || resumoR.error || compR.error) return { ok: false, error: msgErro((serieR.error || resumoR.error || compR.error)!.message, 'carregar o fluxo de caixa') }
+  return { ok: true, ...normalizaFluxo(serieR.data, resumoR.data, compR.data) }
 }
 
 /** Apura o FATURAMENTO real do BEMP como RECEITA no razão, por unidade e por tipo de venda
