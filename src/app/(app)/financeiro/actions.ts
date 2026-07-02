@@ -6,6 +6,7 @@ import { temPapel } from '@/lib/rbac'
 import { finBoletoNum, calcDiasAtraso, proximoPassoRegua, type ReguaPasso, COMISSAO_BASE_OPCOES, type ComissaoBase, janelaFluxo, normalizaFluxo, type FluxoSerie, type FluxoResumo, type FluxoComp } from '@/lib/financeiro'
 import { darBaixaLancamento as _darBaixaLancamento, receberLancamento as _receberLancamento } from './actions-sac'
 import { postLancamento, repostLancamento, conciliarLancamento, mapaFinanceiro, type LancamentoEvento } from '@/lib/financeiro-ledger'
+import { adminClient } from '@/lib/supabase/admin'
 
 // ── Guard comum: financeiro da franqueadora é restrito a admin/financeiro/gestor. ──
 const PAPEIS_FIN = ['financeiro', 'gestor']
@@ -108,12 +109,13 @@ export async function suspenderLancamento(tabela: 'receber' | 'pagar', id: strin
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para suspender lançamentos.' }
 
   const tab = tabela === 'receber' ? 'fin_recebiveis' : 'fin_contas_pagar'
-  const cols = tabela === 'receber' ? 'status, status_anterior, vencimento, jur_id' : 'status, status_anterior'
+  const cols = tabela === 'receber' ? 'status, status_anterior, vencimento, jur_id, lancamento_id' : 'status, status_anterior'
   const { data: rec } = await op.sb.from(tab).select(cols).eq('id', id).maybeSingle()
-  const r = rec as { status?: string; status_anterior?: string | null; vencimento?: string | null; jur_id?: string | null } | null
+  const r = rec as { status?: string; status_anterior?: string | null; vencimento?: string | null; jur_id?: string | null; lancamento_id?: string | null } | null
   if (!r) return { ok: false, error: 'Lançamento não encontrado.' }
 
-  if (r.status === 'suspenso') {
+  const reativando = r.status === 'suspenso'
+  if (reativando) {
     // Reativar: volta ao status anterior; recalcula atraso (receber).
     let novo = r.status_anterior || 'aberto'
     const patch: Record<string, unknown> = { status_anterior: null }
@@ -131,6 +133,19 @@ export async function suspenderLancamento(tabela: 'receber' | 'pagar', id: strin
     const { error: e } = await op.sb.from(tab).update(patch).eq('id', id)
     if (e) return { ok: false, error: msgErro(e.message, 'suspender lançamento') }
   }
+
+  // Espelha no RAZÃO (pedido do cliente): suspenso fica VISÍVEL mas fora do fluxo de caixa
+  // (fin_fluxo* ignoram status 'suspenso'; o DRE mantém — competência). Best-effort.
+  try {
+    const admin = adminClient()
+    const novoStatusRazao = reativando ? 'previsto' : 'suspenso'
+    if (tabela === 'receber' && r.lancamento_id) {
+      await admin.from('fin_lancamento').update({ status: novoStatusRazao }).eq('id', r.lancamento_id)
+    } else if (tabela === 'pagar') {
+      await admin.from('fin_lancamento').update({ status: novoStatusRazao }).eq('origem', 'manual').eq('origem_ref', id)
+    }
+  } catch (e) { console.error('suspender→razão:', (e as Error).message) }
+
   revalidatePath('/financeiro')
   return { ok: true }
 }
