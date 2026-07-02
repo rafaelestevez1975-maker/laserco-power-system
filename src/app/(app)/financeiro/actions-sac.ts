@@ -2,6 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
+
+/** Concilia no RAZÃO da franqueadora o reembolso do SAC deste chamado (origem 'sac').
+ *  Fecha o ciclo do informe: aprovado→previsto no fluxo; pago→conciliado (caixa real). */
+async function conciliarReembolsoRazao(ticketId: string, dataCaixa: string): Promise<void> {
+  try {
+    await adminClient().from('fin_lancamento')
+      .update({ status: 'conciliado', data_caixa: dataCaixa })
+      .eq('origem', 'sac').eq('origem_ref', ticketId)
+  } catch (e) { console.error('conciliar reembolso razão:', (e as Error).message) }
+}
 
 /** Dá baixa (marca como pago) num lançamento de lancamentos_financeiros. Se for um
  *  reembolso do SAC (origem_ref_id aponta para um sac_ticket), conclui o chamado
@@ -40,13 +51,18 @@ export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: bo
       await sb.from('sac_acordos').update({ status: 'pago' }).eq('id', parcela.acordo_id)
       const { data: ac } = await sb.from('sac_acordos').select('ticket_id').eq('id', parcela.acordo_id).single()
       const tid = (ac as { ticket_id?: string } | null)?.ticket_id
-      if (tid) { await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate, concluido_em: agora }).eq('id', tid); concluiuChamado = true }
+      if (tid) {
+        await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate, concluido_em: agora }).eq('id', tid)
+        await conciliarReembolsoRazao(tid, hojeDate)
+        concluiuChamado = true
+      }
     }
     revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados'); revalidatePath('/sac/pagamentos')
   } else if (lanc.origem_ref_id) {
     const { data: tk } = await sb.from('sac_tickets').select('id').eq('id', lanc.origem_ref_id).maybeSingle()
     if (tk) {
       await sb.from('sac_tickets').update({ fase: 'Concluído', pago: true, pago_em: agora, data_reembolso: hojeDate, concluido_em: agora }).eq('id', lanc.origem_ref_id)
+      await conciliarReembolsoRazao(lanc.origem_ref_id, hojeDate)
       concluiuChamado = true
       revalidatePath('/sac'); revalidatePath('/sac/kanban'); revalidatePath('/sac/chamados')
     }

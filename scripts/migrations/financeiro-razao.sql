@@ -160,9 +160,9 @@ $$;
 create or replace function public.fin_ultima_competencia()
 returns date language sql stable as $$ select max(competencia) from fin_lancamento $$;
 
--- DRE por competência e escopo (consolidado | franqueadora | unidades).
+-- DRE por competência, escopo (consolidado | franqueadora | unidades) e opcionalmente UMA loja.
 -- Suspenso PERMANECE (competência/regime de exercício); cancelado sai.
-create or replace function public.fin_dre(p_ini date, p_fim date, p_escopo text default 'consolidado')
+create or replace function public.fin_dre(p_ini date, p_fim date, p_escopo text default 'consolidado', p_unidade uuid default null)
 returns table(grupo text, natureza text, conta text, ordem integer, total numeric) language sql stable as $$
   select coalesce(pc.grupo,'Outros'), pc.natureza, pc.nome, min(pc.ordem)::int, sum(l.valor)::numeric
   from fin_lancamento l
@@ -170,6 +170,7 @@ returns table(grupo text, natureza text, conta text, ordem integer, total numeri
   left join centro_custo cc on cc.id = l.centro_custo_id
   where l.competencia >= p_ini and l.competencia < p_fim
     and l.status <> 'cancelado'
+    and (p_unidade is null or cc.unidade_id = p_unidade)
     and (p_escopo='consolidado'
       or (p_escopo='franqueadora' and cc.tipo='rede')
       or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede'))

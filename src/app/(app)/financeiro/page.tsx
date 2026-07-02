@@ -132,6 +132,11 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     }
   }
 
+  // Plano de contas (Config gerencia; DRE deriva) + unidades (DRE por loja).
+  const { data: pcRaw } = await sb.from('plano_conta').select('id, codigo, nome, natureza, grupo, ordem, ativo').order('ordem')
+  const planoContas = (pcRaw ?? []) as { id: string; codigo: string | null; nome: string; natureza: string; grupo: string | null; ordem: number; ativo: boolean }[]
+  const unidadesOpt = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
+
   // Fluxo de caixa DERIVADO do razão (fonte única) — visão inicial 'consolidado'; o seletor de
   // escopo na aba refaz via server action. Série de 6 meses + KPIs por status + composição.
   let fluxoSerie: FluxoSerie[] = []
@@ -163,6 +168,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         fluxoSerie={fluxoSerie}
         fluxoResumo={fluxoResumo}
         fluxoComp={fluxoComp}
+        planoContas={planoContas}
+        unidades={unidadesOpt}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>

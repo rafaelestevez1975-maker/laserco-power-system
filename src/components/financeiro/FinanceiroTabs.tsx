@@ -12,7 +12,7 @@ import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao,
+  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, type ContaPlano,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
 
@@ -41,7 +41,9 @@ function PrioPill({ pr }: { pr: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: p.bg, color: p.c }}>{p.label}</span>
 }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], tabInicial = 'fluxo' }: {
+export type UnidadeOpt = { id: string; nome: string }
+
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -54,6 +56,8 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   fluxoSerie?: FluxoSerie[]
   fluxoResumo?: FluxoResumo | null
   fluxoComp?: FluxoComp[]
+  planoContas?: ContaPlano[]
+  unidades?: UnidadeOpt[]
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -83,14 +87,14 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       )}
 
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} />}
-      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} />}
+      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
       {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
-      {tab === 'config' && <ConfigTab config={config} />}
+      {tab === 'config' && <ConfigTab config={config} planoContas={planoContas} />}
     </div>
   )
 }
@@ -700,21 +704,23 @@ const DRE_ESCOPOS: { valor: string; label: string; hint: string }[] = [
   { valor: 'franqueadora', label: 'Só franqueadora', hint: 'Resultado da franqueadora: royalties e fundo de marketing recebidos das unidades.' },
   { valor: 'unidades', label: 'Só unidades', hint: 'Resultado agregado das unidades: faturamento menos royalties, fundo e despesas.' },
 ]
-function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | null }) {
+function DreTab({ dre, competencia, unidades = [] }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[] }) {
   const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
   const [escopo, setEscopo] = useState('consolidado')
+  const [unidade, setUnidade] = useState('') // '' = todas as lojas (agregado)
   const [linhas, setLinhas] = useState<DreLinha[]>(dre)
   const [busy, setBusy] = useState(false)
-  async function recarregar(vComp: string, vEscopo: string) {
+  async function recarregar(vComp: string, vEscopo: string, vUnidade: string) {
     const [a, m] = vComp.split('-').map(Number)
     if (!a || !m) { setLinhas([]); return }
     setBusy(true)
-    const r = await dreDaCompetencia(a, m, vEscopo)
+    const r = await dreDaCompetencia(a, m, vEscopo, vEscopo === 'unidades' && vUnidade ? vUnidade : null)
     setBusy(false)
     if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
   }
-  const trocarMes = (v: string) => { setComp(v); recarregar(v, escopo) }
-  const trocarEscopo = (v: string) => { setEscopo(v); recarregar(comp, v) }
+  const trocarMes = (v: string) => { setComp(v); recarregar(v, escopo, unidade) }
+  const trocarEscopo = (v: string) => { setEscopo(v); setUnidade(''); recarregar(comp, v, '') }
+  const trocarUnidade = (v: string) => { setUnidade(v); recarregar(comp, escopo, v) }
   // Fonte única: o RAZÃO. Agrupa por natureza (receita/custo/despesa) e soma por conta.
   const receitas = linhas.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
   const custos = linhas.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
@@ -735,6 +741,13 @@ function DreTab({ dre, competencia }: { dre: DreLinha[]; competencia: string | n
       <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
         {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
       </select>
+      {escopo === 'unidades' && unidades.length > 0 && (
+        <select value={unidade} onChange={(e) => trocarUnidade(e.target.value)} title="DRE de uma loja específica"
+          style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit', maxWidth: 240 }}>
+          <option value="">Todas as lojas (agregado)</option>
+          {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+        </select>
+      )}
       {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
     </div>
   )
@@ -863,8 +876,26 @@ function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: st
 // CONFIGURAÇÕES (finConfigHTML L5401 + finSalvarCfg)
 // =============================================================================
 type AdqRow = { nome: string; deb: number; cred: number; parc: number; pix: number; prazo: number }
-function ConfigTab({ config }: { config: FinConfig }) {
+function ConfigTab({ config, planoContas = [] }: { config: FinConfig; planoContas?: ContaPlano[] }) {
   const router = useRouter()
+  const [pcNome, setPcNome] = useState('')
+  const [pcNatureza, setPcNatureza] = useState('despesa')
+  const [pcBusy, setPcBusy] = useState(false)
+  const [pcMsg, setPcMsg] = useState('')
+  const addConta = async () => {
+    setPcBusy(true); setPcMsg('')
+    const r = await criarContaPlano(pcNome, pcNatureza)
+    setPcBusy(false)
+    if (!r.ok) { setPcMsg(r.error || 'Erro ao criar categoria.'); return }
+    setPcNome(''); setPcMsg('Categoria criada.'); router.refresh()
+  }
+  const toggleConta = async (c: ContaPlano) => {
+    setPcBusy(true); setPcMsg('')
+    const r = await setContaPlanoAtivo(c.id, !c.ativo)
+    setPcBusy(false)
+    if (!r.ok) { setPcMsg(r.error || 'Erro.'); return }
+    router.refresh()
+  }
   const [royalty, setRoyalty] = useState(config.royalty_pct)
   const [fundo, setFundo] = useState(config.fundo_pct)
   const [vencDia, setVencDia] = useState(config.venc_dia)
@@ -940,6 +971,40 @@ function ConfigTab({ config }: { config: FinConfig }) {
             </select>
           </div>
           <div className="mf full"><label>Taxa de cartão — MDR médio (%)</label><input type="number" step="0.1" min={0} max={100} value={taxaCartao} onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)} /></div>
+        </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Plano de contas (DRE) <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— crie as suas categorias de receita/custo/despesa</span></div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 10px' }}>As categorias organizam o <b>DRE</b> e classificam as despesas lançadas em <b>Contas a Pagar</b> (a despesa com categoria de mesmo nome cai na conta certa; sem correspondente vai para “Outras despesas”). Categorias do sistema (com código) não podem ser desativadas.</div>
+        {pcMsg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{pcMsg}</div>}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          <input value={pcNome} onChange={(e) => setPcNome(e.target.value)} placeholder="Nova categoria (ex.: Frete e Logística)" style={{ flex: 1, minWidth: 220, ...inputStyle, padding: '8px 11px' }} />
+          <select value={pcNatureza} onChange={(e) => setPcNatureza(e.target.value)} style={{ ...inputStyle, padding: '8px 11px', background: '#fff' }}>
+            <option value="despesa">Despesa</option>
+            <option value="custo">Custo</option>
+            <option value="receita">Receita</option>
+          </select>
+          <button className="btn btn-ghost" disabled={pcBusy || !pcNome.trim()} onClick={addConta}><i className="ti ti-plus" /> Adicionar</button>
+        </div>
+        <div className="cli-scroll" style={{ maxHeight: 260 }}>
+          <table className="cli-table">
+            <thead><tr><th>Código</th><th>Categoria</th><th>Natureza</th><th>Grupo</th><th style={{ textAlign: 'center' }}>Ativa</th></tr></thead>
+            <tbody>
+              {planoContas.map((c) => (
+                <tr key={c.id} style={c.ativo ? undefined : { opacity: 0.55 }}>
+                  <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.codigo || '—'}</td>
+                  <td>{c.nome}</td>
+                  <td style={{ fontSize: 12 }}>{c.natureza}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.grupo || '—'}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={c.ativo} disabled={pcBusy || (!!c.codigo && c.ativo)} onChange={() => toggleConta(c)}
+                      title={c.codigo ? 'Categoria do sistema — sempre ativa' : (c.ativo ? 'Desativar' : 'Reativar')} style={{ cursor: c.codigo ? 'not-allowed' : 'pointer' }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

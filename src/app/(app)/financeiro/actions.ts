@@ -210,12 +210,15 @@ export async function novaDespesa(input: {
     prioridade: ['alta', 'media', 'baixa'].includes(input.prioridade) ? input.prioridade : 'media',
   }).select('id').single()
   if (e) return { ok: false, error: msgErro(e.message, 'lançar despesa') }
-  // Ponte pro razão: despesa da franqueadora (centro da rede, conta 4.2.99 Outras despesas),
-  // ligada ao contas a pagar por origem_ref. Alimenta DRE e Fluxo (competência do vencimento).
+  // Ponte pro razão: despesa da franqueadora ligada ao contas a pagar por origem_ref.
+  // A conta do DRE é a categoria de MESMO NOME no plano de contas (criável em Config);
+  // sem correspondente, cai em 4.2.99 (Outras despesas). Alimenta DRE e Fluxo.
   const contaId = (ins as { id: string }).id
   const mapa = await mapaFinanceiro(op.sb)
+  const { data: pcMatch } = await op.sb.from('plano_conta').select('id').ilike('nome', categoria).eq('ativo', true).limit(1).maybeSingle()
+  const planoContaId = (pcMatch as { id?: string } | null)?.id ?? mapa.planoPorCodigo.get('4.2.99') ?? null
   await postLancamento({
-    empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('4.2.99') ?? null,
+    empresaId: emp, centroCustoId: mapa.centroRede, planoContaId,
     natureza: 'despesa', competencia: `${input.vencimento.slice(0, 7)}-01`, valor, origem: 'manual', origemRef: contaId,
     idemKey: `manual:${contaId}`, dataPrevista: input.vencimento, status: 'previsto',
     historico: `${categoria}${(input.descricao || '').trim() ? ' · ' + (input.descricao || '').trim() : ''}`,
@@ -347,7 +350,7 @@ export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem:
  *  franqueadora (só o centro da rede: royalties/fundo) ou unidades (só os centros das unidades).
  *  Usado pelos seletores de mês e de escopo na aba DRE. */
 const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades'] as const
-export async function dreDaCompetencia(ano: number, mes: number, escopo: string = 'consolidado'): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
+export async function dreDaCompetencia(ano: number, mes: number, escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o DRE.' }
@@ -357,9 +360,54 @@ export async function dreDaCompetencia(ano: number, mes: number, escopo: string 
   const ini = `${ano}-${p2(mes)}-01`
   const proxMes = mes === 12 ? 1 : mes + 1, proxAno = mes === 12 ? ano + 1 : ano
   const fim = `${proxAno}-${p2(proxMes)}-01`
-  const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim, p_escopo: esc })
+  // DRE de UMA loja (pedido do cliente: "DRE de cada loja, de todas, da franqueadora e do grupo").
+  const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeId || null })
   if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE') }
   return { ok: true, linhas: (data ?? []) as DreLinhaR[], competencia: ini }
+}
+
+// ── Plano de contas: o cliente cria as próprias categorias (validação de 01/07). ──
+export type ContaPlano = { id: string; codigo: string | null; nome: string; natureza: string; grupo: string | null; ordem: number; ativo: boolean }
+const NATUREZAS_VALIDAS = new Set(['receita', 'custo', 'despesa'])
+const GRUPO_POR_NATUREZA: Record<string, string> = { receita: 'Receitas', custo: 'Custos', despesa: 'Despesas administrativas' }
+
+/** Cria uma categoria (conta) no plano de contas. Aparece no DRE assim que houver lançamento. */
+export async function criarContaPlano(nome: string, natureza: string, grupo?: string): Promise<R & { id?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para editar o plano de contas.' }
+  const n = (nome || '').trim()
+  if (!n) return { ok: false, error: 'Informe o nome da categoria.' }
+  if (!NATUREZAS_VALIDAS.has(natureza)) return { ok: false, error: 'Natureza inválida (receita, custo ou despesa).' }
+  const emp = await empresaId(op.sb)
+  const admin = adminClient()
+  const { data: dup } = await admin.from('plano_conta').select('id').eq('empresa_id', emp).ilike('nome', n).limit(1).maybeSingle()
+  if (dup) return { ok: false, error: 'Já existe uma categoria com esse nome.' }
+  const { data: maxRaw } = await admin.from('plano_conta').select('ordem').eq('empresa_id', emp).order('ordem', { ascending: false }).limit(1).maybeSingle()
+  const ordem = ((maxRaw as { ordem?: number } | null)?.ordem ?? 99) + 1
+  const { data: ins, error: e } = await admin.from('plano_conta').insert({
+    empresa_id: emp, codigo: null, nome: n, natureza,
+    grupo: (grupo || '').trim() || GRUPO_POR_NATUREZA[natureza], ordem, ativo: true,
+  }).select('id').single()
+  if (e) return { ok: false, error: msgErro(e.message, 'criar a categoria') }
+  revalidatePath('/financeiro')
+  return { ok: true, id: (ins as { id: string }).id }
+}
+
+/** Ativa/desativa uma categoria. Contas seed (com código) não podem ser desativadas —
+ *  os produtores automáticos (BEMP/royalties/despesas config) lançam nelas. */
+export async function setContaPlanoAtivo(id: string, ativo: boolean): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para editar o plano de contas.' }
+  const admin = adminClient()
+  const { data: c } = await admin.from('plano_conta').select('codigo').eq('id', id).maybeSingle()
+  if (!c) return { ok: false, error: 'Categoria não encontrada.' }
+  if ((c as { codigo?: string | null }).codigo && !ativo) return { ok: false, error: 'Categorias do sistema (com código) não podem ser desativadas — os lançamentos automáticos usam elas.' }
+  const { error: e } = await admin.from('plano_conta').update({ ativo }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'atualizar a categoria') }
+  revalidatePath('/financeiro')
+  return { ok: true }
 }
 
 /** Fluxo de caixa do razão para um escopo (consolidado/franqueadora/unidades) — série + KPIs + composição.

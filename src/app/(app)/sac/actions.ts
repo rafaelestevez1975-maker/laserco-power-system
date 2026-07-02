@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { primeiroPagamentoValido, MSG_DIA15, montarObs, lerObsMeta, montarObsCredor } from '@/lib/sac'
+import { postLancamento, mapaFinanceiro } from '@/lib/financeiro-ledger'
 
 export type NovoChamadoInput = {
   nome_cliente: string
@@ -224,6 +225,21 @@ export async function solicitarReembolso(
   await sb.from('sac_tickets').update({
     valor_devolucao: valor, multa_aplicada: multaPct > 0, fase: 'Em pagamento',
   }).eq('id', ticketId)
+
+  // RAZÃO da franqueadora (informe validado pelo cliente): o reembolso aprovado entra como
+  // despesa PREVISTA no fluxo de caixa da rede (conta 4.2.05, centro rede — SAC é centralizado).
+  // Quando o Financeiro paga (darBaixaLancamento), o lançamento é conciliado e o chamado fecha.
+  try {
+    const mapa = await mapaFinanceiro(sb)
+    const compISO = `${hoje.slice(0, 7)}-01`
+    await postLancamento({
+      empresaId: empresa_id, centroCustoId: mapa.centroRede,
+      planoContaId: mapa.planoPorCodigo.get('4.2.05') ?? null,
+      natureza: 'despesa', competencia: compISO, valor, origem: 'sac', origemRef: ticketId,
+      idemKey: `sac:${ticketId}:reembolso`, dataPrevista: hoje, status: 'previsto',
+      historico: `Reembolso SAC · ${tk.nome_cliente ?? 'Cliente'} · ${ref}`,
+    })
+  } catch (e) { console.error('razão reembolso SAC:', (e as Error).message) }
 
   revalidatePath('/sac/kanban')
   revalidatePath('/sac/chamados')
