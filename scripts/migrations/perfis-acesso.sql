@@ -16,7 +16,7 @@ from (values
   ('Administrador','perfil_administrador','Acesso total aos módulos de negócio (sem configurações de sistema).'),
   ('Diretor','perfil_diretor','Visão executiva: lê, exporta e aprova em todos os módulos.'),
   ('Operações','perfil_operacoes','Gestão completa de operações + leitura do comercial.'),
-  ('Financeiro','perfil_financeiro','Gestão completa do financeiro + leitura de operações.'),
+  ('Financeiro','perfil_financeiro','Gestão completa do Financeiro da franqueadora (módulo único — menu personalizado).'),
   ('Marketing','perfil_marketing','Gestão completa de marketing + leitura do CRM.'),
   ('RH','perfil_rh','Gestão completa de RH e treinamento.'),
   ('Expansão','perfil_expansao','Gestão do funil de expansão (CRM) + leitura de comercial e marketing.'),
@@ -45,7 +45,7 @@ with regras(slug, modulo, acoes) as (values
   -- Operações
   ('perfil_operacoes','operacoes','*'),('perfil_operacoes','comercial','ler'),
   -- Financeiro
-  ('perfil_financeiro','financeiro','*'),('perfil_financeiro','operacoes','ler'),
+  ('perfil_financeiro','financeiro','*'), -- PURO: módulo único → menu personalizado (padrão SAC)
   -- Marketing
   ('perfil_marketing','marketing','*'),('perfil_marketing','crm','ler'),
   -- RH

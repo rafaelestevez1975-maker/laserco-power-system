@@ -21,10 +21,14 @@ function hasPerm(perm: string, recursos: string[]) {
   return perm.endsWith('.') ? recursos.some((r) => r.startsWith(perm)) : recursos.includes(perm)
 }
 
+/** Perfis de MÓDULO ÚNICO (pedido do cliente: menu personalizado, como o SAC): usuário cujo
+ *  cargo só tem recursos de UM módulo enxerga apenas aquele módulo + Minha conta. */
+type SoModulo = '' | 'sac' | 'financeiro'
+
 /** Regra de visibilidade: admin_geral vê tudo; senão, exige o recurso (ou nenhum = visível).
- *  - sacOnly: usuário só com recursos sac.* enxerga apenas o módulo SAC + utilitários.
+ *  - soModulo: usuário de módulo único (sac/financeiro) enxerga apenas o próprio módulo.
  *  - sacNivel: DENTRO do SAC, recorta os sub-itens por cargo (atendente/consulta < supervisor). */
-function canSee(item: Item, isAdmin: boolean, recursos: string[], sacOnly: boolean, sacNivel: SacNivel) {
+function canSee(item: Item, isAdmin: boolean, recursos: string[], soModulo: SoModulo, sacNivel: SacNivel) {
   if (isAdmin) return true
   const href = 'href' in item ? (item as { href?: string }).href ?? '' : ''
   // Recorte por nível dentro do SAC (o grupo em si não tem href → passa; filtra os filhos /sac/*).
@@ -32,19 +36,22 @@ function canSee(item: Item, isAdmin: boolean, recursos: string[], sacOnly: boole
     const permitido = sacNivel === 'atendente' ? SAC_ATENDENTE : SAC_CONSULTA
     if (!permitido.has(href)) return false
   }
-  if (sacOnly) {
-    if (item.perm) return item.perm.startsWith('sac') ? hasPerm(item.perm, recursos) : false
-    if (href.startsWith('/sac')) return true
-    return href === '/minha-conta' || href === '/ajuda'
+  if (soModulo) {
+    if (item.perm) return item.perm.startsWith(soModulo) ? hasPerm(item.perm, recursos) : false
+    if (href.startsWith(`/${soModulo === 'financeiro' ? 'financeiro' : 'sac'}`)) return true
+    return href === '/minha-conta' || (soModulo === 'sac' && href === '/ajuda')
   }
   if (item.perm) return hasPerm(item.perm, recursos)
   if ('admin' in item && item.admin) return false // admin-only sem recurso mapeado
   return true
 }
 
-/** Usuário "SAC-only": tem recursos e TODOS começam com 'sac' (cargo do SAC, não-admin). */
-function ehSacOnly(isAdmin: boolean, recursos: string[]) {
-  return !isAdmin && recursos.length > 0 && recursos.every((r) => r.startsWith('sac'))
+/** Detecta módulo único: todos os recursos do usuário começam com o mesmo módulo suportado. */
+function ehSoModulo(isAdmin: boolean, recursos: string[]): SoModulo {
+  if (isAdmin || recursos.length === 0) return ''
+  if (recursos.every((r) => r.startsWith('sac'))) return 'sac'
+  if (recursos.every((r) => r.startsWith('financeiro'))) return 'financeiro'
+  return ''
 }
 
 /** Acha um leaf do MENU pelo href (em seções ou dentro de grupos). Usado p/ trazer "Minha conta"
@@ -80,32 +87,33 @@ export function Sidebar({
   isAdmin, recursos, sacNivel = null, onNavigate,
 }: { isAdmin: boolean; recursos: string[]; sacNivel?: SacNivel; onNavigate?: () => void }) {
   const pathname = usePathname()
-  const sacOnly = ehSacOnly(isAdmin, recursos)
+  const soModulo = ehSoModulo(isAdmin, recursos)
 
   return (
     <nav className="nav">
       {MENU.map((section, si) => {
-        const items = section.items.filter((i) => canSee(i, isAdmin, recursos, sacOnly, sacNivel))
+        const items = section.items.filter((i) => canSee(i, isAdmin, recursos, soModulo, sacNivel))
         if (items.length === 0) return null
-        // Usuário SAC: achata o grupo SAC numa SEÇÃO "SAC" — sem o guarda-chuva "ADMINISTRAÇÃO"
-        // e sem o submenu aninhado. "Minha conta" entra no fim do SAC; as outras seções não
-        // aparecem (Rede & Conta vira parte do SAC). Pedido do cliente.
-        if (sacOnly) {
-          const g = items.find((i) => isGroup(i) && i.children.some((c) => (c.href ?? '').startsWith('/sac')))
+        // Usuário de MÓDULO ÚNICO (SAC ou Financeiro): achata o grupo numa SEÇÃO própria — sem o
+        // guarda-chuva "ADMINISTRAÇÃO" e sem submenu aninhado. "Minha conta" entra no fim; as
+        // outras seções não aparecem. Pedido do cliente (padrão criado pro SAC).
+        if (soModulo) {
+          const prefixo = soModulo === 'financeiro' ? '/financeiro' : '/sac'
+          const g = items.find((i) => isGroup(i) && i.children.some((c) => (c.href ?? '').startsWith(prefixo)))
           if (g && isGroup(g)) {
-            const filhos = g.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly, sacNivel))
+            const filhos = g.children.filter((c) => canSee(c, isAdmin, recursos, soModulo, sacNivel))
             const minhaConta = acharLeaf('/minha-conta')
-            const itensSac = minhaConta ? [...filhos, minhaConta] : filhos
+            const itens = minhaConta ? [...filhos, minhaConta] : filhos
             return (
-              <SectionBlock key={si} title="SAC" items={itensSac} pathname={pathname}
-                isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
+              <SectionBlock key={si} title={soModulo === 'financeiro' ? 'Financeiro' : 'SAC'} items={itens} pathname={pathname}
+                isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
             )
           }
-          return null // demais seções não aparecem pro SAC (Minha conta foi pra seção SAC)
+          return null // demais seções não aparecem no modo módulo único
         }
         return (
           <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
-            isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
+            isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
         )
       })}
     </nav>
@@ -115,8 +123,8 @@ export function Sidebar({
 /** Seção colapsável (ADMINISTRAÇÃO, REDE & CONTA, ...): aberta por padrão; reabre sozinha quando
  *  a tela atual está dentro dela; clicar no título recolhe/expande (chevron como nos grupos). */
 function SectionBlock({
-  title, items, pathname, isAdmin, recursos, sacOnly, sacNivel, onNavigate,
-}: { title: string; items: Item[]; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; sacNivel: SacNivel; onNavigate?: () => void }) {
+  title, items, pathname, isAdmin, recursos, soModulo, sacNivel, onNavigate,
+}: { title: string; items: Item[]; pathname: string; isAdmin: boolean; recursos: string[]; soModulo: SoModulo; sacNivel: SacNivel; onNavigate?: () => void }) {
   const ativo = secaoTemAtivo(items, pathname)
   const [open, setOpen] = useState(true)
   useEffect(() => { if (ativo) setOpen(true) }, [ativo])
@@ -130,7 +138,7 @@ function SectionBlock({
       </div>
       {open && items.map((item) =>
         isGroup(item) ? (
-          <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} sacOnly={sacOnly} sacNivel={sacNivel} onNavigate={onNavigate} />
+          <GroupEntry key={item.key} group={item} pathname={pathname} isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
         ) : (
           <LeafLink key={item.href} leaf={item} pathname={pathname} onNavigate={onNavigate} />
         ),
@@ -151,9 +159,9 @@ function LeafLink({ leaf, pathname, onNavigate }: { leaf: Leaf; pathname: string
 }
 
 function GroupEntry({
-  group, pathname, isAdmin, recursos, sacOnly, sacNivel, onNavigate,
-}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; sacOnly: boolean; sacNivel: SacNivel; onNavigate?: () => void }) {
-  const children = group.children.filter((c) => canSee(c, isAdmin, recursos, sacOnly, sacNivel))
+  group, pathname, isAdmin, recursos, soModulo, sacNivel, onNavigate,
+}: { group: Group; pathname: string; isAdmin: boolean; recursos: string[]; soModulo: SoModulo; sacNivel: SacNivel; onNavigate?: () => void }) {
+  const children = group.children.filter((c) => canSee(c, isAdmin, recursos, soModulo, sacNivel))
   const childActive = children.some((c) => leafActive(c.href, pathname))
   const grupoFunc = children.some((c) => ehFuncional(c.href)) // grupo "aceso" se tiver ao menos 1 filho funcional
   const [open, setOpen] = useState(childActive)

@@ -11,5 +11,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const ctx = await getSessionContext() // memoizado (cache): não custa round-trip extra vs o layout
   const sacOnly = !!ctx && !ctx.isAdmin && (ctx.papel === 'sac' || (ctx.recursos.length > 0 && ctx.recursos.every((r) => r.startsWith('sac'))))
   if (sacOnly) redirect('/sac')
+  // Perfil Financeiro (módulo único): cai direto no Financeiro da franqueadora (padrão do SAC).
+  const finOnly = !!ctx && !ctx.isAdmin && (ctx.papel === 'financeiro' || (ctx.recursos.length > 0 && ctx.recursos.every((r) => r.startsWith('financeiro'))))
+  if (finOnly) redirect('/financeiro')
   return <DashboardUnidade searchParams={await searchParams} />
 }
