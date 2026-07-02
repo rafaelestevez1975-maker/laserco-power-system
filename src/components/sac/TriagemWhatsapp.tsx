@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, descartarConversa, criarRespostaRapida, excluirRespostaRapida, iniciarConversa, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, descartarConversa, criarRespostaRapida, excluirRespostaRapida, iniciarConversa, mensagensDaConversa, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 
 // ticks de entrega (status da UAZAPI)
 function Ticks({ status }: { status?: string | null }) {
@@ -97,6 +97,21 @@ export function TriagemWhatsapp({
     document.addEventListener('visibilitychange', onVis)
     return () => { stop(); document.removeEventListener('visibilitychange', onVis) }
   }, [router])
+
+  // ── Fio da conversa ABERTA vem por demanda do servidor (histórico COMPLETO, independente do
+  // teto global da página) e re-busca a cada 3s. threadDb sobrepõe os dados SSR quando presente.
+  const [threadDb, setThreadDb] = useState<{ chatId: string; msgs: Msg[]; notas: Nota[] } | null>(null)
+  useEffect(() => {
+    if (!sel) { setThreadDb(null); return }
+    let vivo = true
+    const carregar = async () => {
+      const r = await mensagensDaConversa(sel).catch(() => null)
+      if (vivo && r?.ok) setThreadDb({ chatId: sel, msgs: (r.msgs ?? []) as Msg[], notas: (r.notas ?? []) as Nota[] })
+    }
+    carregar()
+    const id = setInterval(() => { if (!document.hidden) carregar() }, 3000)
+    return () => { vivo = false; clearInterval(id) }
+  }, [sel])
 
   async function abrirCliente() {
     const novo = !cliOpen; setCliOpen(novo)
@@ -219,12 +234,12 @@ export function TriagemWhatsapp({
     setSel(filtrados[0]?.id ?? null)
   }, [filtrados, sel])
 
-  const thread = useMemo(() => msgs.filter((m) => m.chat_id === sel), [msgs, sel])
+  const thread = useMemo(() => (threadDb && threadDb.chatId === sel) ? threadDb.msgs : msgs.filter((m) => m.chat_id === sel), [threadDb, msgs, sel])
   const chat = chats.find((c) => c.id === sel) || null
   const minha = !!chat?.atendente_id && chat.atendente_id === operadorId
   const respNome = chat?.atendente_id ? (nomeAtendente.get(chat.atendente_id) || 'Atribuído') : null
   const espera = chat ? aguardandoMin(chat.id) : null
-  const notasSel = notas.filter((n) => n.chat_id === sel)
+  const notasSel = (threadDb && threadDb.chatId === sel) ? threadDb.notas : notas.filter((n) => n.chat_id === sel)
   const stat = chat?.status || 'aberto'
 
   // Ao trocar de conversa: vai pro fim. Ao chegar mensagem nova: só rola se já estiver

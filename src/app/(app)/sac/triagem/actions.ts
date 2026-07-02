@@ -421,3 +421,21 @@ export async function iniciarConversa(telefoneRaw: string, texto: string, ticket
   revalidatePath('/sac/triagem'); if (ticketId) revalidatePath('/sac/chamados')
   return { ok: true, chatId }
 }
+
+/** Fio COMPLETO de uma conversa (mensagens + notas), buscado sob demanda ao abrir/pollar.
+ *  Garante o histórico integral da conversa aberta independente do teto global da página
+ *  (o PostgREST corta ~1000 linhas — com o SAC crescendo, o fio vem daqui, por conversa). */
+export async function mensagensDaConversa(chatId: string): Promise<{ ok: boolean; error?: string; msgs?: unknown[]; notas?: unknown[] }> {
+  const g = await guardTriagem()
+  if (!g.ok) return { ok: false, error: g.error }
+  if (!chatId) return { ok: false, error: 'Conversa inválida.' }
+  const [m, n] = await Promise.all([
+    g.sb.from('sac_whatsapp_mensagens')
+      .select('id, chat_id, direcao, autor, tipo, texto, midia_url, midia_mimetype, status, criado_em')
+      .eq('chat_id', chatId).order('criado_em', { ascending: false }).order('id', { ascending: false }).limit(1000),
+    g.sb.from('sac_whatsapp_notas')
+      .select('id, chat_id, autor_nome, texto, criada_em')
+      .eq('chat_id', chatId).order('criada_em', { ascending: false }).limit(200),
+  ])
+  return { ok: true, msgs: (m.data ?? []).reverse(), notas: (n.data ?? []).reverse() }
+}
