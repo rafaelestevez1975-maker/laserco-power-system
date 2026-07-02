@@ -60,9 +60,9 @@ for (const uc of uzChats) {
     const mRes = await (await fetch(`${BASE}/message/find`, { method: 'POST', headers: UZ, body: JSON.stringify({ chatid, limit: MSGS_POR_CHAT }) })).json()
     const msgs = (mRes.messages || []).filter((m) => m.messageid || m.id)
     if (!msgs.length) continue
-    // 2c) dedup por wa_id
+    // 2c) dedup por wa_id — GLOBAL (o índice único de wa_id vale para a tabela toda)
     const waIds = msgs.map((m) => m.messageid || m.id)
-    const existRes = await fetch(`${SB_URL}/rest/v1/sac_whatsapp_mensagens?select=wa_id&chat_id=eq.${chatDbId}&wa_id=in.(${waIds.map((w) => `"${w}"`).join(',')})`, { headers: H })
+    const existRes = await fetch(`${SB_URL}/rest/v1/sac_whatsapp_mensagens?select=wa_id&wa_id=in.(${waIds.map((w) => `"${w}"`).join(',')})`, { headers: H })
     const jaTem = new Set((await existRes.json()).map((r) => r.wa_id))
     const novas = msgs.filter((m) => !jaTem.has(m.messageid || m.id)).map((m) => ({
       chat_id: chatDbId, wa_id: m.messageid || m.id,
