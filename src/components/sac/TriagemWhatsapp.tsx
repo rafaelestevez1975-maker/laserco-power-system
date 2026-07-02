@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, descartarConversa, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
+import { responderConversa, abrirChamadoDaConversa, assumirConversa, devolverConversa, transferirConversa, marcarLido, adicionarNota, alterarStatusConversa, reativarIA, buscarClientePorContato, enviarMidia, descartarConversa, criarRespostaRapida, excluirRespostaRapida, iniciarConversa, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 
 // ticks de entrega (status da UAZAPI)
 function Ticks({ status }: { status?: string | null }) {
@@ -33,6 +33,7 @@ export type Msg = { id: string; chat_id: string | null; direcao: string | null; 
 export type Atendente = { id: string; nome: string }
 export type Nota = { id: string; chat_id: string | null; autor_nome: string | null; texto: string | null; criada_em: string | null }
 export type Unidade = { id: string; nome: string }
+export type RespostaRapida = { id: string; atalho: string; texto: string }
 
 const SLA_MIN = 5
 const STATUS_OPCOES = ['aberto', 'pendente', 'resolvido'] as const
@@ -51,10 +52,12 @@ export function TriagemWhatsapp({
   chats, msgs, atendentes, notas, operadorId,
   unidades = [], activeUnitId = null, motivos = [],
   totalN, minhasN: minhasNServer, filaN: filaNServer, amostraCapped = false,
+  respostasRapidas = [],
 }: {
   chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; notas: Nota[]; operadorId: string | null
   unidades?: Unidade[]; activeUnitId?: string | null; motivos?: string[]
   totalN?: number; minhasN?: number; filaN?: number; amostraCapped?: boolean
+  respostasRapidas?: RespostaRapida[]
 }) {
   const router = useRouter()
   const [busca, setBusca] = useState('')
@@ -74,6 +77,8 @@ export function TriagemWhatsapp({
   const [gravando, setGravando] = useState(false)
   const [chamadoOpen, setChamadoOpen] = useState(false)
   const [form, setForm] = useState({ nome: '', cpf: '', telefone: '', email: '', unidade_id: '', motivo: '' })
+  const [novaOpen, setNovaOpen] = useState(false)      // modal "Nova conversa"
+  const [gerenciarRR, setGerenciarRR] = useState(false) // modal gerenciar respostas rápidas
   const fileRef = useRef<HTMLInputElement | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -264,6 +269,9 @@ export function TriagemWhatsapp({
           <div style={tab('fila')} onClick={() => setAba('fila')}>Fila ({filaN})</div>
         </div>
         <div style={{ padding: 10, borderBottom: '1px solid var(--line)' }}>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 8 }} onClick={() => setNovaOpen(true)} title="Iniciar uma nova conversa no WhatsApp">
+            <i className="ti ti-message-plus" /> Nova conversa
+          </button>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔎 Buscar conversa..."
             style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, marginTop: 6 }}>
@@ -397,14 +405,31 @@ export function TriagemWhatsapp({
             )}
             <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface)', padding: 10 }}>
               {aviso && <div style={{ fontSize: 12, color: 'var(--brand-600)', marginBottom: 6 }}>{aviso}</div>}
+              {/* Respostas prontas: digite "/" para filtrar e clicar insere o texto (estilo WhatsApp Business). */}
+              {texto.startsWith('/') && (() => {
+                const termo = texto.slice(1).toLowerCase().trim()
+                const matches = respostasRapidas.filter((r) => r.atalho.includes(termo) || r.texto.toLowerCase().includes(termo)).slice(0, 6)
+                if (matches.length === 0) return <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--text-3)' }}>Nenhuma resposta pronta com “{termo}”. <span style={{ color: 'var(--brand-600)', cursor: 'pointer' }} onClick={() => setGerenciarRR(true)}>Gerenciar respostas</span></div>
+                return (
+                  <div style={{ marginBottom: 8, border: '1px solid var(--line)', borderRadius: 10, background: 'var(--surface)', maxHeight: 220, overflow: 'auto' }}>
+                    {matches.map((r) => (
+                      <div key={r.id} onClick={() => setTexto(r.texto)} style={{ padding: '8px 10px', cursor: 'pointer', borderBottom: '1px solid var(--line)' }} title="Clique para inserir">
+                        <b style={{ fontSize: 12, color: 'var(--brand-600)' }}>/{r.atalho}</b>
+                        <div style={{ fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.texto}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input ref={fileRef} type="file" hidden accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx" onChange={(e) => { enviarArquivo(e.target.files?.[0]); e.currentTarget.value = '' }} />
                 <button className="btn" title="Anexar arquivo/foto" disabled={busy} onClick={() => fileRef.current?.click()}><i className="ti ti-paperclip" /></button>
+                <button className="btn" title="Gerenciar respostas prontas (na conversa, digite / para usar)" disabled={busy} onClick={() => setGerenciarRR(true)}><i className="ti ti-message-2-bolt" /></button>
                 <button className="btn" title={gravando ? 'Parar e enviar áudio' : 'Gravar áudio'} disabled={busy} onClick={gravarVoz} style={gravando ? { color: 'var(--red)', borderColor: 'var(--red)' } : undefined}><i className={`ti ${gravando ? 'ti-player-stop-filled' : 'ti-microphone'}`} /></button>
                 <input
                   value={texto} onChange={(e) => setTexto(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }}
-                  placeholder={gravando ? '🔴 Gravando áudio…' : 'Responder pelo WhatsApp…'}
+                  placeholder={gravando ? '🔴 Gravando áudio…' : 'Responder pelo WhatsApp…  (digite / para respostas prontas)'}
                   style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--line)', borderRadius: 20, fontSize: 13 }}
                 />
                 <button className="btn btn-primary" disabled={busy || !texto.trim()} onClick={enviar}>
@@ -479,7 +504,102 @@ export function TriagemWhatsapp({
           </div>
         </aside>
       )}
+      {novaOpen && <NovaConversaModal onClose={() => setNovaOpen(false)} onCriada={(id) => { setNovaOpen(false); setSel(id); router.refresh() }} />}
+      {gerenciarRR && <GerenciarRespostasModal respostas={respostasRapidas} onClose={() => { setGerenciarRR(false); router.refresh() }} />}
     </div>
     </>
+  )
+}
+
+// ── Modal: iniciar NOVA conversa no WhatsApp (pedido das atendentes) ──
+function NovaConversaModal({ onClose, onCriada }: { onClose: () => void; onCriada: (chatId: string) => void }) {
+  const [tel, setTel] = useState('')
+  const [msg, setMsg] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
+  async function salvar() {
+    setErro(''); setSaving(true)
+    const r = await iniciarConversa(tel, msg)
+    setSaving(false)
+    if (!r.ok || !r.chatId) { setErro(r.error || 'Não foi possível iniciar a conversa.'); return }
+    onCriada(r.chatId)
+  }
+  const inp: React.CSSProperties = { width: '100%', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13.5 }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface, #fff)', borderRadius: 14, width: 'min(440px,100%)', boxShadow: '0 18px 50px rgba(0,0,0,.25)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <b><i className="ti ti-message-plus" /> Nova conversa</b>
+          <button className="btn" style={{ padding: '4px 8px' }} onClick={onClose}><i className="ti ti-x" /></button>
+        </div>
+        <div style={{ padding: 18, display: 'grid', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Número do WhatsApp (com DDD)</label>
+            <input style={inp} value={tel} onChange={(e) => setTel(e.target.value)} placeholder="(11) 90000-0000" autoFocus />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Primeira mensagem</label>
+            <textarea style={{ ...inp, minHeight: 90, resize: 'vertical' }} value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Olá! Aqui é do SAC da Laser&Co…" />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}><i className="ti ti-info-circle" /> O WhatsApp pode restringir iniciar conversa com número novo. Se falhar, tente após o cliente falar primeiro.</div>
+          {erro && <div style={{ color: 'var(--red)', fontSize: 13 }}><i className="ti ti-alert-triangle" /> {erro}</div>}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="btn" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button className="btn btn-primary" onClick={salvar} disabled={saving || !tel.trim() || !msg.trim()}>{saving ? 'Enviando…' : <><i className="ti ti-send" /> Iniciar</>}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Modal: gerenciar RESPOSTAS PRONTAS (barra "/") ──
+function GerenciarRespostasModal({ respostas, onClose }: { respostas: RespostaRapida[]; onClose: () => void }) {
+  const router = useRouter()
+  const [atalho, setAtalho] = useState('')
+  const [texto, setTexto] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [erro, setErro] = useState('')
+  async function add() {
+    setErro(''); setBusy(true)
+    const r = await criarRespostaRapida(atalho, texto)
+    setBusy(false)
+    if (!r.ok) { setErro(r.error || 'Erro ao salvar.'); return }
+    setAtalho(''); setTexto(''); router.refresh()
+  }
+  async function rm(id: string) {
+    setBusy(true); await excluirRespostaRapida(id); setBusy(false); router.refresh()
+  }
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface, #fff)', borderRadius: 14, width: 'min(520px,100%)', maxHeight: '85vh', overflow: 'auto', boxShadow: '0 18px 50px rgba(0,0,0,.25)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <b><i className="ti ti-message-2-bolt" /> Respostas prontas</b>
+          <button className="btn" style={{ padding: '4px 8px' }} onClick={onClose}><i className="ti ti-x" /></button>
+        </div>
+        <div style={{ padding: 18, display: 'grid', gap: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Na conversa, digite <b>/</b> seguido do atalho para inserir o texto. Ex.: <b>/pagamento</b>.</div>
+          <div style={{ display: 'grid', gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }}>
+            <input style={inp} value={atalho} onChange={(e) => setAtalho(e.target.value)} placeholder="Atalho (ex.: pagamento) — sem espaços" />
+            <textarea style={{ ...inp, minHeight: 70, resize: 'vertical' }} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Texto que será inserido na conversa" />
+            {erro && <div style={{ color: 'var(--red)', fontSize: 12.5 }}>{erro}</div>}
+            <div style={{ textAlign: 'right' }}><button className="btn btn-primary" disabled={busy || !atalho.trim() || !texto.trim()} onClick={add}><i className="ti ti-plus" /> Adicionar</button></div>
+          </div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {respostas.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Nenhuma resposta pronta ainda.</div>}
+            {respostas.map((r) => (
+              <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', border: '1px solid var(--line)', borderRadius: 8, padding: '8px 10px' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <b style={{ fontSize: 12, color: 'var(--brand-600)' }}>/{r.atalho}</b>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.texto}</div>
+                </div>
+                <button className="btn" style={{ padding: '4px 8px', color: 'var(--red)' }} disabled={busy} onClick={() => rm(r.id)} title="Excluir"><i className="ti ti-trash" /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

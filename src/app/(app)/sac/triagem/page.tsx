@@ -97,6 +97,10 @@ export default async function SacTriagemPage() {
     )
   }
 
+  // Respostas rápidas (barra "/" na conversa) — pedido das atendentes.
+  const { data: rrRaw } = await sb.from('sac_respostas_rapidas').select('id, atalho, texto').order('atalho')
+  const respostasRapidas = (rrRaw ?? []) as { id: string; atalho: string; texto: string }[]
+
   return (
     <div className="view active">
       <TriagemWhatsapp
@@ -112,6 +116,7 @@ export default async function SacTriagemPage() {
         minhasN={minhasN}
         filaN={filaN}
         amostraCapped={amostraCapped}
+        respostasRapidas={respostasRapidas}
       />
     </div>
   )

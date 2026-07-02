@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { temPapel } from '@/lib/rbac'
 import { adminClient } from '@/lib/supabase/admin'
-import { listInstances, sendText, sendMedia, type Instancia } from '@/lib/uazapi'
+import { listInstances, sendText, sendMedia, normTel, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
 
 // Papéis que operam a triagem (admin_geral sempre passa via temPapel).
@@ -344,4 +344,76 @@ export async function abrirChamadoDaConversa(chatId: string, input: AbrirChamado
   await sb.from('sac_whatsapp_chats').update({ ticket_id: (ins as { id?: string })?.id }).eq('id', chatId)
   revalidatePath('/sac/triagem'); revalidatePath('/sac/chamados'); revalidatePath('/sac')
   return { ok: true }
+}
+
+// ── Respostas rápidas (pedido das atendentes: barra "/" com textos prontos, estilo WhatsApp Business) ──
+export type RespostaRapida = { id: string; atalho: string; texto: string }
+
+/** Cria/atualiza uma resposta rápida (atalho único por texto). Atalho normalizado (a-z0-9_-). */
+export async function criarRespostaRapida(atalho: string, texto: string): Promise<{ ok: boolean; error?: string }> {
+  const g = await guardTriagem()
+  if (!g.ok) return { ok: false, error: g.error }
+  const a = (atalho || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '')
+  if (!a) return { ok: false, error: 'Informe um atalho (ex.: pagamento).' }
+  if (!texto.trim()) return { ok: false, error: 'Escreva o texto da resposta.' }
+  const { error } = await adminClient().from('sac_respostas_rapidas').insert({
+    empresa_id: '00000000-0000-0000-0000-000000000001', atalho: a, texto: texto.trim(), criado_por: g.userId,
+  })
+  if (error) return { ok: false, error: msgErro(error, 'salvar a resposta rápida') }
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
+/** Exclui uma resposta rápida. */
+export async function excluirRespostaRapida(id: string): Promise<{ ok: boolean; error?: string }> {
+  const g = await guardTriagem()
+  if (!g.ok) return { ok: false, error: g.error }
+  if (!id) return { ok: false, error: 'Resposta inválida.' }
+  const { error } = await adminClient().from('sac_respostas_rapidas').delete().eq('id', id)
+  if (error) return { ok: false, error: msgErro(error, 'excluir a resposta rápida') }
+  revalidatePath('/sac/triagem')
+  return { ok: true }
+}
+
+// ── Iniciar NOVA conversa (pedido das atendentes: começar um atendimento no WhatsApp do sistema) ──
+/** Envia a primeira mensagem para um número novo, cria/abre o chat e assume para o atendente. */
+export async function iniciarConversa(telefoneRaw: string, texto: string): Promise<{ ok: boolean; error?: string; chatId?: string }> {
+  const g = await guardTriagem()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { sb, userId, nome } = g
+  const telefone = normTel(telefoneRaw || '')
+  if (!telefone) return { ok: false, error: 'Informe um número de WhatsApp válido (com DDD).' }
+  if (!texto.trim()) return { ok: false, error: 'Escreva a primeira mensagem.' }
+
+  const canal = await canalConectado(null)
+  if (!canal.token) return { ok: false, error: canal.error }
+
+  const agora = new Date().toISOString()
+  // acha ou cria o chat pelo telefone
+  let chatId: string
+  const { data: existing } = await sb.from('sac_whatsapp_chats').select('id').eq('telefone', telefone).maybeSingle()
+  if (existing) {
+    chatId = (existing as { id: string }).id
+  } else {
+    const { data: ins, error } = await sb.from('sac_whatsapp_chats').insert({
+      telefone, wa_chatid: `${telefone}@s.whatsapp.net`,
+      ultima_msg: texto.trim().slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: agora,
+      nao_lidas: 0, atendente_id: userId, bot_ativo: false, status: 'aberto',
+    }).select('id').single()
+    if (error || !ins) return { ok: false, error: msgErro(error || '', 'criar a conversa') }
+    chatId = (ins as { id: string }).id
+  }
+
+  const env = await sendText(canal.token, telefone, texto.trim())
+  if (!env.ok) return { ok: false, error: env.error || 'Falha no envio (o WhatsApp pode restringir iniciar conversa com número novo).' }
+
+  await sb.from('sac_whatsapp_mensagens').insert({
+    chat_id: chatId, wa_id: env.messageid ?? null, direcao: 'saida', autor: nome, enviada_por: userId,
+    tipo: 'text', texto: texto.trim(), status: env.status ?? 'sent', criado_em: agora,
+  })
+  await sb.from('sac_whatsapp_chats').update({
+    ultima_msg: texto.trim().slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: agora, atendente_id: userId, bot_ativo: false,
+  }).eq('id', chatId)
+  revalidatePath('/sac/triagem')
+  return { ok: true, chatId }
 }
