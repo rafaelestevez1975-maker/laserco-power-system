@@ -69,7 +69,9 @@ export default async function SacTriagemPage() {
     const [{ data: msgsRaw }, { data: notasRaw }] = await Promise.all([
       sb.from('sac_whatsapp_mensagens')
         .select('id, chat_id, direcao, autor, tipo, texto, midia_url, midia_mimetype, status, criado_em')
-        .in('chat_id', chatIds).order('criado_em', { ascending: true }),
+        // Desempate por id (ordem de chegada): evita que uma mensagem com timestamp do WhatsApp
+        // ligeiramente atrasado apareça no MEIO do histórico e "suma" do fim da conversa.
+        .in('chat_id', chatIds).order('criado_em', { ascending: true }).order('id', { ascending: true }),
       sb.from('sac_whatsapp_notas')
         .select('id, chat_id, autor_nome, texto, criada_em')
         .in('chat_id', chatIds).order('criada_em', { ascending: true }),

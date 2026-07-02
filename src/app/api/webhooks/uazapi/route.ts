@@ -164,16 +164,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Auto-distribuição (pedido do Julio): conversa de cliente SEM dono cai automaticamente.
-  // Canal de número PRÓPRIO → vai pra dona; canal compartilhado → atendente ONLINE menos carregada.
-  // Se ninguém online, fica na fila (e a IA atende). Atribui só uma vez (não reatribui).
+  // ── Fluxo de atendimento (pedido do Julio): a IA faz o PRIMEIRO atendimento; a atendente humana
+  // entra só quando (a) o canal é de número PRÓPRIO de uma atendente, (b) a IA não está no circuito
+  // (sem IA configurada, bot desligado, ou mensagem não-texto), ou (c) a IA transfere/falha (abaixo).
+  // Antes a distribuição atribuía humana na hora e a IA (que só responde sem dono) nunca disparava. ──
+  const botAtivo = chat.bot_ativo ?? true
+  const iaAtende = !fromMe && tipo === 'text' && !!texto && botAtivo && !chat.atendente_id && iaConfigurada() && !canalAtendenteId
   if (!fromMe && chat && !chat.atendente_id) {
     try {
-      const alvo = canalAtendenteId ?? await escolherAtendenteOnline(sb, unidadeOrigem)
-      if (alvo) {
-        const { error: eAtr } = await sb.from('sac_whatsapp_chats').update({ atendente_id: alvo }).eq('id', chat.id)
-        if (!eAtr) chat.atendente_id = alvo
+      if (canalAtendenteId) {
+        // Número próprio → direto pra dona (não passa pela IA central).
+        const { error: eAtr } = await sb.from('sac_whatsapp_chats').update({ atendente_id: canalAtendenteId }).eq('id', chat.id)
+        if (!eAtr) chat.atendente_id = canalAtendenteId
+      } else if (!iaAtende) {
+        // IA fora do circuito (sem IA / bot off / mídia) → distribui pra atendente online menos carregada.
+        const alvo = await escolherAtendenteOnline(sb, unidadeOrigem)
+        if (alvo) { const { error: eAtr } = await sb.from('sac_whatsapp_chats').update({ atendente_id: alvo }).eq('id', chat.id); if (!eAtr) chat.atendente_id = alvo }
       }
+      // iaAtende === true → NÃO atribui agora; a IA responde primeiro (bloco de IA abaixo).
     } catch (e) { console.error('webhook auto-distribuição:', (e as Error).message) }
   }
 
@@ -184,14 +192,18 @@ export async function POST(req: NextRequest) {
   let midiaUrl: string | null = null
   let midiaMime: string | null = null
   if (['image', 'audio', 'video', 'document', 'sticker'].includes(tipo)) {
-    let fonte = msg.fileURL || null
-    const dlToken = inst?.token || process.env.UAZAPI_TOKEN || ''
-    const midiaId = msg.id || msg.messageid || null
-    if (!fonte && midiaId && dlToken) {
-      const dl = await downloadMessage(dlToken, midiaId)
-      if (dl.ok) { fonte = dl.fileURL || null; midiaMime = dl.mimetype || null }
-    }
-    if (fonte) midiaUrl = await reHostMidia(fonte, { mime: midiaMime, prefixo: 'recebidas' })
+    // Nunca deixar uma falha de download/re-host derrubar a gravação da mensagem (item: sync):
+    // se der erro, grava a mensagem sem a mídia (melhor do que sumir do sistema).
+    try {
+      let fonte = msg.fileURL || null
+      const dlToken = inst?.token || process.env.UAZAPI_TOKEN || ''
+      const midiaId = msg.id || msg.messageid || null
+      if (!fonte && midiaId && dlToken) {
+        const dl = await downloadMessage(dlToken, midiaId)
+        if (dl.ok) { fonte = dl.fileURL || null; midiaMime = dl.mimetype || null }
+      }
+      if (fonte) midiaUrl = await reHostMidia(fonte, { mime: midiaMime, prefixo: 'recebidas' })
+    } catch (e) { console.error('webhook mídia (segue sem anexo):', (e as Error).message) }
   }
 
   await sb.from('sac_whatsapp_mensagens').insert({
@@ -202,10 +214,8 @@ export async function POST(req: NextRequest) {
     status: msg.status ?? null, criado_em: quando,
   })
 
-  // IA de atendimento (OpenRouter): responde quando é mensagem do cliente,
-  // o bot está ativo, não há atendente humano e a IA está configurada.
-  const botAtivo = chat.bot_ativo ?? true
-  if (!fromMe && tipo === 'text' && texto && botAtivo && !chat.atendente_id && iaConfigurada()) {
+  // IA de atendimento (OpenRouter): faz o 1º atendimento (iaAtende calculado acima).
+  if (iaAtende) {
     try {
       const { data: hist } = await sb.from('sac_whatsapp_mensagens')
         .select('direcao, autor, texto').eq('chat_id', chat.id).order('criado_em', { ascending: true }).limit(20)
@@ -228,13 +238,24 @@ export async function POST(req: NextRequest) {
             tipo: 'text', texto: r.resposta, status: env.ok ? (env.status ?? 'sent') : 'failed', criado_em: ag,
           })
           const patch: Record<string, unknown> = { ultima_msg: r.resposta.slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: ag }
-          if (r.transferir) patch.bot_ativo = false // assunto sensível → fila humana
+          if (r.transferir) {
+            // Assunto sensível/que a IA não resolve → desliga o bot e passa pra fila humana (menos carregada).
+            patch.bot_ativo = false
+            const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
+            if (alvo) patch.atendente_id = alvo
+          }
           if (r.nomeCliente && !chat.nome) patch.nome = r.nomeCliente
           await sb.from('sac_whatsapp_chats').update(patch).eq('id', chat.id)
           return NextResponse.json({ ok: true, telefone, ia: true, transferir: r.transferir, canal: canal.name })
         }
       }
     } catch (e) { console.error('webhook IA:', (e as Error).message) }
+    // A IA estava no circuito mas não respondeu/enviou (sem canal, erro, etc.) → não deixa a conversa
+    // órfã: manda pra fila humana (atendente online menos carregada).
+    if (!chat.atendente_id) {
+      const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
+      if (alvo) await sb.from('sac_whatsapp_chats').update({ atendente_id: alvo }).eq('id', chat.id)
+    }
   }
 
   return NextResponse.json({ ok: true, telefone, direcao: fromMe ? 'saida' : 'entrada', unidade: unidadeOrigem })
