@@ -18,11 +18,14 @@ const LISTA_MAX = 300
  * e, se a coluna não existir (erro), caímos para a consulta sem filtro. A RLS do Supabase
  * permanece como 2ª linha de defesa.
  */
-export default async function SacTriagemPage() {
+export default async function SacTriagemPage({ searchParams }: { searchParams?: Promise<{ tel?: string; nome?: string; ticket?: string }> }) {
   const sb = await createClient()
   const ctx = await getSessionContext()
   const { data: { user } } = await sb.auth.getUser()
   const activeUnitId = ctx?.activeUnitId ?? null
+  // Vindo do CHAMADO (botão WhatsApp): pré-abre "Nova conversa" com o telefone/nome do cliente.
+  const spNova = (await searchParams) ?? {}
+  const novaInicial = spNova.tel ? { tel: spNova.tel, nome: spNova.nome || '', ticketId: spNova.ticket || null } : null
 
   // ── Conversas (mais recentes primeiro) com escopo defensivo por unidade ──
   const baseSelect = 'id, telefone, nome, ultima_msg, ultima_msg_em, nao_lidas, bot_ativo, ticket_id, atendente_id, status'
@@ -117,6 +120,7 @@ export default async function SacTriagemPage() {
         filaN={filaN}
         amostraCapped={amostraCapped}
         respostasRapidas={respostasRapidas}
+        novaInicial={novaInicial}
       />
     </div>
   )

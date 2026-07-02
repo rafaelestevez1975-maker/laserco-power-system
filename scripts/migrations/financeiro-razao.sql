@@ -80,6 +80,17 @@ alter table fin_config
   add column if not exists comissao_base text not null default 'faturamento',
   add column if not exists taxa_cartao_pct numeric not null default 0;
 
+-- ── Royalty por unidade + regra automática de desconto (validação do CEO 02/07) ──
+-- Exceção por franquia (null = regra geral). Regra automática: faturamento < teto e
+-- pagando em dia (sem recebível atrasado) → desconto no royalty (ex.: 10% vira 5%).
+alter table unidades
+  add column if not exists royalty_pct_override numeric,
+  add column if not exists venc_dia_override int;
+alter table fin_config
+  add column if not exists royalty_desc_ativo boolean not null default true,
+  add column if not exists royalty_desc_teto numeric not null default 80000,
+  add column if not exists royalty_desc_pct numeric not null default 50;
+
 -- ── Seeds ──
 -- centro de custo: um por unidade ativa + a rede (franqueadora)
 insert into centro_custo (empresa_id, nome, tipo, unidade_id)
@@ -138,19 +149,21 @@ end $$;
 -- RPCs — agregações no servidor (PostgREST bloqueia aggregate no REST)
 -- ============================================================================
 
--- Faturamento real (BEMP) por salon no período
+-- Faturamento real (BEMP) por salon no período.
+-- BASE = receita MENOS descontos (definição do CEO 02/07: "sempre faturamento bruto: receita
+-- menos descontos"). No BEMP, `total` é o preço CHEIO e `desconto` o abatimento da venda.
 create or replace function public.fin_faturamento_por_salon(p_ini date, p_fim date)
 returns table(salon integer, faturamento numeric) language sql stable as $$
-  select bemp_salon_id::int as salon, coalesce(sum(total),0)::numeric as faturamento
+  select bemp_salon_id::int, coalesce(sum(total - coalesce(desconto,0)),0)::numeric
   from bemp_billings
-  where data >= p_ini and data < p_fim and bemp_salon_id is not null
+  where data >= p_ini and data < p_fim and bemp_salon_id is not null and total > 0
   group by bemp_salon_id
 $$;
 
--- Faturamento por salon e tipo de venda (entity → conta de receita)
+-- Faturamento por salon e tipo de venda (entity → conta de receita) — mesma base líquida.
 create or replace function public.fin_faturamento_por_salon_entidade(p_ini date, p_fim date)
 returns table(salon integer, entidade text, total numeric) language sql stable as $$
-  select bemp_salon_id::int, entity, sum(total)::numeric
+  select bemp_salon_id::int, entity, sum(total - coalesce(desconto,0))::numeric
   from bemp_billings
   where data >= p_ini and data < p_fim and bemp_salon_id is not null and total > 0
   group by bemp_salon_id, entity

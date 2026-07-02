@@ -376,8 +376,9 @@ export async function excluirRespostaRapida(id: string): Promise<{ ok: boolean; 
 }
 
 // ── Iniciar NOVA conversa (pedido das atendentes: começar um atendimento no WhatsApp do sistema) ──
-/** Envia a primeira mensagem para um número novo, cria/abre o chat e assume para o atendente. */
-export async function iniciarConversa(telefoneRaw: string, texto: string): Promise<{ ok: boolean; error?: string; chatId?: string }> {
+/** Envia a primeira mensagem para um número novo, cria/abre o chat e assume para o atendente.
+ *  ticketId (opcional): vincula o CHAMADO do site à conversa — é o "usar o chamado no WhatsApp". */
+export async function iniciarConversa(telefoneRaw: string, texto: string, ticketId?: string | null): Promise<{ ok: boolean; error?: string; chatId?: string }> {
   const g = await guardTriagem()
   if (!g.ok) return { ok: false, error: g.error }
   const { sb, userId, nome } = g
@@ -413,7 +414,10 @@ export async function iniciarConversa(telefoneRaw: string, texto: string): Promi
   })
   await sb.from('sac_whatsapp_chats').update({
     ultima_msg: texto.trim().slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: agora, atendente_id: userId, bot_ativo: false,
+    ...(ticketId ? { ticket_id: ticketId } : {}),
   }).eq('id', chatId)
-  revalidatePath('/sac/triagem')
+  // Espelho no chamado: registra que o atendimento via WhatsApp começou (assume pro atendente).
+  if (ticketId) await sb.from('sac_tickets').update({ atribuido_para: userId }).eq('id', ticketId).then(() => {}, () => {})
+  revalidatePath('/sac/triagem'); if (ticketId) revalidatePath('/sac/chamados')
   return { ok: true, chatId }
 }

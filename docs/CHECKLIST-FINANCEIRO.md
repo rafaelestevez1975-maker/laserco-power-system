@@ -9,10 +9,10 @@
 
 | # | Regra | Cliente respondeu? | Sistema | Status |
 |---|-------|--------------------|---------|--------|
-| 1 | Royalty **10%** do faturamento | Material do cliente diz 10%; sem contestação | Configurável em Config (royalty_pct), apuração real BEMP | ✅ (falta só OK formal) |
-| 2 | Fundo de marketing **2%** | Material diz 2%; sem contestação | Configurável (fundo_pct) | ✅ (falta só OK formal) |
-| 3 | Vencimento **dia 10** do mês seguinte | Material diz dia 10; sem contestação | Configurável (venc_dia) | ✅ (falta só OK formal) |
-| 4 | Base de cálculo: **bruto** × líquido | **NÃO respondido explicitamente** | Hoje calcula sobre o BRUTO | ⏳ confirmar |
+| 1 | Royalty 10% **POR UNIDADE** + desconto automático | ✅ CEO 02/07: "10% em regra, mas preencher POR unidade; <80k pagando em dia = 50% de desconto; nada impede regra diversa amanhã" | ✅ Override %/vencimento por franquia (Config → Royalties por unidade) + regra automática configurável (teto/%, 'em dia' = sem recebível atrasado). Mar/abr re-apurados: 42 unidades com 5% | ✅ entregue |
+| 2 | Fundo de marketing | ✅ CEO 02/07: "**hoje não cobramos**" | ✅ fundo_pct = 0 (não lança); segue configurável se voltarem a cobrar. Lançamentos antigos de fundo removidos | ✅ entregue |
+| 3 | Vencimento **dia 10**, mas escolhível | ✅ CEO 02/07: "podemos escolher o dia; sistema não pode ficar engessado (dezenas de franqueados)" | ✅ Dia padrão em Config + override por unidade | ✅ entregue |
+| 4 | Base de cálculo | ✅ CEO 02/07: "**sempre faturamento bruto: receita menos descontos**" | ✅ RPCs mudaram de sum(total) → sum(total − desconto). ⚠️ Números REAIS: mar R$4,58M / abr R$4,37M (antes 17,7/16,0 — era preço cheio!). Royalties abr: R$362k | ✅ entregue |
 | 5 | Só **franquias** pagam royalty (lojas próprias não) | Não contestado | Apura só unidades com bemp_salon_id | ⏳ confirmar se lojas próprias têm bemp_salon_id e devem ficar de fora |
 | 6 | **Categorias** de receita/despesa (plano de contas) | ✅ "precisamos poder criar as categorias" | ✅ Config → "Plano de contas (DRE)": criar (nome+natureza), ativar/desativar; Nova despesa cai na conta de mesmo nome (fallback Outras despesas) | ✅ entregue |
 | 7 | **Reembolso do SAC**: aprovado pelo gestor → conta a pagar → espelha no fluxo da franqueadora → pagamento **encerra o chamado** | ✅ "Está correto como desenhado" | ✅ solicitarReembolso → despesa PREVISTA no razão (4.2.05, centro rede); Financeiro paga (darBaixa) → concilia caixa no razão + fecha o chamado. Falta só: puxar contrato/uso do BEMP p/ CALCULAR o valor (depende da base de clientes) | ✅ cadeia entregue (cálculo auto: aguarda base) |

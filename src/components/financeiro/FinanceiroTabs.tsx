@@ -12,9 +12,9 @@ import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, type ContaPlano,
+  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, salvarRoyaltyUnidade, type ContaPlano,
 } from '@/app/(app)/financeiro/actions'
-import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha } from '@/app/(app)/financeiro/page'
+import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha, RoyaltyUnidade } from '@/app/(app)/financeiro/page'
 
 type TabKey = 'fluxo' | 'dre' | 'calc' | 'receber' | 'pagar' | 'conciliacao' | 'royalties' | 'cobranca' | 'config'
 const TABS: { k: TabKey; label: string; icon: string }[] = [
@@ -43,7 +43,7 @@ function PrioPill({ pr }: { pr: string }) {
 
 export type UnidadeOpt = { id: string; nome: string }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], royaltiesUnidade = [], tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -58,6 +58,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   fluxoComp?: FluxoComp[]
   planoContas?: ContaPlano[]
   unidades?: UnidadeOpt[]
+  royaltiesUnidade?: RoyaltyUnidade[]
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -94,7 +95,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
       {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
-      {tab === 'config' && <ConfigTab config={config} planoContas={planoContas} />}
+      {tab === 'config' && <ConfigTab config={config} planoContas={planoContas} royaltiesUnidade={royaltiesUnidade} />}
     </div>
   )
 }
@@ -876,8 +877,25 @@ function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: st
 // CONFIGURAÇÕES (finConfigHTML L5401 + finSalvarCfg)
 // =============================================================================
 type AdqRow = { nome: string; deb: number; cred: number; parc: number; pix: number; prazo: number }
-function ConfigTab({ config, planoContas = [] }: { config: FinConfig; planoContas?: ContaPlano[] }) {
+function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config: FinConfig; planoContas?: ContaPlano[]; royaltiesUnidade?: RoyaltyUnidade[] }) {
   const router = useRouter()
+  const [descAtivo, setDescAtivo] = useState(config.royalty_desc_ativo !== false)
+  const [descTeto, setDescTeto] = useState(config.royalty_desc_teto ?? 80000)
+  const [descPct, setDescPct] = useState(config.royalty_desc_pct ?? 50)
+  const [ruBusca, setRuBusca] = useState('')
+  const [ruEdit, setRuEdit] = useState<Record<string, { pct: string; dia: string }>>({})
+  const [ruBusy, setRuBusy] = useState<string | null>(null)
+  const [ruMsg, setRuMsg] = useState('')
+  const ruVal = (u: RoyaltyUnidade) => ruEdit[u.id] ?? { pct: u.royalty_pct_override != null ? String(u.royalty_pct_override) : '', dia: u.venc_dia_override != null ? String(u.venc_dia_override) : '' }
+  const salvarRU = async (u: RoyaltyUnidade) => {
+    const v = ruVal(u)
+    setRuBusy(u.id); setRuMsg('')
+    const r = await salvarRoyaltyUnidade(u.id, v.pct.trim() === '' ? null : parseFloat(v.pct), v.dia.trim() === '' ? null : parseInt(v.dia))
+    setRuBusy(null)
+    if (!r.ok) { setRuMsg(r.error || 'Erro ao salvar.'); return }
+    setRuMsg(`${u.nome}: regra salva (vale na próxima apuração).`)
+    router.refresh()
+  }
   const [pcNome, setPcNome] = useState('')
   const [pcNatureza, setPcNatureza] = useState('despesa')
   const [pcBusy, setPcBusy] = useState(false)
@@ -917,7 +935,7 @@ function ConfigTab({ config, planoContas = [] }: { config: FinConfig; planoConta
 
   const salvar = async () => {
     setBusy(true); setMsg('')
-    const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, imposto_pct: imposto, imposto_regime: impostoRegime, comissao_pct: comissao, comissao_base: comissaoBase, taxa_cartao_pct: taxaCartao, banco, adquirentes: adq, categorias: cats, regua })
+    const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, imposto_pct: imposto, imposto_regime: impostoRegime, comissao_pct: comissao, comissao_base: comissaoBase, taxa_cartao_pct: taxaCartao, royalty_desc_ativo: descAtivo, royalty_desc_teto: descTeto, royalty_desc_pct: descPct, banco, adquirentes: adq, categorias: cats, regua })
     setBusy(false)
     setMsg(r.ok ? 'Configurações salvas.' : (r.error || 'Erro ao salvar.'))
     if (r.ok) router.refresh()
@@ -935,9 +953,20 @@ function ConfigTab({ config, planoContas = [] }: { config: FinConfig; planoConta
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Royalties &amp; cobrança</div>
-          <div className="mf full" style={{ marginBottom: 10 }}><label>% de royalties sobre o faturamento bruto</label><input type="number" step="0.5" value={royalty} onChange={(e) => setRoyalty(parseFloat(e.target.value) || 0)} /></div>
-          <div className="mf full" style={{ marginBottom: 10 }}><label>% do fundo de marketing</label><input type="number" step="0.5" value={fundo} onChange={(e) => setFundo(parseFloat(e.target.value) || 0)} /></div>
-          <div className="mf full"><label>Dia de vencimento (mês seguinte)</label><input type="number" min={1} max={28} value={vencDia} onChange={(e) => setVencDia(parseInt(e.target.value) || 10)} /></div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>% de royalties sobre o faturamento bruto (receita − descontos)</label><input type="number" step="0.5" value={royalty} onChange={(e) => setRoyalty(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full" style={{ marginBottom: 10 }}><label>% do fundo de marketing (0 = não cobrar)</label><input type="number" step="0.5" value={fundo} onChange={(e) => setFundo(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full" style={{ marginBottom: 12 }}><label>Dia de vencimento padrão (mês seguinte)</label><input type="number" min={1} max={28} value={vencDia} onChange={(e) => setVencDia(parseInt(e.target.value) || 10)} /></div>
+          <div style={{ borderTop: '1px dashed var(--line)', paddingTop: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer', marginBottom: 8 }}>
+              <input type="checkbox" checked={descAtivo} onChange={(e) => setDescAtivo(e.target.checked)} />
+              <b>Desconto automático de royalty</b>
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div className="mf" style={{ flex: 1 }}><label>Faturamento abaixo de (R$)</label><input type="number" step="1000" value={descTeto} disabled={!descAtivo} onChange={(e) => setDescTeto(parseFloat(e.target.value) || 0)} /></div>
+              <div className="mf" style={{ flex: 1 }}><label>Desconto (%)</label><input type="number" step="5" min={0} max={100} value={descPct} disabled={!descAtivo} onChange={(e) => setDescPct(parseFloat(e.target.value) || 0)} /></div>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>Aplicado só a quem está <b>pagando em dia</b> (sem cobrança atrasada). Ex.: abaixo de 80 mil e em dia → royalty de 10% cai pra 5%.</div>
+          </div>
         </div>
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Banco de cobrança</div>
@@ -972,6 +1001,32 @@ function ConfigTab({ config, planoContas = [] }: { config: FinConfig; planoConta
           </div>
           <div className="mf full"><label>Taxa de cartão — MDR médio (%)</label><input type="number" step="0.1" min={0} max={100} value={taxaCartao} onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)} /></div>
         </div>
+      </div>
+
+      <div className="rel-card" style={{ marginTop: 14 }}>
+        <div className="set-sec" style={{ marginTop: 0 }}>Royalties por unidade <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— exceções à regra geral (vazio = usa a regra geral + desconto automático)</span></div>
+        {ruMsg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{ruMsg}</div>}
+        <input value={ruBusca} onChange={(e) => setRuBusca(e.target.value)} placeholder="🔎 Buscar franquia…" style={{ ...inputStyle, padding: '8px 11px', width: '100%', marginBottom: 8 }} />
+        <div className="cli-scroll" style={{ maxHeight: 280 }}>
+          <table className="cli-table">
+            <thead><tr><th>Franquia</th><th className="num-r">Royalty % (exceção)</th><th className="num-r">Venc. dia (exceção)</th><th /></tr></thead>
+            <tbody>
+              {royaltiesUnidade.filter((u) => !ruBusca.trim() || u.nome.toLowerCase().includes(ruBusca.toLowerCase())).slice(0, 80).map((u) => {
+                const v = ruVal(u)
+                const custom = u.royalty_pct_override != null || u.venc_dia_override != null
+                return (
+                  <tr key={u.id} style={custom ? { background: 'var(--surface-2)' } : undefined}>
+                    <td>{u.nome}{custom && <span style={{ fontSize: 10.5, color: 'var(--brand-600)', marginLeft: 6 }}>(exceção)</span>}</td>
+                    <td className="num-r"><input type="number" step="0.5" min={0} max={100} placeholder="—" value={v.pct} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, pct: e.target.value } })} style={{ ...inputStyle, width: 74, textAlign: 'right' }} /></td>
+                    <td className="num-r"><input type="number" min={1} max={28} placeholder="—" value={v.dia} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, dia: e.target.value } })} style={{ ...inputStyle, width: 64, textAlign: 'right' }} /></td>
+                    <td style={{ textAlign: 'right' }}><button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} disabled={ruBusy === u.id} onClick={() => salvarRU(u)}>{ruBusy === u.id ? '…' : 'Salvar'}</button></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>A exceção vale a partir da <b>próxima apuração</b> (Royalties → Apurar mês). Deixe em branco para voltar à regra geral.</div>
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>

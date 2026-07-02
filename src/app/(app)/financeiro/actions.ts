@@ -281,17 +281,25 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   const fatPorSalon = new Map<number, number>()
   for (const r of (fatRaw ?? []) as { salon: number; faturamento: number }[]) fatPorSalon.set(Number(r.salon), Number(r.faturamento) || 0)
 
-  // 2) Unidades-franquia (têm bemp_salon_id) + config (pct/vencimento)
+  // 2) Unidades-franquia (têm bemp_salon_id) + config (pct/vencimento + regra de desconto)
   const [{ data: unisRaw }, { data: cfg }, mapa] = await Promise.all([
-    op.sb.from('unidades').select('id, nome, bemp_salon_id').not('bemp_salon_id', 'is', null),
-    op.sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+    op.sb.from('unidades').select('id, nome, bemp_salon_id, royalty_pct_override, venc_dia_override').not('bemp_salon_id', 'is', null),
+    op.sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, royalty_desc_ativo, royalty_desc_teto, royalty_desc_pct').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     mapaFinanceiro(op.sb),
   ])
-  const unidades = (unisRaw ?? []) as { id: string; nome: string; bemp_salon_id: number }[]
-  const royaltyPct = Number((cfg as { royalty_pct?: number } | null)?.royalty_pct) || 10
-  const fundoPct = Number((cfg as { fundo_pct?: number } | null)?.fundo_pct) || 2
-  const vencDia = Number((cfg as { venc_dia?: number } | null)?.venc_dia) || 10
-  const vencimento = `${proxAno}-${p2(proxMes)}-${p2(Math.min(28, Math.max(1, vencDia)))}`
+  const unidades = (unisRaw ?? []) as { id: string; nome: string; bemp_salon_id: number; royalty_pct_override?: number | null; venc_dia_override?: number | null }[]
+  const c = cfg as { royalty_pct?: number; fundo_pct?: number; venc_dia?: number; royalty_desc_ativo?: boolean; royalty_desc_teto?: number; royalty_desc_pct?: number } | null
+  const royaltyPct = Number(c?.royalty_pct) || 10
+  const fundoPct = Number(c?.fundo_pct) || 0 // hoje o fundo NÃO é cobrado (validação do CEO 02/07); 0 = não lança
+  const vencDia = Number(c?.venc_dia) || 10
+  // Regra automática de desconto (CEO): faturamento < teto E pagando em dia → desconto no royalty.
+  const descAtivo = c?.royalty_desc_ativo !== false
+  const descTeto = Number(c?.royalty_desc_teto) || 80000
+  const descPct = Number(c?.royalty_desc_pct) || 50
+  const vencDe = (dia: number) => `${proxAno}-${p2(proxMes)}-${p2(Math.min(28, Math.max(1, dia)))}`
+  // "Pagando em dia" = sem recebível atrasado (por unidade).
+  const { data: atrasadosRaw } = await op.sb.from('fin_recebiveis').select('unidade_id').eq('status', 'atrasado')
+  const comAtraso = new Set(((atrasadosRaw ?? []) as { unidade_id: string | null }[]).map((r) => r.unidade_id).filter(Boolean) as string[])
 
   // 3) Idempotência: pula unidade/categoria que já tem recebível nesta competência.
   //    Chaveia por unidade_id (não por nome) — renomear a unidade não pode duplicar o recebível.
@@ -306,18 +314,24 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   for (const u of unidades) {
     const fat = fatPorSalon.get(Number(u.bemp_salon_id)) || 0
     if (fat <= 0) continue
-    const bruto = Math.round(fat)
+    const bruto = Math.round(fat * 100) / 100 // já é receita − descontos (RPC)
     faturamento += bruto; comFat++
-    const valRoy = Math.round(bruto * royaltyPct) / 100
+    // % POR UNIDADE (override) + regra automática: < teto e sem atraso → desconto (ex.: 10% vira 5%).
+    const pctBase = Number(u.royalty_pct_override ?? royaltyPct)
+    const temDesconto = descAtivo && bruto < descTeto && !comAtraso.has(u.id)
+    const pctEfetivo = temDesconto ? pctBase * (1 - descPct / 100) : pctBase
+    const valRoy = Math.round(bruto * pctEfetivo) / 100
     const valFun = Math.round(bruto * fundoPct) / 100
+    const vencimento = vencDe(Number(u.venc_dia_override ?? vencDia))
     const centroUni = mapa.centroPorUnidade.get(u.id) ?? null
-    // Projeção antiga (a tela "A Receber" ainda lê daqui) — mantida até migrar pro razão.
-    if (!jaTem.has(`${u.id}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
-    if (!jaTem.has(`${u.id}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
+    const obsDesc = temDesconto ? ` (${pctEfetivo}% — desconto <${Math.round(descTeto / 1000)}k em dia)` : ''
+    // Sub-livro "A Receber" (fundo só se cobrado — hoje 0).
+    if (valRoy > 0 && !jaTem.has(`${u.id}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
+    if (valFun > 0 && !jaTem.has(`${u.id}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
     // RAZÃO (fonte da verdade): royalty/fundo = RECEITA da rede + DESPESA da unidade (mesmo fato, 2 centros).
     eventos.push(
-      { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.05') ?? null, natureza: 'receita', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:rec`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}` },
-      { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.02') ?? null, natureza: 'despesa', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:desp`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}` },
+      { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.05') ?? null, natureza: 'receita', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:rec`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}${obsDesc}` },
+      { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.02') ?? null, natureza: 'despesa', competencia: compISO, valor: valRoy, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:roy:desp`, dataPrevista: vencimento, historico: `Royalties ${competencia} · ${u.nome}${obsDesc}` },
       { empresaId: emp, centroCustoId: mapa.centroRede, planoContaId: mapa.planoPorCodigo.get('3.1.06') ?? null, natureza: 'receita', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:rec`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
       { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.03') ?? null, natureza: 'despesa', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:desp`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
     )
@@ -343,6 +357,22 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   }
   revalidatePath('/financeiro')
   return { ok: true, geradas: rows.length, faturamento, unidades: comFat, lancamentos: lanc.inseridos }
+}
+
+/** Override de royalty POR UNIDADE (CEO 02/07: "temos que poder preencher por unidade").
+ *  null = usa a regra geral (% global + desconto automático). Vale a partir da próxima apuração. */
+export async function salvarRoyaltyUnidade(unidadeId: string, royaltyPct: number | null, vencDia: number | null): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para alterar royalties.' }
+  if (!unidadeId) return { ok: false, error: 'Unidade inválida.' }
+  if (royaltyPct != null && (!Number.isFinite(royaltyPct) || royaltyPct < 0 || royaltyPct > 100)) return { ok: false, error: 'Percentual de royalty inválido (0 a 100).' }
+  if (vencDia != null && (!Number.isInteger(vencDia) || vencDia < 1 || vencDia > 28)) return { ok: false, error: 'Dia de vencimento inválido (1 a 28).' }
+  const { error: e } = await adminClient().from('unidades')
+    .update({ royalty_pct_override: royaltyPct, venc_dia_override: vencDia }).eq('id', unidadeId)
+  if (e) return { ok: false, error: msgErro(e.message, 'salvar o royalty da unidade') }
+  revalidatePath('/financeiro')
+  return { ok: true }
 }
 
 export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
@@ -610,6 +640,7 @@ export async function rodarConciliacao(): Promise<R & { cruzados?: number }> {
 export async function salvarConfig(input: {
   royalty_pct: number; fundo_pct: number; venc_dia: number
   imposto_pct?: number; imposto_regime?: string; comissao_pct?: number; comissao_base?: string; taxa_cartao_pct?: number
+  royalty_desc_ativo?: boolean; royalty_desc_teto?: number; royalty_desc_pct?: number
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: ReguaPasso[]
 }): Promise<R> {
   const { op, error } = await requireOperador()
@@ -646,6 +677,9 @@ export async function salvarConfig(input: {
     comissao_pct: com,
     comissao_base: base,
     taxa_cartao_pct: tx,
+    royalty_desc_ativo: input.royalty_desc_ativo !== false,
+    royalty_desc_teto: Math.max(0, Number(input.royalty_desc_teto ?? 80000) || 80000),
+    royalty_desc_pct: Math.min(100, Math.max(0, Number(input.royalty_desc_pct ?? 50) || 50)),
     banco: input.banco,
     adquirentes: input.adquirentes,
     categorias: input.categorias,

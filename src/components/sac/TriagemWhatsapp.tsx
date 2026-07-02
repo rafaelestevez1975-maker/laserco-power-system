@@ -52,12 +52,13 @@ export function TriagemWhatsapp({
   chats, msgs, atendentes, notas, operadorId,
   unidades = [], activeUnitId = null, motivos = [],
   totalN, minhasN: minhasNServer, filaN: filaNServer, amostraCapped = false,
-  respostasRapidas = [],
+  respostasRapidas = [], novaInicial = null,
 }: {
   chats: Chat[]; msgs: Msg[]; atendentes: Atendente[]; notas: Nota[]; operadorId: string | null
   unidades?: Unidade[]; activeUnitId?: string | null; motivos?: string[]
   totalN?: number; minhasN?: number; filaN?: number; amostraCapped?: boolean
   respostasRapidas?: RespostaRapida[]
+  novaInicial?: { tel: string; nome: string; ticketId: string | null } | null
 }) {
   const router = useRouter()
   const [busca, setBusca] = useState('')
@@ -77,7 +78,7 @@ export function TriagemWhatsapp({
   const [gravando, setGravando] = useState(false)
   const [chamadoOpen, setChamadoOpen] = useState(false)
   const [form, setForm] = useState({ nome: '', cpf: '', telefone: '', email: '', unidade_id: '', motivo: '' })
-  const [novaOpen, setNovaOpen] = useState(false)      // modal "Nova conversa"
+  const [novaOpen, setNovaOpen] = useState(!!novaInicial) // modal "Nova conversa" (auto-abre vindo do chamado)
   const [gerenciarRR, setGerenciarRR] = useState(false) // modal gerenciar respostas rápidas
   const fileRef = useRef<HTMLInputElement | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
@@ -504,22 +505,23 @@ export function TriagemWhatsapp({
           </div>
         </aside>
       )}
-      {novaOpen && <NovaConversaModal onClose={() => setNovaOpen(false)} onCriada={(id) => { setNovaOpen(false); setSel(id); router.refresh() }} />}
+      {novaOpen && <NovaConversaModal inicial={novaInicial} onClose={() => setNovaOpen(false)} onCriada={(id) => { setNovaOpen(false); setSel(id); router.refresh() }} />}
       {gerenciarRR && <GerenciarRespostasModal respostas={respostasRapidas} onClose={() => { setGerenciarRR(false); router.refresh() }} />}
     </div>
     </>
   )
 }
 
-// ── Modal: iniciar NOVA conversa no WhatsApp (pedido das atendentes) ──
-function NovaConversaModal({ onClose, onCriada }: { onClose: () => void; onCriada: (chatId: string) => void }) {
-  const [tel, setTel] = useState('')
-  const [msg, setMsg] = useState('')
+// ── Modal: iniciar NOVA conversa no WhatsApp (pedido das atendentes). Vindo do CHAMADO do site,
+// chega pré-preenchido (tel/nome) e vincula o chamado à conversa (ticket_id). ──
+function NovaConversaModal({ inicial = null, onClose, onCriada }: { inicial?: { tel: string; nome: string; ticketId: string | null } | null; onClose: () => void; onCriada: (chatId: string) => void }) {
+  const [tel, setTel] = useState(inicial?.tel ?? '')
+  const [msg, setMsg] = useState(inicial ? `Olá${inicial.nome ? ', ' + inicial.nome.split(' ')[0] : ''}! Aqui é do SAC da Laser&Co 💜 Recebemos a sua solicitação pelo site e estou aqui para te ajudar. Pode me contar um pouco mais?` : '')
   const [saving, setSaving] = useState(false)
   const [erro, setErro] = useState('')
   async function salvar() {
     setErro(''); setSaving(true)
-    const r = await iniciarConversa(tel, msg)
+    const r = await iniciarConversa(tel, msg, inicial?.ticketId ?? null)
     setSaving(false)
     if (!r.ok || !r.chatId) { setErro(r.error || 'Não foi possível iniciar a conversa.'); return }
     onCriada(r.chatId)

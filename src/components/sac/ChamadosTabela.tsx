@@ -63,7 +63,13 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
                     <td><span style={prioPill(t.prioridade)}>{PRIORIDADES.find((x) => x.k === t.prioridade)?.l ?? cap(t.prioridade)}</span></td>
                     <td>{t.fase || ''}</td>
                     <td><span style={sitPill(sit)}>{sit}</span></td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {t.telefone_cliente && (
+                        <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12, color: '#15803D' }} title="Falar com o cliente no WhatsApp (abre a Conversa com este chamado vinculado)"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/sac/triagem?tel=${encodeURIComponent(t.telefone_cliente || '')}&nome=${encodeURIComponent(t.nome_cliente || '')}&ticket=${t.id}`) }}>
+                          <i className="ti ti-brand-whatsapp" />
+                        </button>
+                      )}
                       <button className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 12 }} title="Editar chamado" onClick={(e) => { e.stopPropagation(); setEdit(t) }}><i className="ti ti-edit" /></button>
                     </td>
                   </tr>

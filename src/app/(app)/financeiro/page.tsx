@@ -29,8 +29,11 @@ export type Conciliacao = {
 export type FinConfig = {
   royalty_pct: number; fundo_pct: number; venc_dia: number
   imposto_pct: number; imposto_regime: string; comissao_pct: number; comissao_base: string; taxa_cartao_pct: number
+  royalty_desc_ativo: boolean; royalty_desc_teto: number; royalty_desc_pct: number
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: { dias: number; acao: string; canal: string }[]
 }
+// Franquia com override de royalty (CEO: % e vencimento por unidade; null = regra geral).
+export type RoyaltyUnidade = { id: string; nome: string; royalty_pct_override: number | null; venc_dia_override: number | null }
 // DRE derivado do RAZÃO (fin_lancamento) — cada linha é uma conta do plano de contas somada.
 export type DreLinha = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
 
@@ -93,7 +96,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     const [{ data: pagRaw, count: pagCount }, { data: concRaw, count: concCount }, { data: cfgRaw }] = await Promise.all([
       sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade', { count: 'exact' }).order('vencimento', { ascending: true, nullsFirst: false }).limit(LIM_PAG),
       sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao', { count: 'exact' }).order('data', { ascending: true, nullsFirst: false }).limit(LIM_CONC),
-      sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, imposto_pct, imposto_regime, comissao_pct, comissao_base, taxa_cartao_pct, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
+      sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, imposto_pct, imposto_regime, comissao_pct, comissao_base, taxa_cartao_pct, royalty_desc_ativo, royalty_desc_teto, royalty_desc_pct, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     ])
     contasPagar = (pagRaw ?? []) as ContaPagar[]
     conciliacao = (concRaw ?? []) as Conciliacao[]
@@ -111,9 +114,10 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
   // Config com defaults do legado quando não houver linha salva.
   const cfg: FinConfig = config ?? {
-    royalty_pct: ROYALTY_PCT_DEFAULT, fundo_pct: FUNDO_PCT_DEFAULT, venc_dia: VENC_DIA_DEFAULT,
+    royalty_pct: ROYALTY_PCT_DEFAULT, fundo_pct: 0, venc_dia: VENC_DIA_DEFAULT,
     imposto_pct: IMPOSTO_PCT_DEFAULT, imposto_regime: IMPOSTO_REGIME_DEFAULT,
     comissao_pct: COMISSAO_PCT_DEFAULT, comissao_base: COMISSAO_BASE_DEFAULT, taxa_cartao_pct: TAXA_CARTAO_PCT_DEFAULT,
+    royalty_desc_ativo: true, royalty_desc_teto: 80000, royalty_desc_pct: 50,
     banco: {}, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
   }
 
@@ -136,6 +140,12 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   const { data: pcRaw } = await sb.from('plano_conta').select('id, codigo, nome, natureza, grupo, ordem, ativo').order('ordem')
   const planoContas = (pcRaw ?? []) as { id: string; codigo: string | null; nome: string; natureza: string; grupo: string | null; ordem: number; ativo: boolean }[]
   const unidadesOpt = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
+
+  // Franquias com override de royalty (% e vencimento POR unidade — regra do CEO).
+  const { data: ruRaw } = await sb.from('unidades')
+    .select('id, nome, royalty_pct_override, venc_dia_override')
+    .not('bemp_salon_id', 'is', null).eq('ativa', true).order('nome')
+  const royaltiesUnidade = (ruRaw ?? []) as RoyaltyUnidade[]
 
   // Fluxo de caixa DERIVADO do razão (fonte única) — visão inicial 'consolidado'; o seletor de
   // escopo na aba refaz via server action. Série de 6 meses + KPIs por status + composição.
@@ -170,6 +180,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         fluxoComp={fluxoComp}
         planoContas={planoContas}
         unidades={unidadesOpt}
+        royaltiesUnidade={royaltiesUnidade}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>
