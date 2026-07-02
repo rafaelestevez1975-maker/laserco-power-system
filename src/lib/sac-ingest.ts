@@ -11,6 +11,7 @@
  */
 import { adminClient } from '@/lib/supabase/admin'
 import { siteClient } from '@/lib/supabase/site'
+import { candidatosOnline } from '@/lib/sac-distribuicao'
 
 // Única empresa = a franqueadora. unidade_id null => chamado da REDE, não de uma franquia.
 export const FRANQUEADORA_EMPRESA_ID = '00000000-0000-0000-0000-000000000001'
@@ -43,7 +44,24 @@ async function criarChamadoSac(sb: ReturnType<typeof adminClient>, lead: SiteLea
     observacoes: campo(d, 'mensagem'),
   }).select('id').single()
   if (error) { console.error('[ingest-sac] insert:', error.message); return null }
-  return (data as { id?: string })?.id ?? null
+  const id = (data as { id?: string })?.id ?? null
+  if (id) await atribuirChamado(sb, id)
+  return id
+}
+
+/** Atribui o chamado à atendente ONLINE operacional com menos chamados abertos (rede/franqueadora).
+ *  Se ninguém online, fica na fila (a IA/humano pega depois). Best-effort — nunca quebra o ingest. */
+async function atribuirChamado(sb: ReturnType<typeof adminClient>, ticketId: string): Promise<void> {
+  try {
+    const cands = await candidatosOnline(sb, null) // SAC é da rede (unidade null) → aceita as online
+    if (cands.length === 0) return
+    let best = cands[0], min = Infinity
+    for (const id of cands) {
+      const { count } = await sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', id).neq('fase', 'Concluído')
+      if ((count ?? 0) < min) { min = count ?? 0; best = id }
+    }
+    await sb.from('sac_tickets').update({ atribuido_para: best }).eq('id', ticketId)
+  } catch (e) { console.error('[ingest-sac] atribuir:', (e as Error).message) }
 }
 
 export type IngestResult = { criados: number; erros: number; jaRoteados: number }

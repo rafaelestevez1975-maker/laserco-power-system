@@ -45,16 +45,17 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
         <div className="cli-scroll">
           <table className="cli-table">
             <thead>
-              <tr><th>Protocolo</th><th>Cliente</th><th>Canal</th><th>Unidade</th><th>Motivo</th><th>Prioridade</th><th>Fase</th><th>Status</th><th></th></tr>
+              <tr><th>Protocolo</th><th>Aberto em</th><th>Cliente</th><th>Canal</th><th>Unidade</th><th>Motivo</th><th>Prioridade</th><th>Fase</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
-              {tickets.length === 0 && <tr><td colSpan={9} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum chamado para os filtros selecionados.</td></tr>}
+              {tickets.length === 0 && <tr><td colSpan={10} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum chamado para os filtros selecionados.</td></tr>}
               {tickets.map((t) => {
                 const tipo = lerObsMeta(t.observacoes).tipo
                 const sit = situacaoChamado(t.fase, t.sla_violado)
                 return (
                   <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setEdit(t)} title="Clique para editar">
                     <td><b>{t.protocolo || `SAC-${t.numero ?? ''}`}</b></td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
                     <td>{t.nome_cliente || ''}{t.telefone_cliente && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.telefone_cliente}</div>}</td>
                     <td>{t.canal || ''}</td>
                     <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--muted)' }}>Central</span>}{tipo && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{tipo}</div>}</td>
