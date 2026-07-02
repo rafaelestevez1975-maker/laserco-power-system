@@ -14,8 +14,8 @@
 | 3 | Vencimento **dia 10** do mês seguinte | Material diz dia 10; sem contestação | Configurável (venc_dia) | ✅ (falta só OK formal) |
 | 4 | Base de cálculo: **bruto** × líquido | **NÃO respondido explicitamente** | Hoje calcula sobre o BRUTO | ⏳ confirmar |
 | 5 | Só **franquias** pagam royalty (lojas próprias não) | Não contestado | Apura só unidades com bemp_salon_id | ⏳ confirmar se lojas próprias têm bemp_salon_id e devem ficar de fora |
-| 6 | **Categorias** de receita/despesa (plano de contas) | ✅ "seguir o sistema de fluxo de caixa que dei acesso, MAS **precisamos poder criar** as categorias" | Plano de contas existe (17 contas seed); criação pelo usuário **não existe** | 🟡 construir CRUD de categorias/plano de contas |
-| 7 | **Reembolso do SAC**: aprovado pelo gestor → conta a pagar → espelha no fluxo da franqueadora → pagamento **encerra o chamado** | ✅ "Está correto como desenhado" + puxar contrato/pagou/usou do sistema p/ calcular | Reembolso SAC existe (lancamentos_financeiros); falta: fluxo de APROVAÇÃO + produtor → razão + pagar fecha o chamado | 🟡 construir a cadeia completa |
+| 6 | **Categorias** de receita/despesa (plano de contas) | ✅ "precisamos poder criar as categorias" | ✅ Config → "Plano de contas (DRE)": criar (nome+natureza), ativar/desativar; Nova despesa cai na conta de mesmo nome (fallback Outras despesas) | ✅ entregue |
+| 7 | **Reembolso do SAC**: aprovado pelo gestor → conta a pagar → espelha no fluxo da franqueadora → pagamento **encerra o chamado** | ✅ "Está correto como desenhado" | ✅ solicitarReembolso → despesa PREVISTA no razão (4.2.05, centro rede); Financeiro paga (darBaixa) → concilia caixa no razão + fecha o chamado. Falta só: puxar contrato/uso do BEMP p/ CALCULAR o valor (depende da base de clientes) | ✅ cadeia entregue (cálculo auto: aguarda base) |
 | 8 | **Inadimplência**: notificação + jurídico | ✅ "temos as regras, mas **tem que poder criar e ajustar**, não estático" | Régua de cobrança é editável em Config (dias/ação/canal) | ✅ (validar se a edição atende) |
 | 9 | **Taxa de cartão** vira despesa automática | Não contestado | Configurável (taxa_cartao_pct, MDR médio) — apura no botão "Apurar mês" | ✅ (definir o % em Config) |
 | 10 | Competência (DRE) × Caixa (fluxo) | Não contestado | Implementado: DRE por competência; fluxo por data de caixa/prevista | ✅ |
@@ -25,20 +25,21 @@
 
 | # | Pedido | Status |
 |---|--------|--------|
-| A | **Dois financeiros**: da LOJA (franqueado; a pagar/receber simples, lançamentos automáticos de venda/comissão/taxa/royalty + despesas manuais por categoria) e da FRANQUEADORA (interno, gestores; unifica lojas próprias + escritório + receitas rede; DRE por loja/todas/franqueadora/grupo; cobrança automática) | ✅ Arquitetura já é essa (razão + centro de custo por unidade/rede + DRE com escopo Consolidado/Franqueadora/Unidades). Falta: financeiro DA LOJA para o franqueado (/contas é o embrião) e DRE **por loja individual** |
+| A | **Dois financeiros**: da LOJA (franqueado; a pagar/receber simples, lançamentos automáticos de venda/comissão/taxa/royalty + despesas manuais por categoria) e da FRANQUEADORA (interno, gestores; unifica lojas próprias + escritório + receitas rede; DRE por loja/todas/franqueadora/grupo; cobrança automática) | ✅ Arquitetura já é essa + **DRE por loja individual entregue** (aba DRE → visão "Só unidades" → seletor de loja; validado: loja R$1,87M − 12% = R$1,65M). Falta: financeiro DA LOJA para o franqueado (/contas é o embrião) |
 | B | Lançamento **"suspenso"** nas contas a pagar/receber da franqueadora: fica visível, **não pode ser pago** nem **influenciar o fluxo de caixa** (ex.: parcela de máquina em devolução; franqueado em execução judicial) | ✅ **Implementado hoje**: suspender no A Receber/A Pagar espelha no razão; fluxo de caixa ignora suspensos; DRE mantém (competência); reativar restaura |
-| C | **Perfis de Acesso × Cargos separados** (17 perfis sugeridos: Super Admin, Admin, Diretor, Operações, Financeiro, Marketing, RH, Expansão, SAC, Jurídico, TI, Auditor, Franqueado, Gerente de Unidade, Supervisor, Comercial/Recepção, Profissional Técnico; cargos livres apontando pra um perfil) | 🟡 O RBAC atual (cargos × permissões, migration 009) já separa conceito; falta: seed dos 17 perfis + tela de vínculo cargo→perfil + cadastro de cargo digitável/lista |
+| C | **Perfis de Acesso × Cargos separados** (17 perfis sugeridos; cargos livres apontando pra um perfil) | ✅ **17 perfis seedados** (scripts/migrations/perfis-acesso.sql): Super Admin (todas 1176 permissões) → Administrador (tudo menos sistema) → Diretor (lê/exporta/aprova tudo) → … → Profissional Técnico (12). Vincular pessoa→perfil já funciona em /perfis (usuario_cargos). O CARGO (função) segue livre no cadastro do colaborador — exatamente o modelo pedido |
 | D | Sults: aproveitar o que já foi salvo | ✅ Temos reclamações do Sults importadas (sac_tickets) + Checklist Mensal SULTS |
 | E | BEMP/Sults como fonte contínua | ✅ BEMP já é a fonte do faturamento (140k linhas); sync até 11/mai — **renovar o sync** para fechar maio/junho |
 
 ## 3. Próximas fatias (ordem sugerida)
 
-1. **CRUD de categorias/plano de contas** (item 6) — destrava "despesas gerais por categoria" nos dois financeiros.
-2. **Cadeia do reembolso SAC** (item 7): aprovação do gestor → produtor razão (conta 4.2.05) → espelho no A Pagar → pagar encerra o chamado.
-3. **Financeiro da LOJA (franqueado)**: evoluir /contas para o modelo BEMP-like com lançamentos automáticos.
-4. **Perfis × Cargos** (item C): seed dos 17 perfis + telas.
-5. **DRE por loja individual** (item A): seletor de unidade no DRE (hoje: consolidado/franqueadora/unidades agregadas).
-6. Confirmar com o cliente: **bruto × líquido** (item 4), **% imposto/comissão** (item 11), lojas próprias fora do royalty (item 5).
+1. **Financeiro da LOJA (franqueado)**: evoluir /contas para o modelo BEMP-like com lançamentos automáticos por unidade.
+2. **Cálculo automático do reembolso** (contrato/pagou/usou do BEMP) — depende da base de clientes (planilha 350k).
+3. Confirmar com o cliente: **bruto × líquido** (item 4), **% imposto/comissão** (item 11), lojas próprias fora do royalty (item 5).
+4. Renovar o **sync do BEMP** (dados param em 11/mai) para apurar maio/junho.
+5. Tela de gestão dos perfis (hoje o vínculo pessoa→perfil é feito em /perfis; avaliar UX dedicada).
+
+~~CRUD de categorias~~ ✅ · ~~Cadeia do reembolso SAC~~ ✅ · ~~Perfis seed~~ ✅ · ~~DRE por loja~~ ✅ (entregues em 02/07)
 
 ## 4. Garantia central (seção 6 do informe)
 
