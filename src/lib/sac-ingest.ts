@@ -28,6 +28,35 @@ function campo(d: Record<string, unknown> | null | undefined, ...keys: string[])
   return null
 }
 
+// Motivos oficiais (sac_motivos) — o form novo do site envia um destes em dados.motivo.
+const MOTIVOS_OFICIAIS = [
+  'Ausência de resultados', 'Cancelamento', 'Encerramento da unidade', 'Falha operacional',
+  'Intercorrência', 'Laser Club', 'Máquina Quebrada', 'Motivo Pessoal', 'Sessões Expiradas',
+  'Transferência de Pacotes', 'Outros',
+]
+/** Resolve o MOTIVO do chamado a partir do lead do site (pedido do Julio: "o assunto deveria
+ *  entrar em motivo, só que não se encaixa nas opções"). Ordem: dados.motivo exato (form novo)
+ *  → palavras-chave do assunto/mensagem (form antigo) → 'Outros'. O texto original segue em
+ *  assunto/area_reclamada — nada se perde. */
+export function resolverMotivoSac(d: Record<string, unknown> | null | undefined): string {
+  const motivo = campo(d, 'motivo')
+  if (motivo) {
+    const oficial = MOTIVOS_OFICIAIS.find((m) => m.toLowerCase() === motivo.toLowerCase())
+    if (oficial) return oficial
+  }
+  const texto = `${campo(d, 'assunto', 'area', 'servico') ?? ''} ${campo(d, 'mensagem') ?? ''}`.toLowerCase()
+  if (/reembols|cancel|devolu|estorno/.test(texto)) return 'Cancelamento'
+  if (/(unidade|loja|filial).{0,30}(fech|encerr)|fech.{0,20}(unidade|loja)/.test(texto)) return 'Encerramento da unidade'
+  if (/sem resultado|não (vejo|tive|teve) resultado|ausência de resultado|nao funciona/.test(texto)) return 'Ausência de resultados'
+  if (/expirad|venceu|vencid/.test(texto)) return 'Sessões Expiradas'
+  if (/transfer/.test(texto)) return 'Transferência de Pacotes'
+  if (/m[áa]quina|equipamento/.test(texto)) return 'Máquina Quebrada'
+  if (/club/.test(texto)) return 'Laser Club'
+  if (/queimad|les[ãa]o|mancha|bolha|alergia|intercorr/.test(texto)) return 'Intercorrência'
+  if (/agendamento|remarca|hor[áa]rio|atendimento ruim|demora|erro/.test(texto)) return 'Falha operacional'
+  return 'Outros'
+}
+
 /** Cria UM chamado de SAC na franqueadora a partir de um lead do site. Retorna o id (ou null). */
 async function criarChamadoSac(sb: ReturnType<typeof adminClient>, lead: SiteLead): Promise<string | null> {
   const d = (lead.dados ?? {}) as Record<string, unknown>
@@ -38,7 +67,8 @@ async function criarChamadoSac(sb: ReturnType<typeof adminClient>, lead: SiteLea
     nome_cliente: lead.nome || campo(d, 'nome') || 'Cliente (site)',
     email_cliente: lead.email || campo(d, 'email'),
     telefone_cliente: lead.telefone || campo(d, 'telefone', 'whatsapp'),
-    assunto: area || 'Atendimento (site)',
+    assunto: area || campo(d, 'motivo') || 'Atendimento (site)',
+    motivo_label: resolverMotivoSac(d), // motivo OFICIAL (form novo) ou mapeado do assunto (Julio: "assunto deveria entrar em motivo")
     canal: 'formulario',
     area_reclamada: area,
     observacoes: campo(d, 'mensagem'),

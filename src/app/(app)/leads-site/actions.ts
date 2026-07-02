@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { siteClient } from '@/lib/supabase/site'
-import { FRANQUEADORA_EMPRESA_ID } from '@/lib/sac-ingest'
+import { FRANQUEADORA_EMPRESA_ID, resolverMotivoSac } from '@/lib/sac-ingest'
 
 export type RouteResult = { ok: boolean; error?: string; destino?: 'CRM' | 'SAC' | 'RH' }
 
-type Parsed = { tipo: string; nome: string; email: string | null; tel: string | null; mensagem: string | null; area: string | null }
+type Parsed = { tipo: string; nome: string; email: string | null; tel: string | null; mensagem: string | null; area: string | null; motivo: string | null }
 const ORIGEM_CRM: Record<string, string> = { indicacao: 'indicacao', oferta: 'formulario', avaliacao: 'formulario', agendamento: 'formulario', franquia: 'formulario' }
 
 /** Roteia um lead do site (fonte real riut.lasercompany_leads, ou fallback lkii.site_leads)
@@ -30,7 +30,7 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     jaRoteado = d._roteado === true
     parsed = { tipo: (r.tipo ?? '').toLowerCase(), nome: r.nome || (d.nome as string) || 'Lead do site',
       email: r.email || (d.email as string) || null, tel: r.telefone || (d.telefone as string) || (d.whatsapp as string) || null,
-      mensagem: (d.mensagem as string) || null, area: (d.area as string) || null }
+      mensagem: (d.mensagem as string) || null, area: (d.area as string) || null, motivo: (d.motivo as string) || (d.assunto as string) || null }
   } else {
     const { data } = await sb.from('site_leads').select('id, data').eq('id', siteLeadId).single()
     const row = data as { data?: { tipo?: string; status?: string; dados?: Record<string, string> } } | null
@@ -38,7 +38,7 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     jaRoteado = row.data?.status === 'roteado'
     const d = row.data?.dados ?? {}
     parsed = { tipo: (row.data?.tipo ?? '').toLowerCase(), nome: d.nome?.trim() || 'Lead do site', email: d.email || null,
-      tel: d.whatsapp || d.telefone || null, mensagem: d.mensagem || null, area: d.area || null }
+      tel: d.whatsapp || d.telefone || null, mensagem: d.mensagem || null, area: d.area || null, motivo: d.motivo || d.assunto || null }
   }
   if (jaRoteado) return { ok: false, error: 'Este lead já foi roteado.' }
 
@@ -91,7 +91,8 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     const { data: ins, error } = await sb.from('sac_tickets').insert({
       empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: null,
       nome_cliente: parsed.nome, email_cliente: parsed.email, telefone_cliente: parsed.tel,
-      assunto: parsed.area || 'Atendimento (site)', canal: 'formulario', status: 'aberto', prioridade: 'media',
+      assunto: parsed.area || parsed.motivo || 'Atendimento (site)', canal: 'formulario', status: 'aberto', prioridade: 'media',
+      motivo_label: resolverMotivoSac({ motivo: parsed.motivo, assunto: parsed.area ?? parsed.motivo, mensagem: parsed.mensagem }),
       area_reclamada: parsed.area, observacoes: parsed.mensagem,
     }).select('id').single()
     if (error) return { ok: false, error: /row-level|policy|permission/i.test(error.message) ? 'Sem permissão p/ criar chamado.' : error.message }
