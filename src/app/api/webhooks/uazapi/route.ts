@@ -4,6 +4,7 @@ import { normTel, listInstances, sendText, resolverInstancia, downloadMessage, t
 import { reHostMidia } from '@/lib/sac-midia'
 import { escolherAtendenteOnline } from '@/lib/sac-distribuicao'
 import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
+import { FRANQUEADORA_EMPRESA_ID, resolverMotivoSac } from '@/lib/sac-ingest'
 
 /**
  * Webhook de entrada da UAZAPI. Grava as mensagens recebidas em
@@ -27,7 +28,7 @@ type WebhookBody = {
   message?: Msg; data?: Msg
   instance?: string; token?: string; owner?: string
 }
-type ChatRow = { id: string; nome: string | null; nao_lidas: number; bot_ativo?: boolean | null; atendente_id?: string | null }
+type ChatRow = { id: string; nome: string | null; nao_lidas: number; bot_ativo?: boolean | null; atendente_id?: string | null; ticket_id?: string | null }
 type CanalBinding = { instancia_nome: string; unidade_id: string | null; atendente_id?: string | null }
 
 function classificarTipo(mt?: string): string {
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
   // Insert com escopo (unidade_id/canal_nome). Se as colunas não existirem no schema,
   // degrada para o insert mínimo — sem quebrar a entrada das mensagens.
   let chat: ChatRow | null = null
-  const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas, bot_ativo, atendente_id').eq('telefone', telefone).maybeSingle()
+  const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas, bot_ativo, atendente_id, ticket_id').eq('telefone', telefone).maybeSingle()
   chat = chatRaw as ChatRow | null
 
   if (!chat) {
@@ -147,9 +148,9 @@ export async function POST(req: NextRequest) {
     }
     // Só inclui as chaves de escopo quando há valor — evita forçar null numa coluna NOT NULL.
     const comEscopo = { ...baseInsert, ...(unidadeOrigem ? { unidade_id: unidadeOrigem } : {}), ...(canalNome ? { canal_nome: canalNome } : {}) }
-    let ins = await sb.from('sac_whatsapp_chats').insert(comEscopo).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
+    let ins = await sb.from('sac_whatsapp_chats').insert(comEscopo).select('id, nome, nao_lidas, bot_ativo, atendente_id, ticket_id').single()
     if (ins.error && isColMissing(ins.error.message)) {
-      ins = await sb.from('sac_whatsapp_chats').insert(baseInsert).select('id, nome, nao_lidas, bot_ativo, atendente_id').single()
+      ins = await sb.from('sac_whatsapp_chats').insert(baseInsert).select('id, nome, nao_lidas, bot_ativo, atendente_id, ticket_id').single()
     }
     if (ins.error || !ins.data) return NextResponse.json({ error: 'db-insert-failed' }, { status: 500 })
     chat = ins.data as ChatRow
@@ -253,6 +254,26 @@ export async function POST(req: NextRequest) {
             patch.bot_ativo = false
             const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
             if (alvo) patch.atendente_id = alvo
+            // Pedido do Julio (02/07): quando a IA identifica o problema, ela JÁ ABRE o chamado
+            // (nome/CPF/motivo coletados) e distribui — a atendente não precisa abrir manual.
+            if (!chat.ticket_id) {
+              try {
+                const cpfDig = (r.cpf || '').replace(/\D/g, '')
+                const { data: tIns, error: eT } = await sb.from('sac_tickets').insert({
+                  empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: unidadeOrigem, // SAC centralizado (rede) — carimba a unidade se o canal tiver
+                  nome_cliente: (r.nomeCliente || chat.nome || telefone).trim(),
+                  cpf_cliente: cpfDig.length === 11 ? cpfDig : null,
+                  telefone_cliente: telefone,
+                  assunto: (r.motivo || 'Atendimento WhatsApp (IA)').slice(0, 120),
+                  motivo_label: resolverMotivoSac({ motivo: r.motivo, assunto: r.motivo, mensagem: texto }),
+                  canal: 'WhatsApp', status: 'aberto', prioridade: 'media', fase: 'Novo',
+                  atribuido_para: alvo ?? null,
+                  observacoes: `Aberto automaticamente pela IA na triagem do WhatsApp.${r.motivo ? ' Motivo relatado: ' + r.motivo : ''}`,
+                }).select('id').single()
+                if (!eT && tIns) patch.ticket_id = (tIns as { id: string }).id
+                else if (eT) console.error('webhook IA→chamado:', eT.message)
+              } catch (e) { console.error('webhook IA→chamado:', (e as Error).message) }
+            }
           }
           if (r.nomeCliente && !chat.nome) patch.nome = r.nomeCliente
           await sb.from('sac_whatsapp_chats').update(patch).eq('id', chat.id)
