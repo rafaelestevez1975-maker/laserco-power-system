@@ -99,7 +99,10 @@ export async function POST(req: NextRequest) {
   }
   if (eventKind !== 'messages' || !msg?.chatid) return NextResponse.json({ ignored: rawEvent || 'no-message' })
   if (msg.isGroup) return NextResponse.json({ ignored: 'group' })
-  if (msg.wasSentByApi) return NextResponse.json({ ignored: 'sent-by-api' })
+  // NÃO ignorar wasSentByApi: as "mensagens automáticas" configuradas na própria UAZAPI (e
+  // qualquer envio via API feito fora do sistema) chegam só com essa flag — ignorá-las deixava
+  // a conversa "Sem mensagens" no sistema enquanto o WhatsApp mostrava a resposta. Os envios do
+  // PRÓPRIO sistema não duplicam: eles gravam o wa_id na hora do envio e o dedup abaixo segura.
 
   const telefone = normTel(msg.chatid)
   if (!telefone) return NextResponse.json({ ignored: 'invalid-tel' })
@@ -206,13 +209,20 @@ export async function POST(req: NextRequest) {
     } catch (e) { console.error('webhook mídia (segue sem anexo):', (e as Error).message) }
   }
 
-  await sb.from('sac_whatsapp_mensagens').insert({
+  // Se a gravação da MENSAGEM falhar, responde 500 → a UAZAPI reenvia o evento e nada se perde.
+  // (Antes o erro era engolido: o chat já tinha atualizado o preview, mas a mensagem sumia — o
+  // "cliente mandou e não apareceu no sistema" relatado pelas atendentes.)
+  const { error: eMsg } = await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chat.id, wa_id: waId, direcao: fromMe ? 'saida' : 'entrada',
     autor: fromMe ? (msg.senderName || 'WhatsApp') : (msg.senderName || chat.nome || telefone),
     tipo, texto: texto || null,
     midia_url: midiaUrl, midia_mimetype: midiaMime,
     status: msg.status ?? null, criado_em: quando,
   })
+  if (eMsg) {
+    console.error('webhook msg-insert:', eMsg.message)
+    return NextResponse.json({ error: 'db-msg-insert-failed' }, { status: 500 })
+  }
 
   // IA de atendimento (OpenRouter): faz o 1º atendimento (iaAtende calculado acima).
   if (iaAtende) {
