@@ -80,6 +80,17 @@ for (const uc of uzChats) {
       if (r.ok) msgsNovas += lote.length
       else { falhas++; console.error(tel, 'insert:', (await r.text()).slice(0, 120)) }
     }
+    // CRÍTICO (lição de 02/07): preencher ultima_msg_em do chat — a lista da Conversa ordena por
+    // essa data; chat sem ela (null) ia pro TOPO (nulls first) e escondia as conversas ativas.
+    // Só atualiza se a mensagem importada for mais nova que a atual do chat (não rebaixa ativas).
+    const maisNova = msgs.reduce((a, m) => (m.messageTimestamp > (a?.messageTimestamp ?? 0) ? m : a), null)
+    if (maisNova) {
+      const em = new Date(maisNova.messageTimestamp).toISOString()
+      await fetch(`${SB_URL}/rest/v1/sac_whatsapp_chats?id=eq.${chatDbId}&or=(ultima_msg_em.is.null,ultima_msg_em.lt.${em})`, {
+        method: 'PATCH', headers: H,
+        body: JSON.stringify({ ultima_msg_em: em, ultima_msg: ((maisNova.text || maisNova.content?.text || '📩 Mensagem') + '').slice(0, 120), ultima_msg_tipo: tipoDe(maisNova.messageType) }),
+      }).catch(() => {})
+    }
   } catch (e) { falhas++; console.error(tel, (e).message) }
 }
 console.log(`\nRESULTADO: ${chatsNovos} conversa(s) nova(s) criada(s) · ${msgsNovas} mensagem(ns) importada(s) · ${falhas} falha(s)`)

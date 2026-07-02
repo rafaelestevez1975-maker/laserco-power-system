@@ -5,7 +5,7 @@ import { TriagemWhatsapp, type Chat, type Msg, type Atendente, type Nota } from 
 
 export const dynamic = 'force-dynamic'
 
-const LISTA_MAX = 300
+const LISTA_MAX = 800 // cobre a base atual (~500) com folga; nulls por último
 
 /**
  * Conversa — caixa de entrada do SAC.
@@ -34,12 +34,12 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
   let escopoUnidade = false
 
   if (activeUnitId) {
-    const r = await sb.from('sac_whatsapp_chats').select(baseSelect).eq('unidade_id', activeUnitId).order('ultima_msg_em', { ascending: false }).limit(LISTA_MAX)
+    const r = await sb.from('sac_whatsapp_chats').select(baseSelect).eq('unidade_id', activeUnitId).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(LISTA_MAX)
     if (!r.error) { chatsRaw = (r.data ?? []) as Chat[]; escopoUnidade = true }
     // r.error => coluna unidade_id inexistente: cai para a consulta sem filtro abaixo.
   }
   if (chatsRaw == null) {
-    const r = await sb.from('sac_whatsapp_chats').select(baseSelect).order('ultima_msg_em', { ascending: false }).limit(LISTA_MAX)
+    const r = await sb.from('sac_whatsapp_chats').select(baseSelect).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(LISTA_MAX)
     chatsErr = r.error
     chatsRaw = (r.data ?? []) as Chat[]
   }
