@@ -65,22 +65,25 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
   const filaN = erro ? 0 : (filaRes.count ?? 0)
   const amostraCapped = !erro && totalN > chats.length
 
-  // ── Mensagens e notas SÓ das conversas carregadas (sem teto global cego) ──
+  // ── Mensagens e notas SÓ das conversas carregadas ──
+  // CRÍTICO: o PostgREST corta a resposta em ~1000 linhas. Ordenar ASCENDENTE fazia o corte
+  // descartar as mensagens MAIS NOVAS quando o total passou de 1000 — conversas recentes abriam
+  // "Sem mensagens" com tudo gravado no banco (bug de 02/07). Buscamos DESC com teto explícito
+  // (o corte descarta só o histórico antigo) e revertemos para exibir em ordem cronológica.
   let msgs: Msg[] = []
   let notas: Nota[] = []
   if (!erro && chatIds.length > 0) {
     const [{ data: msgsRaw }, { data: notasRaw }] = await Promise.all([
       sb.from('sac_whatsapp_mensagens')
         .select('id, chat_id, direcao, autor, tipo, texto, midia_url, midia_mimetype, status, criado_em')
-        // Desempate por id (ordem de chegada): evita que uma mensagem com timestamp do WhatsApp
-        // ligeiramente atrasado apareça no MEIO do histórico e "suma" do fim da conversa.
-        .in('chat_id', chatIds).order('criado_em', { ascending: true }).order('id', { ascending: true }),
+        // Desempate por id (ordem de chegada): timestamp do WhatsApp atrasado não embaralha o fio.
+        .in('chat_id', chatIds).order('criado_em', { ascending: false }).order('id', { ascending: false }).limit(4000),
       sb.from('sac_whatsapp_notas')
         .select('id, chat_id, autor_nome, texto, criada_em')
-        .in('chat_id', chatIds).order('criada_em', { ascending: true }),
+        .in('chat_id', chatIds).order('criada_em', { ascending: false }).limit(1000),
     ])
-    msgs = (msgsRaw ?? []) as Msg[]
-    notas = (notasRaw ?? []) as Nota[]
+    msgs = ((msgsRaw ?? []) as Msg[]).reverse()
+    notas = ((notasRaw ?? []) as Nota[]).reverse()
   }
 
   // Atendentes do SAC — fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
