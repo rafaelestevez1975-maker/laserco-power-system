@@ -699,3 +699,117 @@ export async function salvarConfig(input: {
 // 'use server' não permite `export … from`; embrulha em funções async que repassam.
 export async function darBaixaLancamento(lancamentoId: string) { return _darBaixaLancamento(lancamentoId) }
 export async function receberLancamento(lancamentoId: string) { return _receberLancamento(lancamentoId) }
+
+// =============================================================================
+// IMPORTAÇÃO DE PLANILHA (finImportExcel L5257 / finModeloExcel L5300) — paridade legacy.
+// O front lê o .xlsx/.csv (SheetJS) e manda linhas JÁ mapeadas; aqui grava no sub-livro
+// e lança no RAZÃO (origem 'manual', conta por nome da categoria — DRE/Fluxo enxergam).
+// =============================================================================
+export type ImportRecebivelItem = { unidade: string; categoria: string; descricao: string; valor: number; vencimento: string | null; status: string }
+export type ImportDespesaItem = { categoria: string; descricao: string; escopo: string; valor: number; vencimento: string | null; prioridade: string; status: string }
+
+const IMPORT_MAX = 500
+/** dd/mm/aaaa ou aaaa-mm-dd → ISO (ou null). */
+function vencISO(s: string | null): string | null {
+  const t = (s || '').trim()
+  if (!t) return null
+  const br = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (br) { const a = br[3].length === 2 ? '20' + br[3] : br[3]; return `${a}-${br[2].padStart(2, '0')}-${br[1].padStart(2, '0')}` }
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10)
+  return null
+}
+
+/** Importa CONTAS A RECEBER (sub-livro + razão receita prevista, centro rede). */
+export async function importarRecebiveis(itens: ImportRecebivelItem[]): Promise<R & { importados?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para importar lançamentos.' }
+  const lista = (itens || []).filter((i) => Number(i.valor) > 0 || (i.descricao || '').trim()).slice(0, IMPORT_MAX)
+  if (lista.length === 0) return { ok: false, error: 'Planilha vazia ou sem dados reconhecidos.' }
+
+  const emp = await empresaId(op.sb)
+  const mapa = await mapaFinanceiro(op.sb)
+  const { data: unisRaw } = await op.sb.from('unidades').select('id, nome')
+  const uniPorNome = new Map(((unisRaw ?? []) as { id: string; nome: string }[]).map((u) => [u.nome.trim().toLowerCase(), u.id]))
+  const { data: pcs } = await op.sb.from('plano_conta').select('id, nome').eq('ativo', true)
+  const contaPorNome = new Map(((pcs ?? []) as { id: string; nome: string }[]).map((c) => [c.nome.trim().toLowerCase(), c.id]))
+
+  const hoje = new Date().toISOString().slice(0, 10)
+  const rows = lista.map((i) => {
+    const venc = vencISO(i.vencimento)
+    let status = /suspen/i.test(i.status) ? 'suspenso' : /pag|sim/i.test(i.status) ? 'pago' : 'aberto'
+    let dias = 0
+    if (status === 'aberto') { const d = calcDiasAtraso(venc, hoje); if (d > 0) { status = 'atrasado'; dias = d } }
+    return {
+      empresa_id: emp, unidade_id: uniPorNome.get((i.unidade || '').trim().toLowerCase()) ?? null,
+      unidade_nome: (i.unidade || '').trim() || null, categoria: (i.categoria || 'Outros').trim() || 'Outros',
+      competencia: (i.descricao || 'Importado').trim(), bruto: 0, valor: Math.round(Number(i.valor) * 100) / 100,
+      vencimento: venc, status, dias_atraso: dias, enviado: false,
+      data_pagamento: status === 'pago' ? (venc || hoje) : null,
+    }
+  })
+  const { data: ins, error: eIns } = await adminClient().from('fin_recebiveis').insert(rows).select('id, categoria, unidade_nome, competencia, valor, vencimento, status')
+  if (eIns) return { ok: false, error: msgErro(eIns.message, 'importar os recebíveis') }
+  const criados = (ins ?? []) as { id: string; categoria: string; unidade_nome: string | null; competencia: string | null; valor: number; vencimento: string | null; status: string }[]
+
+  // RAZÃO: receita prevista (realizada se veio 'pago') no centro da rede, conta pelo NOME da categoria.
+  const eventos: LancamentoEvento[] = criados.map((r) => ({
+    empresaId: emp, centroCustoId: mapa.centroRede,
+    planoContaId: contaPorNome.get(r.categoria.trim().toLowerCase()) ?? null,
+    natureza: 'receita' as const, competencia: `${(r.vencimento || hoje).slice(0, 7)}-01`,
+    valor: r.valor, origem: 'manual', origemRef: r.id, idemKey: `manual:rec:${r.id}`,
+    dataPrevista: r.vencimento, status: r.status === 'pago' ? 'realizado' as const : 'previsto' as const,
+    historico: `${r.categoria} · ${r.unidade_nome || ''} · ${r.competencia || ''} (importado)`.trim(),
+  }))
+  await postLancamento(eventos).catch((e) => console.error('razão import receber:', (e as Error).message))
+  // linka sub-livro ↔ razão (baixa concilia o caixa)
+  const { data: lancs } = await op.sb.from('fin_lancamento').select('id, idem_key').in('idem_key', criados.map((r) => `manual:rec:${r.id}`))
+  const lancPorKey = new Map(((lancs ?? []) as { id: string; idem_key: string }[]).map((l) => [l.idem_key, l.id]))
+  await Promise.all(criados.map((r) => {
+    const lid = lancPorKey.get(`manual:rec:${r.id}`)
+    return lid ? adminClient().from('fin_recebiveis').update({ lancamento_id: lid }).eq('id', r.id) : Promise.resolve(null)
+  }))
+  revalidatePath('/financeiro')
+  return { ok: true, importados: criados.length }
+}
+
+/** Importa CONTAS A PAGAR (sub-livro + razão despesa prevista, centro rede). */
+export async function importarDespesas(itens: ImportDespesaItem[]): Promise<R & { importados?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para importar lançamentos.' }
+  const lista = (itens || []).filter((i) => Number(i.valor) > 0 || (i.descricao || '').trim()).slice(0, IMPORT_MAX)
+  if (lista.length === 0) return { ok: false, error: 'Planilha vazia ou sem dados reconhecidos.' }
+
+  const emp = await empresaId(op.sb)
+  const mapa = await mapaFinanceiro(op.sb)
+  const { data: pcs } = await op.sb.from('plano_conta').select('id, nome').eq('ativo', true)
+  const contaPorNome = new Map(((pcs ?? []) as { id: string; nome: string }[]).map((c) => [c.nome.trim().toLowerCase(), c.id]))
+  const hoje = new Date().toISOString().slice(0, 10)
+
+  const rows = lista.map((i) => ({
+    empresa_id: emp,
+    categoria: (i.categoria || 'Outras').trim() || 'Outras',
+    descricao: (i.descricao || i.categoria || 'Importado').trim(),
+    escopo: (i.escopo || 'Rede').trim() || 'Rede',
+    valor: Math.round(Number(i.valor) * 100) / 100,
+    vencimento: vencISO(i.vencimento),
+    status: /suspen/i.test(i.status) ? 'suspenso' : /pag|sim/i.test(i.status) ? 'pago' : 'aberto',
+    prioridade: /alta|high/i.test(i.prioridade) ? 'alta' : /baixa|low/i.test(i.prioridade) ? 'baixa' : 'media',
+  }))
+  const { data: ins, error: eIns } = await adminClient().from('fin_contas_pagar').insert(rows).select('id, categoria, descricao, valor, vencimento, status')
+  if (eIns) return { ok: false, error: msgErro(eIns.message, 'importar as despesas') }
+  const criados = (ins ?? []) as { id: string; categoria: string; descricao: string | null; valor: number; vencimento: string | null; status: string }[]
+
+  const eventos: LancamentoEvento[] = criados.map((c) => ({
+    empresaId: emp, centroCustoId: mapa.centroRede,
+    planoContaId: contaPorNome.get(c.categoria.trim().toLowerCase()) ?? mapa.planoPorCodigo.get('4.2.99') ?? null,
+    natureza: 'despesa' as const, competencia: `${(c.vencimento || hoje).slice(0, 7)}-01`,
+    valor: c.valor, origem: 'manual', origemRef: c.id, idemKey: `manual:${c.id}`,
+    dataPrevista: c.vencimento, status: c.status === 'pago' ? 'realizado' as const : c.status === 'suspenso' ? 'suspenso' as const : 'previsto' as const,
+    historico: `${c.categoria}${c.descricao ? ' · ' + c.descricao : ''} (importado)`,
+  }))
+  await postLancamento(eventos).catch((e) => console.error('razão import pagar:', (e as Error).message))
+  revalidatePath('/financeiro')
+  return { ok: true, importados: criados.length }
+}

@@ -26,7 +26,7 @@ export type LancamentoEvento = {
   dataPrevista?: string | null
   historico?: string | null
   documento?: string | null
-  status?: 'previsto' | 'realizado' | 'conciliado' | 'cancelado'
+  status?: 'previsto' | 'realizado' | 'conciliado' | 'cancelado' | 'suspenso'
 }
 
 /** Grava lançamentos no razão. Idempotente: pula os `idem_key` que já existem. */

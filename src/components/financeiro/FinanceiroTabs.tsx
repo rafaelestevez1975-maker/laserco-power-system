@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { moedaBR, dataBR } from '@/lib/fmt'
 import {
@@ -13,6 +13,7 @@ import {
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, salvarRoyaltyUnidade, type ContaPlano,
+  importarRecebiveis, importarDespesas, type ImportRecebivelItem, type ImportDespesaItem,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha, RoyaltyUnidade } from '@/app/(app)/financeiro/page'
 
@@ -31,6 +32,89 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
 
 // helpers de soma
 const sum = <T,>(arr: T[], f: (x: T) => number | null | undefined) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0)
+
+// ── Excel (SheetJS) — paridade finImportExcel/finModeloExcel do legacy ──
+async function lerPlanilha(file: File): Promise<string[][]> {
+  const XLSX = await import('xlsx')
+  const buf = await file.arrayBuffer()
+  const wb = XLSX.read(buf, { type: 'array' })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  return XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as string[][]
+}
+const colIdx = (headers: string[], ...keys: string[]) => {
+  for (const k of keys) { const i = headers.findIndex((h) => h.includes(k)); if (i >= 0) return i }
+  return -1
+}
+// parser de dinheiro do legacy (aceita "R$ 1.234,56" e "1234.56")
+function parseValorBR(s: unknown): number {
+  let t = String(s ?? '').replace(/[r$\s]/gi, '')
+  if (t.indexOf(',') > -1 && t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g, '').replace(',', '.')
+  else t = t.replace(/,/g, '')
+  const n = parseFloat(t)
+  return isNaN(n) ? 0 : n
+}
+async function baixarModeloExcel(ctx: 'receber' | 'pagar') {
+  const XLSX = await import('xlsx')
+  const aoa = ctx === 'pagar'
+    ? [['Categoria', 'Descrição', 'Escopo/Unidade', 'Valor', 'Vencimento', 'Prioridade', 'Status'],
+       ['Salários', 'Folha de pagamento — equipe', 'Florianópolis - Centro', '14200,00', '05/07/2026', 'alta', 'aberto'],
+       ['Aluguel', 'Aluguel da matriz', 'Escritório', '12000,00', '10/07/2026', 'media', 'aberto'],
+       ['Impostos', 'DAS Simples Nacional', 'Escritório', '9800,50', '20/07/2026', 'alta', 'aberto']]
+    : [['Unidade/Cliente', 'Categoria', 'Descrição', 'Valor', 'Vencimento', 'Status'],
+       ['Manaus - Ponta Negra Shopping', 'Royalties', 'Royalties · 06/2026', '6850,00', '10/07/2026', 'aberto'],
+       ['Caruaru - Caruaru', 'Taxa de franquia', 'Parcela 4/6', '8333,33', '10/07/2026', 'aberto'],
+       ['Cuiabá - Pantanal Shopping', 'Locação de equipamentos', 'Locação UltraCel · 06/2026', '3600,00', '05/07/2026', 'aberto']]
+  const ws = XLSX.utils.aoa_to_sheet(aoa)
+  ws['!cols'] = aoa[0].map(() => ({ wch: 24 }))
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos')
+  XLSX.writeFile(wb, `modelo-lancamentos-contas-a-${ctx}.xlsx`)
+}
+
+// ── Modal "Editar filtros" (finFiltroOpen L5431) — período/status/categoria/pessoa/descrição ──
+type FiltrosFin = { d1: string; d2: string; pessoa: string; desc: string }
+const FILTROS_ZERO: FiltrosFin = { d1: '', d2: '', pessoa: '', desc: '' }
+function FiltroFinModal({ titulo, pessoaLabel, pessoas, filtros, onApply, onClose }: {
+  titulo: string; pessoaLabel: string; pessoas: string[]; filtros: FiltrosFin
+  onApply: (f: FiltrosFin) => void; onClose: () => void
+}) {
+  const [f, setF] = useState<FiltrosFin>(filtros)
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 9, fontSize: 13, fontFamily: 'inherit', background: '#fff' }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(20,22,30,.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 640, width: '100%', maxHeight: '92vh', overflow: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,.3)', padding: '26px 28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+          <i className="ti ti-filter" style={{ fontSize: 20, color: '#3b4252' }} />
+          <h3 style={{ fontSize: 19, fontWeight: 700, flex: 1 }}>{titulo}</h3>
+          <i className="ti ti-x" style={{ fontSize: 20, color: '#9aa0aa', cursor: 'pointer' }} onClick={onClose} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 26px' }}>
+          <div><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>Período (vencimento)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="date" value={f.d1} onChange={(e) => setF({ ...f, d1: e.target.value })} style={inp} />
+              <span style={{ color: 'var(--text-3)' }}>→</span>
+              <input type="date" value={f.d2} onChange={(e) => setF({ ...f, d2: e.target.value })} style={inp} />
+            </div>
+          </div>
+          <div><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>{pessoaLabel}</label>
+            <select value={f.pessoa} onChange={(e) => setF({ ...f, pessoa: e.target.value })} style={inp}>
+              <option value="">{pessoaLabel} — todos</option>
+              {pessoas.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>Descrição contém</label>
+            <input value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} placeholder="Buscar por texto…" style={inp} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 22 }}>
+          <button className="btn btn-ghost" onClick={() => { onApply({ ...FILTROS_ZERO }) }}>Limpar filtros</button>
+          <button className="btn" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" onClick={() => onApply(f)}><i className="ti ti-check" /> Aplicar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Pill({ s }: { s: string }) {
   const p = STATUS_PILL[s] || STATUS_PILL.aberto
@@ -87,7 +171,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
         </div>
       )}
 
-      {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} />}
+      {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
@@ -103,7 +187,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
 // =============================================================================
 // FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
 // =============================================================================
-function FluxoTab({ serie0, resumo0, comp0, hojeISO }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string }) {
+function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string; recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
   const [escopo, setEscopo] = useState('consolidado')
   const [serie, setSerie] = useState<FluxoSerie[]>(serie0)
   const [resumo, setResumo] = useState<FluxoResumo>(resumo0 ?? FLUXO_ZERO)
@@ -223,8 +307,10 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO }: { serie0: FluxoSerie[]; r
             </tbody>
           </table>
         </div>
-        <div className="rel-legend" style={{ marginTop: 10 }}>A <b>projeção diária</b> de caixa volta junto com a migração de <b>Contas a Pagar/Receber</b> para o razão (próxima etapa), que traz os vencimentos datados.</div>
       </div>
+
+      {/* Projeção de caixa próximos N dias — paridade com o legacy (finProxSemanaHTML). */}
+      <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} hojeISO={hojeISO} />
     </div>
   )
 }
@@ -238,6 +324,41 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
   const [status, setStatus] = useState('Todos')
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
+  const [filtros, setFiltros] = useState<FiltrosFin>({ ...FILTROS_ZERO })
+  const [filtroOpen, setFiltroOpen] = useState(false)
+  const [importando, setImportando] = useState(false)
+  const fileRef = useRef<HTMLInputElement | null>(null)
+  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc].filter(Boolean).length
+
+  // Importação de planilha (paridade finImportExcel 'receber')
+  async function importar(f: File | null | undefined) {
+    if (!f) return
+    setImportando(true); setMsg('Lendo planilha…')
+    try {
+      const aoa = await lerPlanilha(f)
+      const headers = (aoa[0] || []).map((x) => String(x || '').trim().toLowerCase())
+      const cUni = colIdx(headers, 'unidade', 'escopo', 'loja', 'filial', 'franquia', 'cliente')
+      const cCat = colIdx(headers, 'categoria', 'categ', 'conta', 'grupo')
+      const cDesc = colIdx(headers, 'descri', 'histó', 'histo', 'lança', 'lanca', 'nome', 'item')
+      const cVal = colIdx(headers, 'valor', 'value', 'total', 'montante', 'r$')
+      const cVenc = colIdx(headers, 'vencimento', 'venc', 'data')
+      const cStat = colIdx(headers, 'status', 'situa', 'pago')
+      const itens: ImportRecebivelItem[] = aoa.slice(1)
+        .filter((r) => r && r.some((c) => String(c || '').trim()))
+        .map((r) => ({
+          unidade: cUni >= 0 ? String(r[cUni] || '').trim() : '',
+          categoria: cCat >= 0 ? String(r[cCat] || 'Outros').trim() : 'Outros',
+          descricao: cDesc >= 0 ? String(r[cDesc] || '').trim() : '',
+          valor: cVal >= 0 ? parseValorBR(r[cVal]) : 0,
+          vencimento: cVenc >= 0 ? String(r[cVenc] || '').trim() : null,
+          status: cStat >= 0 ? String(r[cStat] || '') : '',
+        }))
+      const res = await importarRecebiveis(itens)
+      setMsg(res.ok ? `${res.importados} lançamento(s) importado(s) do Excel.` : (res.error || 'Falha na importação.'))
+      if (res.ok) router.refresh()
+    } catch { setMsg('Não foi possível ler a planilha. Confira o formato (.xlsx/.csv).') }
+    setImportando(false)
+  }
 
   const run = async (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
     setBusy(id); setMsg('')
@@ -249,7 +370,11 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
 
   const cats = ['Todas', ...FIN_CATS_REC]
   const sts: [string, string][] = [['Todos', 'Todos'], ['aberto', 'Em aberto'], ['atrasado', 'Atrasado'], ['pago', 'Pago'], ['suspenso', 'Suspenso']]
-  const list = recebiveis.filter((r) => (cat === 'Todas' || r.categoria === cat) && (status === 'Todos' || r.status === status))
+  const list = recebiveis.filter((r) =>
+    (cat === 'Todas' || r.categoria === cat) && (status === 'Todos' || r.status === status) &&
+    (!filtros.pessoa || r.unidade_nome === filtros.pessoa) &&
+    (!filtros.desc || `${r.categoria} ${r.unidade_nome || ''} ${r.competencia || ''}`.toLowerCase().includes(filtros.desc.toLowerCase())) &&
+    (!filtros.d1 || (r.vencimento || '') >= filtros.d1) && (!filtros.d2 || (r.vencimento || '') <= filtros.d2))
   const tot = sum(list, (r) => r.valor)
   const susp = sum(list.filter((r) => r.status === 'suspenso'), (r) => r.valor)
 
@@ -267,8 +392,15 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
       </div>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total filtrado: <b style={{ color: '#0f6b3a' }}>{moedaBR(tot)}</b> · {list.length} lançamento(s){susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
-        <button className="btn btn-primary" onClick={goRoyalties}><i className="ti ti-robot" /> Gerar cobrança automática</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv" onChange={(e) => { importar(e.target.files?.[0]); e.currentTarget.value = '' }} />
+          <button className="btn btn-ghost" onClick={() => baixarModeloExcel('receber')} title="Baixar um modelo .xlsx com as colunas certas"><i className="ti ti-download" /> Modelo</button>
+          <button className="btn btn-primary" disabled={importando} onClick={() => fileRef.current?.click()} title="Colunas reconhecidas: Unidade/Cliente, Categoria, Descrição, Valor, Vencimento, Status"><i className="ti ti-file-spreadsheet" /> {importando ? 'Importando…' : 'Importar lançamentos (Excel)'}</button>
+          <button className="btn" onClick={() => setFiltroOpen(true)}><i className="ti ti-filter" /> Editar filtros{fcount > 0 && <span style={{ background: 'var(--brand-500)', color: '#fff', borderRadius: 20, padding: '0 6px', fontSize: 10, marginLeft: 4 }}>{fcount}</span>}</button>
+          <button className="btn btn-primary" onClick={goRoyalties}><i className="ti ti-robot" /> Gerar cobrança automática</button>
+        </div>
       </div>
+      {filtroOpen && <FiltroFinModal titulo="Editar filtros" pessoaLabel="Cliente" pessoas={[...new Set(recebiveis.map((r) => r.unidade_nome).filter(Boolean) as string[])].sort()} filtros={filtros} onApply={(f) => { setFiltros(f); setFiltroOpen(false) }} onClose={() => setFiltroOpen(false)} />}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead><tr><th>Unidade</th><th>Categoria</th><th>Competência</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Ações</th></tr></thead>
@@ -326,6 +458,43 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const [showNova, setShowNova] = useState(false)
+  const [filtros, setFiltros] = useState<FiltrosFin>({ ...FILTROS_ZERO })
+  const [filtroOpen, setFiltroOpen] = useState(false)
+  const [importando, setImportando] = useState(false)
+  const fileRef = useRef<HTMLInputElement | null>(null)
+  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc].filter(Boolean).length
+
+  // Importação de planilha (paridade finImportExcel 'pagar')
+  async function importar(f: File | null | undefined) {
+    if (!f) return
+    setImportando(true); setMsg('Lendo planilha…')
+    try {
+      const aoa = await lerPlanilha(f)
+      const headers = (aoa[0] || []).map((x) => String(x || '').trim().toLowerCase())
+      const cCat = colIdx(headers, 'categoria', 'categ', 'conta', 'grupo')
+      const cDesc = colIdx(headers, 'descri', 'histó', 'histo', 'lança', 'lanca', 'nome', 'item')
+      const cUni = colIdx(headers, 'unidade', 'escopo', 'loja', 'filial', 'franquia', 'fornecedor')
+      const cVal = colIdx(headers, 'valor', 'value', 'total', 'montante', 'r$')
+      const cVenc = colIdx(headers, 'vencimento', 'venc', 'data')
+      const cPrio = colIdx(headers, 'prioridade', 'prio')
+      const cStat = colIdx(headers, 'status', 'situa', 'pago')
+      const itens: ImportDespesaItem[] = aoa.slice(1)
+        .filter((r) => r && r.some((c) => String(c || '').trim()))
+        .map((r) => ({
+          categoria: cCat >= 0 ? String(r[cCat] || 'Outras').trim() : 'Outras',
+          descricao: cDesc >= 0 ? String(r[cDesc] || '').trim() : '',
+          escopo: cUni >= 0 ? String(r[cUni] || 'Rede').trim() : 'Rede',
+          valor: cVal >= 0 ? parseValorBR(r[cVal]) : 0,
+          vencimento: cVenc >= 0 ? String(r[cVenc] || '').trim() : null,
+          prioridade: cPrio >= 0 ? String(r[cPrio] || '') : '',
+          status: cStat >= 0 ? String(r[cStat] || '') : '',
+        }))
+      const res = await importarDespesas(itens)
+      setMsg(res.ok ? `${res.importados} lançamento(s) importado(s) do Excel.` : (res.error || 'Falha na importação.'))
+      if (res.ok) router.refresh()
+    } catch { setMsg('Não foi possível ler a planilha. Confira o formato (.xlsx/.csv).') }
+    setImportando(false)
+  }
 
   const run = async (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => {
     setBusy(id); setMsg('')
@@ -339,7 +508,10 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
   const prRank: Record<string, number> = { alta: 0, media: 1, baixa: 2 }
   let list = contasPagar.filter((p) =>
     (escopo === 'Todos' || (escopo === 'Lojas' ? (p.escopo !== 'Escritório' && p.escopo !== 'Rede') : p.escopo === escopo)) &&
-    (prio === 'Todas' || p.prioridade === prio))
+    (prio === 'Todas' || p.prioridade === prio) &&
+    (!filtros.pessoa || p.escopo === filtros.pessoa) &&
+    (!filtros.desc || `${p.descricao || ''} ${p.categoria}`.toLowerCase().includes(filtros.desc.toLowerCase())) &&
+    (!filtros.d1 || (p.vencimento || '') >= filtros.d1) && (!filtros.d2 || (p.vencimento || '') <= filtros.d2))
   list = [...list].sort((a, b) => (prRank[a.prioridade] ?? 1) - (prRank[b.prioridade] ?? 1))
   const tot = sum(list, (p) => p.valor)
   const aberto = sum(list.filter((p) => p.status === 'aberto'), (p) => p.valor)
@@ -371,8 +543,15 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
       </div>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total: <b>{moedaBR(tot)}</b> · Em aberto: <b style={{ color: 'var(--red)' }}>{moedaBR(aberto)}</b>{susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
-        <button className="btn btn-ghost" onClick={() => setShowNova(true)}><i className="ti ti-plus" /> Nova despesa</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv" onChange={(e) => { importar(e.target.files?.[0]); e.currentTarget.value = '' }} />
+          <button className="btn btn-ghost" onClick={() => baixarModeloExcel('pagar')} title="Baixar um modelo .xlsx com as colunas certas"><i className="ti ti-download" /> Modelo</button>
+          <button className="btn btn-primary" disabled={importando} onClick={() => fileRef.current?.click()} title="Colunas reconhecidas: Categoria, Descrição, Escopo/Unidade, Valor, Vencimento, Prioridade, Status"><i className="ti ti-file-spreadsheet" /> {importando ? 'Importando…' : 'Importar lançamentos (Excel)'}</button>
+          <button className="btn" onClick={() => setFiltroOpen(true)}><i className="ti ti-filter" /> Editar filtros{fcount > 0 && <span style={{ background: 'var(--brand-500)', color: '#fff', borderRadius: 20, padding: '0 6px', fontSize: 10, marginLeft: 4 }}>{fcount}</span>}</button>
+          <button className="btn btn-ghost" onClick={() => setShowNova(true)}><i className="ti ti-plus" /> Nova despesa</button>
+        </div>
       </div>
+      {filtroOpen && <FiltroFinModal titulo="Editar filtros" pessoaLabel="Fornecedor / Escopo" pessoas={[...new Set(contasPagar.map((p) => p.escopo).filter(Boolean))].sort()} filtros={filtros} onApply={(f) => { setFiltros(f); setFiltroOpen(false) }} onClose={() => setFiltroOpen(false)} />}
       {showNova && <NovaDespesaModal config={config} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
@@ -1116,6 +1295,84 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
 
       <div className="rel-acts" style={{ justifyContent: 'flex-end', marginTop: 14, display: 'flex' }}>
         <button className="btn btn-primary" disabled={busy} onClick={salvar}><i className="ti ti-device-floppy" /> Salvar configurações</button>
+      </div>
+    </div>
+  )
+}
+// Projeção de caixa próximos N dias (finProxSemanaHTML L5124)
+function ProjecaoCaixa({ recebiveis, contasPagar, hojeISO }: { recebiveis: Recebivel[]; contasPagar: ContaPagar[]; hojeISO: string }) {
+  const [dias, setDias] = useState(7)
+  const base = new Date(hojeISO + 'T00:00:00') // data-base = hoje (servidor)
+  const N = dias
+  const lista: Date[] = []
+  for (let k = 1; k <= N; k++) { const d = new Date(base); d.setDate(base.getDate() + k); lista.push(d) }
+  const wd = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const fmt = (d: Date) => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')
+  const isBiz = (d: Date) => d.getDay() >= 1 && d.getDay() <= 5
+  const nBiz = lista.filter(isBiz).length || 1
+  const aReceberOpen = sum(recebiveis.filter((r) => r.status === 'aberto' || r.status === 'atrasado'), (r) => r.valor)
+  const recDiaUtil = aReceberOpen / nBiz
+  const parseV = (iso: string | null) => { if (!iso) return ''; const d = new Date(iso); return isNaN(d.getTime()) ? '' : fmt(d) }
+
+  // Saldo inicial = posição de caixa realizada (recebido − pago), não número inventado.
+  const saldoRealizado = sum(recebiveis.filter((r) => r.status === 'pago'), (r) => r.valor)
+    - sum(contasPagar.filter((p) => p.status === 'pago'), (p) => p.valor)
+  let saldo = saldoRealizado
+  const rows = lista.map((d) => {
+    const tag = fmt(d)
+    const entrada = isBiz(d) ? recDiaUtil : recDiaUtil * 0.15
+    const pagDia = contasPagar.filter((p) => p.status === 'aberto' && parseV(p.vencimento) === tag)
+    const saida = sum(pagDia, (p) => p.valor)
+    const saiAlta = sum(pagDia.filter((p) => p.prioridade === 'alta'), (p) => p.valor)
+    saldo += entrada - saida
+    return { tag, wd: wd[d.getDay()], entrada, saida, saiAlta, saldo, neg: saldo < 0 }
+  })
+  const totEnt = lista.reduce((s, d) => s + (isBiz(d) ? recDiaUtil : recDiaUtil * 0.15), 0)
+  const totSai = sum(contasPagar.filter((p) => p.status === 'aberto' && lista.some((d) => parseV(p.vencimento) === fmt(d))), (p) => p.valor)
+  const presets = [7, 10, 15, 30]
+
+  return (
+    <div className="rel-card" style={{ marginTop: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div className="set-sec" style={{ marginTop: 0, flex: 1 }}><i className="ti ti-calendar-due" /> Projeção de caixa — próximos {N} dias ({fmt(lista[0])} a {fmt(lista[lista.length - 1])})</div>
+        <div style={{ minWidth: 200 }}>
+          <label style={{ fontSize: 11, display: 'block' }}>Período da projeção</label>
+          <select value={presets.includes(N) ? N : 'custom'} onChange={(e) => {
+            if (e.target.value === 'custom') { const n = parseInt(prompt('Projetar o caixa para quantos dias à frente?', '20') || ''); if (n && n >= 1) setDias(Math.min(180, n)) }
+            else setDias(+e.target.value)
+          }} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit' }}>
+            <option value={7}>1 semana (7 dias) — padrão</option>
+            <option value={10}>10 dias</option>
+            <option value={15}>15 dias</option>
+            <option value={30}>30 dias</option>
+            <option value="custom">Personalizar…{!presets.includes(N) ? ` (${N} dias)` : ''}</option>
+          </select>
+        </div>
+      </div>
+      <div className="rel-legend" style={{ marginBottom: 10 }}>Projeção conforme <b>o que temos a receber</b> e a <b>expectativa de recebimento das lojas</b> (recebíveis em aberto diluídos nos dias úteis) versus os <b>pagamentos previstos</b>. A coluna <b>(prio. alta)</b> mostra o mínimo a honrar caso o caixa aperte.</div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+        {[['Entradas previstas', totEnt, '#0f6b3a'], ['Saídas previstas', totSai, 'var(--red)'], ['Resultado da semana', totEnt - totSai, (totEnt - totSai) >= 0 ? '#0f6b3a' : 'var(--red)']].map(([lbl, v, cor]) => (
+          <div key={lbl as string} className="rel-card" style={{ padding: '10px 14px', flex: 1, minWidth: 150 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{lbl as string}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: cor as string }}>{moedaBR(v as number)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="cli-scroll">
+        <table className="cli-table">
+          <thead><tr><th>Dia</th><th className="num-r">Entradas (a receber + lojas)</th><th className="num-r">Saídas</th><th className="num-r">(prio. alta)</th><th className="num-r">Saldo projetado</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.tag} style={r.neg ? { background: '#FFF7F7' } : undefined}>
+                <td>{r.wd} {r.tag}</td>
+                <td className="num-r" style={{ color: '#0f6b3a' }}>{moedaBR(r.entrada)}</td>
+                <td className="num-r" style={{ color: 'var(--red)' }}>{r.saida ? moedaBR(r.saida) : ''}</td>
+                <td className="num-r" style={{ fontSize: 11, color: 'var(--red)' }}>{r.saiAlta ? moedaBR(r.saiAlta) : ''}</td>
+                <td className="num-r" style={{ fontWeight: 700, color: r.saldo >= 0 ? '#0f6b3a' : 'var(--red)' }}>{moedaBR(r.saldo)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
