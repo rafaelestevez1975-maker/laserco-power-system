@@ -126,8 +126,10 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     .map((u: { id: string; nome: string }) => ({ id: u.id, nome: (u.nome ?? '').trim() }))
     .filter((u) => u.nome && !u.nome.startsWith('[INATIVA]'))
 
-  // Unidade ativa: cookie (se permitida) > unidade do perfil > nenhuma (= todas).
-  const ck = (await cookies()).get('lc_unit')?.value
+  // Unidade ativa: SÓ a unidade do perfil (franqueado vê a própria loja). O seletor do
+  // header foi removido (03/07) e o cookie lc_unit deixou de ser honrado — evita escopo
+  // fantasma de cookies antigos.
+  const ck = undefined as string | undefined
   const allowed = new Set(unidades.map((u) => u.id))
   let activeUnitId: string | null = ck && allowed.has(ck) ? ck : p?.unidade_id ?? null
   if (activeUnitId && !allowed.has(activeUnitId)) activeUnitId = null

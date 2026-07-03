@@ -12,8 +12,11 @@ type SacNivel = 'supervisor' | 'consulta' | 'atendente' | null
 const SAC_ATENDENTE = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/canais'])
 const SAC_CONSULTA = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/ranking', '/sac/canais'])
 
+// Raízes que têm SUB-ROTAS com item próprio no menu: acendem só no match exato
+// (senão "Fluxo de Caixa" /financeiro ficava aceso junto com "DRE" /financeiro/dre).
+const RAIZ_EXATA = new Set(['/', '/financeiro', '/rh', '/expansao', '/sac'])
 function leafActive(href: string, pathname: string) {
-  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+  return RAIZ_EXATA.has(href) ? pathname === href : pathname === href || pathname.startsWith(href + '/')
 }
 
 /** Usuário tem o recurso exigido? Sufixo '.' = prefixo (qualquer recurso do módulo). */

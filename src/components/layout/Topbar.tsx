@@ -65,32 +65,8 @@ export function Topbar({
         </div>
       </div>
 
-      {/* Seletor de unidade ativa — escondido no SAC (centralizado na franqueadora, sem franquia) */}
-      {user.papel !== 'sac' && (
-      <div className="unit-wrap" style={{ position: 'relative' }}>
-        <div className="unit-pill" onClick={() => setUnitOpen((v) => !v)}>
-          <i className="ti ti-building-store" /> <span>{activeUnitName}</span> <i className="ti ti-chevron-down" />
-        </div>
-        {unitOpen && (
-          <>
-            <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setUnitOpen(false)} />
-            <div className="unit-dd" style={{ display: 'block', zIndex: 50 }}>
-              <div className="dd-head">Unidades da rede ({units.length})</div>
-              {user.isAdmin && (
-                <div className={`unit-opt ${!activeUnitId ? 'active' : ''}`} onClick={() => selectUnit(null)}>
-                  <i className="ti ti-building-store" /> Todas as unidades
-                </div>
-              )}
-              {units.map((u) => (
-                <div key={u.id} className={`unit-opt ${u.id === activeUnitId ? 'active' : ''}`} onClick={() => selectUnit(u.id)}>
-                  <i className="ti ti-building-store" /> {u.nome}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-      )}
+      {/* Seletor de unidade removido do header (pedido do cliente 03/07) — o escopo
+          por unidade agora vem só do perfil do usuário (franqueado vê a própria loja). */}
 
       <NotificacoesSino />
 

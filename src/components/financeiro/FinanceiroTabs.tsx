@@ -148,12 +148,17 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
+  // Troca de aba reflete na URL (/financeiro/<aba>) sem recarregar — o menu lateral acompanha.
+  const trocarAba = (k: TabKey) => {
+    setTab(k)
+    try { window.history.replaceState(null, '', k === 'fluxo' ? '/financeiro' : `/financeiro/${k}`) } catch { /* noop */ }
+  }
 
   return (
     <div>
       <div className="rel-tabs" style={{ flexWrap: 'wrap' }} id="finTabs">
         {TABS.map((t) => (
-          <div key={t.k} className={`rel-tab ${t.k === tab ? 'active' : ''}`} onClick={() => setTab(t.k)} style={{ cursor: 'pointer' }}>
+          <div key={t.k} className={`rel-tab ${t.k === tab ? 'active' : ''}`} onClick={() => trocarAba(t.k)} style={{ cursor: 'pointer' }}>
             <i className={`ti ${t.icon}`} /> {t.label}
           </div>
         ))}
@@ -183,7 +188,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} unidadeAtiva={unidadeAtiva} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
-      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
+      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
