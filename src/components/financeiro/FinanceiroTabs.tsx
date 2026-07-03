@@ -14,6 +14,7 @@ import {
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
   rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, salvarRoyaltyUnidade, type ContaPlano,
   importarRecebiveis, importarDespesas, type ImportRecebivelItem, type ImportDespesaItem,
+  importarExtrato, type ImportExtratoItem,
 } from '@/app/(app)/financeiro/actions'
 import type { Recebivel, ContaPagar, Conciliacao, FinConfig, DreLinha, RoyaltyUnidade } from '@/app/(app)/financeiro/page'
 
@@ -665,21 +666,24 @@ function ConciliacaoTab({ conciliacao }: { conciliacao: Conciliacao[] }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [importOpen, setImportOpen] = useState(false)
   const div = conciliacao.filter((c) => c.status === 'divergencia')
 
   const rodar = async () => {
     setBusy(true); setMsg('')
     const r = await rodarConciliacao(); setBusy(false)
-    setMsg(r.ok ? `Conciliação processada · ${r.cruzados ?? 0} lançamentos cruzados.` : (r.error || 'Erro.'))
+    setMsg(r.ok ? `Conciliação processada · ${r.cruzados ?? 0} cruzado(s), ${r.divergentes ?? 0} divergência(s).` : (r.error || 'Erro.'))
     if (r.ok) router.refresh()
   }
 
   return (
     <div>
       <div className="rel-legend">Conciliação <b>automática</b>: cruza as <b>vendas das lojas</b> com os <b>extratos bancários</b> e as <b>taxas das adquirentes</b> cadastradas. Quando o crédito recebido diverge do esperado, o sistema gera um <b>alerta de inconsistência</b>.</div>
-      <div className="rel-acts" style={{ justifyContent: 'flex-end', marginBottom: 12, display: 'flex' }}>
+      <div className="rel-acts" style={{ justifyContent: 'flex-end', marginBottom: 12, display: 'flex', gap: 8 }}>
+        <button className="btn" disabled={busy} onClick={() => setImportOpen(true)} title="Importa o extrato de QUALQUER banco: você vincula as colunas da planilha aos campos do sistema"><i className="ti ti-file-spreadsheet" /> Importar extrato (Excel)</button>
         <button className="btn btn-primary" disabled={busy} onClick={rodar}><i className="ti ti-refresh" /> Rodar conciliação automática</button>
       </div>
+      {importOpen && <ImportExtratoModal onClose={() => setImportOpen(false)} onDone={(n) => { setImportOpen(false); setMsg(`${n} linha(s) do extrato importada(s) — rode a conciliação.`); router.refresh() }} />}
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
       {conciliacao.length === 0 ? (
         <div className="rel-card" style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>Sem lançamentos de conciliação. Importe o extrato bancário e rode a conciliação.</div>
@@ -1409,6 +1413,118 @@ function ProjecaoCaixa({ recebiveis, contasPagar, hojeISO }: { recebiveis: Receb
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+
+// ── Assistente: importar EXTRATO BANCÁRIO de qualquer banco (pedido 03/07). Passo 1: escolher a
+// planilha (.xlsx/.csv). Passo 2: VINCULAR as colunas dela aos campos do sistema (com sugestão
+// automática por nome) + prévia. Serve para qualquer layout de extrato. ──
+const EXTRATO_CAMPOS: { key: keyof ImportExtratoItem; label: string; obrig: boolean; sug: string[] }[] = [
+  { key: 'data', label: 'Data do crédito', obrig: true, sug: ['data', 'date', 'dia'] },
+  { key: 'recebido', label: 'Valor recebido (crédito)', obrig: true, sug: ['recebido', 'crédito', 'credito', 'valor', 'amount'] },
+  { key: 'venda', label: 'Valor da venda (bruto)', obrig: false, sug: ['venda', 'bruto', 'gross'] },
+  { key: 'adquirente', label: 'Adquirente / bandeira', obrig: false, sug: ['adquirente', 'bandeira', 'operadora', 'cartão', 'cartao'] },
+  { key: 'unidade', label: 'Unidade / loja', obrig: false, sug: ['unidade', 'loja', 'filial', 'estabelecimento'] },
+  { key: 'descricao', label: 'Descrição / histórico', obrig: false, sug: ['descri', 'histó', 'histo', 'lançamento', 'lancamento', 'memo'] },
+]
+function ImportExtratoModal({ onClose, onDone }: { onClose: () => void; onDone: (n: number) => void }) {
+  const [aoa, setAoa] = useState<string[][] | null>(null)
+  const [mapa, setMapa] = useState<Record<string, number>>({})
+  const [busy, setBusy] = useState(false)
+  const [erro, setErro] = useState('')
+  const fileRef = useRef<HTMLInputElement | null>(null)
+  const headers = (aoa?.[0] ?? []).map((h) => String(h ?? '').trim())
+
+  async function carregar(f: File | null | undefined) {
+    if (!f) return
+    setErro('')
+    try {
+      const dados = await lerPlanilha(f)
+      if (!dados.length) { setErro('Planilha vazia.'); return }
+      setAoa(dados)
+      // sugestão automática de vínculo por nome de coluna
+      const hs = (dados[0] ?? []).map((h) => String(h ?? '').trim().toLowerCase())
+      const m: Record<string, number> = {}
+      for (const c of EXTRATO_CAMPOS) { const i = colIdx(hs, ...c.sug); if (i >= 0) m[c.key as string] = i }
+      setMapa(m)
+    } catch { setErro('Não foi possível ler o arquivo. Use .xlsx, .xls ou .csv.') }
+  }
+
+  const linhas = (aoa ?? []).slice(1).filter((r) => r && r.some((c) => String(c ?? '').trim()))
+  const montar = (r: string[]): ImportExtratoItem => ({
+    data: mapa.data != null ? String(r[mapa.data] ?? '').trim() : null,
+    recebido: mapa.recebido != null ? parseValorBR(r[mapa.recebido]) : 0,
+    venda: mapa.venda != null ? parseValorBR(r[mapa.venda]) : null,
+    adquirente: mapa.adquirente != null ? String(r[mapa.adquirente] ?? '').trim() : '',
+    unidade: mapa.unidade != null ? String(r[mapa.unidade] ?? '').trim() : '',
+    descricao: mapa.descricao != null ? String(r[mapa.descricao] ?? '').trim() : '',
+  })
+  const podeImportar = mapa.data != null && mapa.recebido != null && linhas.length > 0
+
+  async function importar() {
+    setBusy(true); setErro('')
+    const res = await importarExtrato(linhas.map(montar))
+    setBusy(false)
+    if (!res.ok) { setErro(res.error || 'Falha na importação.'); return }
+    onDone(res.importados ?? 0)
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '7px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(20,22,30,.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, maxWidth: 860, width: '100%', maxHeight: '92vh', overflow: 'auto', boxShadow: '0 24px 60px rgba(0,0,0,.3)', padding: '24px 26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <i className="ti ti-file-spreadsheet" style={{ fontSize: 20, color: '#3b4252' }} />
+          <h3 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>Importar extrato bancário</h3>
+          <i className="ti ti-x" style={{ fontSize: 20, color: '#9aa0aa', cursor: 'pointer' }} onClick={onClose} />
+        </div>
+
+        {!aoa ? (
+          <div style={{ textAlign: 'center', padding: '30px 10px' }}>
+            <p style={{ fontSize: 13.5, color: 'var(--text-2)', marginBottom: 14 }}>Escolha a planilha do extrato (<b>qualquer banco</b> — .xlsx, .xls ou .csv).<br />No próximo passo você vincula as colunas dela aos campos do sistema.</p>
+            <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv" onChange={(e) => { carregar(e.target.files?.[0]); e.currentTarget.value = '' }} />
+            <button className="btn btn-primary" onClick={() => fileRef.current?.click()}><i className="ti ti-upload" /> Escolher arquivo</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 12 }}><b>{linhas.length}</b> linha(s) encontradas. Vincule as colunas da planilha aos campos do sistema (<span style={{ color: 'var(--red)' }}>*</span> obrigatórios):</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 18px', marginBottom: 16 }}>
+              {EXTRATO_CAMPOS.map((c) => (
+                <div key={c.key as string}>
+                  <label style={{ fontSize: 11.5, fontWeight: 600, display: 'block', marginBottom: 4 }}>{c.label}{c.obrig && <span style={{ color: 'var(--red)' }}> *</span>}</label>
+                  <select style={inp} value={mapa[c.key as string] ?? ''} onChange={(e) => {
+                    const v = e.target.value
+                    setMapa((m) => { const n = { ...m }; if (v === '') delete n[c.key as string]; else n[c.key as string] = Number(v); return n })
+                  }}>
+                    <option value="">— não importar —</option>
+                    {headers.map((h, i) => <option key={i} value={i}>{h || `Coluna ${i + 1}`}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <div className="cli-scroll" style={{ maxHeight: 180, marginBottom: 14 }}>
+              <table className="cli-table">
+                <thead><tr><th>Data</th><th className="num-r">Recebido</th><th className="num-r">Venda</th><th>Adquirente</th><th>Unidade</th><th>Descrição</th></tr></thead>
+                <tbody>
+                  {linhas.slice(0, 5).map((r, i) => { const it = montar(r); return (
+                    <tr key={i}><td>{it.data || '—'}</td><td className="num-r">{it.recebido ? moedaBR(it.recebido) : '—'}</td><td className="num-r">{it.venda ? moedaBR(it.venda) : '—'}</td><td>{it.adquirente || '—'}</td><td>{it.unidade || '—'}</td><td style={{ fontSize: 11.5 }}>{(it.descricao || '—').slice(0, 40)}</td></tr>
+                  ) })}
+                </tbody>
+              </table>
+            </div>
+            {erro && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}><i className="ti ti-alert-triangle" /> {erro}</div>}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
+              <button className="btn btn-ghost" onClick={() => { setAoa(null); setMapa({}) }}><i className="ti ti-arrow-left" /> Trocar arquivo</button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn" onClick={onClose} disabled={busy}>Cancelar</button>
+                <button className="btn btn-primary" onClick={importar} disabled={busy || !podeImportar} title={!podeImportar ? 'Vincule Data e Valor recebido' : undefined}>{busy ? 'Importando…' : <><i className="ti ti-check" /> Importar {linhas.length} linha(s)</>}</button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

@@ -625,13 +625,51 @@ export async function rodarReguaAtraso(regua?: ReguaPasso[]): Promise<R & { apli
 // CONCILIAÇÃO
 // =============================================================================
 /** Rodar conciliação (finRodarConc L5331)  recalcula taxas/divergências sobre os lançamentos. */
-export async function rodarConciliacao(): Promise<R & { cruzados?: number }> {
+export async function rodarConciliacao(): Promise<R & { cruzados?: number; divergentes?: number }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para conciliar.' }
-  const { count } = await op.sb.from('fin_conciliacao').select('id', { count: 'exact', head: true })
+  // Cruzamento REAL linha a linha: esperado (informado, ou venda×(1−taxa%)) × recebido no extrato.
+  // Tolerância de R$0,05 (arredondamento bancário). Sem par completo → permanece pendente.
+  const { data: rows } = await op.sb.from('fin_conciliacao')
+    .select('id, venda, taxa_pct, esperado, recebido, status').neq('status', 'ok').limit(2000)
+  let cruzados = 0, divergentes = 0
+  const admin = adminClient()
+  for (const r of (rows ?? []) as { id: string; venda: number | null; taxa_pct: number | null; esperado: number | null; recebido: number | null }[]) {
+    const esperado = r.esperado ?? (r.venda != null && r.taxa_pct != null ? Math.round(r.venda * (1 - r.taxa_pct / 100) * 100) / 100 : null)
+    if (esperado == null || r.recebido == null) continue
+    const ok = Math.abs(esperado - Number(r.recebido)) <= 0.05
+    const { error: e } = await admin.from('fin_conciliacao')
+      .update({ esperado, status: ok ? 'ok' : 'divergencia', taxa: r.venda != null ? Math.round((r.venda - esperado) * 100) / 100 : null })
+      .eq('id', r.id)
+    if (!e) { cruzados++; if (!ok) divergentes++ }
+  }
   revalidatePath('/financeiro')
-  return { ok: true, cruzados: count ?? 0 }
+  return { ok: true, cruzados, divergentes }
+}
+
+// ── Importação de EXTRATO BANCÁRIO (qualquer banco): o front lê o Excel/CSV e o usuário
+// VINCULA as colunas da planilha aos campos do sistema; aqui só grava (pedido 03/07). ──
+export type ImportExtratoItem = { data: string | null; recebido: number; venda?: number | null; adquirente?: string; unidade?: string; descricao?: string }
+export async function importarExtrato(itens: ImportExtratoItem[]): Promise<R & { importados?: number }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para importar extratos.' }
+  const lista = (itens || []).filter((i) => Number(i.recebido) > 0 || Number(i.venda) > 0).slice(0, 2000)
+  if (lista.length === 0) return { ok: false, error: 'Nenhuma linha com valor reconhecida — confira o vínculo das colunas.' }
+  const rows = lista.map((i) => ({
+    data: vencISO(i.data),
+    unidade_nome: (i.unidade || '').trim() || null,
+    adquirente: (i.adquirente || '').trim() || null,
+    venda: i.venda != null && Number(i.venda) > 0 ? Math.round(Number(i.venda) * 100) / 100 : null,
+    recebido: Number(i.recebido) > 0 ? Math.round(Number(i.recebido) * 100) / 100 : null,
+    observacao: (i.descricao || '').trim() || null,
+    status: 'pendente',
+  }))
+  const { data: ins, error: e } = await adminClient().from('fin_conciliacao').insert(rows).select('id')
+  if (e) return { ok: false, error: msgErro(e.message, 'importar o extrato') }
+  revalidatePath('/financeiro')
+  return { ok: true, importados: (ins ?? []).length }
 }
 
 // =============================================================================
