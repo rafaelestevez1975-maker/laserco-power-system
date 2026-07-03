@@ -121,10 +121,25 @@ export function Sidebar({
     }
     const ordenados = achatados.map((l, i) => ({ l, i })).sort((a, b) => (blocoDe(a.l.href) - blocoDe(b.l.href)) || (a.i - b.i)).map((x) => x.l)
     const minhaConta = acharLeaf('/minha-conta')
+    // Financeiro: DUAS categorias organizadoras (pedido 03/07) — a gestão da REDE separada
+    // do dia a dia da LOJA/relatórios. Minha conta fecha a segunda seção.
+    if (soModulo === 'financeiro') {
+      const franqueadora = ordenados.filter((l) => blocoDe(l.href) === 0)
+      const unidade = ordenados.filter((l) => blocoDe(l.href) !== 0)
+      const itensUnidade = minhaConta ? [...unidade, minhaConta] : unidade
+      return (
+        <nav className="nav">
+          <SectionBlock title="Financeiro · Franqueadora" items={franqueadora} pathname={pathname}
+            isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
+          <SectionBlock title="Unidades & Relatórios" items={itensUnidade} pathname={pathname}
+            isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
+        </nav>
+      )
+    }
     const itens = minhaConta ? [...ordenados, minhaConta] : ordenados
     return (
       <nav className="nav">
-        <SectionBlock title={soModulo === 'financeiro' ? 'Financeiro' : 'SAC'} items={itens} pathname={pathname}
+        <SectionBlock title="SAC" items={itens} pathname={pathname}
           isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
       </nav>
     )
