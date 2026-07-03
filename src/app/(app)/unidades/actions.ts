@@ -80,3 +80,67 @@ export async function toggleAtivaUnidade(id: string, ativa: boolean): Promise<Ac
 // TODO(legado: buildUnidades)  criar nova unidade só Proprietário. Criação envolve
 //   empresa_id + provisionamento (bemp_salon_id) e foge do escopo de cadastro simples;
 //   deixado adiado. //TODO(legado: criar unidade)
+
+export type NovaUnidadeInput = {
+  nome: string
+  cnpj?: string | null
+  cidade?: string | null
+  estado?: string | null
+  tipoLoja?: 'propria' | 'franquia'
+}
+
+/** Cria uma unidade da rede (pedido 03/07). Já provisiona o CENTRO DE CUSTO da unidade —
+ *  sem ele o financeiro (razão/DRE/royalties) não enxerga a loja. RBAC: franqueadora/proprietário. */
+export async function criarUnidade(input: NovaUnidadeInput): Promise<ActionResult & { id?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeGerirUnidade(op.papel)) return { ok: false, error: 'Você não tem permissão para criar unidades.' }
+
+  const nome = (input.nome || '').trim()
+  if (!nome) return { ok: false, error: 'Informe o nome da unidade.' }
+  const estado = (input.estado || '').trim().toUpperCase()
+  if (estado && estado.length !== 2) return { ok: false, error: 'UF deve ter 2 letras (ex.: SP).' }
+
+  const { data: dup } = await op.sb.from('unidades').select('id').ilike('nome', nome).limit(1).maybeSingle()
+  if (dup) return { ok: false, error: 'Já existe uma unidade com esse nome.' }
+
+  const { data: emp } = await op.sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
+  const empresaId = (emp as { id?: string } | null)?.id
+  if (!empresaId) return { ok: false, error: 'Empresa da rede não encontrada.' }
+
+  const { data: ins, error: e } = await op.sb.from('unidades').insert({
+    nome, empresa_id: empresaId, ativa: true,
+    cnpj: input.cnpj?.trim() || null, cidade: input.cidade?.trim() || null, estado: estado || null,
+    tipo_loja: input.tipoLoja === 'propria' ? 'propria' : 'franquia',
+  }).select('id').single()
+  if (e) return { ok: false, error: msgErro(e.message, 'criar unidade') }
+  const id = (ins as { id: string }).id
+
+  // Centro de custo da loja (razão/DRE/royalties dependem dele).
+  const { error: eCc } = await op.sb.from('centro_custo').insert({ empresa_id: empresaId, nome, tipo: 'unidade', unidade_id: id })
+  if (eCc) console.error('criarUnidade: centro de custo falhou:', eCc.message)
+
+  revalidatePath('/unidades'); revalidatePath('/financeiro')
+  return { ok: true, id }
+}
+
+/** Remove uma unidade SEM histórico. Se houver qualquer vínculo (lançamentos, agendamentos,
+ *  chats…), o banco barra por FK e orientamos usar INATIVAR — histórico nunca é apagado. */
+export async function removerUnidade(id: string): Promise<ActionResult> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeGerirUnidade(op.papel)) return { ok: false, error: 'Você não tem permissão para remover unidades.' }
+  if (!id) return { ok: false, error: 'Unidade inválida.' }
+
+  // Centro de custo primeiro (se tiver lançamentos no razão, a FK barra aqui — mensagem amiga).
+  const { error: eCc } = await op.sb.from('centro_custo').delete().eq('unidade_id', id)
+  if (eCc) {
+    return { ok: false, error: /foreign key|violates|constraint/i.test(eCc.message) ? 'Esta unidade tem lançamentos financeiros vinculados — use “Inativar” (o histórico é preservado).' : msgErro(eCc.message, 'remover unidade') }
+  }
+  const { error: e } = await op.sb.from('unidades').delete().eq('id', id)
+  if (e) {
+    return { ok: false, error: /foreign key|violates|constraint/i.test(e.message) ? 'Esta unidade tem histórico vinculado (agendamentos, conversas ou cadastros) — use “Inativar” em vez de remover.' : msgErro(e.message, 'remover unidade') }
+  }
+  revalidatePath('/unidades'); revalidatePath('/financeiro')
+  return { ok: true }
+}

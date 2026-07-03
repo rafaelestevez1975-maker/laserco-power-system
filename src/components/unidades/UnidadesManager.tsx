@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { editarUnidade, toggleAtivaUnidade } from '@/app/(app)/unidades/actions'
+import { editarUnidade, toggleAtivaUnidade, criarUnidade, removerUnidade } from '@/app/(app)/unidades/actions'
 
 export type UnidadeRow = {
   id: string
@@ -33,6 +33,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const [editRow, setEditRow] = useState<UnidadeRow | null>(null)
+  const [novaOpen, setNovaOpen] = useState(false)
 
   function urlCom(extra: Record<string, string | number | undefined>): string {
     const p = new URLSearchParams()
@@ -76,10 +77,11 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
           {!podeGerir && (
             <span className="os-st os-cancelada"><i className="ti ti-eye" /> Somente leitura</span>
           )}
-          {/* TODO(legado: criar unidade)  criação só Proprietário (precisa empresa_id + provisionamento). */}
-          <button className="btn" disabled title="Criação de unidade  restrita ao Proprietário (em breve)">
-            <i className="ti ti-plus" /> Nova unidade
-          </button>
+          {podeGerir && (
+            <button className="btn btn-primary" onClick={() => { setMsg(''); setNovaOpen(true) }}>
+              <i className="ti ti-plus" /> Nova unidade
+            </button>
+          )}
         </div>
       </div>
 
@@ -180,6 +182,21 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
                           <i className="ti ti-pencil" /> Editar
                         </button>
                         <button
+                          className="btn"
+                          style={{ marginRight: 6, color: 'var(--red)' }}
+                          disabled={busy === u.id}
+                          title="Remover (só sem histórico; com histórico use Inativar)"
+                          onClick={async () => {
+                            if (!window.confirm(`Remover a unidade "${u.nome}"? Só é possível se ela não tiver histórico — senão use Inativar.`)) return
+                            setMsg('')
+                            const r = await removerUnidade(u.id)
+                            setMsg(r.ok ? `Unidade removida: ${u.nome}.` : (r.error || 'Não foi possível remover.'))
+                            if (r.ok) router.refresh()
+                          }}
+                        >
+                          <i className="ti ti-trash" />
+                        </button>
+                        <button
                           className={`btn ${u.ativa === false ? 'btn-primary' : ''}`}
                           disabled={busy === u.id}
                           onClick={() => toggle(u)}
@@ -215,6 +232,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
         </div>
       </div>
 
+      {novaOpen && <NovaUnidadeModal onClose={() => setNovaOpen(false)} onCriada={(nome) => { setNovaOpen(false); setMsg(`Unidade criada: ${nome} (centro de custo do financeiro provisionado).`); router.refresh() }} />}
       {editRow && (
         <EditarUnidadeForm
           row={editRow}
@@ -300,6 +318,58 @@ function EditarUnidadeForm({ row, onClose, onSaved }: { row: UnidadeRow; onClose
           <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </form>
+    </div>
+  )
+}
+
+
+// ── Modal: criar unidade (pedido 03/07) — provisiona o centro de custo do financeiro junto. ──
+function NovaUnidadeModal({ onClose, onCriada }: { onClose: () => void; onCriada: (nome: string) => void }) {
+  const [nome, setNome] = useState('')
+  const [cidade, setCidade] = useState('')
+  const [estado, setEstado] = useState('')
+  const [cnpj, setCnpj] = useState('')
+  const [tipo, setTipo] = useState<'franquia' | 'propria'>('franquia')
+  const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
+  async function salvar() {
+    setErro(''); setSaving(true)
+    const r = await criarUnidade({ nome, cidade, estado, cnpj, tipoLoja: tipo })
+    setSaving(false)
+    if (!r.ok) { setErro(r.error || 'Não foi possível criar a unidade.'); return }
+    onCriada(nome.trim())
+  }
+  const inp: React.CSSProperties = { width: '100%', padding: '9px 11px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13.5 }
+  const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface, #fff)', borderRadius: 14, width: 'min(460px,100%)', boxShadow: '0 18px 50px rgba(0,0,0,.25)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <b><i className="ti ti-building-store" /> Nova unidade</b>
+          <button className="btn" style={{ padding: '4px 8px' }} onClick={onClose}><i className="ti ti-x" /></button>
+        </div>
+        <div style={{ padding: 18, display: 'grid', gap: 12 }}>
+          <div><label style={lbl}>Nome da unidade *</label><input style={inp} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Campinas - Iguatemi" autoFocus /></div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 2 }}><label style={lbl}>Cidade</label><input style={inp} value={cidade} onChange={(e) => setCidade(e.target.value)} /></div>
+            <div style={{ flex: 1 }}><label style={lbl}>UF</label><input style={inp} value={estado} onChange={(e) => setEstado(e.target.value.toUpperCase().slice(0, 2))} placeholder="SP" /></div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1 }}><label style={lbl}>CNPJ</label><input style={inp} value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" /></div>
+            <div style={{ flex: 1 }}><label style={lbl}>Tipo</label>
+              <select style={{ ...inp, background: '#fff' }} value={tipo} onChange={(e) => setTipo(e.target.value as 'franquia' | 'propria')}>
+                <option value="franquia">Franquia (paga royalty)</option>
+                <option value="propria">Loja própria (sem royalty)</option>
+              </select>
+            </div>
+          </div>
+          {erro && <div style={{ color: 'var(--red)', fontSize: 13 }}><i className="ti ti-alert-triangle" /> {erro}</div>}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="btn" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button className="btn btn-primary" onClick={salvar} disabled={saving || !nome.trim()}>{saving ? 'Criando…' : <><i className="ti ti-check" /> Criar unidade</>}</button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
