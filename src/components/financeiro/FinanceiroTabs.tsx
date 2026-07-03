@@ -190,7 +190,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} config={config} />}
-      {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} planoContas={planoContas} />}
+      {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} planoContas={planoContas} unidades={unidades} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
       {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
@@ -471,7 +471,7 @@ function VerBoletoLink({ r }: { r: Recebivel }) {
 // =============================================================================
 // CONTAS A PAGAR (finPagarHTML L5233 + finSetPrio + finSuspender)
 // =============================================================================
-function PagarTab({ contasPagar, config, planoContas = [] }: { contasPagar: ContaPagar[]; config: FinConfig; planoContas?: ContaPlano[] }) {
+function PagarTab({ contasPagar, config, planoContas = [], unidades = [] }: { contasPagar: ContaPagar[]; config: FinConfig; planoContas?: ContaPlano[]; unidades?: UnidadeOpt[] }) {
   const router = useRouter()
   const [escopo, setEscopo] = useState('Todos')
   const [prio, setPrio] = useState('Todas')
@@ -583,7 +583,7 @@ function PagarTab({ contasPagar, config, planoContas = [] }: { contasPagar: Cont
         </div>
       </div>
       {filtroOpen && <FiltroFinModal titulo="Editar filtros" pessoaLabel="Fornecedor / Escopo" pessoas={[...new Set(contasPagar.map((p) => p.escopo).filter(Boolean))].sort()} filtros={filtros} onApply={(f) => { setFiltros(f); setFiltroOpen(false) }} onClose={() => setFiltroOpen(false)} />}
-      {showNova && <NovaDespesaModal config={config} planoContas={planoContas} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
+      {showNova && <NovaDespesaModal config={config} planoContas={planoContas} unidades={unidades} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead><tr><th>Prioridade</th><th>Categoria</th><th>Descrição</th><th>Escopo</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Definir prio.</th><th>Ações</th></tr></thead>
@@ -622,7 +622,7 @@ function PagarTab({ contasPagar, config, planoContas = [] }: { contasPagar: Cont
   )
 }
 
-function NovaDespesaModal({ config, planoContas = [], onClose, onSaved }: { config: FinConfig; planoContas?: ContaPlano[]; onClose: () => void; onSaved: () => void }) {
+function NovaDespesaModal({ config, planoContas = [], unidades = [], onClose, onSaved }: { config: FinConfig; planoContas?: ContaPlano[]; unidades?: UnidadeOpt[]; onClose: () => void; onSaved: () => void }) {
   // Categorias de DESPESA vêm do PLANO DE CONTAS (Config → Plano de contas), não de lista solta.
   const catsDespesa = planoContas.filter((c) => c.ativo && (c.natureza === 'despesa' || c.natureza === 'custo')).map((c) => c.nome)
   const [categoria, setCategoria] = useState(catsDespesa[0] ?? '')
@@ -658,7 +658,13 @@ function NovaDespesaModal({ config, planoContas = [], onClose, onSaved }: { conf
         </div>
         <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <div className="mf" style={{ flex: 1 }}><label>Escopo</label><input value={escopo} onChange={(e) => setEscopo(e.target.value)} placeholder="Escritório / Rede / Unidade" /></div>
+          <div className="mf" style={{ flex: 1 }}><label>Escopo</label>
+            <select value={escopo} onChange={(e) => setEscopo(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
+              <option value="Escritório">Escritório</option>
+              <option value="Rede">Rede</option>
+              {unidades.length > 0 && <optgroup label="Unidades">{unidades.map((u) => <option key={u.id} value={u.nome}>{u.nome}</option>)}</optgroup>}
+            </select>
+          </div>
           <div className="mf" style={{ flex: 1 }}><label>Prioridade</label>
             <select value={prioridade} onChange={(e) => setPrioridade(e.target.value as 'alta' | 'media' | 'baixa')}><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select>
           </div>
