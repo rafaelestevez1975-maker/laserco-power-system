@@ -31,7 +31,7 @@ function lerArquivo(file: File): Promise<string> {
   })
 }
 
-/** DISCO VIRTUAL — gerenciador de arquivos da rede (paridade buildDisco ~9417). */
+/** DISCO VIRTUAL  gerenciador de arquivos da rede (paridade buildDisco ~9417). */
 export function DiscoManager(props: Props) {
   const { isAdmin, migrationPendente, driveLinked, driveUrl, pastas, arquivos } = props
   const router = useRouter()
@@ -118,7 +118,7 @@ export function DiscoManager(props: Props) {
     setBusy(true)
     const r = await vincularDrive(u)
     setBusy(false)
-    if (!r.ok) flash(r.error || 'Erro.'); else { flash('Google Drive vinculado — pastas e uploads serão replicados.'); router.refresh() }
+    if (!r.ok) flash(r.error || 'Erro.'); else { flash('Google Drive vinculado  pastas e uploads serão replicados.'); router.refresh() }
   }
 
   async function onDesvincular() {
@@ -166,7 +166,7 @@ export function DiscoManager(props: Props) {
         <div className="rel-card" style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <i className="ti ti-brand-google-drive" style={{ fontSize: 22, color: 'var(--text-3)' }} />
-            <div style={{ fontSize: 13 }}><b>Vincular um Google Drive</b> (opcional) — use uma pasta compartilhada do Drive como raiz; as pastas/arquivos de lá são replicados no Disco Virtual. Ou crie pastas e faça upload direto aqui.</div>
+            <div style={{ fontSize: 13 }}><b>Vincular um Google Drive</b> (opcional)  use uma pasta compartilhada do Drive como raiz; as pastas/arquivos de lá são replicados no Disco Virtual. Ou crie pastas e faça upload direto aqui.</div>
           </div>
           <button className="btn btn-primary" onClick={onVincular} disabled={busy}><i className="ti ti-brand-google-drive" /> Vincular Google Drive</button>
         </div>

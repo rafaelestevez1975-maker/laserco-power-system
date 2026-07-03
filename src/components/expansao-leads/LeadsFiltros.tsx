@@ -33,7 +33,7 @@ const labelStyle: React.CSSProperties = {
 
 /**
  * Filtros da lista de leads de Expansão (origem, temperatura, etapa, busca por texto).
- * Muda a querystring e navega — a página (Server Component) re-renderiza com os dados filtrados.
+ * Muda a querystring e navega  a página (Server Component) re-renderiza com os dados filtrados.
  * O período (periodo/di/df) é preservado para não conflitar com o RelFiltros ao lado.
  */
 export function LeadsFiltros({

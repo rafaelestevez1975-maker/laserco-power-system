@@ -112,7 +112,7 @@ export function JuridicoManager(props: Props) {
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
         <i className="ti ti-gavel" /> Documentos contratuais e assinaturas da unidade <b>{activeUnitName}</b>
-        {!activeUnitId && ' (todas as unidades — selecione uma no topo para vincular um documento a ela)'}. Acesso restrito a administradores.
+        {!activeUnitId && ' (todas as unidades  selecione uma no topo para vincular um documento a ela)'}. Acesso restrito a administradores.
       </div>
 
       {/* KPIs */}
@@ -219,7 +219,7 @@ export function JuridicoManager(props: Props) {
                 return (
                   <tr key={d.id}>
                     <td>
-                      <b>{d.titulo || '—'}</b>
+                      <b>{d.titulo || ''}</b>
                       {d.arquivo_nome && <div style={{ fontSize: 11, color: 'var(--text-3)' }}><i className="ti ti-paperclip" /> {d.arquivo_nome}</div>}
                       {d.status === 'cancelado' && d.motivo_cancelamento && (
                         <div style={{ fontSize: 11, color: 'var(--red)' }}>Motivo: {d.motivo_cancelamento}</div>
@@ -236,7 +236,7 @@ export function JuridicoManager(props: Props) {
                         ? <span style={{ color: 'var(--text-3)' }}>nenhum</span>
                         : <span>{d.assinados}/{d.total_signatarios} assinaram</span>}
                     </td>
-                    <td>{d.prazo ? dataBR(d.prazo) : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                    <td>{d.prazo ? dataBR(d.prazo) : <span style={{ color: 'var(--text-3)' }}></span>}</td>
                     <td style={{ fontSize: 12 }}>{dataBR(d.criado_em)}</td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button className="btn" style={{ marginRight: 6 }} title="Signatários" onClick={() => { setMsg(''); setErr(''); setSignRow(d) }}>

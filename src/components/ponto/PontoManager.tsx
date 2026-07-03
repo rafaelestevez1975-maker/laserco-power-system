@@ -51,7 +51,7 @@ type Props = {
   total: number
 }
 
-const CASA_KEY = 'lc_ponto_casa' // GPS da casa (home office) — por dispositivo (legado casaLat/casaLng)
+const CASA_KEY = 'lc_ponto_casa' // GPS da casa (home office)  por dispositivo (legado casaLat/casaLng)
 function lerCasa(): { lat: number; lng: number } | null {
   if (typeof localStorage === 'undefined') return null
   try { const v = JSON.parse(localStorage.getItem(CASA_KEY) || 'null'); return v && Number.isFinite(v.lat) && Number.isFinite(v.lng) ? v : null } catch { return null }
@@ -72,7 +72,7 @@ export function PontoManager(props: Props) {
   const [novoOpen, setNovoOpen] = useState(false)
   const [editRow, setEditRow] = useState<RegistroRow | null>(null)
 
-  // Modo presencial (unidade) x home office (casa) — legado pontoSetModo (index.html ~8431).
+  // Modo presencial (unidade) x home office (casa)  legado pontoSetModo (index.html ~8431).
   const [modo, setModo] = useState<'unidade' | 'casa'>(config.modo_padrao === 'casa' ? 'casa' : 'unidade')
   const [casa, setCasa] = useState<{ lat: number; lng: number } | null>(() => (typeof window !== 'undefined' ? lerCasa() : null))
   const [capturandoCasa, setCapturandoCasa] = useState(false)
@@ -90,7 +90,7 @@ export function PontoManager(props: Props) {
   const mapLat = ultima?.lat ?? baseLat
   const mapLng = ultima?.lng ?? baseLng
 
-  // ── Definir/atualizar o GPS da minha casa (home office) — legado pontoDefinirCasa (~8432). ──
+  // ── Definir/atualizar o GPS da minha casa (home office)  legado pontoDefinirCasa (~8432). ──
   function definirCasa() {
     setMsg(''); setErro('')
     if (typeof navigator === 'undefined' || !navigator.geolocation) { setErro('GPS indisponível neste dispositivo.'); return }
@@ -169,8 +169,8 @@ export function PontoManager(props: Props) {
         <i className="ti ti-map-pin-check" /> Ponto Digital por geolocalização (GPS) ·{' '}
         <b>{activeUnitName}</b>
         {podeGerir
-          ? ' — você vê o espelho de ponto da unidade e pode ajustar marcações.'
-          : ' — registre o seu ponto pelos botões e acompanhe o seu espelho.'}
+          ? '  você vê o espelho de ponto da unidade e pode ajustar marcações.'
+          : '  registre o seu ponto pelos botões e acompanhe o seu espelho.'}
       </div>
 
       {semMigration && (
@@ -183,7 +183,7 @@ export function PontoManager(props: Props) {
       )}
 
       <div className="rel-legend" style={{ marginBottom: 12 }}>
-        Registre o ponto com a sua <b>localização atual (GPS)</b>. O sistema valida se você está dentro da <b>cerca virtual</b> (raio de {config.raio} m) da <b>unidade</b> — ou, em <b>home office</b>, do seu <b>endereço de casa</b>. Cada colaborador vê o <b>seu próprio</b> ponto.
+        Registre o ponto com a sua <b>localização atual (GPS)</b>. O sistema valida se você está dentro da <b>cerca virtual</b> (raio de {config.raio} m) da <b>unidade</b>  ou, em <b>home office</b>, do seu <b>endereço de casa</b>. Cada colaborador vê o <b>seu próprio</b> ponto.
       </div>
 
       {/* ── Bater meu ponto ── */}
@@ -193,7 +193,7 @@ export function PontoManager(props: Props) {
             <i className="ti ti-clock-hour-4" style={{ color: 'var(--brand-500)' }} /> Meu ponto · {modo === 'casa' ? 'Casa (home office)' : activeUnitName}
           </b>
           <span style={pill(config.maps_key ? '#E7F0EC' : '#FBEFD9', config.maps_key ? '#15803D' : '#9A6700')}>
-            {config.maps_key ? 'Google Maps conectado' : 'Sem chave — usando OpenStreetMap'}
+            {config.maps_key ? 'Google Maps conectado' : 'Sem chave  usando OpenStreetMap'}
           </span>
         </div>
 
@@ -212,7 +212,7 @@ export function PontoManager(props: Props) {
           <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 9px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <i className="ti ti-home" />
             {casaDef
-              ? <span>Endereço de casa definido — valida no raio de {config.raio} m da sua casa.</span>
+              ? <span>Endereço de casa definido  valida no raio de {config.raio} m da sua casa.</span>
               : <b style={{ color: '#B26A00' }}>Defina seu endereço de casa para validar o ponto home office.</b>}
             <button className="btn btn-ghost" style={{ padding: '5px 9px' }} disabled={capturandoCasa} onClick={definirCasa}>
               <i className="ti ti-current-location" /> {capturandoCasa ? 'Capturando…' : casaDef ? 'Atualizar minha casa (GPS)' : 'Definir minha casa (GPS)'}
@@ -259,7 +259,7 @@ export function PontoManager(props: Props) {
         <div className="metric-box"><span>Fora do local</span><b style={{ color: '#D85563' }}>{kpis.foraDoLocal}</b></div>
       </div>
 
-      {/* ── Mapa da marcação + Configuração (admin) — legado dash-grid (~8473) ── */}
+      {/* ── Mapa da marcação + Configuração (admin)  legado dash-grid (~8473) ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: 16, marginBottom: 16 }}>
         <div className="lc-card">
           <h4 style={{ margin: '0 0 10px', fontSize: 14 }}><i className="ti ti-map-2" /> Mapa da marcação</h4>
@@ -284,7 +284,7 @@ export function PontoManager(props: Props) {
           {isAdmin
             ? <ConfigForm activeUnitId={activeUnitId} config={config} onSaved={(m) => { setMsg(m); router.refresh() }} onErro={setErro} />
             : <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                A configuração do mapa e da cerca virtual é feita pelos administradores. Você só precisa registrar seu ponto pelos botões acima — sua localização é capturada automaticamente pelo GPS.
+                A configuração do mapa e da cerca virtual é feita pelos administradores. Você só precisa registrar seu ponto pelos botões acima  sua localização é capturada automaticamente pelo GPS.
               </div>}
         </div>
       </div>
@@ -377,14 +377,14 @@ export function PontoManager(props: Props) {
                   {podeGerir && <td><b>{r.colaborador_nome}</b></td>}
                   <td>
                     <i className={`ti ${TIPO_ICON[r.tipo ?? ''] ?? 'ti-clock'}`} style={{ marginRight: 5, color: 'var(--text-3)' }} />
-                    {TIPO_LABEL[r.tipo ?? ''] ?? r.tipo ?? '—'}
+                    {TIPO_LABEL[r.tipo ?? ''] ?? r.tipo ?? ''}
                   </td>
-                  <td>{r.data_hora ? dataHora(r.data_hora) : '—'}</td>
+                  <td>{r.data_hora ? dataHora(r.data_hora) : ''}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                    {r.lat != null && r.lng != null ? `${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}` : '—'}
+                    {r.lat != null && r.lng != null ? `${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}` : ''}
                   </td>
                   <td className="num-r" style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                    {r.distancia_m != null ? `${r.distancia_m} m` : '—'}
+                    {r.distancia_m != null ? `${r.distancia_m} m` : ''}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
                     {r.fonte === 'gps' ? 'GPS' : r.fonte === 'web' ? 'Web' : r.ajustado_por ? 'Ajuste' : 'Manual'}
@@ -394,7 +394,7 @@ export function PontoManager(props: Props) {
                       ? <span style={pill('#E7F0EC', '#15803D')}><i className="ti ti-map-pin-check" /> No local</span>
                       : r.validado_geo === false
                         ? <span style={pill('#FBE9EB', '#D85563')}><i className="ti ti-map-pin-off" /> Fora do local</span>
-                        : <span style={pill('#EEF2F7', '#64748B')}>—</span>}
+                        : <span style={pill('#EEF2F7', '#64748B')}></span>}
                   </td>
                   {podeGerir && (
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -600,7 +600,7 @@ function MarcacaoForm(props: {
           ) : (
             <div className="mf">
               <label>Colaborador</label>
-              <input style={{ ...inp, background: 'var(--bg-2, #f5f5f5)' }} value={row?.colaborador_nome ?? '—'} disabled />
+              <input style={{ ...inp, background: 'var(--bg-2, #f5f5f5)' }} value={row?.colaborador_nome ?? ''} disabled />
             </div>
           )}
 

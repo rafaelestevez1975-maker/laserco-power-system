@@ -75,7 +75,7 @@ export function MateriaisRede(props: Props) {
                       <td>{dataRefBR(u.data_ref)}</td>
                       <td><span className="os-st os-andamento">{u.tipo}</span></td>
                       <td><b>{u.descricao}</b>{u.novo && <span className="os-st os-cancelada" style={{ fontSize: 10, marginLeft: 6 }}>NOVO</span>}</td>
-                      <td style={{ color: 'var(--text-2)' }}><i className="ti ti-folder" style={{ color: 'var(--gold-600, var(--amber))' }} /> {u.onde || '—'}</td>
+                      <td style={{ color: 'var(--text-2)' }}><i className="ti ti-folder" style={{ color: 'var(--gold-600, var(--amber))' }} /> {u.onde || ''}</td>
                       <td>
                         <button className="btn btn-ghost" style={{ padding: '3px 9px' }} onClick={() => onIrParaMateriais(u.onde)}>
                           <i className="ti ti-arrow-right" /> Abrir pasta

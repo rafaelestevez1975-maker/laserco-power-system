@@ -39,7 +39,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
   ])
   const capped = rec.capped || desp.capped
 
-  // ── Royalties (10% do faturamento REALIZADO do mês anterior — só franqueada) ──
+  // ── Royalties (10% do faturamento REALIZADO do mês anterior  só franqueada) ──
   // CNPJ da unidade ativa decide própria × franqueada (uniEhPropria).
   let royalties: Royalties | null = null
   if (unidadeId) {
@@ -62,7 +62,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
   const kpis: RelKpi[] = [
     { label: 'Contas a pagar previstas', value: moedaBR(pagarPrevisto), icon: 'ti-arrow-down-circle' },
     { label: 'Contas a pagar realizadas', value: moedaBR(pagarRealizado), icon: 'ti-circle-check' },
-    { label: 'Royalties a pagar (auto)', value: royalties?.franqueada ? moedaBR(royalties.valor) : '—', icon: 'ti-receipt-2' },
+    { label: 'Royalties a pagar (auto)', value: royalties?.franqueada ? moedaBR(royalties.valor) : '', icon: 'ti-receipt-2' },
     { label: 'Contas a receber previstas', value: moedaBR(receberPrevisto), icon: 'ti-arrow-up-circle' },
     { label: 'Contas a receber realizadas', value: moedaBR(receberRealizado), icon: 'ti-cash' },
     { label: 'Total de contas a receber', value: moedaBR(receberPrevisto), icon: 'ti-pig-money' },
@@ -86,7 +86,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
     { label: 'Saldo', value: Math.max(0, saldo), display: moedaBR(saldo) },
   ]
 
-  // ── Categorias de Contas a pagar (despesas por categoria + royalties) — legado cpData L4630 ──
+  // ── Categorias de Contas a pagar (despesas por categoria + royalties)  legado cpData L4630 ──
   const pagarPorCat = somaPorChave(desp.rows, (r) => r.categoria_id || '∅')
   const cpRows: BarRow[] = [...pagarPorCat.entries()]
     .map(([id, v]) => ({ label: nomeCat(id), value: v, display: moedaBR(v) }))
@@ -96,7 +96,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
     cpRows.sort((a, b) => b.value - a.value)
   }
 
-  // ── Categorias de Contas a receber (receita por categoria) — legado cr L4632 ──
+  // ── Categorias de Contas a receber (receita por categoria)  legado cr L4632 ──
   const receberPorCat = somaPorChave(rec.rows, (r) => r.categoria_id || '∅')
   const crRows = [...receberPorCat.entries()]
     .map(([id, v]) => ({ nome: nomeCat(id), valor: v }))
@@ -144,13 +144,13 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
         </div>
       )}
 
-      {/* Banner de Royalties (própria × franqueada) — legado royBanner L4617 */}
+      {/* Banner de Royalties (própria × franqueada)  legado royBanner L4617 */}
       {unidadeId && royalties && (
         royalties.franqueada ? (
           <div className="rel-card" style={{ background: '#FDF3E7', border: '1px solid #f0d8b0', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
             <i className="ti ti-receipt-2" style={{ fontSize: 24, color: '#B26A00' }} />
             <div>
-              <b style={{ color: '#B26A00' }}>Royalties a pagar (automático) — {moedaBR(royalties.valor)}</b>
+              <b style={{ color: '#B26A00' }}>Royalties a pagar (automático)  {moedaBR(royalties.valor)}</b>
               <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
                 {royalties.pct}% sobre o faturamento do <b>mês anterior</b> ({moedaBR(royalties.faturamentoMesAnterior)}) · vencimento{' '}
                 <b>dia {ROYALTY_VENC_DIA}</b> ({royalties.venc}). Lançado automaticamente no fluxo de caixa desta <b>unidade franqueada</b>.
@@ -160,7 +160,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
         ) : (
           <div className="rel-card" style={{ background: 'var(--green-bg)', marginBottom: 14 }}>
             <b style={{ color: '#0f6b3a' }}><i className="ti ti-circle-check" /> Loja própria</b>
-            {' '}— não há royalties a pagar (apenas unidades <b>franqueadas</b> pagam royalties).
+            {' '} não há royalties a pagar (apenas unidades <b>franqueadas</b> pagam royalties).
           </div>
         )
       )}
@@ -220,7 +220,7 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 10 }}>
           <i className="ti ti-info-circle" /> Previsto = todos os lançamentos do período; Realizado = lançamentos com status{' '}
-          <b>pago</b>. {!unidadeId && 'Royalties são calculados por unidade — selecione uma unidade para ver o banner e o valor.'}
+          <b>pago</b>. {!unidadeId && 'Royalties são calculados por unidade  selecione uma unidade para ver o banner e o valor.'}
         </div>
       </div>
     </div>

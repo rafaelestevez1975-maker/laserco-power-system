@@ -1,5 +1,5 @@
 /**
- * Lib namespeada de Comissões — tipos + conversão entre a LINHA do banco
+ * Lib namespeada de Comissões  tipos + conversão entre a LINHA do banco
  * (matriz_comissoes) e o modelo de UI (ComCat). Client-safe (sem 'use server'),
  * usada tanto pela page (RSC) quanto pelo board (client) e pelas server actions.
  *

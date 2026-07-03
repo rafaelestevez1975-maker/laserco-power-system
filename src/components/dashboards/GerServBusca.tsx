@@ -6,7 +6,7 @@ import { moedaBR } from '@/lib/fmt'
 export type ServItem = { nome: string; faturamento: number; sessoes: number }
 
 /**
- * Busca de serviço (mesmo fora do Top 10) — réplica do gerServBusca() do legado
+ * Busca de serviço (mesmo fora do Top 10)  réplica do gerServBusca() do legado
  * (legacy/index.html ~4594). Filtra a lista COMPLETA de serviços e mostra, para cada
  * resultado, a posição no ranking de faturamento, % do total, faturamento e sessões.
  */

@@ -127,7 +127,7 @@ export async function renomearEtapa(id: string, nome: string): Promise<ActionRes
   return { ok: true }
 }
 
-/** Remove (desativa) uma etapa — protege etapas do sistema e etapas com leads. */
+/** Remove (desativa) uma etapa  protege etapas do sistema e etapas com leads. */
 export async function excluirEtapa(id: string): Promise<ActionResult> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }

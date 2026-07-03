@@ -70,14 +70,14 @@ export function NovoAcordo({ unidades, chamados }: { unidades: Unidade[]; chamad
               {err && <div className="modal-note" style={{ gridColumn: '1 / -1', background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
               <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Chamado vinculado (opcional)</label>
                 <select style={inp} value={f.ticketId} onChange={(e) => pickChamado(e.target.value)}>
-                  <option value="">— Acordo avulso (sem chamado)</option>
+                  <option value=""> Acordo avulso (sem chamado)</option>
                   {chamados.map((c) => <option key={c.id} value={c.id}>{c.rotulo}</option>)}
                 </select>
               </div>
               <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Cliente *</label><input style={inp} value={f.cliente} onChange={(e) => set('cliente', e.target.value)} autoFocus /></div>
               <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Unidade</label>
                 <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
-                  <option value="">— Franqueadora / sem unidade</option>
+                  <option value=""> Franqueadora / sem unidade</option>
                   {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                 </select>
               </div>
@@ -87,7 +87,7 @@ export function NovoAcordo({ unidades, chamados }: { unidades: Unidade[]; chamad
                 <input style={{ ...inp, maxWidth: 220 }} type="date" value={f.data1} onChange={(e) => set('data1', e.target.value)} />
                 {!diaOk && <div style={{ fontSize: 11.5, color: 'var(--red)', marginTop: 4 }}>A data do 1º pagamento deve ser após o dia 15.</div>}
               </div>
-              <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Observação ao credor (opcional)</label><textarea style={{ ...inp, minHeight: 54, resize: 'vertical' }} value={f.observacao} onChange={(e) => set('observacao', e.target.value)} placeholder="Motivo, andamento, etc. — fica visível no card do acordo." /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={lab}>Observação ao credor (opcional)</label><textarea style={{ ...inp, minHeight: 54, resize: 'vertical' }} value={f.observacao} onChange={(e) => set('observacao', e.target.value)} placeholder="Motivo, andamento, etc.  fica visível no card do acordo." /></div>
 
               {preview.length > 0 && (
                 <div style={{ gridColumn: '1 / -1', border: '1px solid var(--line)', borderRadius: 8, padding: 10 }}>

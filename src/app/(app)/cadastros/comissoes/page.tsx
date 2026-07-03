@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 const PAPEIS_ESCRITA = ['gestor']
 
 /**
- * Matriz de comissões — grade categorias × faixas + simulador em tempo real.
+ * Matriz de comissões  grade categorias × faixas + simulador em tempo real.
  *
  * A matriz agora PERSISTE na tabela matriz_comissoes (scripts/migrations/comissoes.sql).
  * A page carrega as categorias do banco (por empresa) e o board permite editar e
@@ -19,7 +19,7 @@ const PAPEIS_ESCRITA = ['gestor']
  * fiel ao legado (COM_CATS) e o board mostra o banner de empty-state pedindo a migration.
  *
  * O que mais é real: a lista de colaboradores e unidades (alimenta o filtro do
- * simulador, mapeando cargo→categoria — ex.: 'consultora_vendas' → "Consultoras de Vendas").
+ * simulador, mapeando cargo→categoria  ex.: 'consultora_vendas' → "Consultoras de Vendas").
  */
 export default async function ComissoesPage() {
   const ctx = await getSessionContext()
@@ -56,7 +56,7 @@ export default async function ComissoesPage() {
     id: c.id,
     nome: c.nome,
     cargo: c.cargo,
-    unidadeNome: (c.unidade_id && mapaUni.get(c.unidade_id)) || ctx?.activeUnitName || '—',
+    unidadeNome: (c.unidade_id && mapaUni.get(c.unidade_id)) || ctx?.activeUnitName || '',
   }))
 
   return (

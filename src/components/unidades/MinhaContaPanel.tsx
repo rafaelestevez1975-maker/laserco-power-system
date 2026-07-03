@@ -64,7 +64,7 @@ export function MinhaContaPanel({ perfil }: { perfil: PerfilDados | null }) {
     router.refresh()
   }
 
-  const papelLabel = perfil.papel ? (PAPEL_LABEL[perfil.papel] ?? perfil.papel) : '—'
+  const papelLabel = perfil.papel ? (PAPEL_LABEL[perfil.papel] ?? perfil.papel) : ''
 
   return (
     <div className="view active">
@@ -113,7 +113,7 @@ export function MinhaContaPanel({ perfil }: { perfil: PerfilDados | null }) {
         </div>
       </form>
 
-      {/* TODO(legado: buildUni) — tema/cor da marca + subdomínio da organização. Sem coluna/tabela no lkii. */}
+      {/* TODO(legado: buildUni)  tema/cor da marca + subdomínio da organização. Sem coluna/tabela no lkii. */}
       <div className="rel-card" style={{ maxWidth: 640, marginTop: 14 }}>
         <div className="rel-card-h" style={{ cursor: 'default' }}>
           <span><i className="ti ti-palette flt" /> Aparência e subdomínio</span>

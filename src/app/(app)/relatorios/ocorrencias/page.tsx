@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic'
 type SP = { periodo?: string; di?: string; df?: string }
 
 /**
- * Ocorrências e Intercorrências — relatório clínico-operacional.
+ * Ocorrências e Intercorrências  relatório clínico-operacional.
  * Réplica do REL_DEFS.ocorrencias do legado (legacy/index.html ~4280, special:'ocor').
  *
- * IMPORTANTE (ROBUSTEZ): no legado este relatório era 100% mock — a lista `OCOR`
+ * IMPORTANTE (ROBUSTEZ): no legado este relatório era 100% mock  a lista `OCOR`
  * (legacy/index.html ~4432) é um array em memória e a classificação Ocorrência/
  * Intercorrência era um toggle de UI sem persistência. No backend atual NÃO existe
  * tabela de origem:
@@ -24,18 +24,18 @@ type SP = { periodo?: string; di?: string; df?: string }
  * TODO(legado: buildRelatorio special 'ocor'): quando existir a tabela de ocorrências/
  * intercorrências (registro por atendimento: cliente, profissional, serviço, descrição, tipo),
  * substituir o estado vazio por: KPIs (total, ocorrências, intercorrências), gráficos
- * (classificação e por profissional) e a tabela detalhada — escopados por unidade e período.
+ * (classificação e por profissional) e a tabela detalhada  escopados por unidade e período.
  */
 export default async function RelOcorrenciasPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
   const ctx = await getSessionContext()
   const unidadeId = ctx?.activeUnitId ?? null
 
-  // KPIs em placeholder (sem fonte de dados) — mantém o layout consistente com os demais relatórios.
+  // KPIs em placeholder (sem fonte de dados)  mantém o layout consistente com os demais relatórios.
   const kpis: RelKpi[] = [
-    { label: 'Total de registros', value: '—', icon: 'ti-clipboard-heart' },
-    { label: 'Ocorrências', value: '—', icon: 'ti-clipboard-list' },
-    { label: 'Intercorrências', value: '—', icon: 'ti-alert-triangle' },
+    { label: 'Total de registros', value: '', icon: 'ti-clipboard-heart' },
+    { label: 'Ocorrências', value: '', icon: 'ti-clipboard-list' },
+    { label: 'Intercorrências', value: '', icon: 'ti-alert-triangle' },
   ]
 
   return (
@@ -56,7 +56,7 @@ export default async function RelOcorrenciasPage({ searchParams }: { searchParam
       >
         <i className="ti ti-hourglass" style={{ fontSize: 20, color: 'var(--brand-600)', marginTop: 2 }} />
         <div>
-          <b>Relatório em preparação — sem fonte de dados ainda.</b>
+          <b>Relatório em preparação  sem fonte de dados ainda.</b>
           <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>
             O registro de ocorrências e intercorrências por atendimento ainda não está disponível no
             backend (não há tabela de origem). Assim que os registros começarem a ser coletados, este
@@ -65,7 +65,7 @@ export default async function RelOcorrenciasPage({ searchParams }: { searchParam
         </div>
       </div>
 
-      {/* Legenda conceitual (legacy/index.html ~6989) — explica a intenção do relatório. */}
+      {/* Legenda conceitual (legacy/index.html ~6989)  explica a intenção do relatório. */}
       <div
         className="crm-note"
         style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 14, lineHeight: 1.5 }}
@@ -98,7 +98,7 @@ export default async function RelOcorrenciasPage({ searchParams }: { searchParam
             <tbody>
               <tr>
                 <td colSpan={6} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
-                  Nenhum registro disponível — fonte de dados em preparação.
+                  Nenhum registro disponível  fonte de dados em preparação.
                 </td>
               </tr>
             </tbody>

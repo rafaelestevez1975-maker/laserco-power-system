@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 type SP = { periodo?: string; di?: string; df?: string }
 
 // Teto de segurança ao somar (a tabela toda tem ~13k linhas, mas SEMPRE escopamos por
-// período e/ou unidade — uma janela é bem menor; ainda assim limitamos o pull).
+// período e/ou unidade  uma janela é bem menor; ainda assim limitamos o pull).
 const SUM_CAP = 20000
 const PAGE = 1000
 

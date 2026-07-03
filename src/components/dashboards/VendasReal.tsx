@@ -60,7 +60,7 @@ export async function VendasReal({ slug, sp, podeVer }: { slug: string; sp: Vend
   const ticket = vendas > 0 ? receita / vendas : 0
   const desconto = osRows.reduce((a, o) => a + (o.desconto_total || 0), 0)
 
-  // ── Comparativo (período anterior) — só quando há janela anterior definida ──
+  // ── Comparativo (período anterior)  só quando há janela anterior definida ──
   let prev: { vendas: number; receita: number } | null = null
   if (cfg.comparativo && range.prevIni && range.prevFim) {
     const { rows: prevRows } = await pullOS(sb, { unidadeId, ini: range.prevIni, fim: range.prevFim, status: 'fechada' })
@@ -77,7 +77,7 @@ export async function VendasReal({ slug, sp, podeVer }: { slug: string; sp: Vend
       label: 'Vendas', value: vendas.toLocaleString('pt-BR'), icon: 'ti-shopping-cart',
       ...(prev ? { delta: deltaPct(vendas, prev.vendas) != null ? `${deltaPct(vendas, prev.vendas)}% vs ${range.prevLabel}` : `vs ${range.prevLabel}`, deltaTone: (vendas >= prev.vendas ? 'up' : 'down') as 'up' | 'down' } : {}),
     },
-    { label: 'Ticket médio', value: vendas > 0 ? moedaBR(ticket) : '—', icon: 'ti-receipt' },
+    { label: 'Ticket médio', value: vendas > 0 ? moedaBR(ticket) : '', icon: 'ti-receipt' },
     { label: 'Descontos concedidos', value: moedaBR(desconto), icon: 'ti-discount' },
   ]
 
@@ -140,7 +140,7 @@ export async function VendasReal({ slug, sp, podeVer }: { slug: string; sp: Vend
 
       {prev && (
         <div className="rel-card" style={{ marginBottom: 14, fontSize: 12.5, color: 'var(--text-2)' }}>
-          <b><i className="ti ti-arrows-left-right" /> Comparativo</b> — período anterior ({range.prevLabel}):{' '}
+          <b><i className="ti ti-arrows-left-right" /> Comparativo</b>  período anterior ({range.prevLabel}):{' '}
           {moedaBR(prev.receita)} em {prev.vendas.toLocaleString('pt-BR')} vendas.{' '}
           {prev.receita > 0 && <>Variação de receita: <b>{deltaPct(receita, prev.receita)}%</b>.</>}
         </div>

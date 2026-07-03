@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 const PAPEIS_GESTAO = ['financeiro', 'gestor']
 
-/** /catrec — Categorias de contas a RECEBER (plano_contas tipo=receita). */
+/** /catrec  Categorias de contas a RECEBER (plano_contas tipo=receita). */
 export default async function CatRecPage() {
   const ctx = await getSessionContext()
   const sb = await createClient()
@@ -20,7 +20,7 @@ export default async function CatRecPage() {
     .order('codigo', { ascending: true })
 
   // Erro de query (RLS, coluna ausente, banco) não pode virar "Nenhuma
-  // categoria" silencioso — mostra estado de erro honesto.
+  // categoria" silencioso  mostra estado de erro honesto.
   if (error) {
     return (
       <div className="view active">

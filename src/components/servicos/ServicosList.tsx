@@ -21,7 +21,7 @@ export type ServicoRow = {
   ativo: boolean | null
 }
 
-/** Badge de timing de comissão — cores do legado (comTag). */
+/** Badge de timing de comissão  cores do legado (comTag). */
 export function ComTag({ v }: { v: string | null }) {
   const val = v || 'Execução'
   const bg = val === 'Não pagar' ? '#eeeeee' : val === 'Venda' ? '#E7EEFB' : '#E7F0EC'
@@ -41,7 +41,7 @@ type Props = {
 
 /** 30 → "30 min"; 90 → "1h30". */
 function fmtDur(min: number | null): string {
-  if (min == null) return '—'
+  if (min == null) return ''
   if (min < 60) return `${min} min`
   const h = Math.floor(min / 60)
   const m = min % 60
@@ -111,7 +111,7 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
                         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.descricao}</div>
                       )}
                     </td>
-                    <td>{s.grupo ? <span className="orig-tag">{s.grupo}</span> : <span className="muted">—</span>}</td>
+                    <td>{s.grupo ? <span className="orig-tag">{s.grupo}</span> : <span className="muted"></span>}</td>
                     <td className="num-r">{fmtDur(s.duracao_min)}</td>
                     <td className="num-r">
                       <b>{moedaBR(s.preco_padrao)}</b>
@@ -119,7 +119,7 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
                         <span className="orig-tag" style={{ marginLeft: 6, background: '#E7EEFB', color: '#1E3A8A' }} title="Preço dinâmico">din.</span>
                       )}
                     </td>
-                    <td className="num-r">{s.desc_max != null && s.desc_max > 0 ? `${s.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted">—</span>}</td>
+                    <td className="num-r">{s.desc_max != null && s.desc_max > 0 ? `${s.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted"></span>}</td>
                     <td>{s.comissionavel ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                     <td><ComTag v={s.pagar_comissao} /></td>
                     <td>{inativo ? <span className="os-st os-cancelada">Inativo</span> : <span className="os-st os-fechada">Ativo</span>}</td>

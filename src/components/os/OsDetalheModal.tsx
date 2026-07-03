@@ -130,7 +130,7 @@ export function OsDetalheModal({
         <div style={{ padding: '18px 22px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, flex: 1 }}>
-              <i className="ti ti-clipboard-text" /> OS #{os.numero ?? '—'} {os.clienteNome ? `· ${os.clienteNome}` : ''}
+              <i className="ti ti-clipboard-text" /> OS #{os.numero ?? ''} {os.clienteNome ? `· ${os.clienteNome}` : ''}
             </h3>
             <span className={`os-st ${STATUS_CLASS[os.status] || ''}`}>{STATUS_LABEL[os.status] || os.status}</span>
             <button className="btn btn-ghost" onClick={onClose} style={{ padding: '4px 8px' }}><i className="ti ti-x" /></button>
@@ -139,10 +139,10 @@ export function OsDetalheModal({
 
         <div style={{ padding: '14px 22px 22px' }}>
           {/* Cabeçalho de dados */}
-          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Cliente</span><b>{os.clienteNome || '— sem cliente —'}</b></div>
-          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Origem</span><span><span className="orig-tag">{ORIGEM_LABEL[os.origem || ''] || os.origem || '—'}</span></span></div>
-          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Responsável</span><span>{os.responsavelNome || '—'}</span></div>
-          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Criação</span><span>{dataHoraBR(os.criado_em) || '—'}</span></div>
+          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Cliente</span><b>{os.clienteNome || ' sem cliente '}</b></div>
+          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Origem</span><span><span className="orig-tag">{ORIGEM_LABEL[os.origem || ''] || os.origem || ''}</span></span></div>
+          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Responsável</span><span>{os.responsavelNome || ''}</span></div>
+          <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Criação</span><span>{dataHoraBR(os.criado_em) || ''}</span></div>
           {os.fechada_em && <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Fechamento</span><span>{dataBR(os.fechada_em)}</span></div>}
           {os.cancelada_em && <div style={rowSt}><span style={{ color: 'var(--text-2)' }}>Cancelamento</span><span>{dataBR(os.cancelada_em)}</span></div>}
           {os.observacao && <div style={{ ...rowSt, borderBottom: 'none' }}><span style={{ color: 'var(--text-2)' }}>Observação</span><span style={{ textAlign: 'right', maxWidth: '60%' }}>{os.observacao}</span></div>}
@@ -168,7 +168,7 @@ export function OsDetalheModal({
                       <td><span className="orig-tag">{KIND_LABEL[it.kind]}</span></td>
                       <td className="num-r">{it.quantidade}</td>
                       <td className="num-r">{moedaBR(it.preco)}</td>
-                      <td className="num-r">{it.desconto ? moedaBR(it.desconto) : '—'}</td>
+                      <td className="num-r">{it.desconto ? moedaBR(it.desconto) : ''}</td>
                       <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(it.total)}</td>
                       {aberta && podeEscrever && (
                         <td style={{ textAlign: 'right' }}>
@@ -212,7 +212,7 @@ export function OsDetalheModal({
             )}
             {aberta && podeEscrever && (
               <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>
-                {/* TODO(legado: buildOS): produtos e pacotes na OS — tabelas os_produtos/os_pacotes existem mas
+                {/* TODO(legado: buildOS): produtos e pacotes na OS  tabelas os_produtos/os_pacotes existem mas
                     o catálogo (produtos/pacotes) está vazio no backend; ofertamos serviços por enquanto. */}
                 <i className="ti ti-info-circle" /> Produtos e pacotes ficam disponíveis quando o catálogo for cadastrado.
               </p>
@@ -235,7 +235,7 @@ export function OsDetalheModal({
             )}
             {!loading && detalhe && detalhe.pagamentos.map((p: OsPagamentoDetalhe) => (
               <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '5px 0', borderBottom: '1px solid var(--line)' }}>
-                <span>{dataBR(p.data)} · {METODO_LABEL[p.metodo || ''] || p.metodo || '—'}{p.status && p.status !== 'aprovado' ? ` (${p.status})` : ''}</span>
+                <span>{dataBR(p.data)} · {METODO_LABEL[p.metodo || ''] || p.metodo || ''}{p.status && p.status !== 'aprovado' ? ` (${p.status})` : ''}</span>
                 <b>{moedaBR(p.valor)}</b>
               </div>
             ))}

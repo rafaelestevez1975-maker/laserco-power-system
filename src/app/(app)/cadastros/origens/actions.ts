@@ -6,7 +6,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { ehAdmin } from '@/lib/rbac'
 
 /**
- * Origens de Cliente — paridade com o legado (buildOrigens / ORIGENS / origNova /
+ * Origens de Cliente  paridade com o legado (buildOrigens / ORIGENS / origNova /
  * origEdit / origToggle / origDel). Catálogo por EMPRESA. RBAC: admin_geral / gestor.
  * Tabela `origens_cliente` (migration scripts/migrations/anamnese.sql).
  * Toda ação grava auditoria (legado _origSave -> persistState + auditLog).

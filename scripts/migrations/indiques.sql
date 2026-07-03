@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — Gestão de Indiques (paridade com o legado: Prêmio & Link + Sorteio)
+-- Migration  Gestão de Indiques (paridade com o legado: Prêmio & Link + Sorteio)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html, blocos indPremioHTML / indSorteioHTML ~8195-8296)
@@ -11,7 +11,7 @@
 --   Esta migration cria as duas tabelas de config/registro e adiciona as duas
 --   colunas que faltavam em `indicacoes`. Tudo idempotente.
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/indiques.sql
 -- =============================================================================
 
@@ -32,7 +32,7 @@ ALTER TABLE indicacoes
   CHECK (origem IN ('balcao', 'site', 'link'));
 
 -- ----------------------------------------------------------------------------
--- 2) PRÊMIO DO MÊS — config por (empresa, unidade, mês).
+-- 2) PRÊMIO DO MÊS  config por (empresa, unidade, mês).
 --    Legado IND_PREMIO (8063): { premio, valor, obs }. Um registro por unidade/mês.
 --    mes_ref no formato 'YYYY-MM' (legado IND_MES_KEY = '2026-06').
 -- ----------------------------------------------------------------------------
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS indique_config (
 );
 
 -- ----------------------------------------------------------------------------
--- 3) ÚLTIMO SORTEIO — registro do ganhador do mês (legado IND_ULTIMO_SORTEIO 8279).
+-- 3) ÚLTIMO SORTEIO  registro do ganhador do mês (legado IND_ULTIMO_SORTEIO 8279).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS indique_sorteios (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_indique_config_emp_uni  ON indique_config (empres
 CREATE INDEX IF NOT EXISTS idx_indique_sorteios_emp_uni ON indique_sorteios (empresa_id, unidade_id, mes_ref);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — habilita e cria policies básicas por empresa (alinhado às demais tabelas).
+-- 4) RLS  habilita e cria policies básicas por empresa (alinhado às demais tabelas).
 --    Leitura/escrita restritas à empresa do usuário autenticado (via perfis_usuario).
 -- ----------------------------------------------------------------------------
 ALTER TABLE indique_config   ENABLE ROW LEVEL SECURITY;

@@ -30,7 +30,7 @@ export default async function FormasPagamentoPage({ searchParams }: { searchPara
   if (nome) query = query.ilike('nome', `%${nome}%`)
 
   // KPIs absolutos: catálogo INTEIRO, independente dos filtros da tela (o legado
-  // preservava o total). A lista de formas costuma ter ~30 itens — leve.
+  // preservava o total). A lista de formas costuma ter ~30 itens  leve.
   const todasRes = await sb
     .from('formas_pagamento')
     .select('nome, tipo, ativo')

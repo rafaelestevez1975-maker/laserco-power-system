@@ -92,7 +92,7 @@ export function Sidebar({
   const pathname = usePathname()
   const soModulo = ehSoModulo(isAdmin, recursos)
 
-  // MÓDULO ÚNICO (SAC/Financeiro): menu achatado numa seção só — reúne TODOS os itens que o
+  // MÓDULO ÚNICO (SAC/Financeiro): menu achatado numa seção só  reúne TODOS os itens que o
   // módulo pode ver (grupos abertos, sem guarda-chuva "ADMINISTRAÇÃO") + Minha conta no fim.
   if (soModulo) {
     const achatados: Leaf[] = []
@@ -121,7 +121,7 @@ export function Sidebar({
     }
     const ordenados = achatados.map((l, i) => ({ l, i })).sort((a, b) => (blocoDe(a.l.href) - blocoDe(b.l.href)) || (a.i - b.i)).map((x) => x.l)
     const minhaConta = acharLeaf('/minha-conta')
-    // Financeiro: DUAS categorias organizadoras (pedido 03/07) — a gestão da REDE separada
+    // Financeiro: DUAS categorias organizadoras (pedido 03/07)  a gestão da REDE separada
     // do dia a dia da LOJA/relatórios. Minha conta fecha a segunda seção.
     if (soModulo === 'financeiro') {
       const franqueadora = ordenados.filter((l) => blocoDe(l.href) === 0)

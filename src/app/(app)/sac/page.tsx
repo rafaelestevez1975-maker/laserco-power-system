@@ -48,7 +48,7 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   const motivos = ((motivosRaw ?? []) as { label: string }[]).map((m) => m.label)
 
   // PERF: antes esta tela disparava ~33 queries `count:'exact'` separadas (6 KPIs +
-  // 1 por canal + 1 por fase + 1 por motivo) MAIS um loop paginado só para reembolsos —
+  // 1 por canal + 1 por fase + 1 por motivo) MAIS um loop paginado só para reembolsos 
   // dezenas de varreduras em paralelo saturavam o pool do Supabase (lentidão / timeouts).
   // Agora fazemos UMA varredura das colunas necessárias (com os mesmos filtros) e
   // tabulamos tudo em JS. Mesmos números, 1 round-trip por bloco de 1000.
@@ -82,7 +82,7 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
       for (const r of rows) {
         total++
         if (r.fase === 'Concluído') concluidos++
-        // Tempo de resolução: só conta concluídos COM carimbo (chamados antigos sem concluido_em ficam de fora — honesto).
+        // Tempo de resolução: só conta concluídos COM carimbo (chamados antigos sem concluido_em ficam de fora  honesto).
         if (r.fase === 'Concluído' && r.concluido_em && r.criado_em) {
           const dt = new Date(r.concluido_em).getTime() - new Date(r.criado_em).getTime()
           if (dt >= 0) { tempoResoMs += dt; tempoResoQtd++ }
@@ -102,19 +102,19 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   }
   // Em andamento = nem concluído nem em atraso (paridade situacaoChamado).
   const emAndamento = Math.max(0, total - concluidos - emAtraso)
-  // Taxa SLA cumprido: igual ao legado/relatorios — (total - violados) / total.
+  // Taxa SLA cumprido: igual ao legado/relatorios  (total - violados) / total.
   const slaPct = total ? Math.round(((total - slaViol) / total) * 100) : 100
   // Tempo médio de resolução em dias (J.02): média de (concluido_em - criado_em) dos concluídos
-  // carimbados no recorte. "—" enquanto não houver nenhum (não inventamos valor, como o legado fazia).
+  // carimbados no recorte. "" enquanto não houver nenhum (não inventamos valor, como o legado fazia).
   const tempoMedioDias = tempoResoQtd ? tempoResoMs / tempoResoQtd / 86400000 : null
   const tempoMedioLabel = tempoMedioDias == null
-    ? '—'
+    ? ''
     : `${tempoMedioDias.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} dias`
   const canalCounts = CANAIS.map((k) => canalMap.get(k) ?? 0)
   const faseCounts = FASES.map((f) => faseMap.get(f) ?? 0)
   const motivoCounts = motivos.map((m) => motivoMap.get(m) ?? 0)
 
-  // Chamados recentes (6) — com Unidade, Motivo, Prioridade e Status (paridade com o legado).
+  // Chamados recentes (6)  com Unidade, Motivo, Prioridade e Status (paridade com o legado).
   let recq = sb.from('sac_tickets').select('numero, protocolo, nome_cliente, canal, unidade_id, motivo_label, prioridade, fase, sla_violado')
     .order('criado_em', { ascending: false }).limit(6)
   if (activeUnit) recq = recq.eq('unidade_id', activeUnit)
@@ -143,8 +143,8 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
   // Total / Em andamento / Concluídos / Em atraso / Tempo médio resolução / Taxa SLA cumprido.
   // "Tempo médio de resolução" agora é REAL: média de (concluido_em - criado_em) dos chamados
   // concluídos carimbados (J.02). Chamados concluídos antes desta feature não têm carimbo e
-  // ficam de fora — por isso pode aparecer "—" até novos chamados serem concluídos (honesto;
-  // o legado exibia "3,2 dias" hardcoded — dado MOCK).
+  // ficam de fora  por isso pode aparecer "" até novos chamados serem concluídos (honesto;
+  // o legado exibia "3,2 dias" hardcoded  dado MOCK).
   const kpis = [
     { label: 'Total de chamados', value: total.toLocaleString('pt-BR'), icon: 'ti-headset' },
     { label: 'Em andamento', value: emAndamento.toLocaleString('pt-BR'), icon: 'ti-progress' },
@@ -188,7 +188,7 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
         <div className="dash-w">
           <h4><i className="ti ti-cash" /> Reembolsos solicitados (período)</h4>
           <div style={{ padding: '8px 4px' }}>
-            <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--brand-500)' }}>{reembOk ? moedaBR(reembTotal) : '—'}</div>
+            <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--brand-500)' }}>{reembOk ? moedaBR(reembTotal) : ''}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)' }}>
               {reembOk ? `${reembQtd} chamados com reembolso · ${reembPagos} já pagos` : 'não foi possível somar os reembolsos'}
             </div>
@@ -212,8 +212,8 @@ export default async function SacDashboardPage({ searchParams }: { searchParams:
                       <td><b>{t.protocolo || `SAC-${t.numero ?? ''}`}</b></td>
                       <td>{t.nome_cliente || ''}</td>
                       <td>{t.canal || ''}</td>
-                      <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-                      <td>{t.motivo_label || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                      <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--text-3)' }}></span>}</td>
+                      <td>{t.motivo_label || <span style={{ color: 'var(--text-3)' }}></span>}</td>
                       <td><span style={prioPill(t.prioridade)}>{prioLabel(t.prioridade)}</span></td>
                       <td><span style={sitPill(sit)}>{sit}</span></td>
                     </tr>

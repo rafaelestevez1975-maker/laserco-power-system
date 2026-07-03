@@ -25,7 +25,7 @@ export const CARGO_LABELS: Record<string, string> = {
 
 // Perfis de acesso do legado (view-colaboradores filtros ~2085). Inclui os perfis
 // que não são cargos do enum (Profissional/SAC/Proprietário). Usado SÓ para exibir
-// rótulo e para o filtro "Perfil de acesso" da lista — NÃO é validado no insert
+// rótulo e para o filtro "Perfil de acesso" da lista  NÃO é validado no insert
 // (o enum cargo_colaborador só aceita os 4 de CARGO_LABELS). Cargo vindo do banco
 // fora do enum continua sendo exibido por aqui.
 export const PERFIL_LABELS: Record<string, string> = {
@@ -36,7 +36,7 @@ export const PERFIL_LABELS: Record<string, string> = {
 }
 
 // Mapeia o cargo do enum → perfil de acesso amigável do legado, quando difere.
-export const perfilLabel = (c: string | null | undefined) => (c ? PERFIL_LABELS[c] ?? c : '—')
+export const perfilLabel = (c: string | null | undefined) => (c ? PERFIL_LABELS[c] ?? c : '')
 
 export const REGIME_LABELS: Record<string, string> = {
   clt: 'CLT',
@@ -53,6 +53,6 @@ export const STATUS_LABELS: Record<string, string> = {
   inativo: 'Inativo',
 }
 
-export const cargoLabel = (c: string | null | undefined) => (c ? CARGO_LABELS[c] ?? c : '—')
-export const regimeLabel = (r: string | null | undefined) => (r ? REGIME_LABELS[r] ?? r : '—')
-export const tipoLabel = (t: string | null | undefined) => (t ? TIPO_LABELS[t] ?? t : '—')
+export const cargoLabel = (c: string | null | undefined) => (c ? CARGO_LABELS[c] ?? c : '')
+export const regimeLabel = (r: string | null | undefined) => (r ? REGIME_LABELS[r] ?? r : '')
+export const tipoLabel = (t: string | null | undefined) => (t ? TIPO_LABELS[t] ?? t : '')

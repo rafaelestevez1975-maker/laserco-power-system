@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — Marketing + Disco Virtual + Universidade Corporativa
+-- Migration  Marketing + Disco Virtual + Universidade Corporativa
 -- Paridade com o legado (legacy/index.html):
 --   · MARKETING        : buildMarketing (~8372), MKT_TREE/MKT_UPDATES/MKT_NEWS (8302-8349)
 --   · DISCO VIRTUAL    : buildDisco (~9417), DISCO_FOLDERS/DISCO_FILES (9383-9401)
@@ -13,7 +13,7 @@
 --   Arquivos (Disco) usam o bucket de Storage 'disco-virtual' (PRIVADO). O caminho
 --   do objeto fica em disco_arquivos.arquivo_path; o download é via signed URL.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/marketing.sql
 --   E crie o bucket de Storage 'disco-virtual' (privado) no painel do Supabase.
 -- =============================================================================
@@ -162,7 +162,7 @@ CREATE INDEX IF NOT EXISTS idx_uni_progresso_emp ON uni_progresso (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_uni_progresso_perfil ON uni_progresso (perfil_id);
 
 -- ===========================================================================
--- RLS — habilita e cria policies por empresa (alinhado às demais tabelas).
+-- RLS  habilita e cria policies por empresa (alinhado às demais tabelas).
 -- ===========================================================================
 DO $$
 DECLARE t text;
@@ -190,7 +190,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- uni_etapas não tem empresa_id direto — herda da trilha.
+-- uni_etapas não tem empresa_id direto  herda da trilha.
 ALTER TABLE uni_etapas ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS uni_etapas_emp ON uni_etapas;
 CREATE POLICY uni_etapas_emp ON uni_etapas
@@ -214,7 +214,7 @@ CREATE POLICY uni_etapas_emp ON uni_etapas
 COMMIT;
 
 -- =============================================================================
--- SEED — popula a 1ª empresa com o conteúdo do legado (idempotente: só insere
+-- SEED  popula a 1ª empresa com o conteúdo do legado (idempotente: só insere
 -- se a empresa ainda não tiver registros). Roda fora da transação principal.
 -- =============================================================================
 DO $$

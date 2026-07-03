@@ -1,25 +1,25 @@
 -- =============================================================================
--- Migration — CATÁLOGO (paridade com o legado: legacy/index.html)
+-- Migration  CATÁLOGO (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
 --   O legado tem, no módulo de catálogo, campos que o schema lkii ainda não cobria:
---     · Serviços  — "Desc. Máx (%)" (SERVICOS[2]) e "Pagar comissão" timing
+--     · Serviços   "Desc. Máx (%)" (SERVICOS[2]) e "Pagar comissão" timing
 --                   Venda/Execução/Não pagar (SERVICOS[7], default 'Execução').
---     · Produtos  — "Desc. Máx (%)" (PRODUTOS[2]). "Insumo" já existe como
---                   produtos.feedstock no schema — só falta expor na UI.
---     · Pacotes   — "Cobertura de créditos" (Qualquer unidade / Unidade que realiza
+--     · Produtos   "Desc. Máx (%)" (PRODUTOS[2]). "Insumo" já existe como
+--                   produtos.feedstock no schema  só falta expor na UI.
+--     · Pacotes    "Cobertura de créditos" (Qualquer unidade / Unidade que realiza
 --                   a venda), "Desconto máximo (%)" e "Pagar comissão" timing.
 --   Além disso o legado tem duas telas funcionais que não existiam como tabela:
---     · Formas de pagamento (buildPgto / PGTO) — lista de formas com tipo, taxa,
+--     · Formas de pagamento (buildPgto / PGTO)  lista de formas com tipo, taxa,
 --       taxa a descontar na comissão, ativo + bloco de integração PagoLivre
 --       (Crédito Recorrente: token, parcelamento, valor mínimo, base de royalties).
---     · Grupo de serviços (buildGrpserv / GRPSERV) — grupos com flag Ativo.
+--     · Grupo de serviços (buildGrpserv / GRPSERV)  grupos com flag Ativo.
 --
 -- DECISÃO ADOTADA
 --   1. Colunas novas (ADD COLUMN IF NOT EXISTS) em servicos / produtos / pacotes,
 --      com defaults seguros para não quebrar o catálogo existente.
 --   2. Tabelas novas formas_pagamento e grupo_servicos com RLS por papel
---      (admin_geral / gestor / financeiro escrevem; demais leem) — mesmo modelo
+--      (admin_geral / gestor / financeiro escrevem; demais leem)  mesmo modelo
 --      das demais migrations (perfis_usuario.papel). Catálogo é por EMPRESA.
 --   3. Seeds idempotentes (só se a tabela estiver vazia) espelhando PGTO/GRPSERV.
 --
@@ -27,16 +27,16 @@
 --   ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS /
 --   contagem antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/catalogo.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) SERVIÇOS — Desc. Máx (%) + Pagar comissão (timing)
+-- 1) SERVIÇOS  Desc. Máx (%) + Pagar comissão (timing)
 --    desc_max:       SERVICOS[2] do legado (percentual, default 0).
---    pagar_comissao: SERVICOS[7] — 'Venda' | 'Execução' | 'Não pagar'.
+--    pagar_comissao: SERVICOS[7]  'Venda' | 'Execução' | 'Não pagar'.
 --                    Legado normaliza vazio para 'Execução'.
 -- ----------------------------------------------------------------------------
 ALTER TABLE servicos
@@ -51,7 +51,7 @@ ALTER TABLE servicos
   CHECK (pagar_comissao IN ('Venda', 'Execução', 'Não pagar'));
 
 -- ----------------------------------------------------------------------------
--- 2) PRODUTOS — Desc. Máx (%) + Insumo (feedstock)
+-- 2) PRODUTOS  Desc. Máx (%) + Insumo (feedstock)
 --    produtos.feedstock normalmente já existe no schema lkii; o ADD COLUMN
 --    IF NOT EXISTS garante a coluna "Insumo" mesmo onde ela faltar.
 -- ----------------------------------------------------------------------------
@@ -62,10 +62,10 @@ ALTER TABLE produtos
   ADD COLUMN IF NOT EXISTS feedstock boolean NOT NULL DEFAULT false;
 
 -- ----------------------------------------------------------------------------
--- 3) PACOTES — Cobertura de créditos + Desconto máximo (%) + Pagar comissão
+-- 3) PACOTES  Cobertura de créditos + Desconto máximo (%) + Pagar comissão
 --    cobertura_creditos: 'Qualquer unidade' | 'Unidade que realiza a venda'.
 --    desc_max:           PACOTES[4] (percentual).
---    pagar_comissao:     PACOTES[5] — Venda/Execução/Não pagar (default 'Execução').
+--    pagar_comissao:     PACOTES[5]  Venda/Execução/Não pagar (default 'Execução').
 -- ----------------------------------------------------------------------------
 ALTER TABLE pacotes
   ADD COLUMN IF NOT EXISTS cobertura_creditos text NOT NULL DEFAULT 'Qualquer unidade';
@@ -89,7 +89,7 @@ ALTER TABLE pacotes
 -- ----------------------------------------------------------------------------
 -- 4) FORMAS DE PAGAMENTO (buildPgto / PGTO + bloco PagoLivre)
 --    Catálogo por empresa. A integração PagoLivre (Crédito Recorrente) vive nas
---    colunas rec_* — só preenchidas quando tipo = 'Crédito Recorrente'.
+--    colunas rec_*  só preenchidas quando tipo = 'Crédito Recorrente'.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS formas_pagamento (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS formas_pagamento (
   taxa_comissao   numeric(6,2) NOT NULL DEFAULT 0,   -- taxa a descontar na comissão (%)
   ativo           boolean NOT NULL DEFAULT true,
   ordem           integer NOT NULL DEFAULT 0,
-  -- Integração PagoLivre (Crédito Recorrente) — só usado quando tipo='Crédito Recorrente'
+  -- Integração PagoLivre (Crédito Recorrente)  só usado quando tipo='Crédito Recorrente'
   rec_modo        text DEFAULT 'Integrado' CHECK (rec_modo IS NULL OR rec_modo IN ('Integrado','Manual')),
   rec_parceiro    text DEFAULT 'PagoLivre',
   rec_token       text,
@@ -116,7 +116,7 @@ CREATE INDEX IF NOT EXISTS idx_formas_pagamento_empresa ON formas_pagamento (emp
 CREATE INDEX IF NOT EXISTS idx_formas_pagamento_ativo   ON formas_pagamento (ativo);
 
 -- ----------------------------------------------------------------------------
--- 5) GRUPO DE SERVIÇOS (buildGrpserv / GRPSERV) — grupos com flag Ativo
+-- 5) GRUPO DE SERVIÇOS (buildGrpserv / GRPSERV)  grupos com flag Ativo
 --    É a "tabela de grupos" que o legado tinha como lista fixa. O catálogo de
 --    serviços referencia o grupo por NOME (servicos.grupo é texto), então aqui
 --    guardamos os grupos como cadastro próprio (nome + ativo) para a tela
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS grupo_servicos (
 CREATE INDEX IF NOT EXISTS idx_grupo_servicos_empresa ON grupo_servicos (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 6) RLS — habilitar + policies por papel.
+-- 6) RLS  habilitar + policies por papel.
 --    Leitura: qualquer perfil autenticado (catálogo é compartilhado).
 --    Escrita: admin_geral / gestor / financeiro (gestores da rede).
 -- ----------------------------------------------------------------------------
@@ -169,7 +169,7 @@ CREATE POLICY grupo_servicos_rw ON grupo_servicos
                  AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 7) SEED — espelha PGTO (30+ formas) e GRPSERV (3 grupos) do legado.
+-- 7) SEED  espelha PGTO (30+ formas) e GRPSERV (3 grupos) do legado.
 --    Idempotente: só insere se a tabela estiver vazia para a empresa.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -179,7 +179,7 @@ BEGIN
   SELECT id INTO v_empresa FROM empresas ORDER BY 1 LIMIT 1;
   IF v_empresa IS NULL THEN RETURN; END IF;
 
-  -- Grupos de serviços (GRPSERV) — só se vazio
+  -- Grupos de serviços (GRPSERV)  só se vazio
   IF (SELECT count(*) FROM grupo_servicos WHERE empresa_id = v_empresa) = 0 THEN
     INSERT INTO grupo_servicos (empresa_id, nome, ativo, ordem) VALUES
       (v_empresa, 'Depilação', true, 1),
@@ -187,7 +187,7 @@ BEGIN
       (v_empresa, 'Ultrassom', true, 3);
   END IF;
 
-  -- Formas de pagamento (PGTO) — só se vazio
+  -- Formas de pagamento (PGTO)  só se vazio
   IF (SELECT count(*) FROM formas_pagamento WHERE empresa_id = v_empresa) = 0 THEN
     -- Forma especial: Crédito Recorrente PagoLivre (sempre primeira)
     INSERT INTO formas_pagamento (empresa_id, nome, tipo, taxa, taxa_comissao, ativo, ordem,

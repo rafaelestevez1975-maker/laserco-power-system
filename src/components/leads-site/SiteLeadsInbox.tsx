@@ -104,7 +104,7 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
       if (res.ok) ok++; else pulados++
     }
     setBulk(false)
-    setMsg(`Roteados automaticamente: ${ok}.${pulados ? ` Não roteados (revise manualmente — sem unidade ou já roteado): ${pulados}.` : ''}`)
+    setMsg(`Roteados automaticamente: ${ok}.${pulados ? ` Não roteados (revise manualmente  sem unidade ou já roteado): ${pulados}.` : ''}`)
     router.refresh()
   }
 

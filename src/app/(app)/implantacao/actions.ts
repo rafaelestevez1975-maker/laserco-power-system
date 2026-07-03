@@ -9,7 +9,7 @@ import { IMPL_WF, IMPL_ST } from '@/lib/implantacao'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * IMPLANTAÇÃO DE UNIDADE — backend lkii (migration scripts/migrations/implantacao.sql):
+ * IMPLANTAÇÃO DE UNIDADE  backend lkii (migration scripts/migrations/implantacao.sql):
  *   implantacao_projetos(id, empresa_id, unidade_id, nome, inicio, inauguracao, status)
  *   implantacao_etapas(id, projeto_id, cod, nome, ordem)
  *   implantacao_tarefas(id, etapa_id, cod, descricao, responsavel, duracao_dias, situacao, ordem)
@@ -24,7 +24,7 @@ function podeEditar(papel: string | null | undefined): boolean {
   return ehAdmin(papel) || PAPEIS_EDITA.includes(papel || '')
 }
 
-/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação). */
+/** Grava 1 linha em audit_log (best-effort  nunca derruba a operação). */
 async function audit(userId: string, acao: string, label: string, dados: Record<string, unknown>): Promise<void> {
   try {
     await adminClient().from('audit_log').insert({

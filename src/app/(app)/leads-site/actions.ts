@@ -84,7 +84,7 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
   }
 
   // SAC é CENTRALIZADO na FRANQUEADORA (não existe SAC em franquia): empresa = franqueadora,
-  // unidade_id = null. Não exige unidade — diferente de CRM/RH. (No fluxo normal o SAC nem
+  // unidade_id = null. Não exige unidade  diferente de CRM/RH. (No fluxo normal o SAC nem
   // chega aqui: é ingerido automaticamente por lib/sac-ingest; isto é só o caminho manual.)
   if (parsed.tipo === 'sac') {
     destino = 'SAC'
@@ -101,7 +101,7 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
     return { ok: true, destino }
   }
 
-  // CRM (demais tipos comerciais) — exige unidade de destino.
+  // CRM (demais tipos comerciais)  exige unidade de destino.
   if (!unidadeId) return { ok: false, error: 'Selecione a unidade de destino.' }
   const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
@@ -109,7 +109,7 @@ export async function rotearSiteLead(siteLeadId: string, unidadeId: string): Pro
 
   {
     destino = 'CRM'
-    // Etapa inicial DO FUNIL DE CLIENTES (pipeline='cliente') — a migration 050 criou
+    // Etapa inicial DO FUNIL DE CLIENTES (pipeline='cliente')  a migration 050 criou
     // etapas de 'franquia' com a mesma ordem 1..6, então sem o filtro o .single()
     // quebraria por múltiplas linhas (ou pegaria uma etapa de franquia) e o lead sumiria
     // do board do CRM (que só renderiza etapas pipeline='cliente').

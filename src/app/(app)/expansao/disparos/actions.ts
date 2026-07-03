@@ -24,7 +24,7 @@ export async function dadosDisparos(activeUnitId: string | null): Promise<{ list
   if (!op) return { listas: [], historico: [] }
 
   // count head:true → só o total, sem trazer linhas. Clientes escopam por unidade_origem_id.
-  // Inline do filtro de unidade (evita o generic de scopeUnidade estourar a profundidade do tipo — TS2589).
+  // Inline do filtro de unidade (evita o generic de scopeUnidade estourar a profundidade do tipo  TS2589).
   let cBase = op.sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', true)
   if (activeUnitId) cBase = cBase.eq('unidade_origem_id', activeUnitId)
   let cInativos = op.sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', false)
@@ -69,7 +69,7 @@ export async function dispararCampanha(
   const all = await listInstances()
   const canal = all.find((i) => i.name === canalNome)
   if (!canal?.token) return { ok: false, error: 'Canal não encontrado.' }
-  if (canal.status !== 'connected') return { ok: false, error: `O canal "${canalNome}" está desconectado — conecte-o em Canais antes de disparar.` }
+  if (canal.status !== 'connected') return { ok: false, error: `O canal "${canalNome}" está desconectado  conecte-o em Canais antes de disparar.` }
 
   const dMin = Math.max(1, delayMin || 0)
   const dMax = Math.max(dMin, delayMax || dMin)
@@ -78,10 +78,10 @@ export async function dispararCampanha(
   if (!res.ok) return { ok: false, error: res.error }
 
   // Persiste a campanha no histórico (disparo_campanhas) para que ela apareça na
-  // aba Campanhas e alimente os KPIs/relatório — antes o disparo era enviado mas
+  // aba Campanhas e alimente os KPIs/relatório  antes o disparo era enviado mas
   // NUNCA registrado, deixando a lista vazia e os números zerados entre telas.
   // 'enviadas' = nº de destinatários submetidos à UAZAPI (entregues/lidas/respostas
-  // dependem de webhook e ficam em 0 — estado honesto — até essa integração existir).
+  // dependem de webhook e ficam em 0  estado honesto  até essa integração existir).
   await registrarCampanha({
     nome: nomeCampanha || 'Campanha',
     baseNome: baseNome ?? null,

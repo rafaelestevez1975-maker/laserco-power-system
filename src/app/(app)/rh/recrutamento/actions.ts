@@ -12,7 +12,7 @@ export const ESTAGIOS = ['triagem', 'entrevista_rh', 'teste_tecnico', 'entrevist
 export type Estagio = (typeof ESTAGIOS)[number]
 const FONTES = ['portal', 'whatsapp', 'indicacao', 'linkedin', 'outro']
 
-// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
+// rlsMsg = msgErro (compartilhado em @/lib/sb  DRY, ver docs/CONSOLIDACAO.md D1)
 
 /** Move um candidato para outro estágio do kanban (com motivo quando reprovado). */
 export async function moverCandidato(id: string, estagio: Estagio, motivo?: string): Promise<ActionResult> {
@@ -104,7 +104,7 @@ export async function avisarDisponibilidade(id: string, mensagem?: string): Prom
   if ((cand.telefone || '').replace(/\D/g, '').length < 10) return { ok: false, error: 'Candidato sem telefone válido.' }
 
   const canal = (await listInstances()).find((i) => /laser/i.test(i.name) && i.status === 'connected')
-  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+  if (!canal?.token) return { ok: false, error: 'Nenhum canal WhatsApp conectado  conecte um número em Canais.' }
 
   const primeiro = (cand.nome || '').trim().split(/\s+/)[0] || 'tudo bem'
   const texto = mensagem?.trim()

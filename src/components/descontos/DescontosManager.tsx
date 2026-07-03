@@ -51,7 +51,7 @@ export function DescontosManager({ rows, podeGerir }: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-discount" /> Descontos e parcerias — regras reutilizáveis (percentual ou valor fixo)
+        <i className="ti ti-discount" /> Descontos e parcerias  regras reutilizáveis (percentual ou valor fixo)
         aplicáveis em vendas e pacotes.
       </div>
 
@@ -96,7 +96,7 @@ export function DescontosManager({ rows, podeGerir }: Props) {
                 return (
                   <tr key={r.id}>
                     <td><b>{r.nome}</b></td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.tipo === 'percentual' ? 'Percentual' : r.tipo === 'valor' ? 'Valor fixo' : (r.tipo || '—')}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.tipo === 'percentual' ? 'Percentual' : r.tipo === 'valor' ? 'Valor fixo' : (r.tipo || '')}</td>
                     <td className="num-r"><b>{rotuloValor(r.tipo, r.valor)}</b></td>
                     <td>
                       {ativa

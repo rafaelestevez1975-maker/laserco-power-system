@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 type SP = { periodo?: string; di?: string; df?: string }
 
-// Teto de campanhas listadas — o volume por unidade é baixo (espelha LIMITE de /marketing).
+// Teto de campanhas listadas  o volume por unidade é baixo (espelha LIMITE de /marketing).
 const LIMITE = 300
 
 // Fonte real: campanhas_whatsapp (Disparos WhatsApp API). Colunas confirmadas em
@@ -104,7 +104,7 @@ export default async function RelWhatsappPage({ searchParams }: { searchParams: 
         <div>
           <h2>Mensagens WhatsApp API</h2>
           <p>
-            Disparos por campanha — enviadas, entregues, lidas e respondidas ·{' '}
+            Disparos por campanha  enviadas, entregues, lidas e respondidas ·{' '}
             {range.label} · {unidadeId ? ctx?.activeUnitName : 'Todas as unidades'}
           </p>
         </div>
@@ -210,7 +210,7 @@ export default async function RelWhatsappPage({ searchParams }: { searchParams: 
                         <td>
                           <span className={`wa-pill ${pill[0]}`}>{pill[1]}</span>
                         </td>
-                        <td>{SEG_LABEL[c.segmentacao_tipo ?? ''] ?? (c.segmentacao_tipo || '—')}</td>
+                        <td>{SEG_LABEL[c.segmentacao_tipo ?? ''] ?? (c.segmentacao_tipo || '')}</td>
                         <td className="num-r">{env.toLocaleString('pt-BR')}</td>
                         <td className="num-r">
                           {ent.toLocaleString('pt-BR')}

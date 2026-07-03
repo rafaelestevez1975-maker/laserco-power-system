@@ -83,15 +83,15 @@ export function OsList({ rows, page, totalPages, total, searchParams, podeEscrev
               )}
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td><span className="orig-tag">#{r.numero ?? '—'}</span></td>
+                  <td><span className="orig-tag">#{r.numero ?? ''}</span></td>
                   <td>
-                    <span className="cli-name">{r.clienteNome || <span className="muted">— sem cliente —</span>}</span>
+                    <span className="cli-name">{r.clienteNome || <span className="muted"> sem cliente </span>}</span>
                     {r.responsavelNome && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>por {r.responsavelNome}</div>}
                   </td>
-                  <td><span className="orig-tag">{ORIGEM_LABEL[r.origem || ''] || r.origem || '—'}</span></td>
+                  <td><span className="orig-tag">{ORIGEM_LABEL[r.origem || ''] || r.origem || ''}</span></td>
                   <td style={{ fontSize: 12.5 }}>{dataHoraBR(r.criado_em)}</td>
                   <td><span className={`os-st ${STATUS_CLASS[r.status] || ''}`}>{STATUS_LABEL[r.status] || r.status}</span></td>
-                  <td className="num-r">{r.desconto_total ? moedaBR(r.desconto_total) : <span className="muted">—</span>}</td>
+                  <td className="num-r">{r.desconto_total ? moedaBR(r.desconto_total) : <span className="muted"></span>}</td>
                   <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(r.total)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <span className="os-link" onClick={() => setVerRow(r)} style={{ cursor: 'pointer' }}>

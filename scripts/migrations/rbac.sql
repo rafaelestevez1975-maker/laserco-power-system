@@ -1,5 +1,5 @@
 -- ============================================================================
--- Módulo: RBAC — Perfis de acesso (cargos) + matriz de permissões
+-- Módulo: RBAC  Perfis de acesso (cargos) + matriz de permissões
 -- Paridade com o legado: PERFIS[] / perfisRows / perfTogglePonto / perfDel /
 --   renderPerfilEditor (legacy/index.html L7178-7293).
 --

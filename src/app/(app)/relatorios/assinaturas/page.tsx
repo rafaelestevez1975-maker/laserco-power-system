@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 type SP = { ativo?: string }
 
 /**
- * Relatório de Assinaturas — espelha o REL_DEFS.assinaturas do legado
+ * Relatório de Assinaturas  espelha o REL_DEFS.assinaturas do legado
  * (legacy/index.html ~4257: "Relatório de Assinaturas", KPIs de planos/MRR/ticket).
  *
  * Fonte de dados real (confirmada no código): `planos_assinatura` (catálogo de planos de
@@ -22,7 +22,7 @@ type SP = { ativo?: string }
  * portanto KPIs de "assinaturas ativas por cliente", churn e MRR realizado não são
  * calculáveis ainda. Este relatório mostra o catálogo de planos e o MRR/ticket potencial,
  * com aviso (crm-note) sobre a métrica que falta. `planos_assinatura` não tem unidade_id
- * (é escopo da franqueadora), então não há filtro por unidade — mantemos coerência com
+ * (é escopo da franqueadora), então não há filtro por unidade  mantemos coerência com
  * /planos e mostramos a nota.
  */
 type PlanoRow = {
@@ -88,7 +88,7 @@ export default async function RelAssinaturasPage({ searchParams }: { searchParam
 
   // ── Gráficos ──
   const barMensalidade: BarRow[] = ativos
-    .map((r) => ({ label: r.nome || '—', value: Number(r.valor_mensal) || 0, display: moedaBR(Number(r.valor_mensal) || 0) }))
+    .map((r) => ({ label: r.nome || '', value: Number(r.valor_mensal) || 0, display: moedaBR(Number(r.valor_mensal) || 0) }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 10)
 
@@ -200,7 +200,7 @@ export default async function RelAssinaturasPage({ searchParams }: { searchParam
                   return (
                     <tr key={r.id}>
                       <td>
-                        <span className="cli-name">{r.nome || '—'}</span>
+                        <span className="cli-name">{r.nome || ''}</span>
                         {r.descricao && <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{r.descricao}</div>}
                       </td>
                       <td>
@@ -209,7 +209,7 @@ export default async function RelAssinaturasPage({ searchParams }: { searchParam
                       <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(Number(r.valor_mensal) || 0)}/mês</td>
                       <td className="num-r">{(Number(r.valor_adesao) || 0) > 0 ? moedaBR(Number(r.valor_adesao)) : <span style={{ color: 'var(--text-3)' }}>Sem adesão</span>}</td>
                       <td className="num-r">{r.duracao_meses ? `${r.duracao_meses} ${r.duracao_meses === 1 ? 'mês' : 'meses'}` : <span style={{ color: 'var(--text-3)' }}>Sem fidelidade</span>}</td>
-                      <td className="num-r">{servicos > 0 ? servicos.toLocaleString('pt-BR') : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                      <td className="num-r">{servicos > 0 ? servicos.toLocaleString('pt-BR') : <span style={{ color: 'var(--text-3)' }}></span>}</td>
                       <td>{dataBR(r.criado_em)}</td>
                     </tr>
                   )
@@ -233,7 +233,7 @@ export default async function RelAssinaturasPage({ searchParams }: { searchParam
       <div className="crm-note" style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '10px 14px', marginTop: 12 }}>
         <i className="ti ti-info-circle" /> Os indicadores refletem o <b>catálogo de planos</b> da rede{ctx?.papel ? '' : ''}. O backend ainda não
         registra assinaturas por cliente (tabela de vínculo cliente↔plano), então <b>assinaturas ativas, churn e MRR realizado</b> não são
-        calculáveis no momento — o MRR exibido é o <b>potencial</b> (mensalidade por plano).
+        calculáveis no momento  o MRR exibido é o <b>potencial</b> (mensalidade por plano).
         {/* TODO(legado: REL_DEFS.assinaturas ~4257): quando existir a tabela de assinaturas por cliente,
             adicionar KPIs de assinaturas ativas / novas no período / canceladas / churn / MRR realizado
             e as abas "Pagamentos" e "Rateio de Assinaturas". */}

@@ -3,7 +3,7 @@
 /**
  * Error boundary dos Dashboards (Financeiro/Gerencial/Funil).
  * Quando uma query do Supabase falha (RLS, rede, coluna/status inexistente) os helpers de
- * agregação lançam DashAggError — em vez de mostrar 0/valores parciais silenciosos (a
+ * agregação lançam DashAggError  em vez de mostrar 0/valores parciais silenciosos (a
  * reclamação de "números que não batem"), a tela exibe um aviso honesto + botão de tentar de novo.
  */
 export default function DashboardsError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {

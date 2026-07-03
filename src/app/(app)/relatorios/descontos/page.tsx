@@ -16,7 +16,7 @@ type SP = { periodo?: string; di?: string; df?: string }
 const LISTA_MAX = 300
 
 /**
- * Descontos — réplica do REL_DEFS.descontos do legado (legacy/index.html ~4337).
+ * Descontos  réplica do REL_DEFS.descontos do legado (legacy/index.html ~4337).
  * Sobre dado REAL: cada OS com desconto_total > 0 vira uma aplicação de desconto.
  * KPIs: descontos concedidos (R$), nº de aplicações, % médio, maior impacto (vendedor).
  * Colunas: Data/Cliente/Desconto (R$)/% sobre bruto/Valor líquido/Colaborador.
@@ -49,7 +49,7 @@ export default async function RelDescontosPage({ searchParams }: { searchParams:
   const rankVend = [...porVend.entries()]
     .map(([id, v]) => ({ nome: id === '∅' ? 'Sem vendedor' : (nomesV[id] ?? 'Vendedor ' + id.slice(0, 6)), valor: v }))
     .sort((a, b) => b.valor - a.valor)
-  const maiorImpacto = rankVend[0]?.nome ?? '—'
+  const maiorImpacto = rankVend[0]?.nome ?? ''
 
   // Lista detalhada (cap leve, mais recentes primeiro).
   const detalhe = [...comDesconto]
@@ -64,11 +64,11 @@ export default async function RelDescontosPage({ searchParams }: { searchParams:
     const pct = bruto > 0 ? (desc / bruto) * 100 : 0
     return {
       data: r.criado_em,
-      cliente: r.cliente_id ? (nomesC[r.cliente_id] ?? '—') : '—',
+      cliente: r.cliente_id ? (nomesC[r.cliente_id] ?? '') : '',
       desconto: desc,
       pct,
       liquido,
-      colaborador: r.criado_por ? (nomesV[r.criado_por] ?? 'Vendedor ' + r.criado_por.slice(0, 6)) : '—',
+      colaborador: r.criado_por ? (nomesV[r.criado_por] ?? 'Vendedor ' + r.criado_por.slice(0, 6)) : '',
     }
   })
 

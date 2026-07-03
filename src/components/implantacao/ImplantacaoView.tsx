@@ -13,7 +13,7 @@ import {
 } from '@/app/(app)/implantacao/actions'
 
 /**
- * Implantação de Unidade — paridade com implRender do legado (legacy ~4853-4890):
+ * Implantação de Unidade  paridade com implRender do legado (legacy ~4853-4890):
  * cabeçalho editável, 4 KPIs, barra de progresso geral + 2 gráficos de barra,
  * etapas com tabela de tarefas (admin/gestor editam descrição/responsável/duração
  * e adicionam/excluem; todos atualizam a situação).
@@ -93,8 +93,8 @@ export function ImplantacaoView({
   const kpis: [string, string, string][] = [
     ['Progresso geral', pc + '%', 'ti-progress'],
     ['Tarefas concluídas', `${done} / ${tot}`, 'ti-checks'],
-    ['Etapa atual', fase ? fase.cod : '—', 'ti-flag'],
-    ['Dias até inauguração', dias != null ? String(dias) : '—', 'ti-calendar-event'],
+    ['Etapa atual', fase ? fase.cod : '', 'ti-flag'],
+    ['Dias até inauguração', dias != null ? String(dias) : '', 'ti-calendar-event'],
   ]
 
   const chartFases: Array<[string, number, string]> = etapas.map((e) => {
@@ -113,7 +113,7 @@ export function ImplantacaoView({
             <i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> Implantação de Unidade
           </h2>
           <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 2 }}>
-            Fluxo de implantação em <b>5 etapas</b> e {tot} tarefas, do início à inauguração — <b>{activeUnitName}</b>
+            Fluxo de implantação em <b>5 etapas</b> e {tot} tarefas, do início à inauguração  <b>{activeUnitName}</b>
           </p>
         </div>
         {podeEditar && (
@@ -155,7 +155,7 @@ export function ImplantacaoView({
           </div>
           <div className="mf">
             <label style={{ fontSize: 11.5, color: 'var(--text-2)' }}>Prazo total</label>
-            <input value={prazo != null ? `${prazo} dias` : '—'} disabled
+            <input value={prazo != null ? `${prazo} dias` : ''} disabled
               style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '7px 9px', fontSize: 13, background: 'var(--surface-2)' }} />
           </div>
         </div>

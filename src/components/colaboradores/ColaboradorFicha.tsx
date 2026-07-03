@@ -36,7 +36,7 @@ export type ColaboradorFull = {
   home_office_autorizado: boolean | null
   endereco_residencial: string | null
   criado_em: string | null
-  // Abas "Agenda & Serviços" / "Acesso ao sistema" (comissoes.sql) — opcionais (pré-migration).
+  // Abas "Agenda & Serviços" / "Acesso ao sistema" (comissoes.sql)  opcionais (pré-migration).
   exibe_agenda?: boolean | null
   disponivel_online?: boolean | null
   comissao_pct?: number | null
@@ -135,7 +135,7 @@ export function ColaboradorFicha({
       <label style={lbl}>{label}</label>
       {edit
         ? <input style={inp} type={type} value={(f[k] as string) ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={placeholder} />
-        : <div style={{ fontSize: 13.5, color: 'var(--text)', minHeight: 20 }}>{(f[k] as string)?.trim() || <span className="muted">—</span>}</div>}
+        : <div style={{ fontSize: 13.5, color: 'var(--text)', minHeight: 20 }}>{(f[k] as string)?.trim() || <span className="muted"></span>}</div>}
     </div>
   )
 
@@ -192,7 +192,7 @@ export function ColaboradorFicha({
                     <input style={{ ...inp, width: 64, flex: '0 0 auto', textAlign: 'center' }} value="+55" disabled title="DDI" />
                     <input style={inp} value={f.telefone ?? ''} onChange={(e) => set('telefone', e.target.value)} placeholder="(00) 90000-0000" />
                   </div>
-                : <div style={{ fontSize: 13.5 }}>{f.telefone?.trim() ? `+55 ${f.telefone.trim()}` : <span className="muted">—</span>}{wa && <a href={wa} target="_blank" rel="noopener" className="wa-link"><i className="ti ti-brand-whatsapp wa" /></a>}</div>}
+                : <div style={{ fontSize: 13.5 }}>{f.telefone?.trim() ? `+55 ${f.telefone.trim()}` : <span className="muted"></span>}{wa && <a href={wa} target="_blank" rel="noopener" className="wa-link"><i className="ti ti-brand-whatsapp wa" /></a>}</div>}
             </div>
             <Campo label="E-mail" k="email" />
           </div>
@@ -203,7 +203,7 @@ export function ColaboradorFicha({
               <label style={lbl}>Cargo</label>
               {edit
                 ? <select style={inp} value={f.cargo} onChange={(e) => set('cargo', e.target.value)}>
-                    <option value="">—</option>
+                    <option value=""></option>
                     {/* mantém o cargo atual do banco mesmo se fora da lista conhecida */}
                     {f.cargo && !CARGO_LABELS[f.cargo] && <option value={f.cargo}>{f.cargo}</option>}
                     {Object.entries(CARGO_LABELS).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
@@ -288,11 +288,11 @@ export function ColaboradorFicha({
           )}
           <label className="rule-item" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
             <input type="checkbox" disabled={!edit} checked={!!f.exibe_agenda} onChange={(e) => set('exibe_agenda', e.target.checked)} />
-            <span><b>Exibe na agenda</b> — o colaborador aparece como coluna na agenda.</span>
+            <span><b>Exibe na agenda</b>  o colaborador aparece como coluna na agenda.</span>
           </label>
           <label className="rule-item" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
             <input type="checkbox" disabled={!edit} checked={!!f.disponivel_online} onChange={(e) => set('disponivel_online', e.target.checked)} />
-            <span><b>Disponível para agendamento online</b> — clientes podem agendar com este profissional pelo site/App.</span>
+            <span><b>Disponível para agendamento online</b>  clientes podem agendar com este profissional pelo site/App.</span>
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
             <div>
@@ -328,12 +328,12 @@ export function ColaboradorFicha({
             <div>
               <label style={lbl}>Salário bruto</label>
               {edit ? <input style={inp} value={f.salario_bruto ?? ''} onChange={(e) => set('salario_bruto', e.target.value)} placeholder="0,00" />
-                : <div style={{ fontSize: 13.5 }}>{c.salario_bruto != null ? moedaBR(c.salario_bruto) : <span className="muted">—</span>}</div>}
+                : <div style={{ fontSize: 13.5 }}>{c.salario_bruto != null ? moedaBR(c.salario_bruto) : <span className="muted"></span>}</div>}
             </div>
             <div>
               <label style={lbl}>Salário líquido</label>
               {edit ? <input style={inp} value={f.salario_liquido ?? ''} onChange={(e) => set('salario_liquido', e.target.value)} placeholder="0,00" />
-                : <div style={{ fontSize: 13.5 }}>{c.salario_liquido != null ? moedaBR(c.salario_liquido) : <span className="muted">—</span>}</div>}
+                : <div style={{ fontSize: 13.5 }}>{c.salario_liquido != null ? moedaBR(c.salario_liquido) : <span className="muted"></span>}</div>}
             </div>
             <div />
             <Campo label="Jornada semanal (h)" k="jornada_semanal_horas" />

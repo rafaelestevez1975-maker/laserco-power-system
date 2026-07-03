@@ -1,7 +1,7 @@
 /**
  * Ingestão automática dos FORMULÁRIOS DE SAC do site → Chamados.
  *
- * Regra do cliente (Julio): o SAC é CENTRALIZADO na FRANQUEADORA — não existe SAC em
+ * Regra do cliente (Julio): o SAC é CENTRALIZADO na FRANQUEADORA  não existe SAC em
  * franquia. Logo, todo formulário tipo "sac" do site vira um chamado com
  *   empresa_id = franqueadora  e  unidade_id = null  (= rede/franqueadora, não uma franquia),
  * SEM passo manual de "rotear" (o lead de SAC nem aparece no inbox do comercial).
@@ -17,7 +17,7 @@ import { candidatosOnline } from '@/lib/sac-distribuicao'
 export const FRANQUEADORA_EMPRESA_ID = '00000000-0000-0000-0000-000000000001'
 
 // Rótulos de `tipo` no site que representam um FORMULÁRIO DE SAC (case-insensitive).
-// Hoje o site emite oferta/agendamento/avaliacao/curriculo/indicacao/franquia — NENHUM SAC.
+// Hoje o site emite oferta/agendamento/avaliacao/curriculo/indicacao/franquia  NENHUM SAC.
 // Quando o formulário de SAC for publicado, ele deve gravar `tipo` = um destes valores.
 const TIPOS_SAC = new Set(['sac', 'reclamacao', 'reclamação', 'suporte', 'pos_venda', 'pos-venda', 'posvenda'])
 
@@ -28,7 +28,7 @@ function campo(d: Record<string, unknown> | null | undefined, ...keys: string[])
   return null
 }
 
-// Motivos oficiais (sac_motivos) — o form novo do site envia um destes em dados.motivo.
+// Motivos oficiais (sac_motivos)  o form novo do site envia um destes em dados.motivo.
 const MOTIVOS_OFICIAIS = [
   'Ausência de resultados', 'Cancelamento', 'Encerramento da unidade', 'Falha operacional',
   'Intercorrência', 'Laser Club', 'Máquina Quebrada', 'Motivo Pessoal', 'Sessões Expiradas',
@@ -37,7 +37,7 @@ const MOTIVOS_OFICIAIS = [
 /** Resolve o MOTIVO do chamado a partir do lead do site (pedido do Julio: "o assunto deveria
  *  entrar em motivo, só que não se encaixa nas opções"). Ordem: dados.motivo exato (form novo)
  *  → palavras-chave do assunto/mensagem (form antigo) → 'Outros'. O texto original segue em
- *  assunto/area_reclamada — nada se perde. */
+ *  assunto/area_reclamada  nada se perde. */
 export function resolverMotivoSac(d: Record<string, unknown> | null | undefined): string {
   const motivo = campo(d, 'motivo')
   if (motivo) {
@@ -63,7 +63,7 @@ async function criarChamadoSac(sb: ReturnType<typeof adminClient>, lead: SiteLea
   const area = campo(d, 'area', 'assunto', 'servico')
   const { data, error } = await sb.from('sac_tickets').insert({
     empresa_id: FRANQUEADORA_EMPRESA_ID,
-    unidade_id: null, // franqueadora/rede — não existe SAC em franquia
+    unidade_id: null, // franqueadora/rede  não existe SAC em franquia
     nome_cliente: lead.nome || campo(d, 'nome') || 'Cliente (site)',
     email_cliente: lead.email || campo(d, 'email'),
     telefone_cliente: lead.telefone || campo(d, 'telefone', 'whatsapp'),
@@ -80,7 +80,7 @@ async function criarChamadoSac(sb: ReturnType<typeof adminClient>, lead: SiteLea
 }
 
 /** Atribui o chamado à atendente ONLINE operacional com menos chamados abertos (rede/franqueadora).
- *  Se ninguém online, fica na fila (a IA/humano pega depois). Best-effort — nunca quebra o ingest. */
+ *  Se ninguém online, fica na fila (a IA/humano pega depois). Best-effort  nunca quebra o ingest. */
 async function atribuirChamado(sb: ReturnType<typeof adminClient>, ticketId: string): Promise<void> {
   try {
     const cands = await candidatosOnline(sb, null) // SAC é da rede (unidade null) → aceita as online
@@ -102,7 +102,7 @@ export async function ingestSacLeadsDoSite(): Promise<IngestResult> {
   if (!site) return { criados: 0, erros: 0, jaRoteados: 0 }
   const sb = adminClient()
 
-  // Busca leves o suficiente (poucas centenas) — filtramos o tipo em JS p/ tolerar
+  // Busca leves o suficiente (poucas centenas)  filtramos o tipo em JS p/ tolerar
   // variação de caixa/rótulo do formulário de SAC do site.
   const { data, error } = await site.from('lasercompany_leads')
     .select('id, tipo, nome, telefone, email, dados')
@@ -123,7 +123,7 @@ export async function ingestSacLeadsDoSite(): Promise<IngestResult> {
   return { criados, erros, jaRoteados }
 }
 
-// Throttle da chamada oportunista (página de Chamados) — evita varrer o site a cada load.
+// Throttle da chamada oportunista (página de Chamados)  evita varrer o site a cada load.
 let ultimaIngestao = 0
 const INTERVALO_MS = 60_000
 /** Best-effort: roda no máx. 1x/min e NUNCA lança (a página não pode quebrar por isso). */

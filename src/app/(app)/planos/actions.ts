@@ -189,8 +189,8 @@ export async function togglePlanoAtivo(id: string, ativo: boolean): Promise<Acti
 }
 
 // TODO(legado: buildPlanos): coluna "Pagar comissão" (ex.: "Comissão na mensalidade · Divisão por
-//   quantidade de serviços [%]") — legacy ~7720. Não há coluna de comissão em `planos_assinatura`
+//   quantidade de serviços [%]")  legacy ~7720. Não há coluna de comissão em `planos_assinatura`
 //   no schema lkii; pendente de migração (ex.: planos_assinatura.comissao_regra/percentual).
 // TODO(legado: buildPlanos): "Cobertura de créditos" (Unidade que realiza a venda) e variações
-//   "com/sem adesão" como registros distintos — modeladas no legado como linhas separadas; aqui
+//   "com/sem adesão" como registros distintos  modeladas no legado como linhas separadas; aqui
 //   o valor_adesao=0 já cobre o caso "sem adesão" no mesmo cadastro.

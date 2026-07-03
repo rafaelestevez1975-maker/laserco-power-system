@@ -1,7 +1,7 @@
 /**
  * Auto-distribuição de conversas do SAC. Escolhe a atendente que recebe uma conversa nova.
  * Regra (pedido do Julio): só quem está ONLINE recebe automaticamente; entre as online,
- * a OPERACIONAL (atendente/supervisor — exclui consulta) menos carregada, na unidade do canal
+ * a OPERACIONAL (atendente/supervisor  exclui consulta) menos carregada, na unidade do canal
  * (ou rede). Server-only (recebe o client `sb`, normalmente o adminClient do webhook).
  */
 import type { SB } from '@/lib/sb'
@@ -19,7 +19,7 @@ export async function candidatosOnline(sb: SB, unidadeId: string | null): Promis
     .from('perfis_usuario')
     // Desambiguar o embed: usuario_cargos tem 2 FKs p/ perfis_usuario (perfil_id e
     // atribuido_por). Sem a FK explícita o PostgREST devolve PGRST201 e a query falha
-    // INTEIRA — por isso a auto-distribuição não escolhia ninguém.
+    // INTEIRA  por isso a auto-distribuição não escolhia ninguém.
     .select('id, unidade_id, usuario_cargos!usuario_cargos_perfil_id_fkey(cargos(slug))')
     .eq('papel', 'sac')
     .eq('sac_online', true)

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 type SP = { periodo?: string; di?: string; df?: string }
 
 // Teto de segurança ao paginar (a base de agendamentos tem ~136k linhas, mas SEMPRE
-// escopamos por concluido_em (período) e/ou unidade — a janela é bem menor). Ainda assim
+// escopamos por concluido_em (período) e/ou unidade  a janela é bem menor). Ainda assim
 // limitamos o pull para não explodir em períodos amplos.
 const SUM_CAP = 20000
 const PAGE = 1000
@@ -42,7 +42,7 @@ type SbQuery = {
   range: (a: number, b: number) => Promise<{ data: unknown[] | null; error: unknown }>
 }
 
-/** Supabase pode devolver embeds como objeto ou array de 1 — normaliza p/ objeto. */
+/** Supabase pode devolver embeds como objeto ou array de 1  normaliza p/ objeto. */
 function um<T>(v: T | T[] | null): T | null {
   if (Array.isArray(v)) return v[0] ?? null
   return v ?? null
@@ -113,7 +113,7 @@ function agrupar(rows: AgRow[], modo: 'servico' | 'profissional'): Agrupado[] {
 }
 
 function minutosLabel(min: number): string {
-  if (min <= 0) return '—'
+  if (min <= 0) return ''
   return `${Math.round(min)} min`
 }
 

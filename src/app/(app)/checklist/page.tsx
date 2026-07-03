@@ -26,7 +26,7 @@ export default async function ChecklistPage() {
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
   const activeUnitId = ctx?.activeUnitId ?? null
 
-  // ── 1) Snapshot do funil (kpis_unidade_snapshot) — último registro da unidade ativa ──
+  // ── 1) Snapshot do funil (kpis_unidade_snapshot)  último registro da unidade ativa ──
   let snapQuery = sb
     .from('kpis_unidade_snapshot')
     .select('agendamentos_total, taxa_comparecimento, taxa_conversao, ticket_medio, data_referencia, periodo')
@@ -37,7 +37,7 @@ export default async function ChecklistPage() {
   const snap = ((snapData ?? [])[0] as FunilSnapshot | undefined) ?? null
   const linhas = avaliarFunil(snap)
 
-  // ── 1b) Médias da REDE (TODA a rede) — usadas no checklist mensal SULTS ──
+  // ── 1b) Médias da REDE (TODA a rede)  usadas no checklist mensal SULTS ──
   // Pega o último snapshot de cada unidade e tira a média (legacy chkAvg sobre CHK_UNITS).
   // Usa service-role DE PROPÓSITO: a média da rede tem de ser a mesma para qualquer
   // papel/unidade ativa. Com o client RLS, um gestor escopado veria só a própria unidade
@@ -66,7 +66,7 @@ export default async function ChecklistPage() {
     conv: rede.reduce((a, u) => a + u.conv, 0) / n,
     ticket: rede.reduce((a, u) => a + u.ticket, 0) / n,
   }
-  // Checklist mensal SULTS (6 seções, ~26 questões, pontuação 340) — só faz sentido
+  // Checklist mensal SULTS (6 seções, ~26 questões, pontuação 340)  só faz sentido
   // com snapshot da unidade ativa. Sem snapshot, a aba mostra empty-state.
   const mensal = snap ? montarChecklistMensal(snap, mediasRede) : null
 

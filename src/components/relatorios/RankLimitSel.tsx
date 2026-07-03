@@ -3,7 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 /**
- * Seletor de limite do ranking (Top 10/50/100/250/500) — réplica do rankLimitSel() do legado
+ * Seletor de limite do ranking (Top 10/50/100/250/500)  réplica do rankLimitSel() do legado
  * (legacy/index.html ~6971). Persiste o limite na querystring (?limit=) e re-renderiza a página.
  */
 export function RankLimitSel({ value }: { value: number }) {

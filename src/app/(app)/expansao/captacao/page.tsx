@@ -5,7 +5,7 @@ import { dataBR } from '@/lib/fmt'
 export const dynamic = 'force-dynamic'
 
 /**
- * Expansão · Captação (Geo + Site) — relatório read-only.
+ * Expansão · Captação (Geo + Site)  relatório read-only.
  *
  * Intenção (legado expCaptacao ~8568): leads que entram automaticamente no funil de
  * franquia por *geolocalizado* (CRM) e pelo *cadastro do site* (webhook). Aqui mostramos
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
  *
  * Fonte: crm_leads where pipeline='franquia' e origem in ('geolocalizado','site').
  * (Tabela/colunas confirmadas em src/app/(app)/expansao/page.tsx e relatorios/crm/page.tsx.)
- * Escopo: unidade ativa (quando houver) — admin/sem unidade vê todas.
+ * Escopo: unidade ativa (quando houver)  admin/sem unidade vê todas.
  *
  * ROBUSTEZ: se a query falhar (RLS/coluna/tabela ausente), renderiza estado vazio (crm-note)
  * sem quebrar em runtime.
@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 const LIMITE = 500
 const LISTA_MAX = 200
 
-// Origens de captação automática (CHECK do banco — migration 015/050; ver crm/actions.ts).
+// Origens de captação automática (CHECK do banco  migration 015/050; ver crm/actions.ts).
 const ORIGENS_CAPTACAO = ['geolocalizado', 'site'] as const
 
 const ORIGEM_LABEL: Record<string, string> = {
@@ -67,11 +67,11 @@ function origemBadge(origem: string | null) {
       </span>
     )
   }
-  return <span className="os-st">{ORIGEM_LABEL[origem || ''] ?? origem ?? '—'}</span>
+  return <span className="os-st">{ORIGEM_LABEL[origem || ''] ?? origem ?? ''}</span>
 }
 
 function entradaTexto(dias: number | null): string {
-  if (dias == null) return '—'
+  if (dias == null) return ''
   if (dias === 0) return 'hoje'
   return `há ${dias} dia(s)`
 }
@@ -133,7 +133,7 @@ export default async function ExpansaoCaptacaoPage() {
       {semFonte ? (
         <div className="rel-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados de captação disponível no
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados de captação disponível no
             momento (consulta indisponível para o seu perfil/unidade).
           </div>
         </div>
@@ -231,12 +231,12 @@ export default async function ExpansaoCaptacaoPage() {
                   {detalhe.map((l) => (
                     <tr key={l.id}>
                       <td>
-                        <span className="cli-name">{l.nome || l.empresa || '—'}</span>
+                        <span className="cli-name">{l.nome || l.empresa || ''}</span>
                       </td>
-                      <td>{l.telefone || '—'}</td>
+                      <td>{l.telefone || ''}</td>
                       <td>{origemBadge(l.origem)}</td>
-                      <td>{l.tipo_lead || '—'}</td>
-                      <td>{l.uf || '—'}</td>
+                      <td>{l.tipo_lead || ''}</td>
+                      <td>{l.uf || ''}</td>
                       <td>{entradaTexto(diasDesde(l.criado_em))}</td>
                     </tr>
                   ))}
@@ -248,7 +248,7 @@ export default async function ExpansaoCaptacaoPage() {
           <div className="crm-note" style={{ marginTop: 14 }}>
             <i className="ti ti-plug-connected" /> Integração: o formulário do site envia cada lead via webhook e ele entra
             como origem <b>Site</b> no funil de Expansão. Leads <b>geolocalizados</b> vêm do CRM. Última entrada:{' '}
-            <b>{rows[0]?.criado_em ? dataBR(rows[0].criado_em) : '—'}</b>.
+            <b>{rows[0]?.criado_em ? dataBR(rows[0].criado_em) : ''}</b>.
           </div>
         </>
       )}

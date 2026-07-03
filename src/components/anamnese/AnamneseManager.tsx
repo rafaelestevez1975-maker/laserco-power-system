@@ -150,7 +150,7 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela 
                       </td>
                       <td>{d.obrigatorio ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                       <td><span className={`os-st ${statusClass(d.status)}`}>{d.status}</span></td>
-                      <td>{dataBR(d.atualizado_em) || '—'}</td>
+                      <td>{dataBR(d.atualizado_em) || ''}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <span className="os-link" style={{ cursor: 'pointer' }} onClick={() => { setMsg(''); setEditor(d) }}>
                           <i className="ti ti-edit" /> {podeEscrever ? 'Editar' : 'Ver'}
@@ -322,7 +322,7 @@ function DocEditor({ doc, unidades, podeEscrever, onBack, onSaved }: {
         <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: 'pointer' }}>
           <input type="checkbox" checked={acumulativo} disabled={!podeEscrever} onChange={(e) => setAcumulativo(e.target.checked)} style={{ marginTop: 3 }} />
           <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
-            <b>Documento acumulativo de sessões</b> — em vez de um termo por sessão, reabre o mesmo documento e registra cada nova sessão (o que foi feito, evolução, novas fotos e assinaturas do cliente e do profissional).
+            <b>Documento acumulativo de sessões</b>  em vez de um termo por sessão, reabre o mesmo documento e registra cada nova sessão (o que foi feito, evolução, novas fotos e assinaturas do cliente e do profissional).
           </span>
         </label>
         <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 10 }}>{acumulativoHint(acumulativo)}</p>

@@ -107,7 +107,7 @@ export function AvaliacaoModal({ modo, row, colaboradores, onClose, onSaved }: {
             <div className="mf">
               <label>Colaborador <span className="req">*</span></label>
               <select style={inp} value={f.colaborador_id} onChange={(e) => set('colaborador_id', e.target.value)} disabled={modo === 'editar'}>
-                <option value="">— Selecione —</option>
+                <option value=""> Selecione </option>
                 {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}{c.cargo ? ` · ${c.cargo}` : ''}</option>)}
               </select>
             </div>

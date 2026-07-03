@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 const PAPEIS_GESTAO = ['financeiro', 'gestor']
 
-/** /catpag — Categorias de contas a PAGAR (plano_contas tipo=despesa). */
+/** /catpag  Categorias de contas a PAGAR (plano_contas tipo=despesa). */
 export default async function CatPagPage() {
   const ctx = await getSessionContext()
   const sb = await createClient()
@@ -20,7 +20,7 @@ export default async function CatPagPage() {
     .order('codigo', { ascending: true })
 
   // Erro de query (RLS, coluna ausente, banco) não pode virar "Nenhuma
-  // categoria" silencioso — mostra estado de erro honesto.
+  // categoria" silencioso  mostra estado de erro honesto.
   if (error) {
     return (
       <div className="view active">

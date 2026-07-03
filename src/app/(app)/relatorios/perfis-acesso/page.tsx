@@ -7,7 +7,7 @@ import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 export const dynamic = 'force-dynamic'
 
 // Relatório read-only de RBAC: quem tem qual perfil de acesso.
-// Fonte (confirmada no código — src/app/(app)/perfis/*):
+// Fonte (confirmada no código  src/app/(app)/perfis/*):
 //   cargos            → id, nome, slug, descricao, is_sistema, ativo
 //   usuario_cargos    → perfil_id, cargo_id, unidade_id, ativo, expira_em
 //   cargo_permissoes  → cargo_id, permissao_id
@@ -67,7 +67,7 @@ export default async function RelPerfisAcessoPage({
   const permPorCargo: Record<string, number> = {}
   for (const r of cargoPerms) permPorCargo[r.cargo_id] = (permPorCargo[r.cargo_id] ?? 0) + 1
 
-  // Usuários ativos por cargo (contagem global, sem filtro de unidade — visão do perfil).
+  // Usuários ativos por cargo (contagem global, sem filtro de unidade  visão do perfil).
   const usuariosAtivosPorCargo: Record<string, number> = {}
   for (const v of vinculos) {
     if (v.ativo !== false) usuariosAtivosPorCargo[v.cargo_id] = (usuariosAtivosPorCargo[v.cargo_id] ?? 0) + 1
@@ -85,7 +85,7 @@ export default async function RelPerfisAcessoPage({
         cargoId: v.cargo_id,
         nome: u?.nome_completo || u?.email || v.perfil_id,
         email: u?.email ?? null,
-        perfil: c?.nome ?? '—',
+        perfil: c?.nome ?? '',
         unidade: v.unidade_id == null ? 'Todas as unidades' : (nomeUnidade[v.unidade_id] ?? 'Unidade ' + v.unidade_id.slice(0, 6)),
         ativo: v.ativo !== false,
       }
@@ -143,7 +143,7 @@ export default async function RelPerfisAcessoPage({
           <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Relatório de Perfis de acesso</h2>
         </div>
         <div className="crm-note" style={{ marginTop: 12 }}>
-          <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados ainda. As tabelas de
+          <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados ainda. As tabelas de
           perfis de acesso (RBAC) não retornaram dados no momento.
         </div>
       </div>
@@ -257,7 +257,7 @@ export default async function RelPerfisAcessoPage({
               {linhasUsuario.map((l) => (
                 <tr key={`${l.perfilId}-${l.cargoId}-${l.unidade}`} style={{ opacity: l.ativo ? 1 : 0.55 }}>
                   <td className="cli-name" style={{ fontWeight: 600 }}>{l.nome}</td>
-                  <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{l.email || <span className="muted">—</span>}</td>
+                  <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{l.email || <span className="muted"></span>}</td>
                   <td>{l.perfil}</td>
                   <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{l.unidade}</td>
                   <td>

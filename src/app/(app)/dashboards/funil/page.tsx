@@ -106,7 +106,7 @@ export default async function DashFunilPage({ searchParams }: { searchParams: Pr
     { label: 'Agendamentos', value: agendamentos.toLocaleString('pt-BR'), icon: 'ti-calendar' },
     { label: 'Comparecimento', value: `${comparecimento.toLocaleString('pt-BR')} (${pctInt(comparecimento, agendamentos)}%)`, icon: 'ti-user-check' },
     { label: 'Vendas (OS fechadas)', value: `${vendas.toLocaleString('pt-BR')} (${pctInt(vendas, comparecimento)}%)`, icon: 'ti-businessplan' },
-    { label: 'Ticket médio', value: vendas > 0 ? moedaBR(ticketMedio) : '—', icon: 'ti-receipt' },
+    { label: 'Ticket médio', value: vendas > 0 ? moedaBR(ticketMedio) : '', icon: 'ti-receipt' },
     { label: 'Conversão total', value: `${pctInt(vendas, agendamentos)}%`, icon: 'ti-percentage' },
     { label: 'Receita (OS fechadas)', value: moedaBR(receita), icon: 'ti-cash' },
   ]
@@ -120,7 +120,7 @@ export default async function DashFunilPage({ searchParams }: { searchParams: Pr
     { label: 'Cancelados', value: cancelado, display: cancelado.toLocaleString('pt-BR') },
   ]
 
-  // ── Leads por origem (real, crm_leads.origem) — pipeline 'cliente', escopado por unidade ──
+  // ── Leads por origem (real, crm_leads.origem)  pipeline 'cliente', escopado por unidade ──
   let origemQ = sb.from('crm_leads').select('origem').eq('pipeline', 'cliente')
   if (unidadeId) origemQ = origemQ.eq('unidade_id', unidadeId)
   else if (unidadeIdsScope) origemQ = origemQ.in('unidade_id', unidadeIdsScope)
@@ -203,7 +203,7 @@ export default async function DashFunilPage({ searchParams }: { searchParams: Pr
       <RelKpis kpis={kpis} />
 
       <Funnel
-        title="Funil de vendas — agendamentos até receita"
+        title="Funil de vendas  agendamentos até receita"
         sub="Dado real do ERP: agendamentos, comparecimento (concluídos + em atendimento), vendas (OS fechadas) e receita do período."
         stages={stagesAg}
       />

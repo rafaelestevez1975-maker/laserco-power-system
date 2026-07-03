@@ -19,10 +19,10 @@ function extFromMime(m?: string | null): string {
 
 /**
  * Re-hospeda uma mídia (data URI base64 OU URL remota da UAZAPI) no bucket PÚBLICO
- * `sac-midia` e devolve a URL pública — que carrega de fato em <img>/<audio>/<video>.
+ * `sac-midia` e devolve a URL pública  que carrega de fato em <img>/<audio>/<video>.
  * Resolve: imagem enviada que aparecia como "[image]" e áudio que não carregava (a
  * UAZAPI nem sempre devolve URL, e quando devolve nem sempre é pública).
- * Degrada para o valor original se qualquer passo falhar — nunca quebra a mensagem.
+ * Degrada para o valor original se qualquer passo falhar  nunca quebra a mensagem.
  */
 export async function reHostMidia(
   src: string | null | undefined,

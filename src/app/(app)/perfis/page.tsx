@@ -12,7 +12,7 @@ export default async function PerfisPage() {
   const isAdmin = ehAdmin(ctx?.papel)
   const admin = adminClient()
 
-  // bate_ponto pode não existir ainda (migration rbac.sql) — tolera a coluna ausente.
+  // bate_ponto pode não existir ainda (migration rbac.sql)  tolera a coluna ausente.
   const sel = 'id, nome, slug, descricao, is_sistema, ativo, atualizado_em, bate_ponto'
   let cargosRaw: unknown[] | null = null
   let temBatePonto = true
@@ -30,7 +30,7 @@ export default async function PerfisPage() {
   }
   const cargos = (cargosRaw ?? []) as CargoRow[]
 
-  // Contagens agregadas (1 leitura cada) — montamos os mapas em memória.
+  // Contagens agregadas (1 leitura cada)  montamos os mapas em memória.
   const [{ data: cpRaw }, { data: ucRaw }] = await Promise.all([
     admin.from('cargo_permissoes').select('cargo_id'),
     admin.from('usuario_cargos').select('cargo_id, ativo'),

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { REGRAS_REDE, REGRAS_CATEGORIAS, REGRAS_NIVEL } from '@/lib/rh'
 
 /**
- * RH · Regras da Rede — porta a tela "Regras Gerais da Rede" do portal RH
+ * RH · Regras da Rede  porta a tela "Regras Gerais da Rede" do portal RH
  * (legacy/portal-rh.html): busca + filtro por categoria + accordion das 10 regras
  * com pill de nível (Obrigatório/Importante/Recomendado) e alertas em vermelho.
  */

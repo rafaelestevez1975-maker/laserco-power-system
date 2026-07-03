@@ -23,7 +23,7 @@ type Props = {
 
 /**
  * Filtro de período client-side: muda a querystring (?periodo=&di=&df=) e
- * navega — a página (Server Component) re-renderiza com os novos dados.
+ * navega  a página (Server Component) re-renderiza com os novos dados.
  */
 export function RelFiltros({ periodo, di, df, basePath }: Props) {
   const router = useRouter()

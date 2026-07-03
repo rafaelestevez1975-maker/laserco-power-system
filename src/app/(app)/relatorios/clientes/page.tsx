@@ -42,7 +42,7 @@ export default async function RelClientesPage({ searchParams }: { searchParams: 
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // ── KPIs globais (head:true — nunca puxa as 347k linhas) ──
+  // ── KPIs globais (head:true  nunca puxa as 347k linhas) ──
   const [totalGeral, ativos, verificados, novosPeriodo] = await Promise.all([
     contar(sb, (q) => q),
     contar(sb, (q) => q.eq('ativo', true)),
@@ -57,7 +57,7 @@ export default async function RelClientesPage({ searchParams }: { searchParams: 
   const inativos = totalGeral - ativos
   const pctAtivos = totalGeral > 0 ? (ativos / totalGeral) * 100 : 0
 
-  // ── Novos clientes por mês (últimos 6 meses) — 6 counts head, barato ──
+  // ── Novos clientes por mês (últimos 6 meses)  6 counts head, barato ──
   const hoje = new Date()
   const tarefasMes: Promise<{ label: string; count: number }>[] = []
   for (let i = 5; i >= 0; i--) {

@@ -14,7 +14,7 @@ export default async function SacKanbanPage() {
   const unidadeId = ctx?.activeUnitId ?? null
 
   // Carrega POR FASE (cards capados) + conta o total real por fase. Assim TODA coluna
-  // aparece — inclusive fases antigas/com poucos chamados — e o número do cabeçalho bate
+  // aparece  inclusive fases antigas/com poucos chamados  e o número do cabeçalho bate
   // com o Dashboard. (Antes: "240 mais recentes no geral" escondia fases inteiras, ex.:
   // 1.648 chamados Novos recentes empurravam os 36 "Em pagamento" pra fora da janela.)
   // PERF: as LISTAS (cards capados por fase) precisam mesmo das linhas → não dá pra
@@ -46,7 +46,7 @@ export default async function SacKanbanPage() {
   ])
 
   // Estado de erro honesto: se QUALQUER query (lista ou contagem) falhar, não fingimos
-  // colunas vazias — mostramos um aviso. (RLS/rede engolidos viravam "Sem chamados".)
+  // colunas vazias  mostramos um aviso. (RLS/rede engolidos viravam "Sem chamados".)
   const erro = listas.find((r) => r.error)?.error?.message || faseMap.error || null
 
   const tickets = listas.flatMap((r) => (r.data ?? [])) as Ticket[]

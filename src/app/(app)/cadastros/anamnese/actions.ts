@@ -14,7 +14,7 @@ import {
 } from '@/lib/anamnese'
 
 /**
- * Documentos / Anamnese Digital — paridade com o legado (DOCS_LIST / DOC_MODELS /
+ * Documentos / Anamnese Digital  paridade com o legado (DOCS_LIST / DOC_MODELS /
  * docsRows / openDocEditor / renderDocEditor / docSave / docInativar).
  * Construtor de documentos clínicos: metadados + seções/perguntas (8 tipos) +
  * flags obrig./inviabiliza + unidades com acesso + acumulativo. Catálogo por EMPRESA.

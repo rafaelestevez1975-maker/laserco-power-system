@@ -38,7 +38,7 @@ export async function salvarDadosUnidade(input: DadosUnidadeInput): Promise<Acti
   const estado = (input.estado || '').trim().toUpperCase()
   if (estado && estado.length !== 2) return { ok: false, error: 'UF deve ter 2 letras (ex.: SP).' }
 
-  // A unidade precisa estar visível pela RLS (escopo do usuário) — confere ANTES de gravar.
+  // A unidade precisa estar visível pela RLS (escopo do usuário)  confere ANTES de gravar.
   const { data: alvo } = await op.sb.from('unidades').select('id').eq('id', input.id).maybeSingle()
   if (!alvo) return { ok: false, error: 'Unidade não encontrada ou fora do seu acesso.' }
 
@@ -62,9 +62,9 @@ export async function salvarDadosUnidade(input: DadosUnidadeInput): Promise<Acti
   return { ok: true }
 }
 
-// TODO(needs-table: unidade_horarios) — aba "Horários" de funcionamento da unidade.
+// TODO(needs-table: unidade_horarios)  aba "Horários" de funcionamento da unidade.
 //   No legado UNI_HORARIOS é mock; não há tabela no lkii. UI fiel + estado vazio honesto.
-// TODO(needs-table: unidade_bloqueios) — aba "Bloqueios" de agenda (almoço, manutenção).
+// TODO(needs-table: unidade_bloqueios)  aba "Bloqueios" de agenda (almoço, manutenção).
 //   No legado UNI_BLOCKS é mock; sem tabela no lkii.
-// TODO(needs-table: unidade_fotos) — galeria de fotos da unidade (mock no legado).
-// TODO(needs-table: unidade_nfse_config) — configuração de emissão de NFS-e por unidade.
+// TODO(needs-table: unidade_fotos)  galeria de fotos da unidade (mock no legado).
+// TODO(needs-table: unidade_nfse_config)  configuração de emissão de NFS-e por unidade.

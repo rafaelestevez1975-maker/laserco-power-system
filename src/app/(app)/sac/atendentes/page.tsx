@@ -21,11 +21,11 @@ export default async function SacAtendentesPage() {
     erro = true
   }
 
-  // Pesos de premiação (mesma fonte do Ranking) — para estimar o prêmio do mês por atendente.
+  // Pesos de premiação (mesma fonte do Ranking)  para estimar o prêmio do mês por atendente.
   const { data: cfgRaw } = await sb.from('sac_premiacao_config').select('pesos').limit(1).maybeSingle()
   const prem: PremMonetaria = { ...PREM_DEFAULT, ...((cfgRaw as { pesos?: Partial<PremMonetaria> } | null)?.pesos ?? {}) }
 
-  // Presença (sac_online) + cargo SAC atual de cada atendente — para a gestão editar (pôr online,
+  // Presença (sac_online) + cargo SAC atual de cada atendente  para a gestão editar (pôr online,
   // trocar cargo). Sem isso o admin não conseguia consertar "tudo cai numa pessoa só".
   const ids = atendentes.map((a) => a.id)
   const onlinePorId = new Map<string, boolean>()
@@ -45,7 +45,7 @@ export default async function SacAtendentesPage() {
 
   // Carga + KPIs reais por atendente (sac_tickets / sac_whatsapp_chats), escopados pela
   // unidade ativa do topo (não conta a rede inteira de quem opera numa unidade).
-  // Filtro de unidade inline em cada count (o generic de scopeUnidade estoura a profundidade — TS2589).
+  // Filtro de unidade inline em cada count (o generic de scopeUnidade estoura a profundidade  TS2589).
   const rows: AtendenteRow[] = await Promise.all(atendentes.map(async (a) => {
     let qConversas = sb.from('sac_whatsapp_chats').select('id', { count: 'exact', head: true }).eq('atendente_id', a.id)
     let qTickets = sb.from('sac_tickets').select('id', { count: 'exact', head: true }).eq('atribuido_para', a.id).neq('fase', 'Concluído')

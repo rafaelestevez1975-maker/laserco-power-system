@@ -13,7 +13,7 @@ import type { SB } from '@/lib/sb'
 export const PAPEIS_SAC = ['sac']
 
 export type Pessoa = {
-  id: string            // perfis_usuario.id — é a CHAVE de atribuição (sac_tickets.atribuido_para / sac_whatsapp_chats.atendente_id)
+  id: string            // perfis_usuario.id  é a CHAVE de atribuição (sac_tickets.atribuido_para / sac_whatsapp_chats.atendente_id)
   nome: string
   papel: string
   unidadeId: string | null
@@ -51,7 +51,7 @@ export async function listAtendentesSac(sb: SB, incluirInativos = false, somente
   const { data } = await q.order('nome_completo')
   let perfis = (data ?? []) as PerfilRow[]
 
-  // somenteOperacionais: exclui quem é SÓ "Consulta SAC" — esse cargo VÊ o SAC mas não entra na
+  // somenteOperacionais: exclui quem é SÓ "Consulta SAC"  esse cargo VÊ o SAC mas não entra na
   // fila de distribuição nem no ranking/premiação (pedido do Julio). Operacional = atendente/supervisor.
   if (somenteOperacionais && perfis.length) {
     const ids = perfis.map((p) => p.id)

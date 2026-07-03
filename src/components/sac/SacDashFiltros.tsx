@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 
 /**
- * Filtros da Dashboard do SAC — paridade 1:1 com o legado (`sacDashboard`, legacy/index.html ~8985).
+ * Filtros da Dashboard do SAC  paridade 1:1 com o legado (`sacDashboard`, legacy/index.html ~8985).
  * Card `rel-card` com duas colunas: Período (pílulas) + Atendente (pílulas).
  * - Período: pílulas Hoje/Ontem/Última semana/Mês atual/Mês passado/Período. Default "Mês atual".
  * - Atendente: multi-seleção "Todos" + N atendentes (SAC_DFILT.at é array no legado);

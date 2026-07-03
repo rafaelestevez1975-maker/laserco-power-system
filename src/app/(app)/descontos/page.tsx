@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 const PAPEIS_GESTAO = ['financeiro', 'gestor']
 
-/** /descontos — CRUD de descontos/parcerias (tabela real `descontos`). */
+/** /descontos  CRUD de descontos/parcerias (tabela real `descontos`). */
 export default async function DescontosPage() {
   const ctx = await getSessionContext()
   const sb = await createClient()

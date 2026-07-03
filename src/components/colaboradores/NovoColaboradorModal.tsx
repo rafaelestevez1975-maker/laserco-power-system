@@ -119,7 +119,7 @@ export function NovoColaboradorModal({
               {!unidadeFixa && (
                 <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Unidade de lotação <span style={{ color: 'var(--red)' }}>*</span></label>
                   <select style={inp} value={f.unidade_id ?? ''} onChange={(e) => set('unidade_id', e.target.value)}>
-                    <option value="">— Selecione —</option>
+                    <option value=""> Selecione </option>
                     {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                   </select>
                 </div>

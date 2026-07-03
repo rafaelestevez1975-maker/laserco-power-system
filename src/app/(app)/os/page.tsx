@@ -23,7 +23,7 @@ type SP = {
 
 const STATUS_FILTRO = ['aberta', 'fechada', 'cancelada'] as const
 
-/** Builder mínimo usado pelos filtros — evita a explosão de tipos do PostgREST (TS2589). */
+/** Builder mínimo usado pelos filtros  evita a explosão de tipos do PostgREST (TS2589). */
 type FiltroQuery = {
   eq(c: string, v: unknown): FiltroQuery
   gte(c: string, v: unknown): FiltroQuery
@@ -99,7 +99,7 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
     )
     .order('criado_em', { ascending: false, nullsFirst: false })
     .range(from, from + PAGE_SIZE - 1)
-  // Filtramos pelo tipo leve (FiltroQuery) e tratamos o await como o shape esperado — evita TS2589.
+  // Filtramos pelo tipo leve (FiltroQuery) e tratamos o await como o shape esperado  evita TS2589.
   const listFiltrada = aplicarFiltros(listQ as unknown as FiltroQuery, unidadeId, sp) as unknown as PromiseLike<{ data: Raw[] | null; count: number | null }>
   const { data: rowsRaw, count } = await listFiltrada
 
@@ -124,7 +124,7 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   // ── Listas auxiliares p/ filtros e modal (clientes/colaboradores/serviços) ──
-  // Clientes ativos (cap leve) — só p/ os <select> de filtro e o picker de nova OS.
+  // Clientes ativos (cap leve)  só p/ os <select> de filtro e o picker de nova OS.
   const { data: clientesRaw } = await sb
     .from('clientes')
     .select('id, nome')

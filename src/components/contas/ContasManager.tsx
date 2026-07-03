@@ -68,7 +68,7 @@ const STATUS_PILL: Record<string, { bg: string; c: string; t: string }> = {
 /** Rótulo da categoria com indentação por nível (codigo "4.1" => 1 nível). */
 function rotuloCat(c: Categoria): string {
   const niveis = (c.codigo || '').split('.').length - 1
-  const prefixo = niveis > 0 ? '— '.repeat(niveis) : ''
+  const prefixo = niveis > 0 ? ' '.repeat(niveis) : ''
   return `${prefixo}${c.codigo ? c.codigo + ' · ' : ''}${c.nome}`
 }
 
@@ -81,7 +81,7 @@ export function ContasManager(props: Props) {
   const [novoOpen, setNovoOpen] = useState(false)
   const [editRow, setEditRow] = useState<LancRow | null>(null)
 
-  // Só subcategorias (folhas) aceitam lançamentos — usadas no <select> do form.
+  // Só subcategorias (folhas) aceitam lançamentos  usadas no <select> do form.
   const catsFolha = useMemo(() => categorias.filter((c) => c.aceita_lancamentos !== false), [categorias])
 
   const ehReceber = aba === 'receber'
@@ -121,7 +121,7 @@ export function ContasManager(props: Props) {
 
   const temFiltro = !!(filtros.status || filtros.categoria || filtros.fornecedor || filtros.unidade || filtros.di || filtros.df)
 
-  // Export CSV (legado: botão "Exportar" do view-contas) — exporta a PÁGINA atual
+  // Export CSV (legado: botão "Exportar" do view-contas)  exporta a PÁGINA atual
   // já carregada (mesmo filtro do servidor). Gera e baixa client-side, sem libs.
   function exportarCSV() {
     setMsg('')
@@ -153,7 +153,7 @@ export function ContasManager(props: Props) {
       <div className="crm-note" style={{ marginBottom: 14 }}>
         <i className="ti ti-building-store" /> Contas a pagar e a receber da unidade{' '}
         <b>{activeUnitName}</b>
-        {!activeUnitId && ' (todas as unidades — selecione uma no topo para lançar)'}.
+        {!activeUnitId && ' (todas as unidades  selecione uma no topo para lançar)'}.
       </div>
 
       {/* Abas Pagar | Receber */}
@@ -256,7 +256,7 @@ export function ContasManager(props: Props) {
           {temFiltro && (
             <Link href={urlAba(aba)} className="btn"><i className="ti ti-x" /> Limpar</Link>
           )}
-          {/* Exportar (legado: botão "Exportar" do view-contas) — CSV da página atual. */}
+          {/* Exportar (legado: botão "Exportar" do view-contas)  CSV da página atual. */}
           <button type="button" className="btn" onClick={exportarCSV} title="Exportar os lançamentos exibidos em CSV">
             <i className="ti ti-download" /> Exportar CSV
           </button>
@@ -302,12 +302,12 @@ export function ContasManager(props: Props) {
                 const pill = STATUS_PILL[eff] || STATUS_PILL.pendente
                 return (
                   <tr key={r.id}>
-                    <td>{r.descricao || '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.fornecedor || '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.categoria || '—'}</td>
+                    <td>{r.descricao || ''}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.fornecedor || ''}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.categoria || ''}</td>
                     {mostrarUnidade && (
                       <td style={{ fontSize: 12, color: r.unidade_id ? 'var(--text-2)' : 'var(--brand-600)', fontWeight: r.unidade_id ? 400 : 600 }}>
-                        {r.unidade || '—'}
+                        {r.unidade || ''}
                       </td>
                     )}
                     <td>{dataBR(r.data_vencimento)}</td>
@@ -496,7 +496,7 @@ function LancamentoForm(props: {
           <div className="mf">
             <label>Forma de pagamento</label>
             <select value={f.forma_pagamento} onChange={(e) => set('forma_pagamento', e.target.value)}>
-              <option value="">—</option>
+              <option value=""></option>
               <option value="pix">Pix</option>
               <option value="dinheiro">Dinheiro</option>
               <option value="cartao_credito">Cartão de crédito</option>

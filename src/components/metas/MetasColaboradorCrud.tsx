@@ -33,7 +33,7 @@ const UNIDADE_MEDIDA: Record<string, string> = { venda: 'R$', agendamentos: 'age
 
 /** Formata alvo/realizado conforme o indicador (R$ para venda, número p/ o resto). */
 function fmtVal(indicador: string, v: number | null): string {
-  if (v == null) return '—'
+  if (v == null) return ''
   if (indicador === 'venda') return moedaBR(v)
   return v.toLocaleString('pt-BR') + (UNIDADE_MEDIDA[indicador] ? ` ${UNIDADE_MEDIDA[indicador]}` : '')
 }
@@ -121,7 +121,7 @@ function MetaModal({ modo, row, colaboradores, onClose }: { modo: 'novo' | 'edit
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={lbl}>Colaborador <span style={{ color: 'var(--red)' }}>*</span></label>
             <select style={inp} value={f.colaborador_id} onChange={(e) => set('colaborador_id', e.target.value)} disabled={modo === 'editar'}>
-              <option value="">— Selecione —</option>
+              <option value=""> Selecione </option>
               {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}{c.cargo ? ` · ${c.cargo}` : ''}</option>)}
             </select>
           </div>
@@ -141,7 +141,7 @@ function MetaModal({ modo, row, colaboradores, onClose }: { modo: 'novo' | 'edit
           </div>
           <div>
             <label style={lbl}>Peso (0–100)</label>
-            <input style={inp} value={f.peso} onChange={(e) => set('peso', e.target.value)} inputMode="numeric" placeholder="—" />
+            <input style={inp} value={f.peso} onChange={(e) => set('peso', e.target.value)} inputMode="numeric" placeholder="" />
           </div>
           <div>
             <label style={lbl}>Início do período</label>
@@ -187,7 +187,7 @@ export function MetasColaboradorCrud({ metas, colaboradores, podeEscrever }: { m
 
   async function onRealizado(row: MetaRow) {
     const atual = row.valor_realizado ?? 0
-    const v = prompt(`Atualizar realizado de ${INDICADOR_LBL[row.indicador] ?? row.indicador} — ${row.colaboradorNome}:`, String(atual))
+    const v = prompt(`Atualizar realizado de ${INDICADOR_LBL[row.indicador] ?? row.indicador}  ${row.colaboradorNome}:`, String(atual))
     if (v == null) return
     const n = Number(v.replace(/\./g, '').replace(',', '.'))
     if (!Number.isFinite(n) || n < 0) { setErro('Valor de realizado inválido.'); return }
@@ -212,7 +212,7 @@ export function MetasColaboradorCrud({ metas, colaboradores, podeEscrever }: { m
       {metas.length === 0 ? (
         <div style={{ padding: '28px 12px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
           <i className="ti ti-target-off" style={{ fontSize: 28, display: 'block', marginBottom: 8 }} />
-          Nenhuma meta de colaborador cadastrada {colaboradores.length === 0 ? '— e não há colaboradores ativos na unidade.' : 'ainda.'}
+          Nenhuma meta de colaborador cadastrada {colaboradores.length === 0 ? ' e não há colaboradores ativos na unidade.' : 'ainda.'}
           {podeEscrever && colaboradores.length > 0 && <div style={{ marginTop: 10 }}><button className="btn btn-primary" onClick={() => setModal({ modo: 'novo' })}><i className="ti ti-plus" /> Cadastrar a primeira meta</button></div>}
         </div>
       ) : (
@@ -236,7 +236,7 @@ export function MetasColaboradorCrud({ metas, colaboradores, podeEscrever }: { m
                     <td className="num-r">{fmtVal(m.indicador, m.valor_alvo)}</td>
                     <td className="num-r">{fmtVal(m.indicador, m.valor_realizado)}</td>
                     <td><span className={`os-st ${ok ? 'os-fechada' : 'os-aberta'}`}>{pct}%</span></td>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{m.periodo_inicio ? `${dataBR(m.periodo_inicio)} → ${m.periodo_fim ? dataBR(m.periodo_fim) : '...'}` : '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{m.periodo_inicio ? `${dataBR(m.periodo_inicio)} → ${m.periodo_fim ? dataBR(m.periodo_fim) : '...'}` : ''}</td>
                     <td><span className="os-st">{m.status ?? 'ativa'}</span></td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       {podeEscrever ? (
@@ -245,7 +245,7 @@ export function MetasColaboradorCrud({ metas, colaboradores, podeEscrever }: { m
                           <span className="os-link" style={{ marginLeft: 12 }} onClick={() => setModal({ modo: 'editar', row: m })}><i className="ti ti-edit" /> Editar</span>
                           <span className="os-link" style={{ color: 'var(--red)', marginLeft: 12 }} onClick={() => onExcluir(m)}><i className="ti ti-trash" /> Excluir</span>
                         </>
-                      ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
+                      ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}></span>}
                     </td>
                   </tr>
                 )

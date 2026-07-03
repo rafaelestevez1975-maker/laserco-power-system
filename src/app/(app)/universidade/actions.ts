@@ -29,7 +29,7 @@ async function resolverEmpresaId(sb: SB, userId: string): Promise<string | null>
   return (emp as { id?: string } | null)?.id ?? null
 }
 
-// ─────────────── Prova / Quiz (uniQuizSubmit 5982) — qualquer colaborador autenticado ───────────────
+// ─────────────── Prova / Quiz (uniQuizSubmit 5982)  qualquer colaborador autenticado ───────────────
 
 export type SubmitQuizInput = {
   trilhaId: string
@@ -93,7 +93,7 @@ export async function submeterProva(input: SubmitQuizInput): Promise<{ ok: boole
   return { ok: true, nota, aprovado }
 }
 
-// ─────────────── CRUD de trilhas/etapas (uniGerenciar 6044-6078) — só admin ───────────────
+// ─────────────── CRUD de trilhas/etapas (uniGerenciar 6044-6078)  só admin ───────────────
 
 export type EtapaInput = { id?: string; ordem: number; nome: string; yt?: string | null; min: number; prova: Questao[]; is_final?: boolean }
 export type TrilhaInput = { nome: string; role: string; prazo: string; cor?: string }

@@ -1,9 +1,9 @@
 -- ============================================================================
--- FINANCEIRO — Núcleo contábil (razão único) + RPCs derivadas — Laser&Co
+-- FINANCEIRO  Núcleo contábil (razão único) + RPCs derivadas  Laser&Co
 -- Versiona o que foi aplicado no lkii via Management API (antes só existia no
--- banco — apontado pelo code-review). Idempotente: pode rodar de novo.
+-- banco  apontado pelo code-review). Idempotente: pode rodar de novo.
 -- Arquitetura: produtores lançam em fin_lancamento (porta única postLancamento);
--- DRE/Fluxo/A Receber/A Pagar DERIVAM do razão — o número bate em toda tela.
+-- DRE/Fluxo/A Receber/A Pagar DERIVAM do razão  o número bate em toda tela.
 -- ============================================================================
 
 -- ── Centro de custo (unidade | escritorio | rede) ──
@@ -30,7 +30,7 @@ create table if not exists plano_conta (
   criado_em timestamptz not null default now()
 );
 
--- ── Razão (ledger) — fonte única da verdade financeira ──
+-- ── Razão (ledger)  fonte única da verdade financeira ──
 create table if not exists fin_lancamento (
   id uuid primary key default gen_random_uuid(),
   empresa_id uuid references empresas(id) on delete cascade,
@@ -106,7 +106,7 @@ select id, 'Rede / Franqueadora', 'rede', null from empresas
 where not exists (select 1 from centro_custo c where c.tipo='rede')
 order by criada_em limit 1;
 
--- plano de contas (DRE) — curado do material do cliente
+-- plano de contas (DRE)  curado do material do cliente
 insert into plano_conta (empresa_id, codigo, nome, natureza, grupo, ordem)
 select e.id, v.codigo, v.nome, v.natureza, v.grupo, v.ordem
 from empresas e
@@ -148,7 +148,7 @@ do $$ begin
 end $$;
 
 -- ============================================================================
--- RPCs — agregações no servidor (PostgREST bloqueia aggregate no REST)
+-- RPCs  agregações no servidor (PostgREST bloqueia aggregate no REST)
 -- ============================================================================
 
 -- Faturamento real (BEMP) por salon no período.
@@ -162,7 +162,7 @@ returns table(salon integer, faturamento numeric) language sql stable as $$
   group by bemp_salon_id
 $$;
 
--- Faturamento por salon e tipo de venda (entity → conta de receita) — mesma base líquida.
+-- Faturamento por salon e tipo de venda (entity → conta de receita)  mesma base líquida.
 create or replace function public.fin_faturamento_por_salon_entidade(p_ini date, p_fim date)
 returns table(salon integer, entidade text, total numeric) language sql stable as $$
   select bemp_salon_id::int, entity, sum(total - coalesce(desconto,0))::numeric

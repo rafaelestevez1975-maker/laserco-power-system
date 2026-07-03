@@ -14,7 +14,7 @@ export type ClienteOpcao = { id: string; nome: string; telefone: string | null }
 
 /**
  * Busca clientes por nome/telefone/cpf (server-side, sobre 347k linhas, escopado por unidade).
- * Nunca devolve a base toda — sempre filtra por termo e limita. Para o autocomplete do modal.
+ * Nunca devolve a base toda  sempre filtra por termo e limita. Para o autocomplete do modal.
  */
 export async function buscarClientes(termo: string, unidadeId: string | null): Promise<ClienteOpcao[]> {
   const { op } = await requireOperador()
@@ -51,12 +51,12 @@ export type CriarAgendamentoInput = {
   servico_id: string
   /** serviços adicionais (legado addServico): a soma das durações é capada em 60min. */
   servico_ids_extra?: string[]
-  /** ISO local "YYYY-MM-DDTHH:mm" — combinado dia+hora pela grade. */
+  /** ISO local "YYYY-MM-DDTHH:mm"  combinado dia+hora pela grade. */
   inicio: string
   /** duração em minutos (vem da SOMA dos serviços; capada em 60). default 10 = GAP. */
   duracao_min?: number
   observacao?: string
-  /** "Agendou pelo SAC?" — campo customizado do legado. */
+  /** "Agendou pelo SAC?"  campo customizado do legado. */
   via_sac?: boolean
   /** recorrência (legado recBox): repete a cada N semanas/meses por M vezes. */
   recorrencia?: { intervalo: number; unidade: 'semana' | 'mes'; vezes: number }
@@ -103,7 +103,7 @@ export async function criarAgendamento(input: CriarAgendamentoInput): Promise<Ac
   }
 
   // Duração = soma dos serviços, mas a OCUPAÇÃO na agenda é capada em 60min (regra do legado:
-  // "Acima de 1h — limitado a 60 min" pelo alto índice de faltas).
+  // "Acima de 1h  limitado a 60 min" pelo alto índice de faltas).
   const durBruta = Math.max(5, Number(input.duracao_min) || 10)
   const dur = Math.min(durBruta, CAP_SERVICOS_MIN)
   const fimDate = new Date(inicioDate.getTime() + dur * 60_000)
@@ -369,5 +369,5 @@ export async function excluirEventoRede(id: string): Promise<ActionResult> {
   return { ok: true }
 }
 
-// TODO(legado): "Nova venda" a partir do horário (abrir OS/venda) — buildAgenda() abre OS
+// TODO(legado): "Nova venda" a partir do horário (abrir OS/venda)  buildAgenda() abre OS
 //   ao clicar; integração de vendas/OS fora do escopo deste módulo.

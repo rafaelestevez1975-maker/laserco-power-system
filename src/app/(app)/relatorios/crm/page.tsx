@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 type SP = { periodo?: string; di?: string; df?: string }
 
 // Teto de pull: leads são poucos por unidade/período, mas escopamos por pipeline='cliente'
-// (separa CRM de clientes do funil de Expansão — migration 050) + unidade ativa + período.
+// (separa CRM de clientes do funil de Expansão  migration 050) + unidade ativa + período.
 const PULL_CAP = 8000
 const PAGE = 1000
 const LISTA_MAX = 300
@@ -120,8 +120,8 @@ export default async function RelCrmPage({ searchParams }: { searchParams: Promi
   const semFonte = erro
 
   // ── Nome da etapa por id; etapas "terminais" do funil padrão Laser&Co ──
-  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '—']))
-  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '—' : '—')
+  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '']))
+  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
   const ehGanho = (l: LeadRow) => nomeDe(l.etapa_id) === 'Convertido' || l.status === 'convertido' || l.status === 'ganho'
   const ehPerdido = (l: LeadRow) => nomeDe(l.etapa_id) === 'Perdido' || l.status === 'perdido'
 
@@ -135,13 +135,13 @@ export default async function RelCrmPage({ searchParams }: { searchParams: Promi
   const qtdAtivos = ativos.length
   const valorNeg = ativos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
   const valorGanho = ganhos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
-  // Conversão = ganhos / (ganhos + perdidos) — fechados; espelha o KPI do board (/crm).
+  // Conversão = ganhos / (ganhos + perdidos)  fechados; espelha o KPI do board (/crm).
   const conv = qtdGanho + qtdPerdido > 0 ? (qtdGanho / (qtdGanho + qtdPerdido)) * 100 : 0
 
   // ── Distribuição por etapa (na ordem do funil) ──
   const porEtapa = new Map<string, number>()
   for (const l of rows) porEtapa.set(l.etapa_id ?? '', (porEtapa.get(l.etapa_id ?? '') || 0) + 1)
-  const linhasEtapa = etapas.map((e) => ({ id: e.id, nome: e.nome ?? '—', count: porEtapa.get(e.id) || 0 }))
+  const linhasEtapa = etapas.map((e) => ({ id: e.id, nome: e.nome ?? '', count: porEtapa.get(e.id) || 0 }))
   const semEtapa = porEtapa.get('') || 0
 
   // ── Distribuição por origem ──
@@ -168,10 +168,10 @@ export default async function RelCrmPage({ searchParams }: { searchParams: Promi
   const detalhe = rows.slice(0, LISTA_MAX)
   const csvRows = detalhe.map((l) => [
     dataBR(l.criado_em),
-    l.nome || '—',
-    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—',
+    l.nome || '',
+    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '',
     nomeDe(l.etapa_id),
-    TEMP_LABEL[l.temperatura || ''] ?? '—',
+    TEMP_LABEL[l.temperatura || ''] ?? '',
     Math.round(l.valor_estimado || 0),
   ])
 
@@ -199,7 +199,7 @@ export default async function RelCrmPage({ searchParams }: { searchParams: Promi
       {semFonte ? (
         <div className="rel-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados de CRM disponível no momento (consulta indisponível para o seu perfil/unidade).
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados de CRM disponível no momento (consulta indisponível para o seu perfil/unidade).
           </div>
         </div>
       ) : (
@@ -330,12 +330,12 @@ export default async function RelCrmPage({ searchParams }: { searchParams: Promi
                     <tr key={l.id}>
                       <td>{dataBR(l.criado_em)}</td>
                       <td>
-                        <span className="cli-name">{l.nome || '—'}</span>
+                        <span className="cli-name">{l.nome || ''}</span>
                       </td>
-                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—'}</td>
+                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? ''}</td>
                       <td>{nomeDe(l.etapa_id)}</td>
-                      <td>{TEMP_LABEL[l.temperatura || ''] ?? '—'}</td>
-                      <td className="num-r" style={{ fontWeight: 600 }}>{l.valor_estimado ? moedaBR(l.valor_estimado) : '—'}</td>
+                      <td>{TEMP_LABEL[l.temperatura || ''] ?? ''}</td>
+                      <td className="num-r" style={{ fontWeight: 600 }}>{l.valor_estimado ? moedaBR(l.valor_estimado) : ''}</td>
                     </tr>
                   ))}
                 </tbody>

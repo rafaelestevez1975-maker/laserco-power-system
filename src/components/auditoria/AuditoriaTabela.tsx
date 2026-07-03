@@ -78,13 +78,13 @@ export function AuditoriaTabela({ rows, page, totalPages, total, searchParams }:
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{dataHora(r.criado_em)}</td>
-                  <td><code style={{ fontSize: 12 }}>{r.acao || '—'}</code></td>
+                  <td><code style={{ fontSize: 12 }}>{r.acao || ''}</code></td>
                   <td style={{ fontSize: 12 }}>
-                    {r.recurso_label || r.recurso_id || '—'}
+                    {r.recurso_label || r.recurso_id || ''}
                     {r.recurso_label && r.recurso_id && <span style={{ color: 'var(--text-3)' }}> · {r.recurso_id}</span>}
                   </td>
                   <td style={{ fontSize: 12 }}>{r.usuarioNome}</td>
-                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.origem || '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.origem || ''}</td>
                   <td>{pilllResultado(r.resultado)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="btn" onClick={() => setAberto(r)} title="Ver detalhes"><i className="ti ti-eye" /></button>
@@ -123,12 +123,12 @@ export function AuditoriaTabela({ rows, page, totalPages, total, searchParams }:
             </div>
             <div className="modal-body" style={{ display: 'grid', gap: 10, fontSize: 13 }}>
               <Linha rotulo="Data/hora" valor={dataHora(aberto.criado_em)} />
-              <Linha rotulo="Ação" valor={aberto.acao || '—'} mono />
-              <Linha rotulo="Recurso" valor={[aberto.recurso_label, aberto.recurso_id].filter(Boolean).join(' · ') || '—'} />
+              <Linha rotulo="Ação" valor={aberto.acao || ''} mono />
+              <Linha rotulo="Recurso" valor={[aberto.recurso_label, aberto.recurso_id].filter(Boolean).join(' · ') || ''} />
               <Linha rotulo="Usuário" valor={aberto.usuarioNome} />
-              <Linha rotulo="Resultado" valor={aberto.resultado || '—'} />
-              <Linha rotulo="Origem" valor={aberto.origem || '—'} />
-              <Linha rotulo="IP" valor={aberto.ip || '—'} mono />
+              <Linha rotulo="Resultado" valor={aberto.resultado || ''} />
+              <Linha rotulo="Origem" valor={aberto.origem || ''} />
+              <Linha rotulo="IP" valor={aberto.ip || ''} mono />
               {aberto.mensagem_erro && <Linha rotulo="Mensagem de erro" valor={aberto.mensagem_erro} />}
               {aberto.dados_depois != null && (
                 <div>

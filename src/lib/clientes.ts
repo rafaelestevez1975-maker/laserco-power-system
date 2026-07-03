@@ -1,5 +1,5 @@
 /**
- * Helpers de Clientes — paridade com o legado (legacy/index.html ~3242-3324).
+ * Helpers de Clientes  paridade com o legado (legacy/index.html ~3242-3324).
  * Funções PURAS (client-safe): parse de CSV, auto-map de colunas, inferência de gênero,
  * limpeza de nome e dedup em lote. Usadas pelo modal de Importação de clientes.
  *

@@ -17,8 +17,8 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
  *      desconto, total, payment_kind, criado_em)
  *   os_pagamentos(os_id, data_pagamento, tipo, metodo, parcelas_total, parcela_atual, valor, status, criado_por, criado_em)
  *
- * `numero` é NOT NULL e SEM default — geramos (max(numero)+1 escopado por unidade).
- * `unidade_id` é NOT NULL — uma OS sempre pertence a uma unidade (exige unidade ativa).
+ * `numero` é NOT NULL e SEM default  geramos (max(numero)+1 escopado por unidade).
+ * `unidade_id` é NOT NULL  uma OS sempre pertence a uma unidade (exige unidade ativa).
  *
  * RBAC: só operacoes/gestor/admin abrem, editam itens, finalizam ou cancelam OS.
  * Multitenant: scopeUnidade por activeUnitId em todas as escritas/consultas.
@@ -42,7 +42,7 @@ const ORIGENS = ['avulsa', 'agendamento', 'pacote', 'assinatura', 'interna', 'mu
 
 /**
  * Abre uma nova OS (status 'aberta'). Gera o próximo `numero` para a unidade.
- * Não persiste itens aqui — os itens entram via adicionarItem após a criação.
+ * Não persiste itens aqui  os itens entram via adicionarItem após a criação.
  */
 export async function abrirOS(input: NovaOSInput): Promise<ActionResult> {
   const { op, error } = await requireOperador()
@@ -281,7 +281,7 @@ export async function registrarPagamento(input: PagamentoInput, activeUnitId: st
   if (!METODOS.includes(input.metodo)) return { ok: false, error: 'Método de pagamento inválido.' }
   if (!Number.isFinite(input.valor) || input.valor <= 0) return { ok: false, error: 'Informe um valor de pagamento válido.' }
 
-  // OS precisa existir na unidade (pode estar aberta ou fechada — pagamento pós-fechamento é válido).
+  // OS precisa existir na unidade (pode estar aberta ou fechada  pagamento pós-fechamento é válido).
   let q = op.sb.from('os').select('id, status').eq('id', input.osId)
   q = scopeUnidade(q, activeUnitId)
   const { data } = await q.maybeSingle()

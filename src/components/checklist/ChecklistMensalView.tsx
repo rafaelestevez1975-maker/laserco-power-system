@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { ChecklistMensal } from '@/lib/checklist'
 
 /**
- * Aba "Mensal · PDCA" — Check List Mensal de Indicadores (modelo SULTS).
+ * Aba "Mensal · PDCA"  Check List Mensal de Indicadores (modelo SULTS).
  * Espelha chkMensal do legado (legacy ~6114-6166): 6 seções, ~26 questões com
  * itens auto-preenchidos pelos dados da rede/unidade, tabela Questão/Resposta/
  * Avaliação/Pontos, pontuação 340 + % e planos de ação gerados automaticamente.
@@ -40,7 +40,7 @@ export function ChecklistMensalView({ mensal, activeUnitName }: { mensal: Checkl
   return (
     <>
       <div className="rel-legend">
-        <b>Check List Mensal de Indicadores — Franquias e Próprias</b> · unidade <b>{activeUnitName}</b> · referente aos
+        <b>Check List Mensal de Indicadores  Franquias e Próprias</b> · unidade <b>{activeUnitName}</b> · referente aos
         últimos 30 dias. Segue o ciclo <b>PDCA</b>: <b>P</b>lanejar o plano de ação para subir os indicadores,
         <b> D</b>o executar com responsável e meta, <b>C</b>hecar na reunião semanal, <b>A</b>gir conforme o resultado.
         As questões marcadas{' '}
@@ -64,7 +64,7 @@ export function ChecklistMensalView({ mensal, activeUnitName }: { mensal: Checkl
       </div>
 
       <div className="rel-acts" style={{ margin: '0 0 14px', display: 'flex', gap: 10 }}>
-        <button className="btn btn-primary" onClick={() => setAviso('Checklist mensal aplicado — planos de ação enviados para a unidade. (Envio por e-mail/WhatsApp depende da automação semanal.)')}>
+        <button className="btn btn-primary" onClick={() => setAviso('Checklist mensal aplicado  planos de ação enviados para a unidade. (Envio por e-mail/WhatsApp depende da automação semanal.)')}>
           <i className="ti ti-player-play" /> Aplicar e enviar planos de ação
         </button>
         <button className="btn btn-ghost" onClick={() => setAviso('Exportação em PDF do checklist mensal: disponível na automação semanal (cron).')}>
@@ -127,7 +127,7 @@ export function ChecklistMensalView({ mensal, activeUnitName }: { mensal: Checkl
         <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="rel-card-h" style={{ padding: '14px 18px', background: 'var(--amber-bg)' }}>
             <span style={{ color: '#8a5a12' }}>
-              <i className="ti ti-target-arrow flt" /> Planos de ação gerados automaticamente ({mensal.planos.length}) — indicadores a melhorar
+              <i className="ti ti-target-arrow flt" /> Planos de ação gerados automaticamente ({mensal.planos.length})  indicadores a melhorar
             </span>
           </div>
           <div className="cli-scroll">

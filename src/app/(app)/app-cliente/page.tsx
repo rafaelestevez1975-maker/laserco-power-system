@@ -9,7 +9,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 /**
- * App do Cliente — prévia navegável do aplicativo do consumidor, agora alimentada
+ * App do Cliente  prévia navegável do aplicativo do consumidor, agora alimentada
  * com DADOS REAIS do tenant (catálogo de serviços, unidades, profissionais e um
  * cliente real com saldo de pontos/créditos + próximo agendamento e histórico).
  * As ações dentro do telefone seguem sendo demonstrativas (sem persistência).

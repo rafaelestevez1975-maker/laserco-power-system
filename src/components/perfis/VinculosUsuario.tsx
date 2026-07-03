@@ -114,7 +114,7 @@ export function VinculosUsuario({ cargoId, vinculos, opcoes, podeEditar }: Props
               {vinculos.map((v) => (
                 <tr key={v.perfilId} style={{ opacity: v.ativo ? 1 : 0.55 }}>
                   <td className="cli-name" style={{ fontWeight: 600 }}>{v.nome}</td>
-                  <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{v.email || <span className="muted">—</span>}</td>
+                  <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{v.email || <span className="muted"></span>}</td>
                   <td>
                     {v.ativo
                       ? <span className="os-st os-fechada">Ativo</span>

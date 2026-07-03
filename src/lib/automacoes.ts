@@ -1,5 +1,5 @@
 /**
- * Catálogo das automações PADRÃO da rede — espelho fiel do AUTOS do legado
+ * Catálogo das automações PADRÃO da rede  espelho fiel do AUTOS do legado
  * (legacy/index.html 3880-3910). No legado o estado vive em memória; aqui o
  * catálogo é estático (texto/gatilho/ação/categoria/ícone) e o ESTADO ativo
  * por unidade é persistido em automacoes_estado.
@@ -48,7 +48,7 @@ export const AUTOS_PADRAO: AutomacaoPadrao[] = [
     ac: 'dispara um fluxo de 7 dias oferecendo a nova sessão do mesmo serviço para manter o resultado no tempo, e registra a oportunidade de revenda no CRM',
     canais: ['wa'], ativoDefault: true, stat: 'recupera 22% em revenda',
     det: {
-      servicos: ['Ultrassom — todos (UltraCel / microfocado)', 'Rejuvenescimento Facial 4D', 'Rejuvenescimento das Mãos', 'Rejuvenescimento Colo e Pescoço', 'PDRN e Exossomos', 'Melasma'],
+      servicos: ['Ultrassom  todos (UltraCel / microfocado)', 'Rejuvenescimento Facial 4D', 'Rejuvenescimento das Mãos', 'Rejuvenescimento Colo e Pescoço', 'PDRN e Exossomos', 'Melasma'],
       janela: 'Oferta válida por 7 dias (condição especial para resgatar a revenda)',
       passos: [
         { dia: 'Dia 0', titulo: 'Oferta', desc: '"Já fazem 8 meses do seu {serviço} 💜 Para manter o resultado, preparamos uma condição especial válida por 7 dias." + link de agendamento' },
@@ -58,7 +58,7 @@ export const AUTOS_PADRAO: AutomacaoPadrao[] = [
       ],
     },
   },
-  { chave: 'venda_tardia', nome: 'Venda Tardia — recuperação pós-avaliação', cat: 'CRM', ic: 'ti-clock-hour-9', gat: 'passam 5 dias da avaliação ou do orçamento sem fechamento', ac: 'lança o cliente automaticamente no CRM como "Venda Tardia" e abre o fluxo Kanban (Novo → 1º contato → …), com prazo de andamento de 48h', canais: ['wa'], ativoDefault: true, stat: 'recupera vendas perdidas' },
+  { chave: 'venda_tardia', nome: 'Venda Tardia  recuperação pós-avaliação', cat: 'CRM', ic: 'ti-clock-hour-9', gat: 'passam 5 dias da avaliação ou do orçamento sem fechamento', ac: 'lança o cliente automaticamente no CRM como "Venda Tardia" e abre o fluxo Kanban (Novo → 1º contato → …), com prazo de andamento de 48h', canais: ['wa'], ativoDefault: true, stat: 'recupera vendas perdidas' },
   { chave: 'boas_vindas', nome: 'Boas-vindas ao novo cliente', cat: 'Cadastro', ic: 'ti-confetti', gat: 'um novo cliente é cadastrado', ac: 'envia WhatsApp de boas-vindas com o link da Anamnese Digital para preencher', canais: ['wa'], ativoDefault: true, stat: '92% de abertura' },
   { chave: 'entrada_crm', nome: 'Entrada automática no CRM', cat: 'CRM', ic: 'ti-user-plus', gat: 'um novo cliente ou lead é cadastrado', ac: 'cria o lead na etapa "Novo Lead" do funil e atribui um responsável', canais: ['push'], ativoDefault: true, stat: '100% dos leads' },
   { chave: 'confirma_agenda', nome: 'Confirmação de agendamento', cat: 'Agendamentos', ic: 'ti-calendar-check', gat: 'um agendamento é criado', ac: 'envia confirmação com data, hora, serviço e unidade', canais: ['wa'], ativoDefault: true },
@@ -101,7 +101,7 @@ export const SEG_CAMPOS: Record<string, SegCampoDef> = {
 
 export type SegCriterio = { campo: string; op: string; valor: string }
 
-/** Estima nº de contatos do segmento (espelha segCount 6675 — base 1248 × fatores). */
+/** Estima nº de contatos do segmento (espelha segCount 6675  base 1248 × fatores). */
 export function segCount(criterios: SegCriterio[]): number {
   let n = 1248
   const f: Record<string, number> = { verificado: 0.45, jaCliente: 0.55, contratou: 0.22, naoContratou: 0.8, gasto: 0.35, unidade: 0.09, cidade: 0.13, estado: 0.28 }

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 type SP = { periodo?: string; di?: string; df?: string }
 
 /**
- * Relatório de Avaliações (NPS / CSAT) — réplica do REL_DEFS.avaliacoes do legado
+ * Relatório de Avaliações (NPS / CSAT)  réplica do REL_DEFS.avaliacoes do legado
  * (legacy/index.html ~4292). No legado os KPIs ("188 avaliações", "4,8 nota média",
  * "86% promotores", "4% detratores") e as linhas (Data/Cliente/Serviço/Profissional/
  * Nota/Comentário) eram 100% MOCK.
@@ -20,7 +20,7 @@ type SP = { periodo?: string; di?: string; df?: string }
  * ROBUSTEZ: NÃO existe tabela de avaliações de CLIENTE (NPS/CSAT) no backend atual.
  *   grep -rl "from('avaliacoes')" src  → nada.
  *   A única tabela com nome próximo é `avaliacoes_desempenho`, que é avaliação de
- *   DESEMPENHO de colaborador (RH /rh/desempenho) — conceito diferente; não tem
+ *   DESEMPENHO de colaborador (RH /rh/desempenho)  conceito diferente; não tem
  *   nota de cliente, serviço nem comentário de pós-venda. Portanto NÃO consultamos
  *   essa tabela aqui.
  *
@@ -30,7 +30,7 @@ type SP = { periodo?: string; di?: string; df?: string }
  * estrutura (filtros, KPIs zerados, tabela vazia) visível. No dia em que a tabela
  * `avaliacoes` for criada com as colunas esperadas (nota, comentario, cliente_nome,
  * servico_nome, profissional_nome, criado_em, unidade_id), este relatório passa a
- * exibir os números reais automaticamente — sem mexer no código.
+ * exibir os números reais automaticamente  sem mexer no código.
  */
 
 // Linha esperada da (futura) tabela `avaliacoes`. Tudo opcional → tolerante a esquema.
@@ -112,19 +112,19 @@ export default async function RelAvaliacoesPage({ searchParams }: { searchParams
     { label: 'Avaliações', value: total.toLocaleString('pt-BR'), icon: 'ti-star' },
     {
       label: 'Nota média',
-      value: notas.length ? notaMedia.toFixed(1).replace('.', ',') : '—',
+      value: notas.length ? notaMedia.toFixed(1).replace('.', ',') : '',
       icon: 'ti-star-filled',
     },
     {
       label: 'Promotores',
-      value: total > 0 ? `${pctPromotores.toFixed(0)}%` : '—',
+      value: total > 0 ? `${pctPromotores.toFixed(0)}%` : '',
       icon: 'ti-thumb-up',
       delta: total > 0 ? `${promotores.toLocaleString('pt-BR')} avaliação(ões)` : undefined,
       deltaTone: 'up',
     },
     {
       label: 'Detratores',
-      value: total > 0 ? `${pctDetratores.toFixed(0)}%` : '—',
+      value: total > 0 ? `${pctDetratores.toFixed(0)}%` : '',
       icon: 'ti-thumb-down',
       delta: total > 0 ? `${detratores.toLocaleString('pt-BR')} avaliação(ões)` : undefined,
       deltaTone: pctDetratores > 0 ? 'down' : 'flat',
@@ -164,13 +164,13 @@ export default async function RelAvaliacoesPage({ searchParams }: { searchParams
         >
           <i className="ti ti-hourglass" style={{ fontSize: 20, color: 'var(--brand-600)', marginTop: 2 }} />
           <div>
-            <b>Relatório em preparação — sem fonte de dados ainda.</b>
+            <b>Relatório em preparação  sem fonte de dados ainda.</b>
             <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>
               Ainda não existe no backend uma tabela de <b>avaliações de cliente</b> (NPS / CSAT pós-sessão).
               Quando a coleta de avaliações for ligada (pesquisa de satisfação após o atendimento, nota e
               comentário por cliente), este relatório passará a exibir automaticamente: número de avaliações,
               nota média, % de promotores e detratores (NPS), distribuição de notas e a lista de avaliações
-              por cliente, serviço e profissional — filtrados por período e unidade.
+              por cliente, serviço e profissional  filtrados por período e unidade.
             </div>
           </div>
         </div>
@@ -180,19 +180,19 @@ export default async function RelAvaliacoesPage({ searchParams }: { searchParams
 
       <RelKpis kpis={kpis} />
 
-      {/* Métrica NPS consolidada (metric-box). Sem fonte, mostra "—". */}
+      {/* Métrica NPS consolidada (metric-box). Sem fonte, mostra "". */}
       <div className="rel-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <div className="metric-box">
           <span>NPS (Promotores − Detratores)</span>
-          <b>{total > 0 ? `${nps >= 0 ? '+' : ''}${nps.toFixed(0)}` : '—'}</b>
+          <b>{total > 0 ? `${nps >= 0 ? '+' : ''}${nps.toFixed(0)}` : ''}</b>
         </div>
         <div className="metric-box gold">
           <span>Neutros</span>
-          <b>{total > 0 ? neutros.toLocaleString('pt-BR') : '—'}</b>
+          <b>{total > 0 ? neutros.toLocaleString('pt-BR') : ''}</b>
         </div>
         <div className="metric-box purple">
           <span>Escala detectada</span>
-          <b>{total > 0 ? (escalaMax <= 5 ? '1 a 5 (estrelas)' : '0 a 10 (NPS)') : '—'}</b>
+          <b>{total > 0 ? (escalaMax <= 5 ? '1 a 5 (estrelas)' : '0 a 10 (NPS)') : ''}</b>
         </div>
       </div>
 
@@ -225,7 +225,7 @@ export default async function RelAvaliacoesPage({ searchParams }: { searchParams
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
                     {semFonte
-                      ? 'Sem fonte de dados — a coleta de avaliações de cliente ainda não está ativa.'
+                      ? 'Sem fonte de dados  a coleta de avaliações de cliente ainda não está ativa.'
                       : 'Nenhuma avaliação no período selecionado.'}
                   </td>
                 </tr>
@@ -234,19 +234,19 @@ export default async function RelAvaliacoesPage({ searchParams }: { searchParams
                 const cls = classificaNps(r.nota, escalaMax)
                 const stCls = cls === 'promotor' ? 'os-fechada' : cls === 'detrator' ? 'os-cancelada' : 'os-aberta'
                 const n = Number(r.nota)
-                const notaTxt = Number.isFinite(n) ? (escalaMax <= 5 ? `★ ${n}` : `${n}`) : '—'
+                const notaTxt = Number.isFinite(n) ? (escalaMax <= 5 ? `★ ${n}` : `${n}`) : ''
                 return (
                   <tr key={r.id ?? i}>
                     <td>{dataBR(r.criado_em)}</td>
                     <td>
-                      <span className="cli-name">{r.cliente_nome || '—'}</span>
+                      <span className="cli-name">{r.cliente_nome || ''}</span>
                     </td>
-                    <td>{r.servico_nome || '—'}</td>
-                    <td>{r.profissional_nome || '—'}</td>
+                    <td>{r.servico_nome || ''}</td>
+                    <td>{r.profissional_nome || ''}</td>
                     <td className="num-r">
                       <span className={`os-st ${stCls}`}>{notaTxt}</span>
                     </td>
-                    <td style={{ fontSize: 12.5, color: 'var(--text-2)', maxWidth: 320 }}>{r.comentario || '—'}</td>
+                    <td style={{ fontSize: 12.5, color: 'var(--text-2)', maxWidth: 320 }}>{r.comentario || ''}</td>
                   </tr>
                 )
               })}

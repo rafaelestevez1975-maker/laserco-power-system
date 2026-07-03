@@ -77,7 +77,7 @@ export default async function RelFinanceiroPage({ searchParams }: { searchParams
   const resultado = totalReceita - totalDespesa
   const margem = totalReceita > 0 ? (resultado / totalReceita) * 100 : 0
 
-  // Carregar nomes de categorias (plano_contas) usadas — uma query enxuta.
+  // Carregar nomes de categorias (plano_contas) usadas  uma query enxuta.
   const catIds = [...new Set([...rec.rows, ...desp.rows].map((r) => r.categoria_id).filter(Boolean))] as string[]
   const catNome: Record<string, string> = {}
   if (catIds.length > 0) {
@@ -128,7 +128,7 @@ export default async function RelFinanceiroPage({ searchParams }: { searchParams
       <RelTabs active="financeiro" query={relQuery(sp)} />
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '0 0 6px' }}>
-        <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Financeiro — DRE simples</h2>
+        <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Financeiro  DRE simples</h2>
         <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
           {range.label} · {unidadeId ? ctx?.activeUnitName : 'Todas as unidades'}
         </span>

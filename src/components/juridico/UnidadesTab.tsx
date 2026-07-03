@@ -285,8 +285,8 @@ export function UnidadesTab({
   return (
     <div>
       <div className="rel-legend">
-        Selecione a unidade (filtre por <b>ativa</b>, em teste ou <b>inativa</b>) para anexar os documentos contratuais —{' '}
-        <b>Contrato de Franquia</b>, <b>Pré-contrato</b> e <b>COF</b> — e emitir notificações.
+        Selecione a unidade (filtre por <b>ativa</b>, em teste ou <b>inativa</b>) para anexar os documentos contratuais {' '}
+        <b>Contrato de Franquia</b>, <b>Pré-contrato</b> e <b>COF</b>  e emitir notificações.
       </div>
 
       <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

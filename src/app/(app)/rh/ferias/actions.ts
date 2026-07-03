@@ -7,14 +7,14 @@ import { temPapel } from '@/lib/rbac'
 export type ActionResult = { ok: boolean; error?: string }
 
 /**
- * RH · Férias e Ausências — Server Actions.
+ * RH · Férias e Ausências  Server Actions.
  *
  * Tabelas reais (lkii):
  *   solicitacoes_ferias(colaborador_id, periodo_aquisitivo, data_inicio, data_fim,
  *                       dias_solicitados, vender_dias, status, motivo, aprovado_por)
  *   atestados(colaborador_id, data_inicio, dias, cid, data_entrega, status, observacoes)
  *
- * RBAC (legado: permissão "Férias e Afastamentos — Gerenciar"):
+ * RBAC (legado: permissão "Férias e Afastamentos  Gerenciar"):
  *   - rh / gestor / gerente / admin_geral: aprovam, recusam e lançam para qualquer colaborador da unidade.
  *   - colaborador comum: só cria solicitação/atestado para o SEU próprio registro (colaboradores.perfil_id = user).
  */
@@ -75,7 +75,7 @@ export async function solicitarFerias(input: NovaFeriasInput): Promise<ActionRes
   const dias = difDias(input.data_inicio, input.data_fim)
   if (dias <= 0) return { ok: false, error: 'Período inválido (a data fim deve ser igual ou após o início).' }
   if (dias > 30) return { ok: false, error: 'O período de férias não pode exceder 30 dias.' }
-  // Abono pecuniário: até 1/3 das férias (10 de 30 dias) — regra CLT.
+  // Abono pecuniário: até 1/3 das férias (10 de 30 dias)  regra CLT.
   const vender = Math.max(0, Math.min(10, Math.round(input.vender_dias || 0)))
 
   const perm = await podeLancarPara(op, input.colaborador_id)

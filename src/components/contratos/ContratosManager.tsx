@@ -51,7 +51,7 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-file-description" /> Modelos de contrato da rede — defina <b>quando o contrato é emitido</b>,
+        <i className="ti ti-file-description" /> Modelos de contrato da rede  defina <b>quando o contrato é emitido</b>,
         se é <b>enviado por e-mail para assinatura</b>, o <b>título</b>, os <b>termos</b> e anexe o <b>arquivo</b>
         (PDF/DOC/DOCX) para ficar guardado no sistema e disponível para as unidades.
       </div>
@@ -83,7 +83,7 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
         )}
       </div>
 
-      {/* Filtros (form GET) — Ativo (Sim/Não/Todos) + Nome do modelo */}
+      {/* Filtros (form GET)  Ativo (Sim/Não/Todos) + Nome do modelo */}
       <form method="GET" action="/cadastros/contratos" className="rel-card" style={{ marginBottom: 14 }}>
         <div className="rel-card-h" style={{ cursor: 'default' }}>
           <span><i className="ti ti-filter flt" /> Filtros</span>
@@ -149,7 +149,7 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
                           {r.nome || '(sem nome)'}
                         </span>
                       </td>
-                      <td><span className="orig-tag">{r.quando_emitido || '—'}</span></td>
+                      <td><span className="orig-tag">{r.quando_emitido || ''}</span></td>
                       <td>{r.enviar_email !== false ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                       <td>
                         {r.arquivo_path ? (
@@ -158,7 +158,7 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
                             <i className="ti ti-paperclip" /> {r.arquivo_nome || 'arquivo'}
                           </button>
                         ) : (
-                          <span style={{ color: 'var(--text-3)' }}>—</span>
+                          <span style={{ color: 'var(--text-3)' }}></span>
                         )}
                       </td>
                       <td>{inativo ? <span className="pill-no">Não</span> : <span className="pill-yes">Sim</span>}</td>
@@ -332,7 +332,7 @@ function ContratoEditor({ modo, row, onClose, onSaved }: {
         </div>
       </form>
 
-      {/* Pré-visualização (legado: contPreview — renderiza título + termos) */}
+      {/* Pré-visualização (legado: contPreview  renderiza título + termos) */}
       {preview && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', zIndex: 110, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 16, overflow: 'auto' }} onClick={() => setPreview(false)}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 720, margin: '24px 0', padding: 28, background: '#fff', borderRadius: 14, boxShadow: '0 18px 50px rgba(0,0,0,.3)' }}>

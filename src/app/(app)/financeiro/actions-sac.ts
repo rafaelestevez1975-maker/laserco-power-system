@@ -16,8 +16,8 @@ async function conciliarReembolsoRazao(ticketId: string, dataCaixa: string): Pro
 
 /** Dá baixa (marca como pago) num lançamento de lancamentos_financeiros. Se for um
  *  reembolso do SAC (origem_ref_id aponta para um sac_ticket), conclui o chamado
- *  automaticamente — é o "espelha de volta" pedido na reunião.
- *  (Financeiro por UNIDADE — distinto do financeiro da franqueadora em fin_*.) */
+ *  automaticamente  é o "espelha de volta" pedido na reunião.
+ *  (Financeiro por UNIDADE  distinto do financeiro da franqueadora em fin_*.) */
 export async function darBaixaLancamento(lancamentoId: string): Promise<{ ok: boolean; error?: string; concluiuChamado?: boolean }> {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()

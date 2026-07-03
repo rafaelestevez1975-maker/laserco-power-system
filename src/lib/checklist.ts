@@ -4,7 +4,7 @@
  * recebe nota 0–10 contra a meta; abaixo de 7 gera plano de ação sugerido.
  *
  * Os VALORES reais vêm de `kpis_unidade_snapshot` (taxa_comparecimento, taxa_conversao,
- * ticket_medio, agendamentos_total…). Aqui só calculamos nota/status — sem I/O.
+ * ticket_medio, agendamentos_total…). Aqui só calculamos nota/status  sem I/O.
  */
 
 export type IndicadorDef = {
@@ -32,12 +32,12 @@ export type IndicadorDef = {
 }
 
 /**
- * Os 7 indicadores do funil — paridade EXATA com o CHK_INDS legado (legacy ~6081).
+ * Os 7 indicadores do funil  paridade EXATA com o CHK_INDS legado (legacy ~6081).
  * Agendamentos(300) · Comparecimento(85%) · Conversão novos(50%) · Conversão revenda(55%)
  * · Ticket médio(R$1000) · No-show(<=10%, inv) · Ocupação da agenda(80%).
  *
  * Os 3 novos (convR, noshow, ocup) leem colunas que podem não existir ainda no
- * snapshot real — nesse caso o valor vem null (Sem dado) e não geram plano.
+ * snapshot real  nesse caso o valor vem null (Sem dado) e não geram plano.
  */
 export const FUNIL_INDS: IndicadorDef[] = [
   {
@@ -98,7 +98,7 @@ export function statusNota(n: number | null): { cls: 'ok' | 'pend' | 'crit' | 'd
   return { cls: 'crit', label: 'Crítico' }
 }
 
-/** Cor (var CSS) da nota — para o número grande de pontuação. */
+/** Cor (var CSS) da nota  para o número grande de pontuação. */
 export function corNota(n: number | null): string {
   if (n == null) return 'var(--text-3)'
   if (n >= 8) return 'var(--green)'
@@ -108,7 +108,7 @@ export function corNota(n: number | null): string {
 
 /** Formata o valor de um indicador para exibição (R$, %, inteiro). */
 export function fmtValorInd(ind: IndicadorDef, v: number | null | undefined): string {
-  if (v == null) return '—'
+  if (v == null) return ''
   if (ind.suf === ' R$') return 'R$ ' + Math.round(v).toLocaleString('pt-BR')
   return (Math.round(v * 10) / 10).toLocaleString('pt-BR') + ind.suf
 }
@@ -162,10 +162,10 @@ export function gargalos(linhas: LinhaAvaliacao[]): LinhaAvaliacao[] {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Checklist MENSAL de Indicadores (modelo SULTS · ciclo PDCA) — legacy chkMensal
+// Checklist MENSAL de Indicadores (modelo SULTS · ciclo PDCA)  legacy chkMensal
 // (legacy ~6114-6166). Espelha as 6 seções, ~26 questões com itens "auto"
 // preenchidos pelos dados da rede/unidade, pontuação 340 e geração de planos.
-// Funções PURAS — os valores reais entram via FunilSnapshot + médias da rede.
+// Funções PURAS  os valores reais entram via FunilSnapshot + médias da rede.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export type MediasRede = {
@@ -297,7 +297,7 @@ export function montarChecklistMensal(snap: FunilSnapshot | null, avg: MediasRed
     },
   ]
 
-  // Planos de ação automáticos (indicadores abaixo da média/meta) — legacy chkMensal
+  // Planos de ação automáticos (indicadores abaixo da média/meta)  legacy chkMensal
   const planos: PlanoMensal[] = []
   if (!cAg) planos.push({ indicador: 'Agendamentos', acao: FUNIL_INDS[0].act, situacao: `${ag} / meta 630`, responsavel: 'Gerente da unidade' })
   if (!cNovos) planos.push({ indicador: '% Clientes novos', acao: 'Prospecção ativa em redes sociais + sorteio por indicações (3–5 leads/cliente).', situacao: `${novos}% / meta 20%`, responsavel: 'Consultor de Vendas' })
@@ -305,7 +305,7 @@ export function montarChecklistMensal(snap: FunilSnapshot | null, avg: MediasRed
   if (!cConv) planos.push({ indicador: 'Conversão', acao: FUNIL_INDS[2].act, situacao: `${conv}% / rede ${avgConv.toFixed(0)}%`, responsavel: 'Gerente / Vendas' })
   if (!cTicket) planos.push({ indicador: 'Ticket médio', acao: FUNIL_INDS[4].act, situacao: `R$ ${ticket} / rede R$ ${Math.round(avgTicket)}`, responsavel: 'Gerente / Vendas' })
 
-  // Pontuação — legacy: itens variáveis + 7 itens fixos "Sim" (70 pts). tot=340.
+  // Pontuação  legacy: itens variáveis + 7 itens fixos "Sim" (70 pts). tot=340.
   const variaveis: [boolean, number][] = [
     [cAg, 10], [cNovos, 10], [ag >= 300, 10], [cComp, 10], [cComp, 20],
     [cConv, 10], [cConv, 20], [cTicket, 10], [cTicket, 20], [cTicket, 10], [cAg && cConv, 10],

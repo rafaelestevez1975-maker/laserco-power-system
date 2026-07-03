@@ -161,11 +161,11 @@ export function IndiquesManager(props: Props) {
           {/* Ações */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '0 0 12px' }}>
             <button className="btn btn-primary" onClick={() => setNova(true)}><i className="ti ti-user-plus" /> Novo indique</button>
-            <button className="btn btn-ghost" onClick={() => copiar(link, 'Link de indicação copiado — compartilhe em grupos e redes sociais.')}><i className="ti ti-link" /> Copiar link de indicação</button>
+            <button className="btn btn-ghost" onClick={() => copiar(link, 'Link de indicação copiado  compartilhe em grupos e redes sociais.')}><i className="ti ti-link" /> Copiar link de indicação</button>
             <button className="btn btn-ghost" disabled={busy} onClick={onEnviarCrm}><i className="ti ti-affiliate" /> {busy ? 'Enviando…' : 'Enviar novos ao CRM'}</button>
           </div>
           <div className="rel-legend" style={{ marginBottom: 12 }}>
-            <i className="ti ti-link" /> Link compartilhável: <b>{link}</b> — cada indicado que entrar vira um <b>lead novo</b> no quadro, registrando <b>quem indicou</b> para as automações.
+            <i className="ti ti-link" /> Link compartilhável: <b>{link}</b>  cada indicado que entrar vira um <b>lead novo</b> no quadro, registrando <b>quem indicou</b> para as automações.
           </div>
 
           {/* Kanban dos indicados por status */}
@@ -195,7 +195,7 @@ export function IndiquesManager(props: Props) {
                         </div>
                       )
                     })}
-                    {items.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', padding: 10, textAlign: 'center' }}>—</div>}
+                    {items.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', padding: 10, textAlign: 'center' }}></div>}
                   </div>
                 )
               })}
@@ -378,7 +378,7 @@ function PremioTab({
           ) : (
             <div style={{ marginTop: 10 }}>
               <div className="metric-box" style={{ marginBottom: 8 }}><span>Prêmio</span><b>{premioNome}</b></div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Valor de referência: <b>{premio?.valor_ref || '—'}</b></div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>Valor de referência: <b>{premio?.valor_ref || ''}</b></div>
             </div>
           )}
           <div className="rel-legend" style={{ marginTop: 12 }}><i className="ti ti-calendar-event" /> Sorteio do mês: <b>{data} às 18h</b> · ao vivo no Instagram da {uniNomeSel}.</div>
@@ -440,7 +440,7 @@ function NovaIndicacao({ unidades, activeUnitId, link, onClose, onSaved }: { uni
         </div>
         <div><label style={lbl}>Unidade *</label>
           <select style={inp} value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
-            <option value="">— Selecione —</option>{unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+            <option value=""> Selecione </option>{unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
           </select>
         </div>
         <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>Pessoas indicadas (3 a 5)</div>

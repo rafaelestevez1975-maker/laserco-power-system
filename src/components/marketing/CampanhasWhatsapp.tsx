@@ -101,7 +101,7 @@ export function CampanhasWhatsapp(props: Props) {
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
         <i className="ti ti-ad-2" /> Campanhas de WhatsApp da unidade <b>{activeUnitName}</b>
-        {!activeUnitId && ' (todas as unidades — selecione uma no topo para criar campanhas)'}.
+        {!activeUnitId && ' (todas as unidades  selecione uma no topo para criar campanhas)'}.
       </div>
 
       {/* Erro de carga (tabela inexistente ou falha de leitura) */}
@@ -221,7 +221,7 @@ export function CampanhasWhatsapp(props: Props) {
                     </div>
                   </td>
                   <td>{c.unidade}</td>
-                  <td><span className="orig-tag">{SEG_LABEL[c.segmentacao_tipo ?? ''] ?? (c.segmentacao_tipo || '—')}</span></td>
+                  <td><span className="orig-tag">{SEG_LABEL[c.segmentacao_tipo ?? ''] ?? (c.segmentacao_tipo || '')}</span></td>
                   <td><StatusPill status={c.status} /></td>
                   <td className="num-r">{c.enviados || ''}</td>
                   <td className="num-r">{c.lidos || ''}</td>
@@ -373,7 +373,7 @@ function CampanhaForm(props: {
             <div className="mf">
               <label>Template (opcional)</label>
               <select value={f.template_id} onChange={(e) => aplicarTemplate(e.target.value)}>
-                <option value="">— Mensagem livre —</option>
+                <option value=""> Mensagem livre </option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>{t.nome}{t.finalidade ? ` · ${t.finalidade}` : ''}</option>
                 ))}
@@ -475,7 +475,7 @@ function ReportModal({ c, onClose }: { c: CampanhaRow; onClose: () => void }) {
             </div>
             {base === 0 ? (
               <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-                Sem dados de disparo ainda — o funil aparece quando a campanha for enviada.
+                Sem dados de disparo ainda  o funil aparece quando a campanha for enviada.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

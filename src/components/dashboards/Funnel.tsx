@@ -1,5 +1,5 @@
 /**
- * Funil de vendas em SVG — réplica do funnelSVG() do legado (legacy/index.html ~4458).
+ * Funil de vendas em SVG  réplica do funnelSVG() do legado (legacy/index.html ~4458).
  * Server-safe (sem 'use client'): recebe estágios já calculados e desenha trapézios.
  * Cada estágio: { label, value, display, sub, color }.
  */

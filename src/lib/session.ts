@@ -35,7 +35,7 @@ const ADMIN_PAPEL = 'admin_geral'
 async function fetchCargos(userId: string): Promise<{ ids: string[]; slugs: string[] }> {
   try {
     const admin = adminClient()
-    // Traz o slug do cargo no MESMO SELECT (embed) — sem round-trip extra — p/ derivar o nível SAC.
+    // Traz o slug do cargo no MESMO SELECT (embed)  sem round-trip extra  p/ derivar o nível SAC.
     const { data: ucs } = await admin.from('usuario_cargos').select('cargo_id, cargos(slug)').eq('perfil_id', userId)
     const rows = (ucs ?? []) as Array<{ cargo_id: string; cargos: { slug?: string } | { slug?: string }[] | null }>
     const slugs = rows.flatMap((r) => {
@@ -127,14 +127,14 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     .filter((u) => u.nome && !u.nome.startsWith('[INATIVA]'))
 
   // Unidade ativa: SÓ a unidade do perfil (franqueado vê a própria loja). O seletor do
-  // header foi removido (03/07) e o cookie lc_unit deixou de ser honrado — evita escopo
+  // header foi removido (03/07) e o cookie lc_unit deixou de ser honrado  evita escopo
   // fantasma de cookies antigos.
   const ck = undefined as string | undefined
   const allowed = new Set(unidades.map((u) => u.id))
   let activeUnitId: string | null = ck && allowed.has(ck) ? ck : p?.unidade_id ?? null
   if (activeUnitId && !allowed.has(activeUnitId)) activeUnitId = null
 
-  // SAC é CENTRALIZADO na franqueadora — NUNCA filtra por franquia. Ignora cookie/unidade do
+  // SAC é CENTRALIZADO na franqueadora  NUNCA filtra por franquia. Ignora cookie/unidade do
   // perfil e enxerga tudo centralmente (pedido do Julio: SAC não tem unidade/Suzano).
   const ehSac = papel === 'sac'
   if (ehSac) activeUnitId = null

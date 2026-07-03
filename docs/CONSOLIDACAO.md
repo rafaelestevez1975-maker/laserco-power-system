@@ -1,4 +1,4 @@
-# Consolidação do Sistema — Padrões Compartilhados, Duplicação e Regras (DRY)
+# Consolidação do Sistema  Padrões Compartilhados, Duplicação e Regras (DRY)
 
 > **Para que serve:** este é o mapa de **reuso** do Power System. Antes de construir qualquer tela,
 > consulte aqui o que **já existe** para reaproveitar e o que está **duplicado** para não copiar de novo.
@@ -20,21 +20,21 @@
 | Camada | O que é | Qtd aprox. |
 |---|---|---|
 | 🔌 **Funcional** | Rota nativa com dados/ações reais (badge `NOVO` no menu) | **~13** |
-| 🖼️ **Clone visual** | HTML do protótipo servido via catch-all `[...slug]` + `src/snapshots/views.json` — navegável, sem dados | **~88** |
+| 🖼️ **Clone visual** | HTML do protótipo servido via catch-all `[...slug]` + `src/snapshots/views.json`  navegável, sem dados | **~88** |
 | 🚧 **Placeholder** | Sem snapshot → `<Placeholder/>` "em construção" | resto |
 
 Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, `/chamados`, `/expansao/disparos`, `/sac`, `/sac/chamados`, `/sac/kanban`, `/sac/triagem`, `/financeiro`, `/rh/recrutamento` (+ webhook `/api/webhooks/uazapi`). Detalhe e "o que falta" por seção em [FRONTEND-STATUS.md](FRONTEND-STATUS.md).
 
 ---
 
-## 2. Padrões compartilhados que JÁ existem (reaproveitar — não recriar)
+## 2. Padrões compartilhados que JÁ existem (reaproveitar  não recriar)
 | Helper / módulo | Onde | O que faz |
 |---|---|---|
 | `getSessionContext()` | `src/lib/session.ts` | usuário + papel + `isAdmin` + `recursos` (RBAC) + `unidades` + `activeUnitId/Name`. **Use sempre** para escopo/permite. |
 | `createClient()` (server, RLS) | `src/lib/supabase/server.ts` | client server com sessão do usuário (respeita RLS). |
 | `createClient()` (browser) | `src/lib/supabase/client.ts` | client do navegador. |
-| `adminClient()` (service-role) | `src/lib/supabase/admin.ts` | **bypassa RLS** — só server, só quando necessário (ex.: resolver RBAC). |
-| `siteClient` | `src/lib/supabase/site.ts` | backend do site (`riut`) — fonte dos leads. |
+| `adminClient()` (service-role) | `src/lib/supabase/admin.ts` | **bypassa RLS**  só server, só quando necessário (ex.: resolver RBAC). |
+| `siteClient` | `src/lib/supabase/site.ts` | backend do site (`riut`)  fonte dos leads. |
 | `MENU` / `titleFor()` | `src/lib/menu.ts` | fonte da verdade da navegação + título da topbar. |
 | UAZAPI | `src/lib/uazapi.ts` | `normTel`, `sendText`, `sendMedia`, `connect/status/disconnect`, `configurarWebhook`, `criarCampanhaSimples`. |
 | IA do SAC | `src/lib/ia.ts` | `iaConfigurada()`, `gerarRespostaSAC()`, `formatarParaWhatsApp()` (OpenRouter). |
@@ -43,10 +43,10 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 
 ---
 
-## 3. Duplicação atual (CONSOLIDAR) — evidência por arquivo:linha
+## 3. Duplicação atual (CONSOLIDAR)  evidência por arquivo:linha
 | # | Padrão duplicado | Onde se repete | Centralizar em |
 |---|---|---|---|
-| D1 | **Tradução de erro RLS** (`/row-level\|policy\|permission/ → "Sem permissão…"`) — copiado verbatim e com textos divergentes | `comunicados/actions.ts:19`, `canais/actions.ts:11`, `rh/recrutamento/actions.ts:13` (idênticos); inline divergente em `financeiro/actions.ts:29`, `leads-site/actions.ts:72,80` | **`src/lib/sb.ts`** → `msgErro(error, oQue)` |
+| D1 | **Tradução de erro RLS** (`/row-level\|policy\|permission/ → "Sem permissão…"`)  copiado verbatim e com textos divergentes | `comunicados/actions.ts:19`, `canais/actions.ts:11`, `rh/recrutamento/actions.ts:13` (idênticos); inline divergente em `financeiro/actions.ts:29`, `leads-site/actions.ts:72,80` | **`src/lib/sb.ts`** → `msgErro(error, oQue)` |
 | D2 | **Boilerplate `sb.auth.getUser()`** + checar null, refeito à mão | ~20 ocorrências: `chamados/actions.ts:22,69,112`, `crm/actions.ts:21,60`, `comunicados/actions.ts:25,72,90,114`, `indiques`, `leads-site`, `rh/recrutamento`, `financeiro/actions.ts:11`… (só `canais` e `disparos` usam `getSessionContext`) | **`src/lib/sb.ts`** → `requireOperador()` (retorna `{user, perfil, papel, ctx}` ou erro) |
 | D3 | **Formatação BR (moeda `R$` / data `pt-BR`)** inline | 13 arquivos: `crm/page`, `financeiro/page`, `sac/page`, `ChamadosManager`, `NotificacoesSino`, `CienteModal`, `CrmBoard`, `ComunicadosManager`, `FinContasPagar`, `RecrutamentoManager`, `SiteLeadsInbox`, `SacKanban`, `TriagemWhatsapp` | **`src/lib/fmt.ts`** → `moedaBR()`, `dataBR()`, `dataHoraBR()`, `relativo()` |
 | D4 | **Normalizar telefone + `wa.me`** (`replace(/\D/g,'')` + prefixo 55) | `CrmBoard.tsx:19`, `RecrutamentoManager.tsx:29`, `DisparoComposer.tsx:22`, `disparos/actions.ts:15`, `sac/triagem/actions.ts:140-141`, `webhook/route.ts:62` (apesar de `normTel` existir em `uazapi.ts:88`) | reusar `normTel` + novo `waHref()` em **`src/lib/fmt.ts`** |
@@ -60,13 +60,13 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 ---
 
 ## 4. Infra padrão que faltou construir (dívida do EPIC 0.4/0.5)
-- ❌ **Componente de formulário padrão** (`<Field label error>` + validação por campo). **Não existe** `react-hook-form`/`zod`/`<Field>` no projeto — toda validação é ad-hoc. → criar **`src/lib/forms`** (`<Field>`, resolvers Zod, helpers `cpf/cnpj/cep/moedaBR`). É requisito do cliente ("validação por campo, erro abaixo do input").
-- ❌ **Wrapper de chamada Supabase** (`sb()`/`requireOperador()`/`msgErro()`) — ver D1/D2.
-- ❌ **`src/lib/fmt.ts`** (moeda/data/telefone BR) — ver D3/D4.
-- ❌ **`src/lib/rbac.ts`** — checagem de papel (`isAdmin`, `podeSac`, `podeGestor`) hoje é string solta espalhada.
-- ❌ **`src/lib/types.ts`** (`ActionResult`) e **`src/lib/messages.ts`** (constantes de erro/validação) — ver D8 e §3b.
+- ❌ **Componente de formulário padrão** (`<Field label error>` + validação por campo). **Não existe** `react-hook-form`/`zod`/`<Field>` no projeto  toda validação é ad-hoc. → criar **`src/lib/forms`** (`<Field>`, resolvers Zod, helpers `cpf/cnpj/cep/moedaBR`). É requisito do cliente ("validação por campo, erro abaixo do input").
+- ❌ **Wrapper de chamada Supabase** (`sb()`/`requireOperador()`/`msgErro()`)  ver D1/D2.
+- ❌ **`src/lib/fmt.ts`** (moeda/data/telefone BR)  ver D3/D4.
+- ❌ **`src/lib/rbac.ts`**  checagem de papel (`isAdmin`, `podeSac`, `podeGestor`) hoje é string solta espalhada.
+- ❌ **`src/lib/types.ts`** (`ActionResult`) e **`src/lib/messages.ts`** (constantes de erro/validação)  ver D8 e §3b.
 
-## 3b. Inconsistências (mesma coisa, jeitos diferentes — padronizar)
+## 3b. Inconsistências (mesma coisa, jeitos diferentes  padronizar)
 | # | Inconsistência | Evidência | Regra a fixar |
 |---|---|---|---|
 | I1 | **Validação de papel** diverge: comunicados valida `admin_geral` no action; chamados/financeiro não validam (confiam só na RLS); triagem valida `['admin_geral','sac','gestor']` p/ PII | `comunicados/actions.ts:34`, `chamados/actions.ts:28-64` (sem), `sac/triagem/actions.ts:139` | toda ação sensível chama `requireRole()` de `rbac.ts`; RLS é a 2ª linha, não a única |
@@ -77,12 +77,12 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 
 ---
 
-## 5. Backlog de consolidação (ordem sugerida — fazer ANTES de novas telas)
-1. **`src/lib/fmt.ts`** (D3/D4) — baixo risco, alto alcance. Trocar os 13 arquivos.
+## 5. Backlog de consolidação (ordem sugerida  fazer ANTES de novas telas)
+1. **`src/lib/fmt.ts`** (D3/D4)  baixo risco, alto alcance. Trocar os 13 arquivos.
 2. **`src/lib/sb.ts`** com `requireOperador()` + `msgErro()` + `scopeUnidade()` (D1/D2/D5). Migrar os actions.ts.
-3. **`src/lib/forms`** (`<Field>` + Zod) — destrava "validação por campo" em todas as telas novas.
-4. **`src/components/ui/KanbanBoard.tsx`** (D6) — unifica os 3 kanbans.
-5. **Primitivos `ui/`** (Tabs/Filtros/DataTable) (D7) — conforme reescrevemos os Managers.
+3. **`src/lib/forms`** (`<Field>` + Zod)  destrava "validação por campo" em todas as telas novas.
+4. **`src/components/ui/KanbanBoard.tsx`** (D6)  unifica os 3 kanbans.
+5. **Primitivos `ui/`** (Tabs/Filtros/DataTable) (D7)  conforme reescrevemos os Managers.
 
 > Cada item acima é "mudar em todas as ocorrências de uma vez" (Regra 3). Depois disso, toda tela nova nasce DRY.
 
@@ -93,27 +93,27 @@ Funcionais hoje: `/crm`, `/leads-site`, `/canais`, `/indiques`, `/comunicados`, 
 > automática eram **falsos positivos** (a varredura lê trechos): registrados como ✅ já-ok.
 
 ### ✅ Já corretos (eram falsos positivos da auditoria)
-- **Canais** — o `setInterval` do QR **já é limpo** no unmount/connect/close (`CanaisManager:28`).
-- **SAC Kanban** — **já tem contador por fase** (`SacKanban:64`) e move otimista + refresh.
-- **Leads-site** — roteamento **já tem dedup** (`jaRoteado`) e é resumível; o roteamento em massa **reporta** ok/pulados.
-- **SAC Triagem** — painel do cliente (auto-import) e sino de notificações **existem** (a varredura não os viu).
+- **Canais**  o `setInterval` do QR **já é limpo** no unmount/connect/close (`CanaisManager:28`).
+- **SAC Kanban**  **já tem contador por fase** (`SacKanban:64`) e move otimista + refresh.
+- **Leads-site**  roteamento **já tem dedup** (`jaRoteado`) e é resumível; o roteamento em massa **reporta** ok/pulados.
+- **SAC Triagem**  painel do cliente (auto-import) e sino de notificações **existem** (a varredura não os viu).
 
 ### ✅ Corrigidos nesta rodada
-- **Canais** — validação de campo do delay (mín ≥1s, máx ≥ mín) antes de salvar.
-- **Indiques** — regra 3–5 indicados aplicada no server **e** no client (feedback por campo).
-- **CRM** — "Personalizar funil" agora funcional (criar/renomear/remover etapa; admin-only; protege etapas de sistema e com leads). Antes era botão morto.
-- **Leads-site** — mensagem de resultado do roteamento em massa mais honesta.
-- **SAC Chamados** — busca avançada (cliente/protocolo/CPF/telefone via `or()`), filtro por atendente + coluna de atendente, e **paginação real** (antes limitava a 60; há ~2,1 mil tickets). Validado no banco.
+- **Canais**  validação de campo do delay (mín ≥1s, máx ≥ mín) antes de salvar.
+- **Indiques**  regra 3–5 indicados aplicada no server **e** no client (feedback por campo).
+- **CRM**  "Personalizar funil" agora funcional (criar/renomear/remover etapa; admin-only; protege etapas de sistema e com leads). Antes era botão morto.
+- **Leads-site**  mensagem de resultado do roteamento em massa mais honesta.
+- **SAC Chamados**  busca avançada (cliente/protocolo/CPF/telefone via `or()`), filtro por atendente + coluna de atendente, e **paginação real** (antes limitava a 60; há ~2,1 mil tickets). Validado no banco.
 
-### ⏳ Pendentes — são **expansões de feature** (não bugs), precisam de decisão/escopo
+### ⏳ Pendentes  são **expansões de feature** (não bugs), precisam de decisão/escopo
 | Tela | Falta | Tamanho | Observação |
 |---|---|---|---|
 | Disparos | agendamento, templates salvos, personalização `{nome}` (`/sender/advanced`) | M | depende de canal conectado p/ teste real |
-| Comunicados | **publicar agendados** automaticamente | M | precisa **scheduler** (pg_cron no lkii **ou** Vercel Cron) — decisão de infra |
-| Comunicados | preview antes de publicar; arquivar (soft-delete) | S | — |
+| Comunicados | **publicar agendados** automaticamente | M | precisa **scheduler** (pg_cron no lkii **ou** Vercel Cron)  decisão de infra |
+| Comunicados | preview antes de publicar; arquivar (soft-delete) | S |  |
 | Financeiro | **Contas a Receber** (hoje só Contas a Pagar) | L | novo módulo de dados + KPIs |
 | RH Recrutamento | WhatsApp de disponibilidade; score de triagem estruturado | M | envio depende de canal conectado |
 | Chamados | classificação de caixa por flag (hoje regex em `de_parte`, funciona p/ valores controlados) | S | robustez, baixa prioridade |
-| RBAC | `crm_etapas` tem RLS `authenticated/ALL` (qualquer logado escreve) — gate é só no app | S | endurecer via migration se necessário |
+| RBAC | `crm_etapas` tem RLS `authenticated/ALL` (qualquer logado escreve)  gate é só no app | S | endurecer via migration se necessário |
 
-> **Próximo passo recomendado:** priorizar entre Disparos (M), Comunicados-scheduler (M, infra) e Financeiro-Receber (L) — o cliente decide a ordem.
+> **Próximo passo recomendado:** priorizar entre Disparos (M), Comunicados-scheduler (M, infra) e Financeiro-Receber (L)  o cliente decide a ordem.

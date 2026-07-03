@@ -30,7 +30,7 @@ const ORIGEM_LABEL: Record<string, string> = {
   site: 'Site',
 }
 
-// Temperatura — legado EXP_TEMPS (8539): 5 níveis.
+// Temperatura  legado EXP_TEMPS (8539): 5 níveis.
 const TEMP_LABEL: Record<string, string> = {
   gelado: 'Gelado',
   frio: 'Frio',
@@ -107,7 +107,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes — migration 050).
+  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes  migration 050).
   // Se a coluna pipeline não existir (migration não aplicada), a query falha → estado sem fonte.
   const { data: etapasRaw, error: etapasErr } = await sb
     .from('crm_etapas')
@@ -123,8 +123,8 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
   const etapas = (etapasErr ? [] : (etapasRaw ?? [])) as EtapaRow[]
 
   // ── Nome da etapa por id; etapas "terminais" do funil de franquia (até a COF/fechamento) ──
-  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '—']))
-  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '—' : '—')
+  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '']))
+  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
   const ehGanho = (l: LeadRow) =>
     nomeDe(l.etapa_id) === 'Convertido' ||
     nomeDe(l.etapa_id) === 'Fechado' ||
@@ -143,7 +143,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
   const valorNeg = ativos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
   const valorGanho = ganhos.reduce((s, l) => s + (l.valor_estimado || 0), 0)
   const receitaPrevista = rows.reduce((s, l) => s + (l.valor_estimado || 0), 0)
-  // Conversão = ganhos / (ganhos + perdidos) — fechados; espelha o KPI do board (/expansao).
+  // Conversão = ganhos / (ganhos + perdidos)  fechados; espelha o KPI do board (/expansao).
   const conv = qtdGanho + qtdPerdido > 0 ? (qtdGanho / (qtdGanho + qtdPerdido)) * 100 : 0
 
   // ── Distribuição por etapa (na ordem do funil) com valor previsto por etapa ──
@@ -156,17 +156,17 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
   }
   const linhasEtapa = etapas.map((e) => ({
     id: e.id,
-    nome: e.nome ?? '—',
+    nome: e.nome ?? '',
     count: porEtapaQtd.get(e.id) || 0,
     valor: porEtapaVal.get(e.id) || 0,
   }))
   const semEtapaQtd = porEtapaQtd.get('') || 0
   const semEtapaVal = porEtapaVal.get('') || 0
 
-  // ── Distribuição por linha de oferta (tipo_lead) — Ultracell, Quanta, Franquia… ──
+  // ── Distribuição por linha de oferta (tipo_lead)  Ultracell, Quanta, Franquia… ──
   const porTipo = new Map<string, number>()
   for (const l of rows) {
-    const k = l.tipo_lead || '—'
+    const k = l.tipo_lead || ''
     porTipo.set(k, (porTipo.get(k) || 0) + 1)
   }
   const linhasTipo = [...porTipo.entries()].map(([k, v]) => ({ tipo: k, count: v })).sort((a, b) => b.count - a.count)
@@ -195,13 +195,13 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
   const detalhe = rows.slice(0, LISTA_MAX)
   const csvRows = detalhe.map((l) => [
     dataBR(l.criado_em),
-    l.nome || '—',
-    l.empresa || '—',
-    l.uf || '—',
-    l.tipo_lead || '—',
-    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—',
+    l.nome || '',
+    l.empresa || '',
+    l.uf || '',
+    l.tipo_lead || '',
+    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '',
     nomeDe(l.etapa_id),
-    TEMP_LABEL[l.temperatura || ''] ?? '—',
+    TEMP_LABEL[l.temperatura || ''] ?? '',
     Math.round(l.valor_estimado || 0),
   ])
 
@@ -214,7 +214,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
         <div>
           <h2>Expansão · Funil de Vendas</h2>
           <p>
-            CRM de captação e qualificação de candidatos a franqueado — Ultracell, Quanta e Franquia. Pipeline até a <b>COF</b>{' '}
+            CRM de captação e qualificação de candidatos a franqueado  Ultracell, Quanta e Franquia. Pipeline até a <b>COF</b>{' '}
             (Circular de Oferta de Franquia) e fechamento.
           </p>
         </div>
@@ -243,7 +243,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
       {semFonte ? (
         <div className="rel-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados do funil de Expansão disponível no momento
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados do funil de Expansão disponível no momento
             (pipeline de franquia indisponível para o seu perfil/unidade ou migration ainda não aplicada).
           </div>
         </div>
@@ -292,7 +292,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
                       <tr key={e.id}>
                         <td>{e.nome}</td>
                         <td className="num-r" style={{ fontWeight: 600 }}>{e.count.toLocaleString('pt-BR')}</td>
-                        <td className="num-r">{e.valor > 0 ? moedaBR(e.valor) : '—'}</td>
+                        <td className="num-r">{e.valor > 0 ? moedaBR(e.valor) : ''}</td>
                         <td className="num-r">{total > 0 ? ((e.count / total) * 100).toFixed(1) : '0,0'}%</td>
                       </tr>
                     ))}
@@ -300,7 +300,7 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
                     <tr style={{ opacity: 0.75 }}>
                       <td><em>Sem etapa</em></td>
                       <td className="num-r" style={{ fontWeight: 600 }}>{semEtapaQtd.toLocaleString('pt-BR')}</td>
-                      <td className="num-r">{semEtapaVal > 0 ? moedaBR(semEtapaVal) : '—'}</td>
+                      <td className="num-r">{semEtapaVal > 0 ? moedaBR(semEtapaVal) : ''}</td>
                       <td className="num-r">{((semEtapaQtd / total) * 100).toFixed(1)}%</td>
                     </tr>
                   )}
@@ -381,15 +381,15 @@ export default async function ExpansaoFunilPage({ searchParams }: { searchParams
                     <tr key={l.id}>
                       <td>{dataBR(l.criado_em)}</td>
                       <td>
-                        <span className="cli-name">{l.nome || '—'}</span>
+                        <span className="cli-name">{l.nome || ''}</span>
                       </td>
-                      <td>{l.empresa || '—'}</td>
-                      <td>{l.uf || '—'}</td>
-                      <td>{l.tipo_lead || '—'}</td>
-                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—'}</td>
+                      <td>{l.empresa || ''}</td>
+                      <td>{l.uf || ''}</td>
+                      <td>{l.tipo_lead || ''}</td>
+                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? ''}</td>
                       <td>{nomeDe(l.etapa_id)}</td>
-                      <td>{TEMP_LABEL[l.temperatura || ''] ?? '—'}</td>
-                      <td className="num-r" style={{ fontWeight: 600 }}>{l.valor_estimado ? moedaBR(l.valor_estimado) : '—'}</td>
+                      <td>{TEMP_LABEL[l.temperatura || ''] ?? ''}</td>
+                      <td className="num-r" style={{ fontWeight: 600 }}>{l.valor_estimado ? moedaBR(l.valor_estimado) : ''}</td>
                     </tr>
                   ))}
                 </tbody>

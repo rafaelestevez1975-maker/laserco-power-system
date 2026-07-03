@@ -24,7 +24,7 @@ export default async function ComunicadosPage() {
   const ativos = new Set(((ativosRaw ?? []) as { id: string }[]).map((p) => p.id))
   const totalDestinatarios = ativos.size
 
-  // Agregado de leituras (via service-role, só contagem) — conta APENAS cientes de perfis
+  // Agregado de leituras (via service-role, só contagem)  conta APENAS cientes de perfis
   // ativos hoje (espelha rosterLeitura: cientes = ativos que leram). Evita lidos > dest.
   const { data: leiturasAll } = await admin.from('comunicado_leituras').select('comunicado_id, perfil_id')
   const countMap: Record<string, number> = {}
@@ -49,7 +49,7 @@ export default async function ComunicadosPage() {
     email: !!r.enviar_email,
     status: (r.status as Comunicado['status']) ?? 'publicado',
     // dest = perfis ativos AGORA (idêntico ao roster.length do relatório), não o
-    // snapshot congelado em total_destinatarios — assim a LISTA bate com o RELATÓRIO.
+    // snapshot congelado em total_destinatarios  assim a LISTA bate com o RELATÓRIO.
     dest: totalDestinatarios,
     lidos: countMap[r.id] ?? 0,
     autor: r.autor_nome || '',

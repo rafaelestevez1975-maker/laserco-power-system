@@ -36,7 +36,7 @@ export type PacoteRow = {
   itens: ItemComNome[]
 }
 
-/** Badge de timing de comissão — cores do legado (comTag). */
+/** Badge de timing de comissão  cores do legado (comTag). */
 function ComTag({ v }: { v: string | null }) {
   const val = v || 'Execução'
   const bg = val === 'Não pagar' ? '#eeeeee' : val === 'Venda' ? '#E7EEFB' : '#E7F0EC'
@@ -99,7 +99,7 @@ export function PacotesManager(props: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-package" /> Pacotes de serviços da rede — combine serviços e sessões, defina preço e validade.
+        <i className="ti ti-package" /> Pacotes de serviços da rede  combine serviços e sessões, defina preço e validade.
         Disponíveis em todas as unidades.
       </div>
 
@@ -199,7 +199,7 @@ export function PacotesManager(props: Props) {
                     </td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 320 }}>
                       {p.itens.length === 0 ? (
-                        '—'
+                        ''
                       ) : (
                         <>
                           <i className="ti ti-list-check" style={{ verticalAlign: -1 }} /> {p.itens.length} serviço(s) · {totalSessoes} sessão(ões)
@@ -211,9 +211,9 @@ export function PacotesManager(props: Props) {
                       )}
                     </td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 150 }}>{p.cobertura_creditos || 'Qualquer unidade'}</td>
-                    <td className="num-r">{p.validade_dias != null ? `${p.validade_dias} dias` : '—'}</td>
+                    <td className="num-r">{p.validade_dias != null ? `${p.validade_dias} dias` : ''}</td>
                     <td className="num-r"><b>{moedaBR(p.preco)}</b></td>
-                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted">—</span>}</td>
+                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted"></span>}</td>
                     <td><ComTag v={p.pagar_comissao} /></td>
                     <td>{p.ativo ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -306,7 +306,7 @@ function PacoteForm(props: {
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
-  // Serviços agrupados por grupo (optgroup) — usa a mesma ordem do legado.
+  // Serviços agrupados por grupo (optgroup)  usa a mesma ordem do legado.
   const grupos = useMemo(() => {
     const m = new Map<string, ServicoOpt[]>()
     for (const s of servicos) {
@@ -414,7 +414,7 @@ function PacoteForm(props: {
           </div>
 
           <div className="mf full" style={{ gridColumn: '1 / -1' }}>
-            <label>Serviços do pacote <span className="req">*</span> — combine um ou mais serviços, cada um com uma ou mais sessões</label>
+            <label>Serviços do pacote <span className="req">*</span>  combine um ou mais serviços, cada um com uma ou mais sessões</label>
             {servicos.length === 0 ? (
               <div style={{ fontSize: 12.5, color: 'var(--red)' }}>Nenhum serviço ativo cadastrado. Cadastre serviços antes de montar um pacote.</div>
             ) : (

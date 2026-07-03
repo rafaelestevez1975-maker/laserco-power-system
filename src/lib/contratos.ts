@@ -1,4 +1,4 @@
-// Modelos de contrato — paridade com o legado (CONTRATOS / CONTRATO_TXT / termosClube).
+// Modelos de contrato  paridade com o legado (CONTRATOS / CONTRATO_TXT / termosClube).
 // Namespeado para o módulo de contratos. NÃO altera libs compartilhadas.
 
 /** Opções do select "Quando o contrato é emitido" (view-contrato-editor do legado). */

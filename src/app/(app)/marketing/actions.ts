@@ -7,7 +7,7 @@ import { exigirPapel, ehAdmin } from '@/lib/rbac'
 import { STATUS_CAMPANHA, SEGMENTACAO_TIPOS, type StatusCampanha, type SegmentacaoTipo } from '@/lib/marketing'
 
 /**
- * Marketing — campanhas de WhatsApp da unidade (campanhas_whatsapp).
+ * Marketing  campanhas de WhatsApp da unidade (campanhas_whatsapp).
  * Cada unidade dispara para a sua própria base segmentada; o relatório de
  * entrega/leitura/resposta vem dos destinatários (campanha_destinatarios).
  * Substitui o snapshot estático da rota /marketing pelo módulo real.

@@ -84,7 +84,7 @@ export function PlanosManager(props: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-id-badge-2" /> Planos de assinatura da rede (Bronze, Prata, Ouro…) — adesão, mensalidade,
+        <i className="ti ti-id-badge-2" /> Planos de assinatura da rede (Bronze, Prata, Ouro…)  adesão, mensalidade,
         duração, serviços incluídos e benefícios.
       </div>
 
@@ -187,10 +187,10 @@ export function PlanosManager(props: Props) {
                     </td>
                     <td className="num-r">{p.valor_adesao ? moedaBR(p.valor_adesao) : <span className="orig-tag">Sem adesão</span>}</td>
                     <td className="num-r"><b>{moedaBR(p.valor_mensal)}</b></td>
-                    <td className="num-r">{p.duracao_meses != null ? `${p.duracao_meses} m` : '—'}</td>
+                    <td className="num-r">{p.duracao_meses != null ? `${p.duracao_meses} m` : ''}</td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 260 }}>
                       {p.itens.length === 0 ? (
-                        '—'
+                        ''
                       ) : (
                         <>
                           <i className="ti ti-list-check" style={{ verticalAlign: -1 }} /> {p.itens.length} serviço(s)/mês
@@ -383,7 +383,7 @@ function PlanoForm(props: {
 
           {/* Benefícios (text[]) */}
           <div className="mf full" style={{ gridColumn: '1 / -1' }}>
-            <label>Benefícios — descontos, brindes, vantagens do plano</label>
+            <label>Benefícios  descontos, brindes, vantagens do plano</label>
             <div style={{ marginTop: 6 }}>
               {beneficios.map((b, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
@@ -401,13 +401,13 @@ function PlanoForm(props: {
 
           {/* Serviços incluídos (plano_assinatura_servicos) */}
           <div className="mf full" style={{ gridColumn: '1 / -1' }}>
-            <label>Serviços incluídos por mês — opcional (sessões inclusas na mensalidade)</label>
+            <label>Serviços incluídos por mês  opcional (sessões inclusas na mensalidade)</label>
             {servicos.length === 0 ? (
               <div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Nenhum serviço ativo cadastrado.</div>
             ) : (
               <div style={{ marginTop: 6 }}>
                 {itens.length === 0 && (
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>Nenhum serviço incluído — o plano pode ser só de benefícios/descontos.</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 6 }}>Nenhum serviço incluído  o plano pode ser só de benefícios/descontos.</div>
                 )}
                 {itens.map((l, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
@@ -441,7 +441,7 @@ function PlanoForm(props: {
           </div>
         </div>
         {err && <p style={{ color: 'var(--red)', fontSize: 12.5, padding: '0 22px' }}>{err}</p>}
-        {/* TODO(legado: buildPlanos): campo "Pagar comissão" (regra/percentual na mensalidade) — sem coluna no schema lkii. */}
+        {/* TODO(legado: buildPlanos): campo "Pagar comissão" (regra/percentual na mensalidade)  sem coluna no schema lkii. */}
         <div className="modal-foot">
           <button type="button" className="btn" onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar plano'}</button>

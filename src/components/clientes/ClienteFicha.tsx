@@ -63,7 +63,7 @@ export type ContratoRow = {
 
 type Tab = 'dados' | 'agendamentos' | 'carteira' | 'os' | 'contratos' | 'acompanhamento'
 
-const GENEROS: [string, string][] = [['', '—'], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
+const GENEROS: [string, string][] = [['', ''], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
 
 const CANAIS = [
   'Indicação de amigo', 'Instagram', 'Facebook', 'Google / Busca', 'Site da rede',
@@ -86,7 +86,7 @@ const CONTRATO_STATUS: Record<string, { label: string; cls: string }> = {
   inadimplente: { label: 'Inadimplente', cls: 'os-cancelada' },
 }
 function contratoStatusMeta(s: string | null): { label: string; cls: string } {
-  return (s && CONTRATO_STATUS[s]) || { label: s || '—', cls: 'os-aberta' }
+  return (s && CONTRATO_STATUS[s]) || { label: s || '', cls: 'os-aberta' }
 }
 
 export function ClienteFicha({
@@ -158,7 +158,7 @@ export function ClienteFicha({
     if (!/@/.test(e)) { setErr('E-mail inválido.'); return }
     const primeiro = (f.nome || '').split(' ')[0]
     const body = `Olá ${primeiro},%0D%0A%0D%0AAqui é da Laser&Co. `
-    window.location.href = `mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent('Laser&Co — Contato')}&body=${body}`
+    window.location.href = `mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent('Laser&Co  Contato')}&body=${body}`
   }
   function abrirWhats() {
     const full = telBR55(f.telefone)
@@ -244,7 +244,7 @@ export function ClienteFicha({
         <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 20 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 13, cursor: podeEscrever ? 'pointer' : 'default' }}>
             <input type="checkbox" checked={f.verificado} disabled={!podeEscrever} onChange={(e) => set('verificado', e.target.checked)} />
-            <span><b>Verificado</b> — cliente com dados confirmados.</span>
+            <span><b>Verificado</b>  cliente com dados confirmados.</span>
           </label>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14 }}>
@@ -269,7 +269,7 @@ export function ClienteFicha({
             </div>
             <div><label style={lbl}>Como nos conheceu?</label>
               <select style={inp} value={f.canal_origem} disabled={!podeEscrever} onChange={(e) => set('canal_origem', e.target.value)}>
-                <option value="">—</option>
+                <option value=""></option>
                 {CANAIS.map((o) => <option key={o} value={o}>{o}</option>)}
                 {f.canal_origem && !CANAIS.includes(f.canal_origem) && <option value={f.canal_origem}>{f.canal_origem}</option>}
               </select>
@@ -292,8 +292,8 @@ export function ClienteFicha({
             <div style={{ display: 'flex', gap: 10, marginTop: 18, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={salvar} disabled={saving}><i className="ti ti-device-floppy" /> {saving ? 'Salvando…' : 'Salvar cliente'}</button>
               {duplicados >= 2 && <button className="btn" onClick={() => setUnificarOpen(true)}><i className="ti ti-users-group" /> Unificar</button>}
-              <button className="btn" disabled title="Gestão de bloqueios — em breve"><i className="ti ti-lock" /> Bloqueios</button>
-              <button className="btn" disabled title="App da rede — em breve"><i className="ti ti-device-mobile" /> App</button>
+              <button className="btn" disabled title="Gestão de bloqueios  em breve"><i className="ti ti-lock" /> Bloqueios</button>
+              <button className="btn" disabled title="App da rede  em breve"><i className="ti ti-device-mobile" /> App</button>
               <button
                 className="btn"
                 onClick={toggleAtivo}
@@ -320,10 +320,10 @@ export function ClienteFicha({
                 {agendamentos.map((a) => (
                   <tr key={a.id} style={{ cursor: 'default' }}>
                     <td>{dataHoraBR(a.inicio)}</td>
-                    <td>{a.servico || <span className="muted">—</span>}</td>
-                    <td>{a.profissional || <span className="muted">—</span>}</td>
-                    <td>{a.unidade || <span className="muted">—</span>}</td>
-                    <td><span style={statusPill(a.status)}>{a.status || '—'}</span></td>
+                    <td>{a.servico || <span className="muted"></span>}</td>
+                    <td>{a.profissional || <span className="muted"></span>}</td>
+                    <td>{a.unidade || <span className="muted"></span>}</td>
+                    <td><span style={statusPill(a.status)}>{a.status || ''}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -380,7 +380,7 @@ export function ClienteFicha({
             </ul>
           </div>
 
-          {/* Extrato de cashback — só temos o saldo atual (sem tabela de movimentação). */}
+          {/* Extrato de cashback  só temos o saldo atual (sem tabela de movimentação). */}
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
             <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}><i className="ti ti-cash" /> Extrato de cashback</h3>
             {saldoCashback === 0
@@ -391,7 +391,7 @@ export function ClienteFicha({
                     Saldo atual de cashback: <b>{moedaBR(saldoCashback)}</b>.
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-                    O detalhamento por lançamento (acúmulo, uso e validade) ainda não está disponível — exibimos apenas o saldo consolidado.
+                    O detalhamento por lançamento (acúmulo, uso e validade) ainda não está disponível  exibimos apenas o saldo consolidado.
                   </div>
                 </>
               )}
@@ -451,10 +451,10 @@ export function ClienteFicha({
                 )}
                 {ordens.map((o) => (
                   <tr key={o.id} style={{ cursor: 'default' }}>
-                    <td>{o.numero != null ? `#${o.numero}` : <span className="muted">—</span>}</td>
-                    <td>{o.observacao || <span className="muted">—</span>}</td>
-                    <td>{o.origem || <span className="muted">—</span>}</td>
-                    <td><span style={statusPill(o.status)}>{o.status || '—'}</span></td>
+                    <td>{o.numero != null ? `#${o.numero}` : <span className="muted"></span>}</td>
+                    <td>{o.observacao || <span className="muted"></span>}</td>
+                    <td>{o.origem || <span className="muted"></span>}</td>
+                    <td><span style={statusPill(o.status)}>{o.status || ''}</span></td>
                     <td>{dataHoraBR(o.criado_em)}</td>
                     <td className="num-r">{moedaBR(o.total)}</td>
                   </tr>

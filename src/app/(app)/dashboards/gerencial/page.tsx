@@ -130,15 +130,15 @@ export default async function DashGerencialPage({ searchParams }: { searchParams
       <GerServBusca servicos={servicos} />
 
       <div className="dash-grid" style={{ marginBottom: 16 }}>
-        <BarChart title="Top 10 serviços — faturamento" icon="ti-sparkles" rows={topFatRows} gold asMoeda emptyMsg="Sem vendas de serviço no período (OS fechadas)." />
-        <BarChart title="Top 10 serviços — sessões realizadas" icon="ti-checkbox" rows={topSessRows} emptyMsg="Sem sessões no período." />
+        <BarChart title="Top 10 serviços  faturamento" icon="ti-sparkles" rows={topFatRows} gold asMoeda emptyMsg="Sem vendas de serviço no período (OS fechadas)." />
+        <BarChart title="Top 10 serviços  sessões realizadas" icon="ti-checkbox" rows={topSessRows} emptyMsg="Sem sessões no período." />
         <BarChart title="Faturamento por forma de pagamento" icon="ti-credit-card" rows={formaRows} gold asMoeda emptyMsg="Sem receita lançada no período." />
         <BarChart title="Receita por mês" icon="ti-chart-bar" rows={serieReceita} gold asMoeda emptyMsg="Sem receita no período." />
       </div>
 
       <div style={{ marginTop: 4 }}>
         <div className="set-sec" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 8px' }}>
-          Top 10 serviços — detalhamento (com % do total)
+          Top 10 serviços  detalhamento (com % do total)
         </div>
         <div className="rel-card">
           <div className="cli-scroll">
@@ -180,7 +180,7 @@ export default async function DashGerencialPage({ searchParams }: { searchParams
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 12 }}>
         <i className="ti ti-info-circle" /> Faturamento por serviço/sessões vem das OS <b>fechadas</b> do período (os_servicos);
         forma de pagamento e faturamento total vêm de lançamentos financeiros. Atendimentos = agendamentos concluídos.
-        {(osFech.capped || rec.capped) && ' Período amplo: agregação limitada aos primeiros registros — refine o período.'}
+        {(osFech.capped || rec.capped) && ' Período amplo: agregação limitada aos primeiros registros  refine o período.'}
       </div>
     </div>
   )

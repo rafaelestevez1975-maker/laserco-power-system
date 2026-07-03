@@ -1,21 +1,21 @@
 /**
- * Implantação de Unidade — constantes/helpers puros (cliente-safe).
+ * Implantação de Unidade  constantes/helpers puros (cliente-safe).
  * Espelha o legado buildImpl / implRender (legacy ~4827-4895): 9 áreas de
  * workflow (IMPL_WF), 4 situações (IMPL_ST) com seus pills, e os cálculos de
  * progresso/prazo (implDiff/implTotals).
  */
 
-/** IMPL_WF — 9 áreas responsáveis por uma tarefa (legacy 4827). */
+/** IMPL_WF  9 áreas responsáveis por uma tarefa (legacy 4827). */
 export const IMPL_WF = [
   'Implantação', 'Expansão', 'Franqueado', 'Treinamento', 'Diretoria', 'Marketing', 'RH', 'Comercial', 'Compras',
 ] as const
 export type ImplWf = (typeof IMPL_WF)[number]
 
-/** IMPL_ST — 4 estados da tarefa (legacy 4828). */
+/** IMPL_ST  4 estados da tarefa (legacy 4828). */
 export const IMPL_ST = ['Aberto', 'Em Andamento', 'Aguardando Predecessora', 'Concluído'] as const
 export type ImplSt = (typeof IMPL_ST)[number]
 
-/** IMPL_STPILL — classe wa-pill por situação (legacy 4829). */
+/** IMPL_STPILL  classe wa-pill por situação (legacy 4829). */
 export const IMPL_STPILL: Record<string, 'draft' | 'run' | 'pend' | 'ok'> = {
   Aberto: 'draft',
   'Em Andamento': 'run',
@@ -27,7 +27,7 @@ export function pillSituacao(s: string): 'draft' | 'run' | 'pend' | 'ok' {
   return IMPL_STPILL[s] ?? 'draft'
 }
 
-/** Dias entre duas datas ISO (YYYY-MM-DD). null se faltar alguma — implDiff. */
+/** Dias entre duas datas ISO (YYYY-MM-DD). null se faltar alguma  implDiff. */
 export function implDiff(a: string | null, b: string | null): number | null {
   if (!a || !b) return null
   const da = new Date(a + 'T00:00:00')
@@ -74,7 +74,7 @@ export type ProjetoImpl = {
   status: string
 }
 
-/** Totais de tarefas (concluídas / total) de uma lista de etapas — implTotals. */
+/** Totais de tarefas (concluídas / total) de uma lista de etapas  implTotals. */
 export function implTotals(etapas: EtapaImpl[]): { tot: number; done: number } {
   let tot = 0
   let done = 0

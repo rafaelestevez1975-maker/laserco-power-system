@@ -156,8 +156,8 @@ export async function alternarAtivoCategoria(id: string, ativo: boolean, tipo: T
 }
 
 // TODO(legado: buildCatpag/buildCatrec): renumeração automática de código por nível
-//   (legacy gera "4.8" a partir do pai). Hoje o código é manual/opcional — pendente
+//   (legacy gera "4.8" a partir do pai). Hoje o código é manual/opcional  pendente
 //   de uma RPC que calcule o próximo código sequencial dentro do grupo.
 // TODO(legado: buildCatpag/buildCatrec): exclusão definitiva (DELETE) de categorias
-//   sem lançamentos. Por segurança só expusemos inativar (soft) — DELETE exige checar
+//   sem lançamentos. Por segurança só expusemos inativar (soft)  DELETE exige checar
 //   FKs em lancamentos_financeiros.

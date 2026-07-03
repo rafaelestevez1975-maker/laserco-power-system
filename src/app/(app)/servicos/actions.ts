@@ -8,7 +8,7 @@ import { PAGAR_COMISSAO_OPCOES, type PagarComissao } from '@/lib/catalogo'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * Catálogo de serviços é por EMPRESA (não tem escopo de unidade) — não aplicamos
+ * Catálogo de serviços é por EMPRESA (não tem escopo de unidade)  não aplicamos
  * scopeUnidade. RBAC: só gestor/admin_geral cria/edita/inativa.
  * Tabela `servicos`: id, empresa_id, nome, descricao, grupo, duracao_min,
  * preco_padrao, dynamic_price, comissionavel, ativo, bemp_id, criado_em, atualizado_em.
@@ -25,7 +25,7 @@ export type ServicoInput = {
   descricao?: string | null
   duracao_min?: number | null
   preco_padrao?: number | null
-  desc_max?: number | null // legado SERVICOS[2] — desconto máximo (%)
+  desc_max?: number | null // legado SERVICOS[2]  desconto máximo (%)
   pagar_comissao?: PagarComissao // legado SERVICOS[7]
   comissionavel?: boolean
   dynamic_price?: boolean
@@ -134,7 +134,7 @@ export async function toggleServicoAtivo(id: string, ativo: boolean): Promise<Ac
 }
 
 /**
- * Renomeia um "grupo de serviços" — não existe tabela de grupos (404 nas tentativas
+ * Renomeia um "grupo de serviços"  não existe tabela de grupos (404 nas tentativas
  * de introspecção): grupo é só o valor textual em servicos.grupo. Renomear = update em
  * massa de todos os serviços daquele grupo. RBAC: gestor/admin.
  */
@@ -159,7 +159,7 @@ export async function renomearGrupo(de: string, para: string): Promise<ActionRes
   return { ok: true }
 }
 
-// "Pagar comissão" (timing Venda/Execução/Não pagar — comTag do legado) e "Desc. Máx (%)"
+// "Pagar comissão" (timing Venda/Execução/Não pagar  comTag do legado) e "Desc. Máx (%)"
 // agora persistem nas colunas servicos.pagar_comissao / servicos.desc_max (migration catalogo.sql).
-// Pendente ainda: "preço por unidade" (matriz de preços por unidade) — depende de tabela própria
+// Pendente ainda: "preço por unidade" (matriz de preços por unidade)  depende de tabela própria
 // inexistente no backend lkii; dynamic_price segue como flag.

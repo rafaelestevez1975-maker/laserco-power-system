@@ -2,7 +2,7 @@
  * Helpers de leitura para os relatórios construídos sobre DADO REAL do lkii.
  * Server-safe (importa apenas o client server-side via parâmetro). Centraliza o
  * "pull paginado" de OS / pagamentos usado por ranking-vendas, descontos, pagamentos,
- * contratos e ordens-servico — espelha a lógica do legado (buildRelatorio / RANKS).
+ * contratos e ordens-servico  espelha a lógica do legado (buildRelatorio / RANKS).
  *
  * Tabelas reais (introspecção lkii, ver src/app/(app)/os/actions.ts):
  *   os(id, numero, unidade_id, cliente_id, status[aberta|fechada|cancelada], origem,
@@ -19,7 +19,7 @@ type SB = Awaited<ReturnType<typeof createClient>>
 const PAGE = 1000
 export const PULL_CAP = 20000
 
-/** Builder estrutural mínimo (encadeável + thenable via range) — evita TS2589 do PostgREST. */
+/** Builder estrutural mínimo (encadeável + thenable via range)  evita TS2589 do PostgREST. */
 type Q = {
   eq: (c: string, v: unknown) => Q
   gte: (c: string, v: unknown) => Q

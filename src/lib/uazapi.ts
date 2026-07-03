@@ -141,11 +141,11 @@ export function traduzErroEnvio(body: unknown, fallback = 'Falha no envio.'): st
     || /\b463\b|reachout|temporary restriction|starting new conversation|under a temporary/.test(raw)
   if (reachout) {
     const ate = dataBR(b.details?.reachout_timelock?.until)
-    return `O WhatsApp colocou este número sob restrição temporária${ate ? ` (até ${ate})` : ''} para INICIAR conversas novas pelo aparelho conectado ao sistema (dispositivo vinculado). É proteção anti-spam de número recém-ativado — pelo CELULAR principal funciona normal. Para iniciar conversas pelo sistema: use um número já estabelecido ou aguarde liberar. Responder logo que o cliente te escreve tende a funcionar.`
+    return `O WhatsApp colocou este número sob restrição temporária${ate ? ` (até ${ate})` : ''} para INICIAR conversas novas pelo aparelho conectado ao sistema (dispositivo vinculado). É proteção anti-spam de número recém-ativado  pelo CELULAR principal funciona normal. Para iniciar conversas pelo sistema: use um número já estabelecido ou aguarde liberar. Responder logo que o cliente te escreve tende a funcionar.`
   }
   if (/not.*on.*whatsapp|invalid.*number|no.*account|exists.*false/.test(raw)) return 'Esse número não tem WhatsApp ativo.'
   if (/disconnect|not connected|no instance|instance.*not/.test(raw)) return 'A conexão do canal caiu. Reconecte o número em Canais.'
-  if (/rate|too many|limit/.test(raw)) return 'Muitos envios em sequência — aguarde alguns segundos e tente de novo.'
+  if (/rate|too many|limit/.test(raw)) return 'Muitos envios em sequência  aguarde alguns segundos e tente de novo.'
   return b.message_ptbr || b.provider_message_ptbr || b.error || fallback
 }
 
@@ -189,7 +189,7 @@ export async function sendMedia(token: string, numero: string, tipo: MidiaTipo, 
   return { ok: true, fileURL: b?.fileURL ?? b?.message?.fileURL, ...lerEnvio(body) }
 }
 
-/** Baixa a mídia de uma mensagem recebida. A UAZAPI nem sempre manda `fileURL` no webhook —
+/** Baixa a mídia de uma mensagem recebida. A UAZAPI nem sempre manda `fileURL` no webhook 
  *  POST /message/download (token da instância) com `return_link` devolve a URL pública + mimetype
  *  (e gera MP3 para áudio). `id` = id INTERNO da UAZAPI da mensagem (msg.id no webhook).
  *  Sem isso, imagem/áudio/vídeo recebidos ficam como "[image]" no chat. */
@@ -201,7 +201,7 @@ export async function downloadMessage(token: string, id: string): Promise<{ ok: 
 }
 
 /** URL pública do nosso webhook (com ?secret=) que a UAZAPI deve chamar.
- *  CRÍTICO: a UAZAPI é externa e precisa ALCANÇAR a URL — nunca pode ser localhost.
+ *  CRÍTICO: a UAZAPI é externa e precisa ALCANÇAR a URL  nunca pode ser localhost.
  *  Se NEXT_PUBLIC_APP_URL apontar pra localhost (dev), cai pro domínio público. */
 const WEBHOOK_FALLBACK = 'https://laserco-power-system.vercel.app'
 export function urlWebhook(): string {
@@ -215,7 +215,7 @@ export function urlWebhook(): string {
   return `${base}/api/webhooks/uazapi${secret ? `?secret=${encodeURIComponent(secret)}` : ''}`
 }
 
-/** POST /webhook (token da instância) — garante que a instância entrega os eventos no nosso endpoint.
+/** POST /webhook (token da instância)  garante que a instância entrega os eventos no nosso endpoint.
  *  excludeMessages: ["wasSentByApi"] evita loop com o que o próprio sistema/IA envia. */
 export async function configurarWebhook(token: string, url: string): Promise<{ ok: boolean; error?: string }> {
   const { ok, body } = await instPost('/webhook', token, {

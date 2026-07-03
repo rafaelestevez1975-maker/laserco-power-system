@@ -8,7 +8,7 @@ import { CATEGORIAS_TAREFA } from '@/lib/checklist'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * Planos de Ação do Checklist PDCA — backend real lkii.
+ * Planos de Ação do Checklist PDCA  backend real lkii.
  *   planos_acao(id, unidade_id, semana_inicio, semana_fim, status, prioridade,
  *               resumo_executivo, diagnostico_ia, gargalos[], kpis_snapshot,
  *               cumprimento_pct, concluido_em, observacoes_finais, gerado_em)
@@ -17,7 +17,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
  *
  * RBAC: criar/editar plano e marcar tarefa = gestor / admin_geral.
  * Multitenant: o plano é gravado com a unidade ativa (scopeUnidade não se aplica
- * em INSERT — passamos o unidade_id explícito).
+ * em INSERT  passamos o unidade_id explícito).
  */
 const PAPEIS_ESCRITA = ['gestor']
 
@@ -181,7 +181,7 @@ export async function definirStatusPlano(planoId: string, status: string, observ
 // TODO(legado: buildChecklist): coleta automática semanal (cron) dos KPIs por unidade,
 // geração automática de planos por fragilidade (indicadores < 7 viram tarefas sozinhos),
 // chat/comentários no plano e simulação final de pontuação. Dependem de cron (pg_cron) e
-// de tabela de comentários — fora do escopo sem acesso de migration.
+// de tabela de comentários  fora do escopo sem acesso de migration.
 // TODO(needs-table: sults_checklist_avaliacoes): persistir a avaliação completa por seção
-// (modelo SULTS mensal). A tabela existe mas está vazia/sem colunas confirmadas — por isso
+// (modelo SULTS mensal). A tabela existe mas está vazia/sem colunas confirmadas  por isso
 // a aba "Avaliação" é calculada em tempo real a partir de kpis_unidade_snapshot, sem gravar.

@@ -99,20 +99,20 @@ export function DisparoComposer({ canais, activeUnitId, templates, listas }: { c
           <select style={inp} value={canal} onChange={(e) => trocarCanal(e.target.value)}>
             {canais.map((c) => <option key={c.nome} value={c.nome}>{c.label}{c.escopo === 'geral' ? ' · geral' : ''}</option>)}
           </select>
-          {sel && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{sel.escopo === 'geral' ? 'Canal geral da franqueadora' : sel.escopo === 'unidade' ? 'Canal da unidade' : 'Canal sem vínculo — defina em Canais'}</div>}
+          {sel && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 3 }}>{sel.escopo === 'geral' ? 'Canal geral da franqueadora' : sel.escopo === 'unidade' ? 'Canal da unidade' : 'Canal sem vínculo  defina em Canais'}</div>}
         </div>
         <div><label style={{ fontSize: 12, fontWeight: 600 }}>Nome da campanha</label><input style={inp} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Oferta junho" /></div>
       </div>
 
-      {/* Público da campanha (base/segmento) — legado: a campanha escolhe uma BASE como público */}
+      {/* Público da campanha (base/segmento)  legado: a campanha escolhe uma BASE como público */}
       {listas && listas.length > 0 && (
         <div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Público (base/segmento)</label>
           <select style={inp} value={publico} onChange={(e) => { setPublico(e.target.value); const l = listas.find((x) => x.nome === e.target.value); if (l && !nome.trim()) setNome(l.nome) }}>
             <option value="">Números colados manualmente (abaixo)</option>
-            {listas.map((l) => <option key={l.nome} value={l.nome}>{l.nome} — {l.qtd.toLocaleString('pt-BR')} contatos</option>)}
+            {listas.map((l) => <option key={l.nome} value={l.nome}>{l.nome}  {l.qtd.toLocaleString('pt-BR')} contatos</option>)}
           </select>
-          {publico && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>Base dinâmica do sistema — cole os números do segmento abaixo (o sistema materializa a lista no disparo).</div>}
+          {publico && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>Base dinâmica do sistema  cole os números do segmento abaixo (o sistema materializa a lista no disparo).</div>}
         </div>
       )}
 

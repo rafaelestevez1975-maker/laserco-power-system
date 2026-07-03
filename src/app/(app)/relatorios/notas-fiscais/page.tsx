@@ -12,8 +12,8 @@ export const dynamic = 'force-dynamic'
 
 type SP = { periodo?: string; di?: string; df?: string }
 
-// Teto de segurança ao puxar linhas p/ listagem/somas (a tabela `nfse` é pequena —
-// emissões fiscais — mas SEMPRE escopamos por período e/ou unidade). Limitamos o pull.
+// Teto de segurança ao puxar linhas p/ listagem/somas (a tabela `nfse` é pequena 
+// emissões fiscais  mas SEMPRE escopamos por período e/ou unidade). Limitamos o pull.
 const ROW_CAP = 5000
 const PAGE = 1000
 const LIST_MAX = 200
@@ -63,7 +63,7 @@ export default async function RelNotasFiscaisPage({ searchParams }: { searchPara
   const periodo = sp.periodo || '90d'
   const range = resolveRelRange(periodo, sp.di, sp.df)
   // `criado_em` é timestamptz; filtramos por borda de dia. (`competencia` é text 'YYYY-MM',
-  // populada de forma irregular — usamos a data de criação como eixo de período.)
+  // populada de forma irregular  usamos a data de criação como eixo de período.)
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
@@ -124,7 +124,7 @@ export default async function RelNotasFiscaisPage({ searchParams }: { searchPara
     porStatus.set(st, (porStatus.get(st) || 0) + 1)
     valorPorStatus.set(st, (valorPorStatus.get(st) || 0) + val)
     if (st === 'autorizada') valorAutorizadas += val
-    const tp = (r.tipo || '').toUpperCase() || '—'
+    const tp = (r.tipo || '').toUpperCase() || ''
     const cur = porTipo.get(tp) || { qtd: 0, valor: 0 }
     cur.qtd += 1
     cur.valor += val
@@ -267,16 +267,16 @@ export default async function RelNotasFiscaisPage({ searchParams }: { searchPara
                 </tr>
               )}
               {listadas.map((n) => {
-                const cliente = n.cliente_nome || one(n.cliente)?.nome || '—'
+                const cliente = n.cliente_nome || one(n.cliente)?.nome || ''
                 const st = n.status || 'processando'
                 return (
                   <tr key={n.id}>
-                    <td style={{ fontWeight: 600 }}>{n.numero || '—'}</td>
-                    <td>{dataBR(n.criado_em) || '—'}</td>
-                    <td>{n.competencia || '—'}</td>
+                    <td style={{ fontWeight: 600 }}>{n.numero || ''}</td>
+                    <td>{dataBR(n.criado_em) || ''}</td>
+                    <td>{n.competencia || ''}</td>
                     <td>{cliente}</td>
-                    <td>{(n.tipo || '').toUpperCase() || '—'}</td>
-                    <td style={{ textTransform: 'capitalize' }}>{n.fato_gerador || '—'}</td>
+                    <td>{(n.tipo || '').toUpperCase() || ''}</td>
+                    <td style={{ textTransform: 'capitalize' }}>{n.fato_gerador || ''}</td>
                     <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(Number(n.valor) || 0)}</td>
                     <td>
                       <span className={`os-st ${STATUS_CLS[st] || 'os-aberta'}`}>{STATUS_LABEL[st] || st}</span>

@@ -182,7 +182,7 @@ export function TriagemWhatsapp({
       mr.start(); setGravando(true)
     } catch { setAviso('Não consegui acessar o microfone.') }
   }
-  // Abre o "Fluxo inicial — dados do cliente" (legado): pré-preenche nome/telefone da conversa.
+  // Abre o "Fluxo inicial  dados do cliente" (legado): pré-preenche nome/telefone da conversa.
   function abrirFluxoChamado() {
     const c = chats.find((x) => x.id === sel)
     if (!c) return
@@ -274,9 +274,9 @@ export function TriagemWhatsapp({
     {/* Layout do legado (sacTriagem, index.html:9066): grid 300px 1fr com dois rel-card lado a lado. */}
     {/* Altura travada na viewport: a thread rola DENTRO da coluna (scroll interno) em vez de
         empurrar a página inteira pra baixo. Offset = topbar + paddings + header "Conversa" (≈165px)
-        — ajustado p/ o chat ocupar quase toda a altura, sem sobra embaixo. */}
+         ajustado p/ o chat ocupar quase toda a altura, sem sobra embaixo. */}
     <div style={{ display: 'grid', gridTemplateColumns: chat && cliOpen ? '300px 1fr 340px' : '300px 1fr', gap: 14, alignItems: 'stretch', height: 'calc(100dvh - 165px)', minHeight: 360 }}>
-      {/* Lista de conversas — rel-card "Conversas (N)" do legado */}
+      {/* Lista de conversas  rel-card "Conversas (N)" do legado */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, borderBottom: '1px solid var(--line)' }}>Conversas ({totalReal})</div>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--line)' }}>
@@ -331,7 +331,7 @@ export function TriagemWhatsapp({
         </div>
       </div>
 
-      {/* Thread — rel-card de conversa do legado (index.html:9068) */}
+      {/* Thread  rel-card de conversa do legado (index.html:9068) */}
       <div className="rel-card" style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         {!chat ? (
           <div style={{ margin: 'auto', color: 'var(--text-3)', padding: 34 }}>Selecione uma conversa</div>
@@ -375,12 +375,12 @@ export function TriagemWhatsapp({
                 )
               })}
             </div>
-            {/* Ficha do cliente movida para o painel LATERAL (aside, 3ª coluna) — ver abaixo. */}
+            {/* Ficha do cliente movida para o painel LATERAL (aside, 3ª coluna)  ver abaixo. */}
             {chamadoOpen && (
               <div style={{ borderTop: '1px solid var(--line)', background: 'var(--surface-2)', padding: 12, maxHeight: 300, overflowY: 'auto' }}>
                 {/* Card de fluxo idêntico ao legado (index.html:9070): borda pontilhada. */}
                 <div style={{ border: '1px dashed var(--line)', borderRadius: 10, padding: 12, background: 'var(--surface-2)' }}>
-                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial — dados do cliente</div>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}><i className="ti ti-forms" style={{ color: 'var(--brand-500)' }} /> Fluxo inicial  dados do cliente</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>Confirme os dados e o chamado é aberto automaticamente com eles.</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo *" style={inpForm} autoFocus />
@@ -410,7 +410,7 @@ export function TriagemWhatsapp({
                 {notasSel.map((n) => (
                   <div key={n.id} style={{ fontSize: 12.5, marginBottom: 6, borderLeft: '2px solid var(--gold-500)', paddingLeft: 8 }}>
                     <div>{n.texto}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{n.autor_nome || '—'} · {n.criada_em ? new Date(n.criada_em).toLocaleString('pt-BR') : ''}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{n.autor_nome || ''} · {n.criada_em ? new Date(n.criada_em).toLocaleString('pt-BR') : ''}</div>
                   </div>
                 ))}
                 <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -501,7 +501,7 @@ export function TriagemWhatsapp({
             <div>
               <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}><i className="ti ti-user-search" /> Cliente</div>
               {cliBusy && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Buscando no cadastro…</div>}
-              {!cliBusy && cli && !cli.achou && <div style={{ fontSize: 12, color: 'var(--amber)' }}>Não encontrei cadastro para este contato — pode ser não-cliente.</div>}
+              {!cliBusy && cli && !cli.achou && <div style={{ fontSize: 12, color: 'var(--amber)' }}>Não encontrei cadastro para este contato  pode ser não-cliente.</div>}
               {!cliBusy && cli?.achou && (
                 <div style={{ fontSize: 12.5, display: 'grid', gap: 6 }}>
                   <div><b>{cli.nome}</b> {cli.ativo === false && <span style={{ color: 'var(--text-3)' }}>(inativo)</span>}{cli.verificado && <span style={{ color: 'var(--green)' }}> ✓ verificado</span>}</div>
@@ -598,7 +598,7 @@ function GerenciarRespostasModal({ respostas, onClose }: { respostas: RespostaRa
         <div style={{ padding: 18, display: 'grid', gap: 12 }}>
           <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Na conversa, digite <b>/</b> seguido do atalho para inserir o texto. Ex.: <b>/pagamento</b>.</div>
           <div style={{ display: 'grid', gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }}>
-            <input style={inp} value={atalho} onChange={(e) => setAtalho(e.target.value)} placeholder="Atalho (ex.: pagamento) — sem espaços" />
+            <input style={inp} value={atalho} onChange={(e) => setAtalho(e.target.value)} placeholder="Atalho (ex.: pagamento)  sem espaços" />
             <textarea style={{ ...inp, minHeight: 70, resize: 'vertical' }} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Texto que será inserido na conversa" />
             {erro && <div style={{ color: 'var(--red)', fontSize: 12.5 }}>{erro}</div>}
             <div style={{ textAlign: 'right' }}><button className="btn btn-primary" disabled={busy || !atalho.trim() || !texto.trim()} onClick={add}><i className="ti ti-plus" /> Adicionar</button></div>

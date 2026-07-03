@@ -12,7 +12,7 @@ function asDate(d: Dataish): Date | null {
   return isNaN(dt.getTime()) ? null : dt
 }
 
-/** "R$ 1.234" (inteiro, sem centavos — padrão do sistema). null/undefined => "R$ 0". */
+/** "R$ 1.234" (inteiro, sem centavos  padrão do sistema). null/undefined => "R$ 0". */
 export function moedaBR(v: number | null | undefined): string {
   return 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
 }
@@ -41,7 +41,7 @@ export function dataBR(d: Dataish): string {
   return dt ? dt.toLocaleDateString('pt-BR') : ''
 }
 
-/** "31/12, 14:05" (dia/mês + hora — formato curto usado nas listas/threads). */
+/** "31/12, 14:05" (dia/mês + hora  formato curto usado nas listas/threads). */
 export function dataHoraBR(d: Dataish): string {
   const dt = asDate(d)
   return dt ? dt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
@@ -53,7 +53,7 @@ export function dataHora(d: Dataish): string {
   return dt ? dt.toLocaleString('pt-BR') : ''
 }
 
-/** "há 5 min" / "há 2 h" / "há 3 d" — tempo relativo curto em pt-BR. */
+/** "há 5 min" / "há 2 h" / "há 3 d"  tempo relativo curto em pt-BR. */
 export function relativo(d: Dataish, agora: number = 0): string {
   const dt = asDate(d)
   if (!dt) return ''

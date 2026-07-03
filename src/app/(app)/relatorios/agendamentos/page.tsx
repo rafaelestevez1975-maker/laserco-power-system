@@ -46,7 +46,7 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // ── Contagens por status (paralelo, head:true — nunca puxa as 136k linhas) ──
+  // ── Contagens por status (paralelo, head:true  nunca puxa as 136k linhas) ──
   const [total, ...porStatus] = await Promise.all([
     contar(sb, { unidadeId, iniTs, fimTs }),
     ...STATUS.map((s) => contar(sb, { status: s.val, unidadeId, iniTs, fimTs })),
@@ -166,7 +166,7 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
         </div>
       </div>
 
-      {/* TODO(legado: buildAgendamentos): breakdown por profissional — a tabela `profissionais` não existe
+      {/* TODO(legado: buildAgendamentos): breakdown por profissional  a tabela `profissionais` não existe
           no backend atual (agendamentos.profissional_id é sempre null na base importada do BEMP).
           Quando a fonte existir, agrupar por profissional_id e juntar nomes. */}
     </div>

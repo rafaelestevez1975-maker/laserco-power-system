@@ -147,7 +147,7 @@ export function UniversidadeManager(props: Props) {
             setQuiz(null)
             if (!r.ok) { flash(r.error || 'Erro ao enviar prova.'); return }
             if (r.aprovado) flash(`Aprovado! Nota ${r.nota?.toFixed(1)}.`)
-            else flash(`Nota ${r.nota?.toFixed(1)} — abaixo de ${UNI_NOTA_MIN.toFixed(1).replace('.', ',')}, refaça a prova.`)
+            else flash(`Nota ${r.nota?.toFixed(1)}  abaixo de ${UNI_NOTA_MIN.toFixed(1).replace('.', ',')}, refaça a prova.`)
             router.refresh()
           }}
           busy={busy}
@@ -197,7 +197,7 @@ function TrilhaDetalhe(props: {
               <div style={{ fontWeight: 700, fontSize: 13.5 }}>{e.nome}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{done ? `Concluído · nota ${p?.nota ?? ''}` : 'Assista e faça a prova da etapa'}</div>
             </div>
-            <button className={`btn ${done ? 'btn-ghost' : 'btn-primary'}`} style={{ padding: '8px 12px' }} onClick={() => onProva(e.id, String(e.ordem), `Prova — etapa ${i + 1} · ${tr.nome}`, e.prova)}>
+            <button className={`btn ${done ? 'btn-ghost' : 'btn-primary'}`} style={{ padding: '8px 12px' }} onClick={() => onProva(e.id, String(e.ordem), `Prova  etapa ${i + 1} · ${tr.nome}`, e.prova)}>
               <i className="ti ti-writing" /> {done ? 'Refazer' : 'Prova'}
             </button>
           </div>
@@ -214,7 +214,7 @@ function TrilhaDetalhe(props: {
         <div className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: allDone ? 1 : 0.55 }}>
           <div style={{ width: 34, height: 34, borderRadius: 9, background: finalDone ? 'var(--gold-600, var(--amber))' : 'var(--surface-2)', color: finalDone ? '#fff' : 'var(--text-2)', display: 'grid', placeItems: 'center' }}><i className="ti ti-certificate" /></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>Prova final — {tr.nome}</div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>Prova final  {tr.nome}</div>
             <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{finalDone ? `Aprovado · nota ${meuProgresso[`${tr.id}:final`]?.nota ?? ''} · curso concluído ✅ libera presencial` : 'Avaliação final do conteúdo'}</div>
           </div>
           <button className={`btn ${allDone ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '8px 12px' }} disabled={!allDone} onClick={() => tr.final && onProva(tr.final.id, 'final', `Prova final · ${tr.nome}`, tr.final.prova)}>
@@ -305,10 +305,10 @@ function AlunosNotas(props: { alunos: AlunoRow[]; onCertificado: (a: AlunoRow) =
                     <div style={{ height: 7, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: `${a.prog}%`, background: 'var(--brand-500)' }} /></div>
                     <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 2 }}>{a.prog}%</div>
                   </td>
-                  <td>{a.nota ? notaPill(a.nota) : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                  <td>{a.nota ? notaPill(a.nota) : <span style={{ color: 'var(--text-3)' }}></span>}</td>
                   <td>{a.prazo === 'Atrasado' ? <span className="wa-pill" style={{ background: 'var(--red-bg, #FDECEC)', color: 'var(--red)' }}>Atrasado</span> : <span className="wa-pill ok">No prazo</span>}</td>
                   <td>{a.status === 'Concluído' ? <span className="wa-pill done">Concluído</span> : <span className="wa-pill run">Em curso</span>}</td>
-                  <td>{a.status === 'Concluído' ? <span className="os-link" onClick={() => onCertificado(a)}><i className="ti ti-certificate" /> Gerar certificado</span> : <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                  <td>{a.status === 'Concluído' ? <span className="os-link" onClick={() => onCertificado(a)}><i className="ti ti-certificate" /> Gerar certificado</span> : <span style={{ color: 'var(--text-3)' }}></span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -388,7 +388,7 @@ function Gerenciar(props: { trilhas: Trilha[]; onEditar: (id: string) => void; o
       <div className="rel-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: 'var(--text-2)' }}>
           <i className="ti ti-brand-youtube" style={{ color: '#c4302b', fontSize: 18 }} />
-          <span>No YouTube, suba o vídeo como <b>&quot;Não listado&quot;</b> (unlisted) — não aparece em buscas e é <b>gratuito</b>. Cole o link/ID aqui na etapa.</span>
+          <span>No YouTube, suba o vídeo como <b>&quot;Não listado&quot;</b> (unlisted)  não aparece em buscas e é <b>gratuito</b>. Cole o link/ID aqui na etapa.</span>
         </div>
       </div>
       <div className="cli-card"><div className="cli-scroll">

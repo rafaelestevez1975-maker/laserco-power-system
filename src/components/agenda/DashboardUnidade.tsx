@@ -69,7 +69,7 @@ export async function DashboardUnidade({ searchParams }: { searchParams: SP }) {
     (async () => {
       let q = sb.from('clientes').select('id', { count: 'exact', head: true })
         .gte('criado_em', novosRange.de).lt('criado_em', novosRange.ate)
-      // base de clientes compartilhada — não filtra por unidade.
+      // base de clientes compartilhada  não filtra por unidade.
       const { count } = await q
       return count ?? 0
     })(),
@@ -193,10 +193,10 @@ export async function DashboardUnidade({ searchParams }: { searchParams: SP }) {
         {/* k-green: Meta da unidade (faturamento do mês) */}
         <div className="metric-box" style={{ borderLeft: '3px solid var(--green)', padding: 16 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><i className="ti ti-target-arrow" /> Meta da unidade · mês</span>
-          <b style={{ fontSize: 26 }}>{moedaBR(vendido)} <small style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 600 }}>/ {meta > 0 ? moedaBR(meta) : '—'}</small></b>
+          <b style={{ fontSize: 26 }}>{moedaBR(vendido)} <small style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 600 }}>/ {meta > 0 ? moedaBR(meta) : ''}</small></b>
           <Barra pct={Math.min(100, pctMeta)} cor="var(--green)" />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginTop: 4 }}>
-            <span><b>{meta > 0 ? `${pctMeta}%` : '—'}</b> da meta</span><span>vendido acumulado</span>
+            <span><b>{meta > 0 ? `${pctMeta}%` : ''}</b> da meta</span><span>vendido acumulado</span>
           </div>
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12.5 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -258,7 +258,7 @@ async function metaUnidade(
     const { data: mRow } = await qM
     const m = ((mRow ?? []) as Array<Record<string, unknown>>)[0]
     if (m) meta = Number(m.valor_meta ?? m.meta_valor ?? m.valor ?? 0) || 0
-  } catch { /* tabela metas pode não existir; meta=0 → mostra "—" */ }
+  } catch { /* tabela metas pode não existir; meta=0 → mostra "" */ }
   return { vendido, meta }
 }
 
@@ -341,7 +341,7 @@ async function buildCorridinha(
   if (unidades.length === 0) return { rows: [], minhaId, erro: false }
 
   // Quando o usuário tem unidade ativa, a RLS pode limitar a leitura à própria
-  // unidade — então NÃO filtramos por unidade aqui (queremos a rede inteira).
+  // unidade  então NÃO filtramos por unidade aqui (queremos a rede inteira).
   // A RLS do Supabase ainda decide o que cada perfil enxerga.
   const [agDia, agMes, vendaDia, vendaMes] = await Promise.all([
     contaAgPorUnidade(sb, null, hojeRange.de, hojeRange.ate),

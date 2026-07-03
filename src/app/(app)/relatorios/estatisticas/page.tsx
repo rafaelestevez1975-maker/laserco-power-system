@@ -282,7 +282,7 @@ export default async function RelEstatisticasPage({ searchParams }: { searchPara
                                   : 'var(--text-3)',
                         }}
                       >
-                        {d ? d.txt.replace(' vs período anterior', '') : '—'}
+                        {d ? d.txt.replace(' vs período anterior', '') : ''}
                       </td>
                     )}
                   </tr>

@@ -13,14 +13,14 @@ import { inserirOSComNumero } from '@/lib/os-numero'
  * com itens (os_servicos/os_produtos/os_pacotes), pagamento (os_pagamentos) e auditoria.
  *
  * Regras de negócio reais portadas do legado:
- *  - Alçada de desconto por papel (DESC_LIMIT) — bloqueia finalização sem aprovação do gestor.
+ *  - Alçada de desconto por papel (DESC_LIMIT)  bloqueia finalização sem aprovação do gestor.
  *  - Cortesia (desconto 100% → total 0): 1 por cliente + teto mensal por unidade (R$2000).
  *
  * Origem: o enum `os.origem` do lkii ainda não tem 'PDV' (CHECK = avulsa|agendamento|pacote|
  * assinatura|interna|multa_assinatura). Usamos 'avulsa' (balcão) e marcamos "[PDV]" na observação.
  * //TODO(needs-migration: adicionar 'PDV' ao CHECK os_origem e gravar origem='PDV').
- * NFS-e: não há tabela fiscal no lkii — registramos o pedido na observação.
- * //TODO(needs-table: nfse — emissão fiscal de fato).
+ * NFS-e: não há tabela fiscal no lkii  registramos o pedido na observação.
+ * //TODO(needs-table: nfse  emissão fiscal de fato).
  */
 
 export type VendaKind = 'servico' | 'produto' | 'pacote'
@@ -94,7 +94,7 @@ export async function finalizarVenda(input: FinalizarVendaInput): Promise<Action
     const clienteId = (input.clienteId || '').trim()
     if (clienteId) {
       // Limite de 1 cortesia por cliente (regra do legado): conta TODAS as cortesias do cliente
-      // na unidade (sem gate de mês — é "1 por cliente", não "1 por mês"), via count exato.
+      // na unidade (sem gate de mês  é "1 por cliente", não "1 por mês"), via count exato.
       const { count, error: eCliente } = await op.sb
         .from('os')
         .select('id', { count: 'exact', head: true })
@@ -107,7 +107,7 @@ export async function finalizarVenda(input: FinalizarVendaInput): Promise<Action
         return { ok: false, error: 'Este cliente já recebeu uma sessão cortesia (limite de 1 por cliente).' }
       }
     }
-    // Teto mensal: gate por `criado_em` (sempre preenchido) e não por `fechada_em` — cortesias
+    // Teto mensal: gate por `criado_em` (sempre preenchido) e não por `fechada_em`  cortesias
     // legadas/importadas sem `fechada_em` precisam contar, senão o teto da unidade é furado.
     // Mesma regra que alimenta o saldo exibido em pdv/page.tsx (precisam bater).
     const desde = inicioDoMes(new Date().toISOString())
@@ -133,7 +133,7 @@ export async function finalizarVenda(input: FinalizarVendaInput): Promise<Action
   if (input.observacao?.trim()) obsPartes.push(input.observacao.trim())
   const observacao = obsPartes.join(' · ')
 
-  // ── Cria a OS já fechada (numero max+1 com retry anti-corrida — sem sequence no lkii) ──
+  // ── Cria a OS já fechada (numero max+1 com retry anti-corrida  sem sequence no lkii) ──
   const osNova = await inserirOSComNumero(op.sb, unidadeId, {
     cliente_id: (input.clienteId || '').trim() || null,
     status: 'fechada',

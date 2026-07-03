@@ -26,7 +26,7 @@ const ORIGENS_IND = ['balcao', 'site', 'link']
 /**
  * Registra uma indicação manual (indicador + 3 a 5 indicados) e, por paridade com o
  * legado (indSalvarManual 8188-8189), cria um lead no CRM para cada indicado.
- * Telefone do indicado é OPCIONAL (legado aceita só o nome — TODO ⚪ regra 3-5).
+ * Telefone do indicado é OPCIONAL (legado aceita só o nome  TODO ⚪ regra 3-5).
  */
 export async function criarIndicacao(input: NovaIndicacaoInput): Promise<ActionResult> {
   const sb = await createClient()
@@ -163,14 +163,14 @@ async function criarLeadsCrmDeIndicados(
 
 export type PremioInput = { unidade_id?: string | null; premio: string; valor_ref?: string; observacao?: string; meta_mensal?: number }
 
-/** Salva o prêmio/meta do mês (admin) — grava em indique_config (migration indiques.sql). */
+/** Salva o prêmio/meta do mês (admin)  grava em indique_config (migration indiques.sql). */
 export async function salvarPremio(input: PremioInput): Promise<ActionResult> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!ehAdmin(op.papel)) return { ok: false, error: 'Apenas o administrador define o prêmio do mês.' }
   if (!input.premio?.trim()) return { ok: false, error: 'Informe o prêmio do mês.' }
 
-  // empresa do usuário (pela unidade ativa) — necessária p/ a RLS por empresa.
+  // empresa do usuário (pela unidade ativa)  necessária p/ a RLS por empresa.
   const uniId = input.unidade_id || null
   let empresa_id: string | null = null
   if (uniId) {
@@ -235,7 +235,7 @@ export async function registrarSorteio(input: RegistrarSorteioInput): Promise<{ 
   return { ok: true, id: (data as { id: string }).id }
 }
 
-/** Marca o sorteio como notificado (e-mail + WhatsApp) — legado indNotificarGanhador (8291-8296). */
+/** Marca o sorteio como notificado (e-mail + WhatsApp)  legado indNotificarGanhador (8291-8296). */
 export async function notificarGanhador(sorteioId: string): Promise<ActionResult> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }

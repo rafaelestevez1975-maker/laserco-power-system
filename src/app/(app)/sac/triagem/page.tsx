@@ -8,11 +8,11 @@ export const dynamic = 'force-dynamic'
 const LISTA_MAX = 800 // cobre a base atual (~500) com folga; nulls por último
 
 /**
- * Conversa — caixa de entrada do SAC.
+ * Conversa  caixa de entrada do SAC.
  *
  * Escopo por unidade: o modelo do projeto exige escopo por unidade_id (como em /sac/chamados).
  * Porém sac_whatsapp_chats é alimentada pelo webhook da UAZAPI (src/app/api/webhooks/uazapi)
- * que NÃO grava unidade_id/empresa_id no chat — e a coluna unidade_id não é confirmada no schema
+ * que NÃO grava unidade_id/empresa_id no chat  e a coluna unidade_id não é confirmada no schema
  * (ver nota em src/app/(app)/expansao/whatsapp/page.tsx:25). Para honrar o escopo sem quebrar em
  * runtime, aplicamos o filtro por unidade de forma DEFENSIVA: tentamos com .eq('unidade_id', ...)
  * e, se a coluna não existir (erro), caímos para a consulta sem filtro. A RLS do Supabase
@@ -47,7 +47,7 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
   const chats = (erro ? [] : (chatsRaw ?? [])) as Chat[]
   const chatIds = chats.map((c) => c.id)
 
-  // ── Contagens REAIS (count exato, não o tamanho do array capado) — mesmo escopo dos chats ──
+  // ── Contagens REAIS (count exato, não o tamanho do array capado)  mesmo escopo dos chats ──
   // Só filtra por unidade se o escopo de unidade foi efetivamente aplicado nos chats
   // (escopoUnidade=true significa que a coluna unidade_id existe e respondeu sem erro).
   const escopo = escopoUnidade && activeUnitId ? activeUnitId : null
@@ -67,7 +67,7 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
 
   // ── Mensagens e notas SÓ das conversas carregadas ──
   // CRÍTICO: o PostgREST corta a resposta em ~1000 linhas. Ordenar ASCENDENTE fazia o corte
-  // descartar as mensagens MAIS NOVAS quando o total passou de 1000 — conversas recentes abriam
+  // descartar as mensagens MAIS NOVAS quando o total passou de 1000  conversas recentes abriam
   // "Sem mensagens" com tudo gravado no banco (bug de 02/07). Buscamos DESC com teto explícito
   // (o corte descarta só o histórico antigo) e revertemos para exibir em ordem cronológica.
   let msgs: Msg[] = []
@@ -86,7 +86,7 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
     notas = ((notasRaw ?? []) as Nota[]).reverse()
   }
 
-  // Atendentes do SAC — fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
+  // Atendentes do SAC  fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
   const atendentes = (await listAtendentesSac(sb)).map((a) => ({ id: a.id, nome: a.nome })) as Atendente[]
 
   // Motivos do SAC (para o fluxo de abrir chamado, igual ao /sac/chamados)
@@ -97,13 +97,13 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
     return (
       <div className="view active">
         <div className="cli-card" style={{ padding: 18, color: 'var(--red)' }}>
-          <i className="ti ti-alert-triangle" /> Não foi possível carregar as conversas do WhatsApp. Recarregue a página — se persistir, verifique a conexão com o backend.
+          <i className="ti ti-alert-triangle" /> Não foi possível carregar as conversas do WhatsApp. Recarregue a página  se persistir, verifique a conexão com o backend.
         </div>
       </div>
     )
   }
 
-  // Respostas rápidas (barra "/" na conversa) — pedido das atendentes.
+  // Respostas rápidas (barra "/" na conversa)  pedido das atendentes.
   const { data: rrRaw } = await sb.from('sac_respostas_rapidas').select('id, atalho, texto').order('atalho')
   const respostasRapidas = (rrRaw ?? []) as { id: string; atalho: string; texto: string }[]
 

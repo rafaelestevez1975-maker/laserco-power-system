@@ -90,7 +90,7 @@ export function ExportacoesHub({ counts, activeUnitName, escopoUnidade }: {
         return
       }
       baixarCsv(d.key, r.cols, r.rows)
-      setOk((p) => ({ ...p, [d.key]: `${r.rows.length.toLocaleString('pt-BR')} linha(s) exportada(s).${r.truncado ? ` Limite de ${EXPORT_LIMIT.toLocaleString('pt-BR')} atingido — refine antes de baixar tudo.` : ''}` }))
+      setOk((p) => ({ ...p, [d.key]: `${r.rows.length.toLocaleString('pt-BR')} linha(s) exportada(s).${r.truncado ? ` Limite de ${EXPORT_LIMIT.toLocaleString('pt-BR')} atingido  refine antes de baixar tudo.` : ''}` }))
     } catch {
       setErro((p) => ({ ...p, [d.key]: 'Falha ao gerar o arquivo. Tente novamente.' }))
     } finally {
@@ -103,7 +103,7 @@ export function ExportacoesHub({ counts, activeUnitName, escopoUnidade }: {
       <div className="crm-note" style={{ marginBottom: 16 }}>
         <i className="ti ti-download" /> Central de exportações em <b>CSV</b> (separador <code>;</code>, compatível com Excel pt-BR).
         Os dados respeitam a unidade ativa: <b>{activeUnitName}</b>
-        {escopoUnidade ? '.' : ' (todas as unidades — selecione uma no topo para reduzir o escopo).'}
+        {escopoUnidade ? '.' : ' (todas as unidades  selecione uma no topo para reduzir o escopo).'}
         {' '}Limite de <b>{EXPORT_LIMIT.toLocaleString('pt-BR')}</b> linhas por arquivo.
       </div>
 

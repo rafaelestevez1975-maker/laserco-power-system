@@ -20,7 +20,7 @@ export type ExpLead = {
 
 export type ExpUnidade = { id: string; nome: string }
 
-// Tipos de lead (linhas de oferta) — legado EXP_TIPOS (8537): 5 linhas de oferta.
+// Tipos de lead (linhas de oferta)  legado EXP_TIPOS (8537): 5 linhas de oferta.
 export const TIPOS_LEAD: { label: string; cor: string }[] = [
   { label: 'Ultracell', cor: '#2f44a0' },
   { label: 'Quanta', cor: '#0d9488' },
@@ -29,7 +29,7 @@ export const TIPOS_LEAD: { label: string; cor: string }[] = [
   { label: 'Quanta Light', cor: '#06b6d4' },
 ]
 
-// Temperatura — legado EXP_TEMPS (8539): 5 níveis com as cores do cliente.
+// Temperatura  legado EXP_TEMPS (8539): 5 níveis com as cores do cliente.
 export const TEMPERATURAS: { k: string; label: string; cor: string }[] = [
   { k: 'gelado', label: 'Gelado', cor: '#3b82f6' },
   { k: 'frio', label: 'Frio', cor: '#06b6d4' },
@@ -43,7 +43,7 @@ export function corTipo(label: string | null | undefined): string {
 }
 
 export function metaTemp(k: string | null | undefined): { label: string; cor: string } {
-  return TEMPERATURAS.find((t) => t.k === k) ?? { label: '—', cor: '#94a3b8' }
+  return TEMPERATURAS.find((t) => t.k === k) ?? { label: '', cor: '#94a3b8' }
 }
 
 // ─── Listas de disparo / Captação ───

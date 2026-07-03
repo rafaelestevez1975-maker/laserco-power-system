@@ -11,7 +11,7 @@ const COMP_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 
 /** Gera (ou regenera) a folha de uma competência para os colaboradores ATIVOS da unidade.
  *  Calcula INSS/IRRF/FGTS/Líquido a partir do salário bruto do cadastro (src/lib/rh).
- *  Upsert idempotente por (colaborador_id, competencia) — só toca folhas 'aberta'. */
+ *  Upsert idempotente por (colaborador_id, competencia)  só toca folhas 'aberta'. */
 export async function gerarFolha(competencia: string, unidadeId: string | null, decimo = false): Promise<{ ok: boolean; error?: string; gerados?: number }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }

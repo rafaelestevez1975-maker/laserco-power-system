@@ -42,7 +42,7 @@ function AjudaCard({ e }: { e: HelpTopic }) {
 export function AjudaManager() {
   const [q, setQ] = useState('')
   const [sel, setSel] = useState('')
-  // Tópico aberto via chip/grade/select (id) — independente da busca por texto.
+  // Tópico aberto via chip/grade/select (id)  independente da busca por texto.
   const [picked, setPicked] = useState<string | null>(null)
 
   const cats = useMemo(() => ajudaCats(), [])
@@ -93,7 +93,7 @@ export function AjudaManager() {
               Ou escolha um item já definido
             </label>
             <select value={sel} onChange={(e) => pick(e.target.value)} style={inp}>
-              <option value="">— Selecione um tópico de ajuda —</option>
+              <option value=""> Selecione um tópico de ajuda </option>
               {Object.keys(cats).map((c) => (
                 <optgroup key={c} label={c}>
                   {cats[c].map((e) => (

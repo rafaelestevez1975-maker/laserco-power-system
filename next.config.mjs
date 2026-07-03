@@ -6,7 +6,7 @@ const nextConfig = {
     serverActions: { bodySizeLimit: '25mb' },
   },
   // Checagem de TIPOS no build mantida LIGADA (segurança): o build falha se houver erro
-  // de tipo — verificado limpo com `tsc --noEmit`. Só o ESLint roda à parte (lint é ruidoso
+  // de tipo  verificado limpo com `tsc --noEmit`. Só o ESLint roda à parte (lint é ruidoso
   // e não deve bloquear o build da onda; rodar `next lint` separadamente).
   eslint: { ignoreDuringBuilds: true },
 }

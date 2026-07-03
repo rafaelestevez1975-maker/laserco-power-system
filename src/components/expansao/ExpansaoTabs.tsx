@@ -24,7 +24,7 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
 // Endpoint do webhook do formulário do site (legado expCaptacao 8579).
 const ENDPOINT_WEBHOOK = 'POST https://api.laserco.com.br/leads/site'
 
-// Quantos dias um lead permanece "novo" (não visto) — legado EXP_LEADS novo: dias<=2.
+// Quantos dias um lead permanece "novo" (não visto)  legado EXP_LEADS novo: dias<=2.
 function diasDesde(criadoEm: string | null): number {
   if (!criadoEm) return 9999
   const ms = Date.now() - new Date(criadoEm).getTime()
@@ -127,7 +127,7 @@ function BarList({ rows }: { rows: { label: string; valor: number; cor?: string 
 }
 
 function badgeEtapa(et: ExpEtapa | undefined, nome: string) {
-  if (!et) return <span style={{ fontSize: 12 }}>{nome || '—'}</span>
+  if (!et) return <span style={{ fontSize: 12 }}>{nome || ''}</span>
   return <span className="os-st" style={{ background: et.cor + '22', color: et.cor }}>{et.nome}</span>
 }
 
@@ -136,10 +136,10 @@ function Dashboard({ leads, etapas, nomeEtapa, totalLeads, totaisPorEtapa, leads
   leads: ExpLead[]; etapas: ExpEtapa[]; nomeEtapa: Map<string, string>
   totalLeads: number; totaisPorEtapa: Record<string, number>; leadsCapped: boolean
 }) {
-  // total REAL (count exato) — não o tamanho do array capado.
+  // total REAL (count exato)  não o tamanho do array capado.
   const total = totalLeads
   const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
-  // contagem exata por etapa (count exato) — somada por nome de etapa.
+  // contagem exata por etapa (count exato)  somada por nome de etapa.
   const totalEtapaNome = (nome: string) => etapas.filter((e) => e.nome === nome).reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
   const fechados = totalEtapaNome('Fechado')
   const perdidos = totalEtapaNome('Perdido')
@@ -159,7 +159,7 @@ function Dashboard({ leads, etapas, nomeEtapa, totalLeads, totaisPorEtapa, leads
   // Tipo e origem só temos sobre a amostra (não há count exato por tipo/origem aqui).
   const tipoRows = TIPOS_LEAD.map((t) => ({ label: t.label, valor: leads.filter((l) => l.tipo_lead === t.label).length, cor: t.cor }))
   const origMap = new Map<string, number>()
-  for (const l of leads) origMap.set(l.origem || '—', (origMap.get(l.origem || '—') || 0) + 1)
+  for (const l of leads) origMap.set(l.origem || '', (origMap.get(l.origem || '') || 0) + 1)
   const origRows = [...origMap.entries()].map(([label, valor]) => ({ label, valor })).sort((a, b) => b.valor - a.valor)
 
   if (total === 0) return <EmptyState texto="Nenhum lead de franquia ainda. Cadastre na aba Leads ou ative a captação." />
@@ -202,13 +202,13 @@ function Dashboard({ leads, etapas, nomeEtapa, totalLeads, totaisPorEtapa, leads
                 const et = etapas.find((e) => e.id === l.etapa_id)
                 return (
                   <tr key={l.id}>
-                    <td><span style={{ fontWeight: 600 }}>{l.nome || '—'}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{[l.empresa, l.uf].filter(Boolean).join(' · ') || '—'}</td>
-                    <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : '—'}</td>
-                    <td>{l.origem || '—'}</td>
+                    <td><span style={{ fontWeight: 600 }}>{l.nome || ''}</span></td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{[l.empresa, l.uf].filter(Boolean).join(' · ') || ''}</td>
+                    <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : ''}</td>
+                    <td>{l.origem || ''}</td>
                     <td>{badgeEtapa(et, nomeDe(l.etapa_id))}</td>
-                    <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : '—'}</td>
-                    <td>{l.valor_estimado ? moedaBR(l.valor_estimado) : '—'}</td>
+                    <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : ''}</td>
+                    <td>{l.valor_estimado ? moedaBR(l.valor_estimado) : ''}</td>
                     <td>{dataBR(l.criado_em)}</td>
                   </tr>
                 )
@@ -262,7 +262,7 @@ function Captacao({
   return (
     <div>
       <div className="rel-legend">
-        Leads que entram automaticamente por <b>geolocalização</b> (CRM) e pelo <b>cadastro do site</b>. O formulário do site integra direto aqui via <b>webhook</b> — cada novo lead cai no funil em <b>Novo Lead</b> e gera notificação no menu Expansão.
+        Leads que entram automaticamente por <b>geolocalização</b> (CRM) e pelo <b>cadastro do site</b>. O formulário do site integra direto aqui via <b>webhook</b>  cada novo lead cai no funil em <b>Novo Lead</b> e gera notificação no menu Expansão.
       </div>
       <div className="kpi-grid">
         <Kpi label="Leads (7 dias)" value={String(sete.length)} icon="ti-user-plus" />
@@ -289,7 +289,7 @@ function Captacao({
           <h4><i className="ti ti-route" /> Entrada de leads por origem</h4>
           <BarList rows={(() => {
             const m = new Map<string, number>()
-            for (const l of leads) m.set(l.origem || '—', (m.get(l.origem || '—') || 0) + 1)
+            for (const l of leads) m.set(l.origem || '', (m.get(l.origem || '') || 0) + 1)
             return [...m.entries()].map(([label, valor]) => ({ label, valor })).sort((a, b) => b.valor - a.valor)
           })()} />
         </div>
@@ -308,15 +308,15 @@ function Captacao({
                   const d = diasDesde(l.criado_em)
                   return (
                     <tr key={l.id}>
-                      <td><span style={{ fontWeight: 600 }}>{l.nome || '—'}</span></td>
-                      <td>{l.telefone || '—'}</td>
+                      <td><span style={{ fontWeight: 600 }}>{l.nome || ''}</span></td>
+                      <td>{l.telefone || ''}</td>
                       <td>{l.origem === 'geolocalizado'
                         ? <span className="os-st os-andamento"><i className="ti ti-map-pin" /> Geolocalizado</span>
                         : l.origem === 'site'
                           ? <span className="os-st os-fechada"><i className="ti ti-world" /> Site</span>
-                          : (l.origem || '—')}</td>
-                      <td>{l.tipo_lead || '—'}</td>
-                      <td>{l.uf || '—'}</td>
+                          : (l.origem || '')}</td>
+                      <td>{l.tipo_lead || ''}</td>
+                      <td>{l.uf || ''}</td>
                       <td>{d === 0 ? 'hoje' : `há ${d} dia(s)`}</td>
                       <td>{badgeEtapa(et, nomeEtapa.get(l.etapa_id || '') || '')}</td>
                     </tr>
@@ -339,7 +339,7 @@ function Funil({ leads, etapas, totaisPorEtapa, leadsCapped }: {
   const visiveis = semFiltro ? leads : leads.filter((l) => l.tipo_lead === filtroTipo)
   const etapasFunil = etapas.filter((e) => e.nome !== 'Perdido')
   // Sem filtro de tipo, usa a CONTAGEM EXATA por etapa (não cai no teto). Com filtro
-  // de tipo, só temos a amostra (não há count exato por tipo) — sinalizamos isso.
+  // de tipo, só temos a amostra (não há count exato por tipo)  sinalizamos isso.
   const counts = etapasFunil.map((e) => ({
     etapa: e,
     c: semFiltro ? (totaisPorEtapa[e.id] ?? 0) : visiveis.filter((l) => l.etapa_id === e.id).length,
@@ -386,12 +386,12 @@ function Funil({ leads, etapas, totaisPorEtapa, leadsCapped }: {
                   const et = etapas.find((e) => e.id === l.etapa_id)
                   return (
                     <tr key={l.id}>
-                      <td style={{ fontWeight: 600 }}>{l.nome || '—'}</td>
-                      <td>{l.telefone || '—'}</td>
-                      <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : '—'}</td>
-                      <td>{et ? <span className="os-st" style={{ background: et.cor + '22', color: et.cor }}>{et.nome}</span> : '—'}</td>
-                      <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : '—'}</td>
-                      <td>{l.origem || '—'}</td>
+                      <td style={{ fontWeight: 600 }}>{l.nome || ''}</td>
+                      <td>{l.telefone || ''}</td>
+                      <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : ''}</td>
+                      <td>{et ? <span className="os-st" style={{ background: et.cor + '22', color: et.cor }}>{et.nome}</span> : ''}</td>
+                      <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : ''}</td>
+                      <td>{l.origem || ''}</td>
                     </tr>
                   )
                 })}
@@ -417,7 +417,7 @@ function Leads({
       <div className="rel-acts" style={{ marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className={`btn ${mode === 'kanban' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setMode('kanban')}><i className="ti ti-layout-kanban" /> Kanban</button>
         <button className={`btn ${mode === 'lista' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setMode('lista')}><i className="ti ti-list" /> Lista</button>
-        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} title="Importação de planilha (.xlsx) — em breve" onClick={() => alert('Importe a planilha de leads (.xlsx) no padrão Nome / Telefone / E-mail / Empresa / Tipo / UF. Recurso em integração.')}>
+        <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} title="Importação de planilha (.xlsx)  em breve" onClick={() => alert('Importe a planilha de leads (.xlsx) no padrão Nome / Telefone / E-mail / Empresa / Tipo / UF. Recurso em integração.')}>
           <i className="ti ti-upload" /> Importar (.xlsx)
         </button>
       </div>
@@ -438,14 +438,14 @@ function Leads({
                       const et = etapas.find((e) => e.id === l.etapa_id)
                       return (
                         <tr key={l.id}>
-                          <td style={{ fontWeight: 600 }}>{l.nome || '—'}</td>
-                          <td>{l.telefone || '—'}</td>
-                          <td>{l.email || '—'}</td>
-                          <td>{l.empresa || '—'}</td>
-                          <td>{l.uf || '—'}</td>
-                          <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : '—'}</td>
+                          <td style={{ fontWeight: 600 }}>{l.nome || ''}</td>
+                          <td>{l.telefone || ''}</td>
+                          <td>{l.email || ''}</td>
+                          <td>{l.empresa || ''}</td>
+                          <td>{l.uf || ''}</td>
+                          <td>{l.tipo_lead ? <span className="os-st" style={{ background: corTipo(l.tipo_lead) + '22', color: corTipo(l.tipo_lead) }}>{l.tipo_lead}</span> : ''}</td>
                           <td>{badgeEtapa(et, nomeEtapa.get(l.etapa_id || '') || '')}</td>
-                          <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : '—'}</td>
+                          <td>{l.temperatura ? <span className="os-st" style={{ background: tmp.cor + '22', color: tmp.cor }}>{tmp.label}</span> : ''}</td>
                         </tr>
                       )
                     })}
@@ -461,7 +461,7 @@ function Leads({
 // ─── CONVERSAS ───
 // As conversas reais de WhatsApp ficam em sac_whatsapp_chats / sac_whatsapp_mensagens
 // e são atendidas na Conversa (SAC). Esta aba NÃO tem fonte de conversas própria,
-// então direciona para o relatório real (Expansão · WhatsApp CRM) e para a Triagem — em vez
+// então direciona para o relatório real (Expansão · WhatsApp CRM) e para a Triagem  em vez
 // de exibir uma caixa de entrada fictícia. Sem dados inventados.
 function Conversas() {
   return (
@@ -516,7 +516,7 @@ function Tipos({ leads }: { leads: ExpLead[] }) {
                     <td>{doTipo.length}</td>
                     <td>{moedaBR(soma)}</td>
                     <td>
-                      <button className="btn btn-ghost" style={{ padding: '3px 9px' }} title="Edição de tipo (cor) — gerida pela franqueadora" onClick={() => alert(`O tipo "${t.label}" usa a cor padrão da franqueadora. Edição de cores em integração.`)}>
+                      <button className="btn btn-ghost" style={{ padding: '3px 9px' }} title="Edição de tipo (cor)  gerida pela franqueadora" onClick={() => alert(`O tipo "${t.label}" usa a cor padrão da franqueadora. Edição de cores em integração.`)}>
                         <i className="ti ti-edit" /> Editar
                       </button>
                     </td>

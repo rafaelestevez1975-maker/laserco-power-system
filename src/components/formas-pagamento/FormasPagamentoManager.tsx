@@ -55,7 +55,7 @@ export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, to
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-credit-card" /> Formas de pagamento da rede — defina tipo, taxa do adquirente e taxa a
+        <i className="ti ti-credit-card" /> Formas de pagamento da rede  defina tipo, taxa do adquirente e taxa a
         descontar na comissão. A forma <b>Crédito Recorrente</b> abre a integração PagoLivre.
       </div>
 
@@ -86,7 +86,7 @@ export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, to
         )}
       </div>
 
-      {/* Filtros (form GET) — Ativo (Sim/Não/Todos) + busca por nome */}
+      {/* Filtros (form GET)  Ativo (Sim/Não/Todos) + busca por nome */}
       <form method="GET" action="/cadastros/formas-pagamento" className="rel-card" style={{ marginBottom: 14 }}>
         <div className="rel-card-h" style={{ cursor: 'default' }}>
           <span><i className="ti ti-filter flt" /> Filtros</span>
@@ -157,7 +157,7 @@ export function FormasPagamentoManager({ formas, podeEscrever, kpis, filtros, to
                           </div>
                         )}
                       </td>
-                      <td><span className="orig-tag">{r.tipo || '—'}</span></td>
+                      <td><span className="orig-tag">{r.tipo || ''}</span></td>
                       <td className="num-r">{pct(r.taxa)}</td>
                       <td className="num-r">{pct(r.taxa_comissao)}</td>
                       <td>{inativo ? <span className="pill-no">Não</span> : <span className="pill-yes">Sim</span>}</td>
@@ -302,7 +302,7 @@ function FormaModal({ modo, row, onClose, onSaved }: {
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-2)', background: 'var(--surface-2)', borderRadius: 8, padding: '8px 10px', marginBottom: 12 }}>
               <i className="ti ti-info-circle" /> A venda no <b>crédito recorrente</b> pode ser reconhecida no relatório de
-              vendas em <b>Visão Vendas</b> (valor integral no ato) e <b>Visão Recorrência</b> (parcela mês a mês — também
+              vendas em <b>Visão Vendas</b> (valor integral no ato) e <b>Visão Recorrência</b> (parcela mês a mês  também
               base dos <b>royalties</b>). Não se aplica ao grupo <b>Ultrassom</b>.
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

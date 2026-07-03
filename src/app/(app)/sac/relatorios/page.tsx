@@ -8,7 +8,7 @@ import { SacRelatorios } from '@/components/sac/SacRelatorios'
 // Canais e fases EXATAMENTE como o write path canônico (sac/actions.ts) e as telas peer
 // (Dashboard/kanban/ChamadosTabela). Servem só de "esqueleto" / ordem de exibição: as
 // barras são montadas a partir da varredura real, então um valor fora desta lista
-// (ex.: canal "Importado" da importação legada) AINDA aparece — não some do breakdown.
+// (ex.: canal "Importado" da importação legada) AINDA aparece  não some do breakdown.
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
 const FASES = ['Novo', 'Contato com cliente', 'Contato com unidade', 'Aguardando cliente', 'Aguardando retorno interno', 'Em pagamento', 'Concluído']
 const PRIOS = ['baixa', 'media', 'alta', 'urgente']
@@ -60,7 +60,7 @@ export default async function SacRelatoriosPage({ searchParams }: { searchParams
   const motivos = ((motRaw ?? []) as { label: string }[]).map((m) => m.label)
 
   // PERF: antes esta tela disparava 60+ queries `count:'exact'` (1 por canal/fase/
-  // prioridade/motivo + 3 POR atendente) — saturava o pool do Supabase. Agora é UMA
+  // prioridade/motivo + 3 POR atendente)  saturava o pool do Supabase. Agora é UMA
   // varredura das colunas necessárias (mesmos filtros) tabulada em JS. Mesmos números.
   let carregouOk = true
   let total = 0, concluidos = 0, slaViol = 0
@@ -71,7 +71,7 @@ export default async function SacRelatoriosPage({ searchParams }: { searchParams
   const motivoMap = new Map<string, number>()
   const uniMap = new Map<string, number>()
   const atendMap = new Map<string, { total: number; resolvidos: number; violado: number }>()
-  // Linhas de reembolso (1 por ticket com devolução > 0) — paridade com a tabela legada.
+  // Linhas de reembolso (1 por ticket com devolução > 0)  paridade com a tabela legada.
   const reembRows: { ref: string; cliente: string; unidadeId: string | null; valor: number; multa: boolean; pago: boolean }[] = []
   try {
     const PAGE = 1000
@@ -123,7 +123,7 @@ export default async function SacRelatoriosPage({ searchParams }: { searchParams
   }
 
   // Estado de erro honesto: se a varredura falhou (RLS/conexão), não mostramos "tela vazia"
-  // (Total 0, barras zeradas) — sinalizamos o erro como o Dashboard do SAC faz.
+  // (Total 0, barras zeradas)  sinalizamos o erro como o Dashboard do SAC faz.
   if (!carregouOk) {
     return (
       <div className="view active">
@@ -145,7 +145,7 @@ export default async function SacRelatoriosPage({ searchParams }: { searchParams
   const prios = ordenarUniao(PRIOS, prioMap)
   const motivosTop = ordenarUniao(motivos, motivoMap).sort((a, b) => b.n - a.n).slice(0, 8)
 
-  // Chamados por unidade (Top 10) — útil principalmente na visão "Todas as unidades"
+  // Chamados por unidade (Top 10)  útil principalmente na visão "Todas as unidades"
   // (sem unidade ativa), onde o breakdown por unidade faz sentido (paridade com o legado).
   const porUnidade = !activeUnit
     ? [...uniMap.entries()]
@@ -164,11 +164,11 @@ export default async function SacRelatoriosPage({ searchParams }: { searchParams
 
   // Reembolsos: ordena pendentes antes de pagos, depois por valor desc; resolve nome da unidade.
   const reembolsos = reembRows
-    .map((r) => ({ ref: r.ref, cliente: r.cliente, unidade: r.unidadeId ? (uniNome.get(r.unidadeId) ?? '—') : '—', valor: r.valor, multa: r.multa, pago: r.pago }))
+    .map((r) => ({ ref: r.ref, cliente: r.cliente, unidade: r.unidadeId ? (uniNome.get(r.unidadeId) ?? '') : '', valor: r.valor, multa: r.multa, pago: r.pago }))
     .sort((a, b) => Number(a.pago) - Number(b.pago) || b.valor - a.valor)
 
-  // SLA: usamos a convenção CUMPRIDO ((total - violados)/total) em toda a tela — KPI,
-  // coluna por atendente e CSV — para não exibir duas métricas opostas com o mesmo nome.
+  // SLA: usamos a convenção CUMPRIDO ((total - violados)/total) em toda a tela  KPI,
+  // coluna por atendente e CSV  para não exibir duas métricas opostas com o mesmo nome.
   const slaPct = total ? Math.round(((total - slaViol) / total) * 100) : 100
 
   return (

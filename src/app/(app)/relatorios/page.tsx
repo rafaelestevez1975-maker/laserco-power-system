@@ -57,7 +57,7 @@ export default function RelatoriosIndexPage() {
       <div style={{ margin: '0 0 10px' }}>
         <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Comercial e operação</h3>
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
-          Ranking, descontos, pagamentos, OS, contratos e metas — dados reais, com filtros e exportação CSV.
+          Ranking, descontos, pagamentos, OS, contratos e metas  dados reais, com filtros e exportação CSV.
         </p>
       </div>
       <div className="dash-grid" style={{ marginBottom: 22 }}>

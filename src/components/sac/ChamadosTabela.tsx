@@ -55,7 +55,7 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
                 return (
                   <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setEdit(t)} title="Clique para editar">
                     <td><b>{t.protocolo || `SAC-${t.numero ?? ''}`}</b></td>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : <span style={{ color: 'var(--muted)' }}>—</span>}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : <span style={{ color: 'var(--muted)' }}></span>}</td>
                     <td>{t.nome_cliente || ''}{t.telefone_cliente && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.telefone_cliente}</div>}</td>
                     <td>{t.canal || ''}</td>
                     <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--muted)' }}>Central</span>}{tipo && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{tipo}</div>}</td>
@@ -149,12 +149,12 @@ function EditModal({ t, atendentes, motivos, unidades, onClose, onSaved }: { t: 
             </div>
             <div style={col}><label style={flab}>Tipo</label>
               <select style={fin} value={f.tipo} onChange={(e) => set('tipo', e.target.value)}>
-                <option value="">—</option>{TIPOS.map((x) => <option key={x} value={x}>{x}</option>)}
+                <option value=""></option>{TIPOS.map((x) => <option key={x} value={x}>{x}</option>)}
               </select>
             </div>
             <div style={col}><label style={flab}>Motivo *</label>
               <select style={fin} value={f.motivo_label} onChange={(e) => set('motivo_label', e.target.value)}>
-                <option value="">—</option>{motOpts.map((m) => <option key={m} value={m}>{m}</option>)}
+                <option value=""></option>{motOpts.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div style={col}><label style={flab}>Prioridade</label>
@@ -278,7 +278,7 @@ function Reembolso({ t, ficha, valorPagoForm, onDone }: { t: ChamadoRow; ficha: 
   return (
     <div style={{ borderTop: '2px solid var(--line)', paddingTop: 12 }}>
       <button type="button" className="btn" onClick={() => setAberto((v) => !v)} style={{ width: '100%', justifyContent: 'space-between' }}>
-        <span><i className="ti ti-receipt-refund" style={{ color: 'var(--brand-500)' }} /> Cancelamento e reembolso — cálculo automático</span>
+        <span><i className="ti ti-receipt-refund" style={{ color: 'var(--brand-500)' }} /> Cancelamento e reembolso  cálculo automático</span>
         <i className={`ti ti-chevron-${aberto ? 'up' : 'down'}`} />
       </button>
 
@@ -305,13 +305,13 @@ function Reembolso({ t, ficha, valorPagoForm, onDone }: { t: ChamadoRow; ficha: 
                 <div className="mf"><label>Sessões já feitas</label><input style={cell} type="number" min={0} value={sessoesFeitas} onChange={(e) => setSessoesFeitas(e.target.value)} placeholder="ex.: 3" /></div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, margin: '8px 0' }}>
-                <input type="checkbox" checked={isentar} onChange={(e) => setIsentar(e.target.checked)} /> Rescisão por nossa culpa (ex.: fechamento de unidade) — sem multa
+                <input type="checkbox" checked={isentar} onChange={(e) => setIsentar(e.target.checked)} /> Rescisão por nossa culpa (ex.: fechamento de unidade)  sem multa
               </label>
               {temSessoes ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3px 12px', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 9, padding: 10, fontSize: 12.5 }}>
                   <span>Total pago</span><b style={{ textAlign: 'right' }}>{money(vp)}</b>
                   <span>Valor por sessão ({contrNum} sessões)</span><span style={{ textAlign: 'right' }}>{money(R.vSess)}</span>
-                  <span>Sessões já feitas ({feitasNum}) — abatidas</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.consumido)}</span>
+                  <span>Sessões já feitas ({feitasNum})  abatidas</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.consumido)}</span>
                   <span>Saldo das {R.restantes} sessões restantes</span><b style={{ textAlign: 'right' }}>{money(R.saldo)}</b>
                   <span>Multa de rescisão{isentar ? ' (isenta)' : ` ${pctMulta}%`}</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.multa)}</span>
                   <span style={{ fontWeight: 800, borderTop: '1px solid var(--line)', paddingTop: 5, marginTop: 3 }}>Valor a reembolsar</span>

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — FINANCEIRO DA FRANQUEADORA (Franqueadora A + B)
+-- Migration  FINANCEIRO DA FRANQUEADORA (Franqueadora A + B)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html · buildFinFranq L5099+) tem um módulo financeiro
@@ -15,20 +15,20 @@
 -- DECISÃO ADOTADA (tabelas próprias do financeiro da franqueadora)
 --   Em vez de poluir lancamentos_financeiros (que é por unidade), criamos tabelas
 --   dedicadas com prefixo fin_:
---     fin_recebiveis   — royalties/taxas/aluguéis cobrados das unidades pela matriz
---     fin_contas_pagar — despesas da franqueadora (folha, impostos, fornecedores)
---     fin_conciliacao  — cruzamento venda x extrato x taxa adquirente
---     fin_config       — parâmetros (royaltyPct/fundoPct/vencDia, banco, adquirentes, régua)
+--     fin_recebiveis    royalties/taxas/aluguéis cobrados das unidades pela matriz
+--     fin_contas_pagar  despesas da franqueadora (folha, impostos, fornecedores)
+--     fin_conciliacao   cruzamento venda x extrato x taxa adquirente
+--     fin_config        parâmetros (royaltyPct/fundoPct/vencDia, banco, adquirentes, régua)
 --
 --   Categorias de recebíveis são FIXAS (FIN_CATS_REC do legado), guardadas como
---   texto na coluna categoria (não usam plano_contas — são conceitos da matriz).
+--   texto na coluna categoria (não usam plano_contas  são conceitos da matriz).
 --
 -- SEGURANÇA / IDEMPOTÊNCIA
 --   CREATE TABLE IF NOT EXISTS / ON CONFLICT DO NOTHING. RLS habilitada com policy
 --   por empresa (admin_geral e perfil financeiro). O seed usa a 1ª empresa e as
 --   unidades ativas existentes, espelhando o finSeed do legado.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/financeiro.sql
 -- =============================================================================
 
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS fin_conciliacao (
 CREATE INDEX IF NOT EXISTS idx_fin_conciliacao_empresa ON fin_conciliacao (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) CONFIG DO FINANCEIRO (1 linha por empresa) — parâmetros do legado FIN_CFG
+-- 4) CONFIG DO FINANCEIRO (1 linha por empresa)  parâmetros do legado FIN_CFG
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS fin_config (
   empresa_id   uuid PRIMARY KEY REFERENCES empresas(id) ON DELETE CASCADE,
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS fin_config (
 );
 
 -- ----------------------------------------------------------------------------
--- 5) RLS — habilitar + policies por empresa (admin_geral e perfil financeiro)
+-- 5) RLS  habilitar + policies por empresa (admin_geral e perfil financeiro)
 --    Modelo: perfis_usuario(papel, unidade_id) → unidades(empresa_id).
 -- ----------------------------------------------------------------------------
 ALTER TABLE fin_recebiveis   ENABLE ROW LEVEL SECURITY;
@@ -164,7 +164,7 @@ CREATE POLICY fin_config_rw ON fin_config
                  AND p.papel IN ('admin_geral','financeiro','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 6) SEED — espelha finSeed do legado, sobre as unidades ativas reais.
+-- 6) SEED  espelha finSeed do legado, sobre as unidades ativas reais.
 --    Royalty = 10% do bruto; Fundo = 2% do bruto. Vencimento 10/06/2026.
 --    Só insere se a tabela estiver vazia (idempotente por contagem).
 -- ----------------------------------------------------------------------------

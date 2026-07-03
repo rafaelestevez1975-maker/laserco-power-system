@@ -17,13 +17,13 @@ const LISTA_MAX = 300
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 /**
- * Relatório de Crédito Recorrente — réplica da intenção do legado
+ * Relatório de Crédito Recorrente  réplica da intenção do legado
  * (REL_DEFS['credito-recorrente'], legacy/index.html ~4331: assinaturas recorrentes,
  * MRR recorrente, falhas de cobrança, cancelamentos; colunas Cliente/Status/Valor/Modo/Próx. cobrança).
  *
  * Fonte de dados REAL (confirmada no código):
  *   • A forma de pagamento "Crédito Recorrente" é um tipo do catálogo formas_pagamento
- *     (tipo = 'Crédito Recorrente', integração PagoLivre — ver lib/catalogo.ehRecorrente e
+ *     (tipo = 'Crédito Recorrente', integração PagoLivre  ver lib/catalogo.ehRecorrente e
  *     src/app/(app)/cadastros/formas-pagamento/*). Não existe tabela de assinaturas *por cliente*
  *     no backend lkii (cliente_assinaturas / assinaturas / clientes_planos não aparecem em
  *     nenhum from()), então status Ativo/Pausado/Cancelado por assinatura e "próxima cobrança"
@@ -92,7 +92,7 @@ export default async function RelCreditoRecorrentePage({ searchParams }: { searc
   const nomeDoPag = (osId: string | null): string => {
     const k = chaveCliente(osId)
     if (k === '∅') return 'Sem cliente vinculado'
-    return nomeCliente[k] ?? '—'
+    return nomeCliente[k] ?? ''
   }
 
   // ── KPIs ──
@@ -117,7 +117,7 @@ export default async function RelCreditoRecorrentePage({ searchParams }: { searc
   for (const r of rows) {
     if (!ehAprovado(r.status)) continue
     const k = chaveCliente(r.os_id)
-    const nome = k === '∅' ? 'Sem cliente vinculado' : nomeCliente[k] ?? '—'
+    const nome = k === '∅' ? 'Sem cliente vinculado' : nomeCliente[k] ?? ''
     const a = porCliente.get(k) || { nome, valor: 0, qtd: 0, ultima: null as string | null }
     a.valor += Number(r.valor) || 0
     a.qtd += 1
@@ -170,7 +170,7 @@ export default async function RelCreditoRecorrentePage({ searchParams }: { searc
     dataBR(r.data_pagamento),
     nomeDoPag(r.os_id),
     Math.round(Number(r.valor) || 0),
-    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '—',
+    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '',
   ])
 
   return (

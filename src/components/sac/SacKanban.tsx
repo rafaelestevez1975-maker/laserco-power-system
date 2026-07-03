@@ -108,7 +108,7 @@ export function SacKanban({ tickets: ticketsProp, totais, erro }: { tickets: Tic
 
 // Coluna idêntica ao legado (sacKanban, index.html:9051): caixa surface-2 de 230px,
 // cabeçalho em brand-600 SEM bolinha + contador brand-500. (Antes reusava as classes do
-// Kanban do CRM — .kan-col 272px com bolinha colorida — o que divergia do index.)
+// Kanban do CRM  .kan-col 272px com bolinha colorida  o que divergia do index.)
 function Col({ fase, tickets, total, onOpen, onAdvance }: { fase: { nome: string; cor: string }; tickets: Ticket[]; total?: number; onOpen: (t: Ticket) => void; onAdvance: (id: string, fase: string) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: fase.nome })
   const totalReal = total ?? tickets.length
@@ -328,7 +328,7 @@ function TicketModal({ t, onClose }: { t: Ticket; onClose: () => void }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3px 12px', background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 9, padding: 10, fontSize: 12.5 }}>
                   <span>Total pago</span><b style={{ textAlign: 'right' }}>{money(vp)}</b>
                   <span>Valor por sessão ({contrNum} sessões)</span><span style={{ textAlign: 'right' }}>{money(R.vSess)}</span>
-                  <span>Sessões já feitas ({feitasNum}) — abatidas</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.consumido)}</span>
+                  <span>Sessões já feitas ({feitasNum})  abatidas</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.consumido)}</span>
                   <span>Saldo das {R.restantes} sessões restantes</span><b style={{ textAlign: 'right' }}>{money(R.saldo)}</b>
                   <span>Multa de rescisão{isentar ? ' (isenta)' : ` ${pctMulta}%`}</span><span style={{ textAlign: 'right', color: '#B91C1C' }}>− {money(R.multa)}</span>
                   <span style={{ fontWeight: 800, borderTop: '1px solid var(--line)', paddingTop: 5, marginTop: 3 }}>Valor a reembolsar</span>

@@ -33,9 +33,9 @@ type Props = {
 }
 
 function fmtData(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return ''
   const d = new Date(iso)
-  if (isNaN(d.getTime())) return '—'
+  if (isNaN(d.getTime())) return ''
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
@@ -237,7 +237,7 @@ function Secao({
                       </span>
                       <span style={{ display: 'block', fontSize: 11, color: 'var(--text-3)' }}>{c.slug}</span>
                     </td>
-                    <td style={{ maxWidth: 320, fontSize: 12.5, color: 'var(--text-2)' }}>{c.descricao || <span className="muted">—</span>}</td>
+                    <td style={{ maxWidth: 320, fontSize: 12.5, color: 'var(--text-2)' }}>{c.descricao || <span className="muted"></span>}</td>
                     <td className="num-r"><b>{nPerm.toLocaleString('pt-BR')}</b></td>
                     <td className="num-r">
                       <span title={`${nUsr} usuário(s) com este cargo`} style={{ fontWeight: nUsr ? 600 : 400, color: nUsr ? 'var(--text)' : 'var(--text-3)' }}>

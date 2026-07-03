@@ -27,7 +27,7 @@ const EM_PROCESSO = new Set(['entrevista_rh', 'teste_tecnico', 'entrevista_gesto
 const DRAG_OFF = new Set(['contratado', 'reprovado'])
 const FONTE_LABEL: Record<string, string> = { portal: 'Site', whatsapp: 'WhatsApp', indicacao: 'Indicação', linkedin: 'LinkedIn', outro: 'Outro' }
 
-// waHref e dataBR vêm de @/lib/fmt (DRY — ver docs/CONSOLIDACAO.md D3/D4)
+// waHref e dataBR vêm de @/lib/fmt (DRY  ver docs/CONSOLIDACAO.md D3/D4)
 
 function Kpis({ items }: { items: [string, string, string][] }) {
   return <div className="rel-kpis">{items.map(([l, v, ic]) => (

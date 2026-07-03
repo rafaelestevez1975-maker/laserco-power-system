@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — IMPLANTAÇÃO DE UNIDADE (/implantacao)
+-- Migration  IMPLANTAÇÃO DE UNIDADE (/implantacao)
 -- =============================================================================
 -- CONTEXTO
 --   O legado tinha buildImpl / implRender (legacy ~4852): fluxo completo de
@@ -12,9 +12,9 @@
 --   (IMPL_FASES) para um projeto demo, para a tela não nascer vazia.
 --
 -- MODELO
---   implantacao_projetos   — 1 projeto por unidade em implantação (cabeçalho).
---   implantacao_etapas     — as fases F01..F05 do projeto (cod, nome, ordem).
---   implantacao_tarefas    — tarefas da etapa (cod, descricao, responsavel,
+--   implantacao_projetos    1 projeto por unidade em implantação (cabeçalho).
+--   implantacao_etapas      as fases F01..F05 do projeto (cod, nome, ordem).
+--   implantacao_tarefas     tarefas da etapa (cod, descricao, responsavel,
 --                            duracao_dias, situacao).
 --
 --   responsavel ∈ IMPL_WF (9 áreas) · situacao ∈ IMPL_ST (4 estados).
@@ -22,16 +22,16 @@
 -- SEGURANÇA / IDEMPOTÊNCIA
 --   Tudo IF NOT EXISTS / ON CONFLICT. RLS habilitada: leitura p/ qualquer
 --   autenticado; escrita p/ admin_geral / gestor (espelha o "só admin edita"
---   do legado — demais perfis só atualizam a situação, regra reforçada na action).
+--   do legado  demais perfis só atualizam a situação, regra reforçada na action).
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/implantacao.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) PROJETO DE IMPLANTAÇÃO (cabeçalho — IMPL_PROJ do legado)
+-- 1) PROJETO DE IMPLANTAÇÃO (cabeçalho  IMPL_PROJ do legado)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS implantacao_projetos (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS implantacao_tarefas (
 CREATE INDEX IF NOT EXISTS idx_impl_tarefas_etapa ON implantacao_tarefas (etapa_id, ordem);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — leitura p/ autenticado; escrita p/ admin_geral / gestor.
+-- 4) RLS  leitura p/ autenticado; escrita p/ admin_geral / gestor.
 -- ----------------------------------------------------------------------------
 ALTER TABLE implantacao_projetos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE implantacao_etapas   ENABLE ROW LEVEL SECURITY;
@@ -128,7 +128,7 @@ CREATE POLICY impl_tarefas_del ON implantacao_tarefas
   FOR DELETE USING (EXISTS (SELECT 1 FROM perfis_usuario p WHERE p.id = auth.uid() AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 5) SEED — template padrão (IMPL_FASES: 5 etapas, 65 tarefas) num projeto demo.
+-- 5) SEED  template padrão (IMPL_FASES: 5 etapas, 65 tarefas) num projeto demo.
 --    Idempotente: só cria o projeto demo se ainda não houver nenhum projeto.
 -- ----------------------------------------------------------------------------
 DO $$

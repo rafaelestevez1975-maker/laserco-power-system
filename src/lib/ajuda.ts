@@ -1,8 +1,8 @@
 /**
- * Base de conhecimento (Ajuda) — paridade com o legado (HELP_KB / buildAjuda /
+ * Base de conhecimento (Ajuda)  paridade com o legado (HELP_KB / buildAjuda /
  * ajudaScore / ajudaSearch / ajudaCard). 48 tópicos em 7 categorias, busca com
  * ranking (título +6, keywords +4, qualquer +1, top 8) e select por categoria.
- * Dados estáticos (mesma fonte do legado) — namespeado para este módulo.
+ * Dados estáticos (mesma fonte do legado)  namespeado para este módulo.
  */
 
 export type HelpTopic = {
@@ -19,7 +19,7 @@ export type HelpTopic = {
 /** Data da última atualização da base (HELP_UPDATED do legado). */
 export const HELP_UPDATED = '16/06/2026'
 
-/** IDs dos tópicos mais procurados (chips da home — ajudaHome do legado). */
+/** IDs dos tópicos mais procurados (chips da home  ajudaHome do legado). */
 export const HELP_POPULARES = ['agenda', 'notas', 'finFranq', 'comissoes', 'indiques', 'pontoDigital', 'relFat', 'perfis']
 
 export const HELP_KB: HelpTopic[] = [
@@ -38,7 +38,7 @@ export const HELP_KB: HelpTopic[] = [
     uso: 'Abra a ficha para ver as 6 abas. Use a câmera para registrar evolução, registre a anamnese antes do primeiro procedimento e consulte o histórico de sessões.' },
   { id: 'os', cat: 'Operação da Loja', t: 'Ordens de Serviço', ic: 'ti-clipboard-list', k: 'os ordem servico execucao atendimento comanda procedimento',
     oque: 'Registro de execução dos serviços/procedimentos realizados (a "comanda" do atendimento).',
-    serve: 'Serve para comprovar o que foi efetivamente executado — é a base da Visão Execução e do fato gerador da Nota Fiscal.',
+    serve: 'Serve para comprovar o que foi efetivamente executado  é a base da Visão Execução e do fato gerador da Nota Fiscal.',
     uso: 'Abra/finalize a OS ao realizar a sessão. A OS finalizada alimenta comissões, faturamento por execução e a emissão de NFS-e (quando a política é "emitir na execução").' },
   { id: 'crm', cat: 'Operação da Loja', t: 'CRM (Funil Kanban)', ic: 'ti-layout-kanban', k: 'crm funil kanban lead oportunidade follow up acompanhamento quadro',
     oque: 'Funil de relacionamento em quadro Kanban, com etapas personalizáveis e cartões de leads/clientes.',
@@ -165,7 +165,7 @@ export const HELP_KB: HelpTopic[] = [
     serve: 'Serve para controlar a jornada com prova de presença no local.',
     uso: 'Habilite o GPS e marque o ponto. Configure a chave da API do Google Maps; o perfil "Ponto" dá acesso somente a esta tela.' },
   { id: 'marketing', cat: 'Gestão (Rede)', t: 'Marketing', ic: 'ti-photo', k: 'marketing materiais campanhas banco de imagens videos redes sociais noticias atualizacoes',
-    oque: 'Central de materiais da rede para o franqueado: Campanhas, Banco de Imagens & Vídeos, Materiais Físicos, Redes Sociais, Extras — além de Atualizações e Notícias.',
+    oque: 'Central de materiais da rede para o franqueado: Campanhas, Banco de Imagens & Vídeos, Materiais Físicos, Redes Sociais, Extras  além de Atualizações e Notícias.',
     serve: 'Serve para o franqueado acessar sempre a versão mais recente dos materiais da marca.',
     uso: 'Navegue pelas pastas; veja as últimas atualizações (data, o que é, onde está) e receba notificação quando algo novo é publicado. Em Notícias a rede posta matérias e divulgações.' },
   { id: 'indiques', cat: 'Gestão (Rede)', t: 'Gestão de Indiques', ic: 'ti-gift', k: 'indicacao indique lead cliente sorteio premio whatsapp cpf campanha',
@@ -196,7 +196,7 @@ export const HELP_KB: HelpTopic[] = [
   { id: 'juridico', cat: 'Administração (Franqueadora)', t: 'Jurídico', ic: 'ti-gavel', k: 'juridico cobranca notificacao inadimplencia atraso ok enviar financeiro',
     oque: 'Módulo jurídico integrado ao recebimento do Financeiro Franqueadora: identifica unidades que atrasaram pagamento e monta automaticamente a notificação padrão.',
     serve: 'Serve para cobrar inadimplentes com respaldo e rastreabilidade.',
-    uso: 'Ao haver atraso, o sistema importa os dados (unidade, valores, a que se refere) e gera a notificação; o Jurídico revisa/ajusta e clica em "OK — Enviar".' },
+    uso: 'Ao haver atraso, o sistema importa os dados (unidade, valores, a que se refere) e gera a notificação; o Jurídico revisa/ajusta e clica em "OK  Enviar".' },
   { id: 'auditoria', cat: 'Administração (Franqueadora)', t: 'Auditoria', ic: 'ti-history', k: 'auditoria log historico rastreabilidade acao registro',
     oque: 'Registro de auditoria de ações relevantes feitas no sistema.',
     serve: 'Serve para rastreabilidade, segurança e compliance.',
@@ -215,7 +215,7 @@ export const HELP_KB: HelpTopic[] = [
     serve: 'Serve para gerenciar seu acesso e preferências.',
     uso: 'Atualize seus dados; a alteração de senha/credenciais deve ser feita por você diretamente.' },
   { id: 'perfis', cat: 'Rede & Conta', t: 'Perfis de Acesso', ic: 'ti-shield-lock', k: 'perfil acesso permissao editor visualizar alterar restricao ponto',
-    oque: 'Perfis de acesso e editor de permissões: define, por menu, quem visualiza, altera, etc. — inclusive perfis restritos (ex.: acesso só ao Ponto).',
+    oque: 'Perfis de acesso e editor de permissões: define, por menu, quem visualiza, altera, etc.  inclusive perfis restritos (ex.: acesso só ao Ponto).',
     serve: 'Serve para controlar a segurança e o que cada usuário pode fazer.',
     uso: 'No editor, marque/desmarque as permissões de cada novo menu do sistema. Defina por perfil, na coluna "Bate ponto", se aquele perfil registra ponto (GPS) ou não.' },
   { id: 'ajuda', cat: 'Rede & Conta', t: 'Ajuda (esta tela)', ic: 'ti-help-circle', k: 'ajuda base conhecimento duvida como funciona suporte busca',
@@ -246,7 +246,7 @@ export function ajudaScore(e: HelpTopic, terms: string[]): number {
   return s
 }
 
-/** Busca com ranking — retorna top 8 (legado ajudaSearch). */
+/** Busca com ranking  retorna top 8 (legado ajudaSearch). */
 export function ajudaBuscar(q: string): HelpTopic[] {
   const query = (q || '').trim().toLowerCase()
   if (!query) return []

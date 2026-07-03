@@ -125,10 +125,10 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                       </Link>
                     </td>
                     <td><span className="orig-tag">{perfilLabel(c.cargo)}</span></td>
-                    <td>{local || <span className="muted">—</span>}</td>
+                    <td>{local || <span className="muted"></span>}</td>
                     <td>{regimeLabel(c.regime)}</td>
                     <td>
-                      {fmtTel(c.telefone) || <span className="muted">—</span>}
+                      {fmtTel(c.telefone) || <span className="muted"></span>}
                       {wa && (
                         <a href={wa} target="_blank" rel="noopener" className="wa-link" title="Enviar mensagem no WhatsApp" onClick={(e) => e.stopPropagation()}>
                           <i className="ti ti-brand-whatsapp wa" />
@@ -138,11 +138,11 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                     <td style={{ whiteSpace: 'nowrap' }}>
                       {c.ultimo_acesso
                         ? <>{dataBR(c.ultimo_acesso)} <span style={{ fontSize: 11, color: corDias }}>· {dias}d</span></>
-                        : <span className="muted">—</span>}
+                        : <span className="muted"></span>}
                     </td>
                     <td>
                       {c.exibe_agenda == null
-                        ? <span className="muted">—</span>
+                        ? <span className="muted"></span>
                         : c.exibe_agenda
                           ? <span className="pill-yes">Sim</span>
                           : <span className="pill-no">Não</span>}

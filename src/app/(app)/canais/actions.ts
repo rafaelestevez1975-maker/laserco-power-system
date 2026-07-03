@@ -15,7 +15,7 @@ const PAPEIS_CANAL = ['gestor', 'operacoes', 'sac'] as const
 type CanalAlvo = { token: string; binding: { escopo: 'unidade' | 'geral'; unidade_id: string | null } | null }
 
 /** Gate de operação sobre UM canal específico (conectar/desconectar/sincronizar):
- *  exige login + papel de gestão; e o canal precisa estar no ESCOPO do usuário —
+ *  exige login + papel de gestão; e o canal precisa estar no ESCOPO do usuário 
  *  admin opera qualquer canal; o gestor só opera canal GERAL ou da SUA unidade ativa.
  *  Canal sem vínculo em canais_whatsapp só é operável por admin. */
 async function guardCanalAlvo(nome: string): Promise<{ ok: true; alvo: CanalAlvo } | { ok: false; error: string }> {
@@ -30,7 +30,7 @@ async function guardCanalAlvo(nome: string): Promise<{ ok: true; alvo: CanalAlvo
   const binding = (data as { escopo: 'unidade' | 'geral'; unidade_id: string | null } | null) ?? null
 
   if (!ctx.isAdmin) {
-    if (!binding) return { ok: false, error: 'Canal sem vínculo — peça ao administrador para vinculá-lo a uma unidade.' }
+    if (!binding) return { ok: false, error: 'Canal sem vínculo  peça ao administrador para vinculá-lo a uma unidade.' }
     const noEscopo = binding.escopo === 'geral' || (!!ctx.activeUnitId && binding.unidade_id === ctx.activeUnitId)
     if (!noEscopo) return { ok: false, error: 'Este canal pertence a outra unidade.' }
   }
@@ -43,7 +43,7 @@ export type CanalForm = { nome: string; escopo: Escopo; unidadeId?: string | nul
   // o canal ao próprio usuário logado (cai só pra ele) em vez da fila compartilhada.
   central?: boolean; meuNumero?: boolean }
 
-// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
+// rlsMsg = msgErro (compartilhado em @/lib/sb  DRY, ver docs/CONSOLIDACAO.md D1)
 
 async function tokenPorNome(nome: string): Promise<string | null> {
   const all = await listInstances()
@@ -142,7 +142,7 @@ export async function statusCanal(nome: string): Promise<{ ok: boolean; state?: 
   return { ok: true, state: await getStatus(token) }
 }
 
-/** Reaplica o webhook do canal apontando pra produção — garante que TODA mensagem
+/** Reaplica o webhook do canal apontando pra produção  garante que TODA mensagem
  *  recebida caia na Triagem (sincronização). Idempotente: a UAZAPI casa pelo URL,
  *  então pode ser chamado quantas vezes quiser sem duplicar. Usado no auto-pós-conexão
  *  e no botão "Sincronizar". Retorna se está conectado e a URL aplicada. */
@@ -165,7 +165,7 @@ export async function desconectarCanal(nome: string): Promise<{ ok: boolean; err
 }
 
 /** Exclui o canal de vez: apaga a instância na UAZAPI e remove o vínculo. Mesma autorização
- *  de operar o canal (admin sempre; demais só no próprio escopo). Self-service — evita depender
+ *  de operar o canal (admin sempre; demais só no próprio escopo). Self-service  evita depender
  *  do desenvolvedor pra remover um número. */
 export async function excluirCanal(nome: string): Promise<{ ok: boolean; error?: string }> {
   const g = await guardCanalAlvo(nome)

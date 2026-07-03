@@ -65,7 +65,7 @@ export function OrigensManager({ origens, podeEscrever, filtros, contador, exibi
         )}
       </div>
 
-      {/* Filtros (form GET) — Ativo (Todos/Sim/Não) + busca por nome */}
+      {/* Filtros (form GET)  Ativo (Todos/Sim/Não) + busca por nome */}
       <form method="GET" action="/cadastros/origens" className="rel-card" style={{ marginBottom: 14 }}>
         <div className="rel-card-h" style={{ cursor: 'default' }}>
           <span><i className="ti ti-filter flt" /> Filtros</span>
@@ -150,7 +150,7 @@ export function OrigensManager({ origens, podeEscrever, filtros, contador, exibi
                             </span>
                           </>
                         ) : (
-                          <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
+                          <span style={{ color: 'var(--text-3)', fontSize: 12 }}></span>
                         )}
                       </td>
                     </tr>

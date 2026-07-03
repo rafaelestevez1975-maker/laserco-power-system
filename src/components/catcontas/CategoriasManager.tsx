@@ -83,7 +83,7 @@ export function CategoriasManager({ tipo, rows, podeGerir }: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-category" /> {titulo} — árvore <b>grupo → itens</b>. Os itens (folhas) são os que
+        <i className="ti ti-category" /> {titulo}  árvore <b>grupo → itens</b>. Os itens (folhas) são os que
         recebem lançamentos no contas a {ehPagar ? 'pagar' : 'receber'}.
       </div>
 
@@ -188,7 +188,7 @@ function GrupoBloco(props: {
   return (
     <>
       <tr style={{ background: 'var(--surface-2, #FAFAFB)' }}>
-        <td style={{ fontWeight: 700, color: 'var(--text-2)' }}>{grupo.codigo || '—'}</td>
+        <td style={{ fontWeight: 700, color: 'var(--text-2)' }}>{grupo.codigo || ''}</td>
         <td>
           <span style={{ fontWeight: 700 }}>{grupo.nome}</span>
           {grupo.is_sistema && <BadgeSistema />}
@@ -201,7 +201,7 @@ function GrupoBloco(props: {
       </tr>
       {filhos.map((f) => (
         <tr key={f.id}>
-          <td style={{ color: 'var(--text-3)' }}>{f.codigo || '—'}</td>
+          <td style={{ color: 'var(--text-3)' }}>{f.codigo || ''}</td>
           <td style={{ paddingLeft: 26 }}>
             <i className="ti ti-corner-down-right" style={{ color: 'var(--text-3)', marginRight: 6 }} />
             {f.nome}
@@ -244,7 +244,7 @@ function Acoes(props: {
   onToggle: (r: CatRow) => void
 }) {
   const { row, podeGerir, busy, ehGrupo, onEdit, onAddFilho, onToggle } = props
-  if (!podeGerir) return <span style={{ fontSize: 11, color: 'var(--text-3)' }}>—</span>
+  if (!podeGerir) return <span style={{ fontSize: 11, color: 'var(--text-3)' }}></span>
   if (row.is_sistema) {
     // Sistema: só permitimos adicionar filho a um grupo de sistema (não editar/inativar o próprio).
     return ehGrupo
@@ -335,7 +335,7 @@ function CategoriaForm(props: {
             <div className="mf">
               <label>Grupo pai</label>
               <select value={f.parent_id} onChange={(e) => set('parent_id', e.target.value)}>
-                <option value="">— Sem pai (grupo raiz) —</option>
+                <option value=""> Sem pai (grupo raiz) </option>
                 {grupos.map((g) => (
                   <option key={g.id} value={g.id}>{g.codigo ? g.codigo + ' · ' : ''}{g.nome}</option>
                 ))}

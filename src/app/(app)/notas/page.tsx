@@ -77,10 +77,10 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
   // ── KPIs das notas emitidas (count por status + soma de valores). ──
   // Os KPIs DEVEM honrar os MESMOS filtros da tabela (competência/unidade/tipo) para
   // que os números batam com a lista exibida. (Antes os KPIs ignoravam sp.* e somavam
-  // só por unidade ativa → tabela filtrada divergia dos KPIs — mesma classe do SAC.)
+  // só por unidade ativa → tabela filtrada divergia dos KPIs  mesma classe do SAC.)
   // O filtro de status NÃO é aplicado aos KPIs porque cada KPI já É uma quebra por status.
   let notas: NotaRow[] = []
-  let listaTotal = 0 // total real de linhas no recorte (count exact) — p/ "mostrando N de TOTAL"
+  let listaTotal = 0 // total real de linhas no recorte (count exact)  p/ "mostrando N de TOTAL"
   let valorCapped = false // soma de valores truncada pelo teto de segurança?
   let kpiEmitidas = 0
   let kpiCanceladas = 0
@@ -132,9 +132,9 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
       }))
     }
 
-    // KPIs — count por status APLICANDO os filtros comp/unidade/tipo (não o de status).
+    // KPIs  count por status APLICANDO os filtros comp/unidade/tipo (não o de status).
     // Tratamos o builder como um tipo leve (CountQuery) para não estourar a
-    // profundidade de instanciação do PostgREST no TS (TS2589) — igual à página de OS.
+    // profundidade de instanciação do PostgREST no TS (TS2589)  igual à página de OS.
     type CountRes = { count: number | null }
     type CountQuery = { eq(c: string, v: unknown): CountQuery }
     const base = (): CountQuery => {
@@ -157,7 +157,7 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
     kpiProcessando = prRes.count ?? 0
     listaTotal = totRes.count ?? 0
 
-    // Soma de valores das notas autorizadas no recorte (comp/unidade/tipo) — paginada
+    // Soma de valores das notas autorizadas no recorte (comp/unidade/tipo)  paginada
     // p/ não subdimensionar em volume; sinaliza truncamento se exceder o teto.
     type ValQuery = {
       eq(c: string, v: unknown): ValQuery

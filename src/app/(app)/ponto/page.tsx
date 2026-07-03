@@ -33,7 +33,7 @@ export default async function PontoPage({ searchParams }: { searchParams: Promis
   const activeUnitId = ctx?.activeUnitId ?? null
   const podeGerir = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_GESTAO.includes(ctx.papel))
 
-  // Colaborador (RH) ligado ao usuário logado — é "o meu ponto".
+  // Colaborador (RH) ligado ao usuário logado  é "o meu ponto".
   const { data: { user } } = await sb.auth.getUser()
   let meuColabId: string | null = null
   if (user) {
@@ -51,10 +51,10 @@ export default async function PontoPage({ searchParams }: { searchParams: Promis
   if (activeUnitId) colabQ = colabQ.eq('unidade_id', activeUnitId)
   const { data: colabRaw } = await colabQ
   const colaboradores = ((colabRaw ?? []) as ColabOpt[])
-  const colabNome: Record<string, string> = Object.fromEntries(colaboradores.map((c) => [c.id, c.nome ?? '—']))
+  const colabNome: Record<string, string> = Object.fromEntries(colaboradores.map((c) => [c.id, c.nome ?? '']))
 
   // ── Lista paginada de marcações ──
-  // Quem NÃO é gestão só vê o próprio ponto (cada colaborador vê o SEU — legado).
+  // Quem NÃO é gestão só vê o próprio ponto (cada colaborador vê o SEU  legado).
   let listQ = sb
     .from('registros_ponto')
     .select('id, colaborador_id, unidade_id, tipo, data_hora, lat, lng, distancia_m, modo, validado_geo, fonte, ajustado_por, motivo_ajuste', { count: 'exact' })
@@ -98,7 +98,7 @@ export default async function PontoPage({ searchParams }: { searchParams: Promis
   }
   const rows: RegistroRow[] = ((rowsRaw ?? []) as RegistroRow[]).map((r) => ({
     ...r,
-    colaborador_nome: r.colaborador_id ? (colabNome[r.colaborador_id] ?? '—') : '—',
+    colaborador_nome: r.colaborador_id ? (colabNome[r.colaborador_id] ?? '') : '',
   }))
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))

@@ -13,14 +13,14 @@ export type DistribResult = { ok: boolean; error?: string; conversas?: number; t
 
 // Cargos do SAC que o "Novo atendente" pode atribuir (todos resolvem só para recursos sac.*,
 // então o usuário enxerga apenas o módulo SAC). Atendente = padrão. (Não exportar: este é um
-// módulo 'use server' — só funções async podem ser exportadas; o componente define o seu rótulo.)
+// módulo 'use server'  só funções async podem ser exportadas; o componente define o seu rótulo.)
 const SLUGS_SAC = new Set(['atendente_sac', 'supervisor_sac', 'consulta_sac'])
 
 export type CriarAtendenteInput = { nome: string; email: string; senha: string; telefone?: string; unidadeId?: string | null; cargoSlug?: string }
 
 const emailValido = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
 
-/** Trilha de auditoria (secundária — nunca quebra a ação principal). Mesma tabela
+/** Trilha de auditoria (secundária  nunca quebra a ação principal). Mesma tabela
  *  e formato das demais ações do sistema (audit_log). */
 async function audit(userId: string, acao: string, label: string): Promise<void> {
   try {
@@ -82,7 +82,7 @@ export async function criarAcessoAtendente(input: CriarAtendenteInput): Promise<
   }
 
   // 3) vincula o cargo "Atendente SAC" (recursos SÓ do SAC). SEM esse vínculo o atendente
-  //    fica com recursos=[] e não enxerga NADA no menu — papel 'sac' sozinho não dá acesso.
+  //    fica com recursos=[] e não enxerga NADA no menu  papel 'sac' sozinho não dá acesso.
   //    É o RBAC real (usuario_cargos → cargo_permissoes → permissoes) que libera o módulo SAC.
   const cargoSlug = SLUGS_SAC.has(input.cargoSlug || '') ? (input.cargoSlug as string) : 'atendente_sac'
   const { data: cargoRow } = await admin.from('cargos').select('id').eq('slug', cargoSlug).maybeSingle()
@@ -97,7 +97,7 @@ export async function criarAcessoAtendente(input: CriarAtendenteInput): Promise<
       console.error('criarAcessoAtendente: vínculo do cargo Atendente SAC falhou:', eCargo.message)
     }
   } else {
-    console.error('criarAcessoAtendente: cargo slug "atendente_sac" não encontrado — atendente ficará sem acesso até receber um cargo.')
+    console.error('criarAcessoAtendente: cargo slug "atendente_sac" não encontrado  atendente ficará sem acesso até receber um cargo.')
   }
 
   await audit(op.userId, 'sac.atendente.criar', `Criou acesso SAC de ${nome}`)
@@ -192,7 +192,7 @@ export async function setAtendenteAtivo(id: string, ativo: boolean): Promise<{ o
 async function cargaPorAtendente(sb: SB, ids: string[], unidadeId: string | null): Promise<Map<string, number>> {
   const carga = new Map<string, number>()
   await Promise.all(ids.map(async (id) => {
-    // Filtro de unidade inline (o generic de scopeUnidade estoura a profundidade do tipo — TS2589).
+    // Filtro de unidade inline (o generic de scopeUnidade estoura a profundidade do tipo  TS2589).
     // Só conversas ABERTAS entram na carga (as resolvidas não são trabalho vivo).
     let qConv = sb.from('sac_whatsapp_chats').select('id', { count: 'exact', head: true }).eq('atendente_id', id).eq('status', 'aberto')
     if (unidadeId) qConv = qConv.eq('unidade_id', unidadeId)
@@ -260,7 +260,7 @@ export async function distribuirFila(): Promise<DistribResult> {
 }
 
 /** Reequilibra o BACKLOG: redistribui as conversas ABERTAS já atribuídas entre as atendentes
- *  ONLINE, com MÍNIMA perturbação — cada uma mantém as suas até o alvo (total/nº online); só o
+ *  ONLINE, com MÍNIMA perturbação  cada uma mantém as suas até o alvo (total/nº online); só o
  *  excedente e as conversas de quem não está online migram para as de menor carga. Idempotente. */
 export async function reequilibrarBacklog(): Promise<{ ok: boolean; movidas?: number; atendentes?: number; error?: string }> {
   const { op, error } = await requireOperador()
@@ -272,7 +272,7 @@ export async function reequilibrarBacklog(): Promise<{ ok: boolean; movidas?: nu
 
   const cands = await candidatosOnline(sb, unidadeId)
   if (cands.length === 0) return { ok: false, error: 'Nenhuma atendente online para receber as conversas. Ponha ao menos uma online.' }
-  if (cands.length === 1) return { ok: false, error: 'Só há uma atendente online — não há entre quem dividir. Ponha outra online.' }
+  if (cands.length === 1) return { ok: false, error: 'Só há uma atendente online  não há entre quem dividir. Ponha outra online.' }
 
   let qChats = sb.from('sac_whatsapp_chats').select('id, atendente_id').eq('status', 'aberto').not('atendente_id', 'is', null)
   if (unidadeId) qChats = qChats.eq('unidade_id', unidadeId)

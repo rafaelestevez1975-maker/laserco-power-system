@@ -1,5 +1,5 @@
 /**
- * KPIs de relatório — réplica do relKpis() do legado (legacy/index.html ~4218).
+ * KPIs de relatório  réplica do relKpis() do legado (legacy/index.html ~4218).
  * Server-safe (sem 'use client'): só markup, recebe valores já formatados.
  */
 

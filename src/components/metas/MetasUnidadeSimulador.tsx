@@ -7,12 +7,12 @@ const META_MIN = 100000
 const PLBL: Record<number, string> = { 1: 'mês', 2: 'quinzena', 3: 'dezena' }
 
 /**
- * Painel de metas da UNIDADE — venda (mín. R$100k) + agendamentos + clientes novos (25%)
+ * Painel de metas da UNIDADE  venda (mín. R$100k) + agendamentos + clientes novos (25%)
  * + indicações, com apuração mensal/quinzenal/decendial e alertas em tempo real.
  * Fiel a buildMetas/updateMetas/setMetasPeriodo do legado (~3640).
  *
  * É um SIMULADOR: não há tabela metas_unidade no backend lkii. //TODO(needs-table: metas_unidade)
- * — o botão "Salvar metas" mostra aviso honesto. As metas POR COLABORADOR (que têm tabela real)
+ *  o botão "Salvar metas" mostra aviso honesto. As metas POR COLABORADOR (que têm tabela real)
  * ficam no CRUD logo abaixo nesta mesma tela.
  */
 export function MetasUnidadeSimulador({
@@ -21,8 +21,8 @@ export function MetasUnidadeSimulador({
   mesAnterior = 0,
 }: {
   unidades: { id: string; nome: string }[]
-  mediaRede?: number   // média de agendamentos/unidade na rede (mês anterior) — real, vinda da page
-  mesAnterior?: number // agendamentos da unidade no mês anterior — real, vinda da page
+  mediaRede?: number   // média de agendamentos/unidade na rede (mês anterior)  real, vinda da page
+  mesAnterior?: number // agendamentos da unidade no mês anterior  real, vinda da page
 }) {
   const [div, setDiv] = useState<number>(1) // 1=mensal, 2=quinzenal, 3=decendial
   const [uniNome, setUniNome] = useState<string>(unidades[0]?.nome ?? '')
@@ -35,7 +35,7 @@ export function MetasUnidadeSimulador({
   const agendPer = agendMeta / div
   const novosPer = agendPer * 0.25
 
-  // "Realizado" começa em 0 (o usuário ajusta nos sliders) — antes vinham valores
+  // "Realizado" começa em 0 (o usuário ajusta nos sliders)  antes vinham valores
   // inventados (68500/210/38) exibidos como vendido/agendado reais.
   const [vendReal, setVendReal] = useState<number>(0)
   const [agReal, setAgReal] = useState<number>(0)
@@ -52,7 +52,7 @@ export function MetasUnidadeSimulador({
   }
 
   // Legado indMetaSync (~8100): meta diária = ceil(meta/30) e projeção do mês =
-  // round(realizado / diaAtual * 30) — base de 30 dias e usando o realizado REAL.
+  // round(realizado / diaAtual * 30)  base de 30 dias e usando o realizado REAL.
   const ind = useMemo(() => {
     const diaria = Math.ceil(indiques / 30)
     const diaAtual = new Date().getDate() || 1
@@ -67,8 +67,8 @@ export function MetasUnidadeSimulador({
   }
 
   function salvar() {
-    // //TODO(needs-table: metas_unidade) — sem tabela, só confirma visualmente (igual ao legado).
-    setSaving('Metas da unidade calculadas. Ainda não há tabela no backend para publicá-las no Dashboard — quando existir, este botão persistirá.')
+    // //TODO(needs-table: metas_unidade)  sem tabela, só confirma visualmente (igual ao legado).
+    setSaving('Metas da unidade calculadas. Ainda não há tabela no backend para publicá-las no Dashboard  quando existir, este botão persistirá.')
     setTimeout(() => setSaving(null), 6000)
   }
 
@@ -136,7 +136,7 @@ export function MetasUnidadeSimulador({
           <div className="metric-box purple"><span>Meta do período</span><b>{Math.round(agendPer)} agend.</b></div>
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--surface-2,#f7f7f8)', borderRadius: 8, padding: '10px 12px', margin: '12px 0' }}>
-          <b>Regra geral:</b> a meta de agendamento da unidade é a <b>média da rede</b> ou o que a unidade <b>agendou no mês anterior</b>, o que for <b>maior</b> — podendo ser dividida no mês, por quinzena ou dezena.
+          <b>Regra geral:</b> a meta de agendamento da unidade é a <b>média da rede</b> ou o que a unidade <b>agendou no mês anterior</b>, o que for <b>maior</b>  podendo ser dividida no mês, por quinzena ou dezena.
         </div>
         <div className="sim-slider">
           <label>Agendado no período: <b style={{ color: 'var(--brand-500)' }}>{agReal} agend.</b></label>
@@ -171,7 +171,7 @@ export function MetasUnidadeSimulador({
         {nvReal >= novosPer ? (
           <div className="sim-msg ok"><i className="ti ti-check" /> Meta de clientes novos (avaliações) da {plbl} atingida!</div>
         ) : (
-          <div className="sim-msg next"><i className="ti ti-user-plus" /> Faltam <b>{Math.max(0, Math.ceil(novosPer - nvReal))} avaliações</b> (clientes novos) para a meta da {plbl} — equivale a 25% do total de clientes.</div>
+          <div className="sim-msg next"><i className="ti ti-user-plus" /> Faltam <b>{Math.max(0, Math.ceil(novosPer - nvReal))} avaliações</b> (clientes novos) para a meta da {plbl}  equivale a 25% do total de clientes.</div>
         )}
       </div>
 

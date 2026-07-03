@@ -21,7 +21,7 @@ const ESCOPO_COR: Record<Escopo, string> = {
   empresa: '#7C3AED',
   global: '#8A2A41',
 }
-const NENHUM = '—'
+const NENHUM = ''
 
 const ACAO_ICON: Record<string, string> = {
   ler: 'ti-eye',

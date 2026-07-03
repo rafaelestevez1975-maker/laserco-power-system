@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — ANAMNESE / DOCUMENTOS + ORIGENS + MOTIVOS
+-- Migration  ANAMNESE / DOCUMENTOS + ORIGENS + MOTIVOS
 --   (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
@@ -11,21 +11,21 @@
 --          acumulativo, unidades com acesso);
 --        · seções e perguntas dinâmicas (8 tipos de campo: simnao, textocurto,
 --          textolongo, numero, selecao, consent, assinatura, imagem);
---        · flags por pergunta: obrig. e "inviabiliza" (regra clínica — respondida
+--        · flags por pergunta: obrig. e "inviabiliza" (regra clínica  respondida
 --          positivamente bloqueia os serviços).
 --      8 documentos seed: Anamnese, Termo de Sessão (acumulativo), Autorização
 --      para Menor, Uso de Imagem, Cancelamento, Transferência de Pacotes,
 --      Troca p/ Crédito e Orientações Pós-Laser (Rascunho / subconjunto de unidades).
 --
---   2. Origens de Cliente (buildOrigens / ORIGENS) — CRUD de canais de captação,
+--   2. Origens de Cliente (buildOrigens / ORIGENS)  CRUD de canais de captação,
 --      com flags auto (Geolocalizado) e campo (Outros).
 --
---   3. Motivos de Cancelamento (buildMotivos / MOTIVOS) — CRUD com flag "sistema"
+--   3. Motivos de Cancelamento (buildMotivos / MOTIVOS)  CRUD com flag "sistema"
 --      (padrão do sistema: só inativa, não exclui).
 --
 -- DECISÃO ADOTADA
 --   · Catálogo por EMPRESA (config da rede), espelhando catalogo.sql.
---   · documentos.secoes em JSONB (lista de {titulo, campos:[{q,t,obr,inv}]}) —
+--   · documentos.secoes em JSONB (lista de {titulo, campos:[{q,t,obr,inv}]}) 
 --     o construtor do legado já trabalha com esse formato; evita N tabelas filhas.
 --   · documentos.unidades_ids uuid[] = subconjunto de unidades com acesso
 --     (NULL/[] = "Todas as unidades da rede").
@@ -37,7 +37,7 @@
 --   CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS / contagem antes de semear.
 --   Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/anamnese.sql
 -- =============================================================================
 
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS motivos_cancelamento (
 CREATE INDEX IF NOT EXISTS idx_motivos_cancelamento_empresa ON motivos_cancelamento (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) AUTOMAÇÃO DE NÃO COMPARECIMENTO (WhatsApp) — bloco de config dos Motivos.
+-- 4) AUTOMAÇÃO DE NÃO COMPARECIMENTO (WhatsApp)  bloco de config dos Motivos.
 --    1 linha por empresa (config singleton). Espelha view-motivos (1762-1788).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS noshow_automacao (
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS noshow_automacao (
 );
 
 -- ----------------------------------------------------------------------------
--- 5) RLS — habilitar + policies por papel.
+-- 5) RLS  habilitar + policies por papel.
 --    Leitura: qualquer perfil autenticado. Escrita: admin_geral / gestor.
 -- ----------------------------------------------------------------------------
 ALTER TABLE documentos          ENABLE ROW LEVEL SECURITY;
@@ -163,7 +163,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 6) SEED — espelha ORIGENS, MOTIVOS, DOCS_LIST e DOC_MODELS do legado.
+-- 6) SEED  espelha ORIGENS, MOTIVOS, DOCS_LIST e DOC_MODELS do legado.
 --    Idempotente: só insere se a tabela estiver vazia para a empresa.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -183,7 +183,7 @@ BEGIN
       (v_empresa, 'Outros',        true, false, true,  5);
   END IF;
 
-  -- Motivos de cancelamento (MOTIVOS) — 3 do sistema + 3 personalizados
+  -- Motivos de cancelamento (MOTIVOS)  3 do sistema + 3 personalizados
   IF (SELECT count(*) FROM motivos_cancelamento WHERE empresa_id = v_empresa) = 0 THEN
     INSERT INTO motivos_cancelamento (empresa_id, nome, sistema, ativo, ordem) VALUES
       (v_empresa, 'Cliente Cancelou (antecipadamente)',               true,  true, 1),
@@ -388,7 +388,7 @@ BEGIN
        ]}
      ]$json$::jsonb);
 
-    -- Orientações Pós-Laser (Rascunho, subconjunto de unidades — demonstra status)
+    -- Orientações Pós-Laser (Rascunho, subconjunto de unidades  demonstra status)
     INSERT INTO documentos (empresa_id, nome, tipo, descricao, preenchimento, obrigatorio, status, secoes) VALUES
     (v_empresa, 'Orientações Pós-Laser', 'Termo', 'Orientações de cuidados pós-procedimento a laser',
      'Opcional', false, 'Rascunho',

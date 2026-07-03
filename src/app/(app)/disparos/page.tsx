@@ -62,10 +62,10 @@ export default async function DisparosPage({ searchParams }: { searchParams: Pro
     if (rCamp.error && /relation|does not exist|schema cache/i.test(rCamp.error.message)) semTabela = true
     campanhasTotal = rCampCount.error ? 0 : (rCampCount.count ?? 0)
     campanhas = ((rCamp.data as CampDb[] | null) ?? []).map((c) => ({
-      id: c.id, nome: c.nome, base: c.base_nome ?? '—', canal: c.canal_nome ?? '—', status: c.status,
+      id: c.id, nome: c.nome, base: c.base_nome ?? '', canal: c.canal_nome ?? '', status: c.status,
       enviadas: c.enviadas, entregues: c.entregues, lidas: c.lidas, respostas: c.respostas,
       quando: c.agendada_para ? `Agendada ${new Date(c.agendada_para).toLocaleString('pt-BR')}` : new Date(c.criado_em).toLocaleDateString('pt-BR'),
-      unidade: c.unidade_id ? uniNome.get(c.unidade_id) ?? '—' : 'Todas',
+      unidade: c.unidade_id ? uniNome.get(c.unidade_id) ?? '' : 'Todas',
     }))
     bases = ((rBase.data as BaseDb[] | null) ?? []).map((b) => ({ id: b.id, nome: b.nome, tipo: b.tipo, contatos: b.contatos, criada: new Date(b.criado_em).toLocaleDateString('pt-BR') }))
     vip = ((rVip.data as VipDb[] | null) ?? []).map((g) => ({

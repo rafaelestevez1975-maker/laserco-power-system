@@ -1,27 +1,27 @@
 -- =============================================================================
--- Migration — Notas Fiscais (NFS-e) + Integração com prefeituras
+-- Migration  Notas Fiscais (NFS-e) + Integração com prefeituras
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html, buildNotas ~8502-8531) tem a tela de Notas
 --   Fiscais com três peças que NÃO existem no backend lkii:
 --     1) NOTAS EMITIDAS (numero, competencia, tipo, cliente, fato gerador,
---        valor, status) — tabela `nfse`.
+--        valor, status)  tabela `nfse`.
 --     2) CONFIGURAÇÃO FISCAL POR UNIDADE (provedor municipal, alíquota ISS,
 --        inscrição municipal, certificado/token, ambiente, status de conexão)
---        — tabela `nfse_config_unidade`.
+--         tabela `nfse_config_unidade`.
 --     3) POLÍTICA DE EMISSÃO DA REDE (nenhuma|venda|execucao) + flag
---        "calcular por sessão" — tabela `nfse_politica` (1 registro por empresa).
+--        "calcular por sessão"  tabela `nfse_politica` (1 registro por empresa).
 --
 --   Tudo idempotente. Espelha as colunas que a UI de /notas lê.
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/nfse.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) POLÍTICA DE EMISSÃO DA REDE — 1 registro por empresa.
+-- 1) POLÍTICA DE EMISSÃO DA REDE  1 registro por empresa.
 --    Legado: NFSE_POLICY ('nenhuma'|'venda'|'execucao', default 'execucao')
 --            + NFSE_POR_SESSAO (boolean, default true).
 -- ----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ ALTER TABLE nfse_politica
   CHECK (politica IN ('nenhuma', 'venda', 'execucao'));
 
 -- ----------------------------------------------------------------------------
--- 2) CONFIGURAÇÃO FISCAL POR UNIDADE — 1 registro por unidade.
+-- 2) CONFIGURAÇÃO FISCAL POR UNIDADE  1 registro por unidade.
 --    Legado: nfseProvedor(cidade), nfseAliquota(cidade), nfseConectada(nome),
 --            nfseConfigUnidade(nome) → inscrição municipal, certificado/token,
 --            ambiente (Produção/Homologação).
@@ -72,7 +72,7 @@ ALTER TABLE nfse_config_unidade
   CHECK (status_conexao IN ('conectada', 'pendente'));
 
 -- ----------------------------------------------------------------------------
--- 3) NOTAS EMITIDAS — registro/listagem de NFS-e (emissão fiscal real = TODO).
+-- 3) NOTAS EMITIDAS  registro/listagem de NFS-e (emissão fiscal real = TODO).
 --    Legado emit: Número, Competência, Tipo, Cliente, Fato gerador, Valor, Status.
 --    fato_gerador: 'Sessão executada' (por sessão) ou 'Venda'.
 --    status: autorizada | cancelada | processando | erro.
@@ -114,7 +114,7 @@ CREATE INDEX IF NOT EXISTS idx_nfse_status        ON nfse (empresa_id, status);
 CREATE INDEX IF NOT EXISTS idx_nfse_cfg_uni       ON nfse_config_unidade (empresa_id, unidade_id);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — habilita e cria policies por empresa (alinhado às demais tabelas).
+-- 4) RLS  habilita e cria policies por empresa (alinhado às demais tabelas).
 --    Leitura/escrita restritas à empresa do usuário autenticado (via perfis_usuario).
 -- ----------------------------------------------------------------------------
 ALTER TABLE nfse_politica       ENABLE ROW LEVEL SECURITY;

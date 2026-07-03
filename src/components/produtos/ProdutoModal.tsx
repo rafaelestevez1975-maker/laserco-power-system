@@ -130,7 +130,7 @@ export function ProdutoModal({
                 if (e.target.value === '__novo__') { setNovoGrupo(true); set('grupo', '') }
                 else set('grupo', e.target.value)
               }}>
-                <option value="">— Sem grupo —</option>
+                <option value=""> Sem grupo </option>
                 {grupos.map((g) => <option key={g} value={g}>{g}</option>)}
                 <option value="__novo__">+ Novo grupo…</option>
               </select>

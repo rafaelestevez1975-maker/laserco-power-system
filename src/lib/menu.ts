@@ -163,7 +163,7 @@ export const MENU: Section[] = [
           { label: 'Chamados', href: '/sac/chamados', icon: 'ti-headset', title: 'SAC · Chamados' },
           { label: 'Kanban', href: '/sac/kanban', icon: 'ti-layout-kanban', title: 'SAC · Kanban' },
           { label: 'Conversa', href: '/sac/triagem', icon: 'ti-brand-whatsapp', title: 'SAC · Conversa' },
-          // Canais do SAC — tela PRÓPRIA, central (franqueadora). perm 'sac.canal' → todos os cargos
+          // Canais do SAC  tela PRÓPRIA, central (franqueadora). perm 'sac.canal' → todos os cargos
           // SAC (inclusive atendente, p/ conectar o próprio número no login dela). Isolada de /canais (Gestão).
           { label: 'Canais', href: '/sac/canais', icon: 'ti-plug-connected', perm: 'sac.canal', title: 'SAC · Canais' },
           { label: 'Relatórios', href: '/sac/relatorios', icon: 'ti-chart-bar', title: 'SAC · Relatórios' },
@@ -175,7 +175,7 @@ export const MENU: Section[] = [
         ],
       },
       {
-        // Espelha as 9 ABAS do Financeiro Franqueadora do legacy (finTabs) — mesma ordem/rótulos.
+        // Espelha as 9 ABAS do Financeiro Franqueadora do legacy (finTabs)  mesma ordem/rótulos.
         // Receber/Pagar apontavam pro /contas (financeiro da UNIDADE) e sumiam do perfil Financeiro.
         label: 'Financeiro Franqueadora', icon: 'ti-businessplan', key: 'finfranq', perm: 'financeiro.', children: [
           { label: 'Fluxo de Caixa', href: '/financeiro', icon: 'ti-cash', title: 'Financeiro · Fluxo de Caixa' },
@@ -224,7 +224,7 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/relatorios/agendamentos', '/relatorios/clientes', '/relatorios/contratos', '/relatorios/descontos',
   '/relatorios/faturamento', '/relatorios/metas', '/relatorios/ordens-servico',
   '/relatorios/pagamentos', '/relatorios/ranking-vendas',
-  // (Relatório Financeiro/DRE ainda é parcial — só receitas, sem despesas → prévia)
+  // (Relatório Financeiro/DRE ainda é parcial  só receitas, sem despesas → prévia)
   // Gestão · Dashboards (vendas-* ainda são iframe de HTML estático do legado → prévia)
   '/dashboards/financeiro', '/dashboards/gerencial', '/dashboards/funil',
   // Gestão · diversos

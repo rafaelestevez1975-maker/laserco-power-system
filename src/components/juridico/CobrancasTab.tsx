@@ -103,7 +103,7 @@ function NotifCard({ n }: { n: NotifRow }) {
           <input value={assunto} onChange={(e) => setAssunto(e.target.value)} disabled={!pendente || busy} />
         </div>
         <div className="mf full">
-          <label>Notificação padrão (gerada automaticamente — ajuste se necessário)</label>
+          <label>Notificação padrão (gerada automaticamente  ajuste se necessário)</label>
           <textarea
             value={corpo}
             onChange={(e) => setCorpo(e.target.value)}
@@ -118,7 +118,7 @@ function NotifCard({ n }: { n: NotifRow }) {
         {pendente ? (
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             <button className="btn btn-primary" disabled={busy} onClick={() => run(() => enviarNotif(n.id, assunto, corpo))}>
-              <i className="ti ti-check" /> OK — Enviar notificação
+              <i className="ti ti-check" /> OK  Enviar notificação
             </button>
             <button className="btn btn-ghost" disabled={busy} onClick={() => run(() => salvarAjusteNotif(n.id, assunto, corpo))}>
               <i className="ti ti-device-floppy" /> Salvar ajuste
@@ -143,7 +143,7 @@ export function CobrancasTab({ notificacoes, kpis, migrationPendente }: { notifi
   const [msg, setMsg] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
-  // Listas exibidas (capadas a 500 pela página) — apenas para renderizar os cards.
+  // Listas exibidas (capadas a 500 pela página)  apenas para renderizar os cards.
   const pend = useMemo(() => notificacoes.filter((n) => n.status === 'pendente'), [notificacoes])
   const enviadas = useMemo(() => notificacoes.filter((n) => n.status === 'enviada'), [notificacoes])
 
@@ -163,10 +163,10 @@ export function CobrancasTab({ notificacoes, kpis, migrationPendente }: { notifi
       <div className="rel-legend">
         Integrado ao <b>recebimento do Financeiro Franqueadora</b>: toda unidade que <b>atrasa um pagamento</b> entra
         aqui automaticamente, com a <b>notificação padrão já montada</b> a partir dos dados da unidade (valor, natureza
-        do débito, vencimento e dias em atraso). Revise, ajuste se quiser e clique em <b>OK — Enviar</b>.
+        do débito, vencimento e dias em atraso). Revise, ajuste se quiser e clique em <b>OK  Enviar</b>.
       </div>
 
-      {/* 4 KPIs (jurCobrancas 4956) — totais REAIS (count/sum server-side), não derivados da lista capada. */}
+      {/* 4 KPIs (jurCobrancas 4956)  totais REAIS (count/sum server-side), não derivados da lista capada. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '0 0 18px' }}>
         <Kpi label="Notificações pendentes" value={String(kpis.pendentes)} icon="ti-bell" />
         <Kpi label="Valor em cobrança" value={moedaBR(kpis.valorPendente)} icon="ti-cash" />

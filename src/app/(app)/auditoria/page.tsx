@@ -18,7 +18,7 @@ type SP = {
 }
 
 /**
- * /auditoria — visualizador read-only do audit_log. Somente admin_geral lê.
+ * /auditoria  visualizador read-only do audit_log. Somente admin_geral lê.
  * Usa service-role (adminClient) APENAS para leitura agregada/RBAC: o audit_log
  * é log de sistema e fica fora da RLS de negócio. Nenhuma escrita ocorre aqui.
  */
@@ -83,7 +83,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   if (userIds.length > 0) {
     const { data: perfis } = await admin.from('perfis_usuario').select('id, nome_completo').in('id', userIds)
     for (const p of (perfis ?? []) as { id: string; nome_completo: string | null }[]) {
-      nomePorId[p.id] = p.nome_completo || '—'
+      nomePorId[p.id] = p.nome_completo || ''
     }
   }
   const rows: AuditRow[] = rowsBase.map((r) => ({
@@ -101,7 +101,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
     .order('nome_completo', { ascending: true })
     .limit(500)
   const usuarios = ((usuariosOpcRaw ?? []) as { id: string; nome_completo: string | null }[])
-    .map((u) => ({ id: u.id, nome: u.nome_completo || '—' }))
+    .map((u) => ({ id: u.id, nome: u.nome_completo || '' }))
 
   // ── KPIs (paridade legado buildAuditoria 5788): Eventos / Hoje / Usuários / Política ──
   const { count: eventosTotal } = await admin.from('audit_log').select('id', { count: 'exact', head: true })
@@ -126,7 +126,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-history" /> <b>Tudo é rastreável e nada é apagado.</b> Exclusões não existem no sistema —
+        <i className="ti ti-history" /> <b>Tudo é rastreável e nada é apagado.</b> Exclusões não existem no sistema 
         registros só mudam para <b>Ativo</b> ou <b>Inativo</b>, preservando o histórico. Abaixo, o log imutável de
         movimentações (somente leitura).
       </div>

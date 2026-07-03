@@ -227,7 +227,7 @@ export async function solicitarReembolso(
   }).eq('id', ticketId)
 
   // RAZÃO da franqueadora (informe validado pelo cliente): o reembolso aprovado entra como
-  // despesa PREVISTA no fluxo de caixa da rede (conta 4.2.05, centro rede — SAC é centralizado).
+  // despesa PREVISTA no fluxo de caixa da rede (conta 4.2.05, centro rede  SAC é centralizado).
   // Quando o Financeiro paga (darBaixaLancamento), o lançamento é conciliado e o chamado fecha.
   try {
     const mapa = await mapaFinanceiro(sb)
@@ -254,7 +254,7 @@ function addMonths(d: Date, n: number): Date { const x = new Date(d); x.setMonth
  *  O legado classifica como "Reembolso SAC". Não existe essa categoria no seed → tentamos,
  *  por NOME (não por código fixo, que apontava para '2.3' = Cessão de Direitos, errado), as
  *  categorias de devolução a clientes que existem no plano (categorias.sql). Se nenhuma existir,
- *  cai em null graciosamente (lançamento sem categoria, como antes — nunca quebra). */
+ *  cai em null graciosamente (lançamento sem categoria, como antes  nunca quebra). */
 async function categoriaReembolso(sb: SB): Promise<string | null> {
   const candidatos = ['Reembolso SAC', 'Devolução a Clientes', 'Devoluções a Clientes', 'Devoluções e Abatimentos']
   for (const nome of candidatos) {

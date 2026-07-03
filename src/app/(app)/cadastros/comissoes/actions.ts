@@ -33,7 +33,7 @@ async function resolverEmpresaId(op: Op): Promise<string | null> {
 /**
  * Salva a matriz de comissões inteira (uma linha por categoria) para a empresa.
  * Estratégia simples e idempotente: apaga as categorias da empresa e regrava as
- * recebidas (a matriz é pequena — 5..10 linhas). Fiel à edição livre do legado
+ * recebidas (a matriz é pequena  5..10 linhas). Fiel à edição livre do legado
  * (readComCards/novaCategoria) que reescrevia COM_CATS por completo.
  */
 export async function salvarMatriz(cats: ComCat[]): Promise<ActionResult> {

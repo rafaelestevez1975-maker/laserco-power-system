@@ -18,7 +18,7 @@ export type ComunicadoForm = {
 }
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
-// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
+// rlsMsg = msgErro (compartilhado em @/lib/sb  DRY, ver docs/CONSOLIDACAO.md D1)
 
 /** Cria um comunicado (somente admin_geral  garantido pela RLS). */
 export async function criarComunicado(form: ComunicadoForm): Promise<ActionResult> {

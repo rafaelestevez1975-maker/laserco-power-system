@@ -1,5 +1,5 @@
 /**
- * Resolver de período dos DASHBOARDS — espelha os 8 presets do legado (REL_PERIODS L4208):
+ * Resolver de período dos DASHBOARDS  espelha os 8 presets do legado (REL_PERIODS L4208):
  * Hoje, Ontem, Semana passada, Últimos 30 dias, Mês atual, Mês passado, Este ano, Período…
  * Reaproveita resolveRelRange() (relatorios) para os presets comuns (mes/mes_passado/ano/custom)
  * e adiciona os presets diários que faltam. Pure / server-safe.
@@ -33,7 +33,7 @@ export function resolveDashRange(periodo: string | undefined, di?: string, df?: 
     return { label: 'Ontem', ini: ymd(ini), fim: ymd(fim), prevIni: ymd(pIni), prevFim: ymd(ini), prevLabel: 'Anteontem' }
   }
   if (p === 'semana_passada') {
-    // Semana anterior (seg→dom) — bloco de 7 dias terminando no início desta semana.
+    // Semana anterior (seg→dom)  bloco de 7 dias terminando no início desta semana.
     const dow = (now.getDay() + 6) % 7 // 0 = segunda
     const inicioSemana = new Date(y, m, d - dow) // segunda desta semana
     const ini = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() - 7)

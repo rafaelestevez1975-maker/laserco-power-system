@@ -17,7 +17,7 @@ type SP = { periodo?: string; di?: string; df?: string; limit?: string }
 const LIMITES = [10, 50, 100, 250, 500]
 
 /**
- * Ranking de Vendas — réplica do RANKS.vendas / rankRender do legado (legacy/index.html ~6963).
+ * Ranking de Vendas  réplica do RANKS.vendas / rankRender do legado (legacy/index.html ~6963).
  * Sobre dado REAL: ranqueia os vendedores (os.criado_por) por valor total de OS fechadas no
  * período, com colunas Posição/Colaborador/Vendas/Valor/Ticket médio, seletor Top 10/50/100/250/500
  * e rodapé "Exibindo Top X de Y". Default '90d' (OS são históricas como o faturamento).
@@ -69,7 +69,7 @@ export default async function RelRankingVendasPage({ searchParams }: { searchPar
   const kpis: RelKpi[] = [
     { label: 'Total vendido', value: moedaBR(totalVendido), icon: 'ti-currency-dollar' },
     { label: 'Vendedores', value: ranking.length.toLocaleString('pt-BR'), icon: 'ti-users' },
-    { label: 'Líder', value: lider ? lider.nome : '—', icon: 'ti-trophy', delta: lider ? moedaBR(lider.valor) : undefined, deltaTone: 'up' },
+    { label: 'Líder', value: lider ? lider.nome : '', icon: 'ti-trophy', delta: lider ? moedaBR(lider.valor) : undefined, deltaTone: 'up' },
     { label: 'Ticket médio', value: moedaBR(ticketGeral), icon: 'ti-receipt' },
   ]
 

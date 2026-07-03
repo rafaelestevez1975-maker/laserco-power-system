@@ -4,7 +4,7 @@
  * Corridinha de Vendas + Ranking de agendamentos do mês.
  *
  * ANTES: usava uma base FIXA de 16 unidades com vendas/agendamentos inventados
- * e um botão "Atualizar agora" que injetava deltas com Math.random() — dado fake
+ * e um botão "Atualizar agora" que injetava deltas com Math.random()  dado fake
  * apresentado como real. Substituído por dados reais agregados no servidor
  * (DashboardUnidade.tsx): cada linha vem de agendamentos/OS reais por unidade.
  *
@@ -80,11 +80,11 @@ export function Corridinha({ data }: { data: CorridinhaData }) {
   const maxAgMes = agMes[0]?.agm || 1
 
   const kpis: [string, string, string][] = [
-    ['Vendas · sua posição', myV ? `${myV.posVendaDia}º` : '—', 'ti-flag'],
-    ['Agendamentos · sua posição', myA && myA.agd > 0 ? `${myA.pos}º` : '—', 'ti-calendar-stats'],
+    ['Vendas · sua posição', myV ? `${myV.posVendaDia}º` : '', 'ti-flag'],
+    ['Agendamentos · sua posição', myA && myA.agd > 0 ? `${myA.pos}º` : '', 'ti-calendar-stats'],
     ['Unidades na rede', String(rows.length), 'ti-building'],
-    ['Meus pontos hoje (game)', myDG ? `${myDG.dpts} pts · ${myDG.posVendaDia}º` : '—', 'ti-bolt'],
-    ['Meus pontos no mês (game)', myMG ? `${myMG.posVendaMes}º` : '—', 'ti-device-gamepad-2'],
+    ['Meus pontos hoje (game)', myDG ? `${myDG.dpts} pts · ${myDG.posVendaDia}º` : '', 'ti-bolt'],
+    ['Meus pontos no mês (game)', myMG ? `${myMG.posVendaMes}º` : '', 'ti-device-gamepad-2'],
   ]
 
   const rowStyle = (mine: boolean): React.CSSProperties => ({
@@ -153,7 +153,7 @@ export function Corridinha({ data }: { data: CorridinhaData }) {
 
         {/* Game · pontuação acumulada no mês (por posição de vendas do mês) */}
         <div style={{ marginTop: 14 }}>
-          <Bloco titulo="Game · ranking de vendas no mês" icon="ti-device-gamepad-2" sub={<span>Ranking <b>mensal</b> por posição de vendas — sem exibir valores em R$</span>}>
+          <Bloco titulo="Game · ranking de vendas no mês" icon="ti-device-gamepad-2" sub={<span>Ranking <b>mensal</b> por posição de vendas  sem exibir valores em R$</span>}>
             {mgame.length === 0 && <Vazio msg="Sem vendas registradas no mês." />}
             {mgame.slice(0, 10).map((x) => (
               <div key={x.id} style={rowStyle(ehMinha(x.id))}>{medal(x.posVendaMes)}<span style={{ flex: 1 }}>{x.u}{ehMinha(x.id) && <b> (sua unidade)</b>}</span></div>

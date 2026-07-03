@@ -34,7 +34,7 @@ function slaHoras(l: Lead): number | null {
 // Iniciais do responsável p/ o mini-avatar (legado l.resp).
 function iniciais(nome: string | null | undefined): string {
   const p = (nome || '').trim().split(/\s+/).filter(Boolean)
-  if (!p.length) return '—'
+  if (!p.length) return ''
   return ((p[0][0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
 }
 
@@ -246,7 +246,7 @@ function Card({ lead, etapaNome }: { lead: Lead; etapaNome: string }) {
   )
 }
 
-// Origens visíveis do legado (lead modal HTML 2899) — value mapeado p/ o CHECK no server.
+// Origens visíveis do legado (lead modal HTML 2899)  value mapeado p/ o CHECK no server.
 const ORIGENS_UI: { value: string; label: string }[] = [
   { value: 'instagram', label: 'Instagram' },
   { value: 'facebook', label: 'Facebook' },
@@ -311,7 +311,7 @@ function NovoLeadModal({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Responsável</label>
               <select style={inp} value={f.responsavel_id} onChange={(e) => set('responsavel_id', e.target.value)}>
-                <option value="">— eu mesmo —</option>
+                <option value=""> eu mesmo </option>
                 {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>

@@ -7,7 +7,7 @@ import { ehAdmin } from '@/lib/rbac'
 import { discoExt } from '@/lib/marketing'
 
 /**
- * DISCO VIRTUAL — Drive da rede (paridade legado buildDisco ~9417).
+ * DISCO VIRTUAL  Drive da rede (paridade legado buildDisco ~9417).
  * Tabelas (migration scripts/migrations/marketing.sql):
  *   disco_config (vínculo Google Drive), disco_pastas (hierárquicas), disco_arquivos.
  * Storage: bucket PRIVADO 'disco-virtual' (arquivo_path -> objeto). Download via signed URL.
@@ -155,7 +155,7 @@ export async function urlArquivo(id: string): Promise<{ ok: boolean; url?: strin
 
   const { data: row } = await op.sb.from('disco_arquivos').select('arquivo_path').eq('id', id).maybeSingle()
   const path = (row as { arquivo_path?: string | null } | null)?.arquivo_path ?? null
-  if (!path) return { ok: false, error: 'Arquivo de exemplo — disponível na nuvem da rede.' }
+  if (!path) return { ok: false, error: 'Arquivo de exemplo  disponível na nuvem da rede.' }
 
   const { data, error: e } = await adminClient().storage.from(BUCKET).createSignedUrl(path, 60 * 5)
   if (e || !data?.signedUrl) return { ok: false, error: 'Não foi possível gerar o link do arquivo.' }
@@ -191,7 +191,7 @@ export async function vincularDrive(driveUrl: string): Promise<ActionResult> {
   if (!ehAdmin(op.papel)) return { ok: false, error: 'Apenas administradores vinculam o Google Drive.' }
 
   const url = (driveUrl || '').trim()
-  if (!/drive\.google\.com/.test(url)) return { ok: false, error: 'Link inválido — use um link do Google Drive.' }
+  if (!/drive\.google\.com/.test(url)) return { ok: false, error: 'Link inválido  use um link do Google Drive.' }
 
   const empresa_id = await resolverEmpresaId(op.sb, op.userId)
   if (!empresa_id) return { ok: false, error: 'Não foi possível resolver a empresa.' }

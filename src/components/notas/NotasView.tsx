@@ -75,7 +75,7 @@ export function NotasView(props: Props) {
   // Mensagem explicativa da política (legado buildNotas cfg).
   const polMsg =
     politica === 'nenhuma'
-      ? { cls: 'warn-msg', icon: 'ti-alert-triangle', html: <>Emissão de NF <b>desativada</b> — nenhuma nota será gerada automaticamente.</> }
+      ? { cls: 'warn-msg', icon: 'ti-alert-triangle', html: <>Emissão de NF <b>desativada</b>  nenhuma nota será gerada automaticamente.</> }
       : politica === 'venda'
         ? { cls: 'next', icon: 'ti-info-circle', html: <>A NFS-e é emitida no <b>ato da venda</b>, pelo valor total, na <b>prefeitura da unidade vendedora</b>.</> }
         : { cls: 'ok', icon: 'ti-check', html: <>A NFS-e é emitida a cada <b>sessão executada</b> (fato gerador), no valor por sessão, na <b>prefeitura da unidade executora</b>.</> }
@@ -119,7 +119,7 @@ export function NotasView(props: Props) {
           }}
         >
           <input type="checkbox" checked={porSessao} readOnly />{' '}
-          <span><b>Calcular por sessão</b> — o preço de cada sessão é o <b>valor total pago ÷ nº de sessões adquiridas</b>. Cada sessão executada gera uma NFS-e e libera a comissão proporcional àquela sessão.</span>
+          <span><b>Calcular por sessão</b>  o preço de cada sessão é o <b>valor total pago ÷ nº de sessões adquiridas</b>. Cada sessão executada gera uma NFS-e e libera a comissão proporcional àquela sessão.</span>
         </label>
         <div className={`sim-msg ${polMsg.cls}`} style={{ marginTop: 8 }}>
           <i className={`ti ${polMsg.icon}`} /> {polMsg.html}
@@ -127,13 +127,13 @@ export function NotasView(props: Props) {
       </div>
 
       {/* ── Exemplo · preço por sessão ── */}
-      {/* Regra ilustrada em TEXTO (não em cards de KPI — auditoria 02/07: parecia dado real). */}
-      <div className="rel-legend"><i className="ti ti-calculator" /> <b>Como funciona o preço por sessão:</b> num pacote hipotético de <b>R$ 5.000</b> com <b>10 sessões</b>, o preço por sessão é <b>R$ 500</b> (5.000 ÷ 10) — a cada execução emite-se <b>NF de R$ 500</b> e apura-se a comissão correspondente.</div>
+      {/* Regra ilustrada em TEXTO (não em cards de KPI  auditoria 02/07: parecia dado real). */}
+      <div className="rel-legend"><i className="ti ti-calculator" /> <b>Como funciona o preço por sessão:</b> num pacote hipotético de <b>R$ 5.000</b> com <b>10 sessões</b>, o preço por sessão é <b>R$ 500</b> (5.000 ÷ 10)  a cada execução emite-se <b>NF de R$ 500</b> e apura-se a comissão correspondente.</div>
 
       {/* ── Integração com prefeituras ── */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="rel-card-h" style={{ padding: '14px 18px' }}>
-          <span><i className="ti ti-building-bank flt" /> Integração com prefeituras — token por unidade ({conectadas}/{unidades.length} conectadas)</span>
+          <span><i className="ti ti-building-bank flt" /> Integração com prefeituras  token por unidade ({conectadas}/{unidades.length} conectadas)</span>
         </div>
         <div className="rel-legend" style={{ margin: '0 14px 8px' }}>
           Cada unidade recolhe o <b>ISS na sua própria prefeitura</b>. O sistema integra com os provedores municipais de
@@ -247,10 +247,10 @@ export function NotasView(props: Props) {
               const b = badgeStatus(n.status)
               return (
                 <tr key={n.id}>
-                  <td>{n.numero || '—'}</td>
-                  <td>{n.competencia || '—'}</td>
+                  <td>{n.numero || ''}</td>
+                  <td>{n.competencia || ''}</td>
                   <td>{rotuloTipo(n.tipo)}</td>
-                  <td><span className="cli-name">{n.clienteNome || '—'}</span></td>
+                  <td><span className="cli-name">{n.clienteNome || ''}</span></td>
                   <td>{rotuloFato(n.fato_gerador)}</td>
                   <td className="num-r">{moedaBR(n.valor)}</td>
                   <td><span className={`os-st ${b.cls}`}>{b.label}</span></td>
@@ -436,7 +436,7 @@ function EmitirModal({
             <label style={LBL}>Valor (R$)<input style={INP} inputMode="decimal" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} /></label>
           </div>
           <label style={LBL}>Observação<input style={INP} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="opcional" /></label>
-          <p style={{ fontSize: 11, color: 'var(--text-3)' }}>A emissão fiscal real (envio à prefeitura) é processada em seguida — a nota entra como <b>Processando</b>.</p>
+          <p style={{ fontSize: 11, color: 'var(--text-3)' }}>A emissão fiscal real (envio à prefeitura) é processada em seguida  a nota entra como <b>Processando</b>.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
           <button className="btn" onClick={onClose} disabled={pending}>Cancelar</button>

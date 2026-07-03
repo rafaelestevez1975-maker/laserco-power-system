@@ -52,7 +52,7 @@ export function ChecklistView({
         <div>
           <h2 style={{ fontSize: 19, fontWeight: 800 }}><i className="ti ti-checklist" style={{ color: 'var(--brand-500)' }} /> Checklist de Indicadores · PDCA</h2>
           <p style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 2 }}>
-            Avaliação do funil e planos de ação — <b>{activeUnitName}</b>
+            Avaliação do funil e planos de ação  <b>{activeUnitName}</b>
           </p>
         </div>
         {podeEscrever && (
@@ -104,7 +104,7 @@ export function ChecklistView({
           <div className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 14 }}>
             <div style={{ textAlign: 'center', minWidth: 90 }}>
               <div style={{ fontSize: 34, fontWeight: 800, color: corNota(geral), lineHeight: 1 }}>
-                {geral != null ? geral.toFixed(1) : '—'}
+                {geral != null ? geral.toFixed(1) : ''}
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-3)' }}>nota do funil</div>
             </div>
@@ -149,7 +149,7 @@ export function ChecklistView({
                         <td className="num-r" style={{ color: 'var(--text-3)' }}>{l.ind.peso}</td>
                         <td>
                           <span style={{ display: 'inline-block', minWidth: 42, textAlign: 'center', fontWeight: 800, color: '#fff', background: corNota(l.nota), borderRadius: 7, padding: '3px 8px' }}>
-                            {l.nota != null ? l.nota.toFixed(1) : '—'}
+                            {l.nota != null ? l.nota.toFixed(1) : ''}
                           </span>
                         </td>
                         <td><span className={`wa-pill ${l.status.cls}`}>{l.status.label}</span></td>
@@ -163,7 +163,7 @@ export function ChecklistView({
 
           {temSnap && gargs.length > 0 && podeEscrever && (
             <div className="sim-msg warn-msg" style={{ marginTop: 14, justifyContent: 'space-between', alignItems: 'center' }}>
-              <span><i className="ti ti-target-arrow" /> {gargs.length} indicador(es) abaixo de 7 — gere um plano de ação com tarefas sugeridas.</span>
+              <span><i className="ti ti-target-arrow" /> {gargs.length} indicador(es) abaixo de 7  gere um plano de ação com tarefas sugeridas.</span>
               <button className="btn btn-primary" style={{ padding: '7px 14px' }} onClick={() => setModal(true)}>
                 <i className="ti ti-player-play" /> Gerar plano
               </button>

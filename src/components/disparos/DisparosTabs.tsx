@@ -76,7 +76,7 @@ export function DisparosTabs(props: Props) {
     <div>
       <div className="rel-head" style={{ marginBottom: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
         <div className="ri" style={{ background: '#E7F9EE', color: '#1a8a4f', width: 42, height: 42, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-brand-whatsapp" style={{ fontSize: 22 }} /></div>
-        <div><h2 style={{ fontSize: 17, margin: 0 }}>Disparos WhatsApp API</h2><p style={{ fontSize: 12.5, color: 'var(--text-2)', margin: 0 }}>Campanhas segmentadas, central de conversas, bases e Grupo VIP — pelo número de cada unidade.</p></div>
+        <div><h2 style={{ fontSize: 17, margin: 0 }}>Disparos WhatsApp API</h2><p style={{ fontSize: 12.5, color: 'var(--text-2)', margin: 0 }}>Campanhas segmentadas, central de conversas, bases e Grupo VIP  pelo número de cada unidade.</p></div>
       </div>
 
       {/* Tab nav */}
@@ -130,7 +130,7 @@ export function DisparosTabs(props: Props) {
 function TabCampanhas({ campanhas, campanhasTotal, canais, listas, templates, activeUnitId, podeEscrever, onReport, onExcluir, busy }: Props & { onReport: (id: string) => void; onExcluir: (id: string) => void; busy: boolean }) {
   const agg = useMemo(() => campanhas.reduce((a, c) => ({ env: a.env + c.enviadas, entr: a.entr + c.entregues, lidas: a.lidas + c.lidas, resp: a.resp + c.respostas }), { env: 0, entr: 0, lidas: 0, resp: 0 }), [campanhas])
   // total real vem do count exato (não do array capado em 100); se houver corte, os
-  // agregados abaixo somam só as exibidas — sinalizamos isso pra não "mentir" o número.
+  // agregados abaixo somam só as exibidas  sinalizamos isso pra não "mentir" o número.
   const capado = campanhasTotal > campanhas.length
   const composerCanais: CanalOpt[] = canais.map((c) => ({ nome: c.nome, label: c.label, escopo: c.escopo, unidadeId: null, delayMin: 20, delayMax: 45 }))
 
@@ -153,7 +153,7 @@ function TabCampanhas({ campanhas, campanhasTotal, canais, listas, templates, ac
 
       {campanhas.length === 0 ? (
         <div className="rel-card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)' }}>
-          Nenhuma campanha registrada ainda. Use o disparador acima — as campanhas enviadas aparecem aqui com entrega, leitura e respostas.
+          Nenhuma campanha registrada ainda. Use o disparador acima  as campanhas enviadas aparecem aqui com entrega, leitura e respostas.
         </div>
       ) : (
         <div className="cli-card"><div className="cli-scroll"><table className="cli-table" style={{ width: '100%' }}>
@@ -181,7 +181,7 @@ function TabCampanhas({ campanhas, campanhasTotal, canais, listas, templates, ac
 function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: CampanhaRow; onBack: () => void; onCRM: (id: string) => void; busy: boolean; podeEscrever: boolean }) {
   const env = camp.enviadas || 0
   // entregues/lidas/respostas só são preenchidas por webhook da UAZAPI (writeback de
-  // status), que ainda não existe — então ficam em 0. Mostramos os zeros reais e um
+  // status), que ainda não existe  então ficam em 0. Mostramos os zeros reais e um
   // aviso honesto, em vez de fabricar Conversões (respostas×0.6) e Custo (×R$0,08)
   // que o legado inventava.
   const semMetricas = camp.entregues === 0 && camp.lidas === 0 && camp.respostas === 0
@@ -196,9 +196,9 @@ function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: Campanh
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div className="metric-box"><span>Enviadas</span><b>{env}</b></div>
-        <div className="metric-box"><span>Entregues</span><b>{semMetricas ? '—' : `${camp.entregues} (${pct(camp.entregues, env)})`}</b></div>
-        <div className="metric-box"><span>Lidas</span><b>{semMetricas ? '—' : `${camp.lidas} (${pct(camp.lidas, camp.entregues)})`}</b></div>
-        <div className="metric-box"><span>Respostas</span><b>{semMetricas ? '—' : camp.respostas}</b></div>
+        <div className="metric-box"><span>Entregues</span><b>{semMetricas ? '' : `${camp.entregues} (${pct(camp.entregues, env)})`}</b></div>
+        <div className="metric-box"><span>Lidas</span><b>{semMetricas ? '' : `${camp.lidas} (${pct(camp.lidas, camp.entregues)})`}</b></div>
+        <div className="metric-box"><span>Respostas</span><b>{semMetricas ? '' : camp.respostas}</b></div>
       </div>
 
       <div className="rel-card" style={{ padding: 16, marginBottom: 16, background: '#E7F9EE', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -214,7 +214,7 @@ function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: Campanh
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-filter" /> Funil da campanha</div>
         {semMetricas ? (
           <div style={{ fontSize: 12.5, color: 'var(--text-3)', padding: '6px 0' }}>
-            Sem métricas de entrega/leitura/resposta ainda — elas chegam pelo retorno de status da UAZAPI (webhook). Por enquanto só registramos as <b>{env}</b> mensagens enviadas.
+            Sem métricas de entrega/leitura/resposta ainda  elas chegam pelo retorno de status da UAZAPI (webhook). Por enquanto só registramos as <b>{env}</b> mensagens enviadas.
           </div>
         ) : funnel.map(([lbl, n]) => (
           <div key={lbl} style={{ marginBottom: 8 }}>
@@ -227,7 +227,7 @@ function CampReport({ camp, onBack, onCRM, busy, podeEscrever }: { camp: Campanh
   )
 }
 
-// ─── Conversas (dispConversas 6577) — inbox real depende do webhook; empty-state até então ───
+// ─── Conversas (dispConversas 6577)  inbox real depende do webhook; empty-state até então ───
 function TabConversas() {
   return (
     <div>
@@ -251,7 +251,7 @@ function TabBases({ bases, podeEscrever, onSegmentar, onImportar, onExcluir, bus
   return (
     <div>
       <div className="rel-legend" style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 12 }}>
-        As bases do tipo <b>Sistema</b> são segmentos dinâmicos (atualizam sozinhos). As <b>Externas</b> vêm de arquivos importados (CSV/Excel) — ideais para leads de anúncios e listas de outras origens.
+        As bases do tipo <b>Sistema</b> são segmentos dinâmicos (atualizam sozinhos). As <b>Externas</b> vêm de arquivos importados (CSV/Excel)  ideais para leads de anúncios e listas de outras origens.
       </div>
       {podeEscrever && (
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
@@ -364,8 +364,8 @@ function TabVip({ vip, podeEscrever, busy, onAgendar, onExcluir }: { vip: VipRow
         <div className="metric-box"><span>Grupos VIP agendados</span><b>{vip.length}</b></div>
         <div className="metric-box"><span>Membros (ativos)</span><b>{membros.toLocaleString('pt-BR')}</b></div>
         {/* conversão/receita do VIP não têm origem real (sem colunas no vip_grupos) → estado honesto em vez de número inventado (31% / R$ 42.800). */}
-        <div className="metric-box"><span>Conversão média</span><b>—</b></div>
-        <div className="metric-box"><span>Receita último VIP</span><b>—</b></div>
+        <div className="metric-box"><span>Conversão média</span><b></b></div>
+        <div className="metric-box"><span>Receita último VIP</span><b></b></div>
       </div>
 
       {podeEscrever && (
@@ -375,12 +375,12 @@ function TabVip({ vip, podeEscrever, busy, onAgendar, onExcluir }: { vip: VipRow
       )}
       {open && (
         <div className="rel-card" style={{ padding: 16, marginBottom: 14, display: 'grid', gap: 10, maxWidth: 640 }}>
-          <div><label style={{ fontSize: 12, fontWeight: 600 }}>Nome do grupo</label><input style={inp} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Ex.: VIP Junho — Rejuvenescimento" /></div>
+          <div><label style={{ fontSize: 12, fontWeight: 600 }}>Nome do grupo</label><input style={inp} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Ex.: VIP Junho  Rejuvenescimento" /></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Convite (5d antes)</label><input style={inp} type="date" value={f.dataConvite} onChange={(e) => setF({ ...f, dataConvite: e.target.value })} /></div>
             <div><label style={{ fontSize: 12, fontWeight: 600 }}>Aquecimento (2d antes)</label><input style={inp} type="date" value={f.dataAquecimento} onChange={(e) => setF({ ...f, dataAquecimento: e.target.value })} /></div>
-            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Ofertas — início</label><input style={inp} type="date" value={f.dataOfertaIni} onChange={(e) => setF({ ...f, dataOfertaIni: e.target.value })} /></div>
-            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Ofertas — fim</label><input style={inp} type="date" value={f.dataOfertaFim} onChange={(e) => setF({ ...f, dataOfertaFim: e.target.value })} /></div>
+            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Ofertas  início</label><input style={inp} type="date" value={f.dataOfertaIni} onChange={(e) => setF({ ...f, dataOfertaIni: e.target.value })} /></div>
+            <div><label style={{ fontSize: 12, fontWeight: 600 }}>Ofertas  fim</label><input style={inp} type="date" value={f.dataOfertaFim} onChange={(e) => setF({ ...f, dataOfertaFim: e.target.value })} /></div>
           </div>
           <div><button className="btn btn-primary" disabled={busy} onClick={() => { onAgendar(f); setOpen(false); setF({ nome: '', dataConvite: '', dataAquecimento: '', dataOfertaIni: '', dataOfertaFim: '' }) }}><i className="ti ti-calendar-plus" /> Agendar grupo</button></div>
         </div>
@@ -395,11 +395,11 @@ function TabVip({ vip, podeEscrever, busy, onAgendar, onExcluir }: { vip: VipRow
             {vip.map((g) => (
               <tr key={g.id}>
                 <td><span className="cli-name">{g.nome}</span></td>
-                <td>{g.convite ?? '—'}</td><td>{g.aquecimento ?? '—'}</td>
-                <td>{g.ofertaIni ? `${g.ofertaIni}${g.ofertaFim ? ` – ${g.ofertaFim}` : ''}` : '—'}</td>
+                <td>{g.convite ?? ''}</td><td>{g.aquecimento ?? ''}</td>
+                <td>{g.ofertaIni ? `${g.ofertaIni}${g.ofertaFim ? ` – ${g.ofertaFim}` : ''}` : ''}</td>
                 <td style={{ textAlign: 'right' }}>{g.membros || ''}</td>
                 <td>{pill(g.status)}</td>
-                <td style={{ fontSize: 11.5 }}>{g.link ? <span style={{ color: 'var(--brand-600)' }}><i className="ti ti-link" /> {g.link}</span> : '—'}</td>
+                <td style={{ fontSize: 11.5 }}>{g.link ? <span style={{ color: 'var(--brand-600)' }}><i className="ti ti-link" /> {g.link}</span> : ''}</td>
                 {podeEscrever && <td><span onClick={() => !busy && onExcluir(g.id)} style={{ color: 'var(--red)', cursor: 'pointer' }}><i className="ti ti-trash" /></span></td>}
               </tr>
             ))}

@@ -47,7 +47,7 @@ export async function criarLeadFranquia(input: NovoLeadFranquiaInput): Promise<A
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
 
-  // RBAC: captação de franquia é da franqueadora — admin geral pode sempre;
+  // RBAC: captação de franquia é da franqueadora  admin geral pode sempre;
   // demais papéis precisam de unidade ativa (RLS confirma na escrita).
   if (!ehAdmin(op.papel) && !input.unidade_id) {
     return { ok: false, error: 'Selecione a unidade para registrar o lead.' }
@@ -57,7 +57,7 @@ export async function criarLeadFranquia(input: NovoLeadFranquiaInput): Promise<A
   const nome = input.nome?.trim()
   if (!nome) return { ok: false, error: 'Informe o nome do candidato.' }
   if (!input.unidade_id) return { ok: false, error: 'Selecione a unidade.' }
-  if (!input.etapa_id) return { ok: false, error: 'Etapa inválida — recarregue a página.' }
+  if (!input.etapa_id) return { ok: false, error: 'Etapa inválida  recarregue a página.' }
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
     return { ok: false, error: 'E-mail inválido.' }
   }
@@ -74,7 +74,7 @@ export async function criarLeadFranquia(input: NovoLeadFranquiaInput): Promise<A
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id
   if (!empresa_id) return { ok: false, error: 'Unidade sem empresa vinculada.' }
 
-  // Campos opcionais do legado (empresa/UF) — colunas adicionadas pela migration 050.
+  // Campos opcionais do legado (empresa/UF)  colunas adicionadas pela migration 050.
   const uf = (input.uf || '').trim().toUpperCase().slice(0, 2) || null
   const empresa = input.empresa?.trim() || null
 
@@ -132,7 +132,7 @@ const SIM_SOBR = ['Castro', 'Lemos', 'Nunes', 'Andrade', 'Ferreira', 'Tavares', 
 const SIM_UFS = ['SP', 'RS', 'SC', 'MG', 'PR', 'BA', 'GO', 'RJ']
 
 /**
- * Simula a chegada de um novo lead de captação (webhook de teste) — legado expSimularLead (8587).
+ * Simula a chegada de um novo lead de captação (webhook de teste)  legado expSimularLead (8587).
  * Cria um lead origem 'site' ou 'geolocalizado' na etapa "Novo Lead" do funil de franquia,
  * com temperatura 'morno'. Usado para validar a integração do formulário do site.
  */
@@ -157,7 +157,7 @@ export async function simularLeadFranquia(unidadeId: string): Promise<{ ok: bool
     return { ok: false, error: msgErro(eEt.message, 'localizar a etapa Novo Lead') }
   }
   const etapaId = (etapaNovo as { id?: string } | null)?.id
-  if (!etapaId) return { ok: false, error: 'Etapa "Novo Lead" não encontrada — aplique a migration 050.' }
+  if (!etapaId) return { ok: false, error: 'Etapa "Novo Lead" não encontrada  aplique a migration 050.' }
 
   const { data: uni } = await op.sb.from('unidades').select('empresa_id').eq('id', unidadeId).single()
   const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id

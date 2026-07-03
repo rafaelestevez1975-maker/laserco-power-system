@@ -31,7 +31,7 @@ export default async function ExpansaoPage() {
 
   // Leads de franquia (escopados por unidade quando houver; admin/null vê todos).
   // A LISTA fica capada em LEADS_CAP; os TOTAIS (KPIs, funil, %) usam contagem exata
-  // separada — mesmo padrão do CRM/SAC Kanban (não cai no teto do array).
+  // separada  mesmo padrão do CRM/SAC Kanban (não cai no teto do array).
   const LEADS_CAP = 500
   let leads: ExpLead[] = []
   let totalLeads = 0
@@ -53,7 +53,7 @@ export default async function ExpansaoPage() {
   }
 
   if (migracaoOk) {
-    // Total REAL e contagem por etapa (não o tamanho do array capado) — para o funil e os
+    // Total REAL e contagem por etapa (não o tamanho do array capado)  para o funil e os
     // KPIs derivados não caírem no teto.
     // PERF: antes eram 1 count total + 1 count `count:'exact'` POR etapa (fan-out que
     // saturava o pool do Supabase). Agora é UMA varredura paginada da coluna etapa_id

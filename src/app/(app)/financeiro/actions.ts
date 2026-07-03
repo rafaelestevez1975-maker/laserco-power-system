@@ -20,7 +20,7 @@ const CONTA_POR_ENTIDADE: Record<string, string> = {
   subscription_quotas: '3.1.04', subscriptions: '3.1.04', money_credits: '3.1.01',
 }
 
-/** Empresa default (1ª) — o financeiro da franqueadora é consolidado da matriz. */
+/** Empresa default (1ª)  o financeiro da franqueadora é consolidado da matriz. */
 async function empresaId(sb: SB): Promise<string | null> {
   const { data } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
   return (data as { id?: string } | null)?.id ?? null
@@ -101,7 +101,7 @@ export async function notificarCobranca(id: string): Promise<R> {
 }
 
 // =============================================================================
-// SUSPENDER / REATIVAR (finSuspender L5254) — receber e pagar
+// SUSPENDER / REATIVAR (finSuspender L5254)  receber e pagar
 // =============================================================================
 export async function suspenderLancamento(tabela: 'receber' | 'pagar', id: string): Promise<R> {
   const { op, error } = await requireOperador()
@@ -135,7 +135,7 @@ export async function suspenderLancamento(tabela: 'receber' | 'pagar', id: strin
   }
 
   // Espelha no RAZÃO (pedido do cliente): suspenso fica VISÍVEL mas fora do fluxo de caixa
-  // (fin_fluxo* ignoram status 'suspenso'; o DRE mantém — competência). Best-effort.
+  // (fin_fluxo* ignoram status 'suspenso'; o DRE mantém  competência). Best-effort.
   try {
     const admin = adminClient()
     const novoStatusRazao = reativando ? 'previsto' : 'suspenso'
@@ -185,7 +185,7 @@ export async function definirPrioridade(id: string, prio: 'alta' | 'media' | 'ba
   return { ok: true }
 }
 
-/** Nova despesa manual (Nova despesa — finPagarHTML L5250). */
+/** Nova despesa manual (Nova despesa  finPagarHTML L5250). */
 export async function novaDespesa(input: {
   categoria: string; descricao: string; escopo: string; valor: number; vencimento: string; prioridade: 'alta' | 'media' | 'baixa'
 }): Promise<R> {
@@ -302,7 +302,7 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   const comAtraso = new Set(((atrasadosRaw ?? []) as { unidade_id: string | null }[]).map((r) => r.unidade_id).filter(Boolean) as string[])
 
   // 3) Idempotência: pula unidade/categoria que já tem recebível nesta competência.
-  //    Chaveia por unidade_id (não por nome) — renomear a unidade não pode duplicar o recebível.
+  //    Chaveia por unidade_id (não por nome)  renomear a unidade não pode duplicar o recebível.
   const { data: existRaw } = await op.sb.from('fin_recebiveis').select('unidade_id, categoria').eq('competencia', competencia).in('categoria', ['Royalties', 'Fundo de marketing'])
   const jaTem = new Set(((existRaw ?? []) as { unidade_id: string; categoria: string }[]).map((r) => `${r.unidade_id}|${r.categoria}`))
 
@@ -324,8 +324,8 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
     const valFun = Math.round(bruto * fundoPct) / 100
     const vencimento = vencDe(Number(u.venc_dia_override ?? vencDia))
     const centroUni = mapa.centroPorUnidade.get(u.id) ?? null
-    const obsDesc = temDesconto ? ` (${pctEfetivo}% — desconto <${Math.round(descTeto / 1000)}k em dia)` : ''
-    // Sub-livro "A Receber" (fundo só se cobrado — hoje 0).
+    const obsDesc = temDesconto ? ` (${pctEfetivo}%  desconto <${Math.round(descTeto / 1000)}k em dia)` : ''
+    // Sub-livro "A Receber" (fundo só se cobrado  hoje 0).
     if (valRoy > 0 && !jaTem.has(`${u.id}|Royalties`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Royalties', competencia, bruto, valor: valRoy, vencimento, status: 'aberto' })
     if (valFun > 0 && !jaTem.has(`${u.id}|Fundo de marketing`)) rows.push({ empresa_id: emp, unidade_id: u.id, unidade_nome: u.nome, categoria: 'Fundo de marketing', competencia, bruto, valor: valFun, vencimento, status: 'aberto' })
     // RAZÃO (fonte da verdade): royalty/fundo = RECEITA da rede + DESPESA da unidade (mesmo fato, 2 centros).
@@ -336,7 +336,7 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
       { empresaId: emp, centroCustoId: centroUni, planoContaId: mapa.planoPorCodigo.get('4.1.03') ?? null, natureza: 'despesa', competencia: compISO, valor: valFun, origem: 'royalty', origemRef: u.id, idemKey: `royalty:${compISO}:${u.id}:fun:desp`, dataPrevista: vencimento, historico: `Fundo de marketing ${competencia} · ${u.nome}` },
     )
   }
-  // Grava no RAZÃO (fonte única) — SUBSTITUI a competência (reflete correções do BEMP); erro propagado.
+  // Grava no RAZÃO (fonte única)  SUBSTITUI a competência (reflete correções do BEMP); erro propagado.
   let lanc: { inseridos: number }
   try { lanc = await repostLancamento('royalty', compISO, eventos) }
   catch (e) { return { ok: false, error: msgErro((e as Error).message, 'lançar os royalties no razão') } }
@@ -376,7 +376,7 @@ export async function salvarRoyaltyUnidade(unidadeId: string, royaltyPct: number
 }
 
 export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
-/** Carrega o DRE (do RAZÃO) de uma competência — com escopo: consolidado (rede+unidades),
+/** Carrega o DRE (do RAZÃO) de uma competência  com escopo: consolidado (rede+unidades),
  *  franqueadora (só o centro da rede: royalties/fundo) ou unidades (só os centros das unidades).
  *  Usado pelos seletores de mês e de escopo na aba DRE. */
 const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades', 'proprias', 'franquias'] as const
@@ -424,7 +424,7 @@ export async function criarContaPlano(nome: string, natureza: string, grupo?: st
   return { ok: true, id: (ins as { id: string }).id }
 }
 
-/** Ativa/desativa uma categoria. Contas seed (com código) não podem ser desativadas —
+/** Ativa/desativa uma categoria. Contas seed (com código) não podem ser desativadas 
  *  os produtores automáticos (BEMP/royalties/despesas config) lançam nelas. */
 export async function setContaPlanoAtivo(id: string, ativo: boolean): Promise<R> {
   const { op, error } = await requireOperador()
@@ -433,14 +433,14 @@ export async function setContaPlanoAtivo(id: string, ativo: boolean): Promise<R>
   const admin = adminClient()
   const { data: c } = await admin.from('plano_conta').select('codigo').eq('id', id).maybeSingle()
   if (!c) return { ok: false, error: 'Categoria não encontrada.' }
-  if ((c as { codigo?: string | null }).codigo && !ativo) return { ok: false, error: 'Categorias do sistema (com código) não podem ser desativadas — os lançamentos automáticos usam elas.' }
+  if ((c as { codigo?: string | null }).codigo && !ativo) return { ok: false, error: 'Categorias do sistema (com código) não podem ser desativadas  os lançamentos automáticos usam elas.' }
   const { error: e } = await admin.from('plano_conta').update({ ativo }).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'atualizar a categoria') }
   revalidatePath('/financeiro')
   return { ok: true }
 }
 
-/** Fluxo de caixa do razão para um escopo (consolidado/franqueadora/unidades) — série + KPIs + composição.
+/** Fluxo de caixa do razão para um escopo (consolidado/franqueadora/unidades)  série + KPIs + composição.
  *  Os helpers janelaFluxo/normalizaFluxo vivem em @/lib/financeiro (módulo puro) porque um arquivo
  *  'use server' só pode exportar funções async. */
 export async function fluxoDoRazao(escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { serie?: FluxoSerie[]; resumo?: FluxoResumo; composicao?: FluxoComp[] }> {
@@ -508,7 +508,7 @@ export async function apurarFaturamentoBemp(ano: number, mes: number): Promise<R
 
 /** Apura as DESPESAS configuráveis (imposto/comissão/taxa de cartão) sobre a receita real já
  *  lançada no razão. As regras vêm de fin_config (o contador ajusta em Config, não é chumbado).
- *  Semântica de SUBSTITUIÇÃO: apaga as despesas de config da competência e regrava — assim,
+ *  Semântica de SUBSTITUIÇÃO: apaga as despesas de config da competência e regrava  assim,
  *  quando o % muda, o razão reflete o novo valor (idempotência simples colidiria e não atualizaria). */
 export async function apurarDespesasDaCompetencia(ano: number, mes: number): Promise<R & { unidades?: number; lancamentos?: number; imposto?: number; comissao?: number; taxaCartao?: number }> {
   const { op, error } = await requireOperador()
@@ -571,10 +571,10 @@ export async function apurarDespesasDaCompetencia(ano: number, mes: number): Pro
   }
 
   // SUBSTITUI (reapurável): apaga as despesas de config da competência e regrava; erro propagado
-  // (nunca engolir após o DELETE — apagaria e reportaria sucesso, inflando o lucro no DRE).
+  // (nunca engolir após o DELETE  apagaria e reportaria sucesso, inflando o lucro no DRE).
   let lanc: { inseridos: number }
   try { lanc = await repostLancamento('despesa_config', ini, eventos) }
-  catch (e) { return { ok: false, error: msgErro((e as Error).message, 'atualizar as despesas (as anteriores foram removidas — reapure)') } }
+  catch (e) { return { ok: false, error: msgErro((e as Error).message, 'atualizar as despesas (as anteriores foram removidas  reapure)') } }
   revalidatePath('/financeiro')
   return { ok: true, unidades: porCentro.size, lancamentos: lanc.inseridos, imposto: totImp, comissao: totCom, taxaCartao: totTax }
 }
@@ -624,7 +624,7 @@ export async function rodarReguaAtraso(regua?: ReguaPasso[]): Promise<R & { apli
 // =============================================================================
 // CONCILIAÇÃO
 // =============================================================================
-/** Rodar conciliação (finRodarConc L5331) — recalcula taxas/divergências sobre os lançamentos. */
+/** Rodar conciliação (finRodarConc L5331)  recalcula taxas/divergências sobre os lançamentos. */
 export async function rodarConciliacao(): Promise<R & { cruzados?: number }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
@@ -654,7 +654,7 @@ export async function salvarConfig(input: {
   if (!Number.isFinite(royalty) || royalty < 0) return { ok: false, error: 'Percentual de royalties inválido.' }
   if (!Number.isFinite(fundo) || fundo < 0) return { ok: false, error: 'Percentual do fundo inválido.' }
 
-  // Regras de despesa configuráveis — todas são % ≥ 0 (0 = não lança). Limite 100% de sanidade.
+  // Regras de despesa configuráveis  todas são % ≥ 0 (0 = não lança). Limite 100% de sanidade.
   const pctDesp = (v: unknown, nome: string): number | { erro: string } => {
     const n = Number(v ?? 0)
     if (!Number.isFinite(n) || n < 0 || n > 100) return { erro: `Percentual de ${nome} inválido (0 a 100).` }
@@ -692,7 +692,7 @@ export async function salvarConfig(input: {
 }
 
 // =============================================================================
-// COMPAT — ações antigas (usadas por /sac e componentes órfãos legados).
+// COMPAT  ações antigas (usadas por /sac e componentes órfãos legados).
 // Mantidas para não quebrar imports existentes. lancamentos_financeiros é o
 // financeiro por UNIDADE (/contas); aqui só os reembolsos do SAC espelham de volta.
 // =============================================================================
@@ -701,9 +701,9 @@ export async function darBaixaLancamento(lancamentoId: string) { return _darBaix
 export async function receberLancamento(lancamentoId: string) { return _receberLancamento(lancamentoId) }
 
 // =============================================================================
-// IMPORTAÇÃO DE PLANILHA (finImportExcel L5257 / finModeloExcel L5300) — paridade legacy.
+// IMPORTAÇÃO DE PLANILHA (finImportExcel L5257 / finModeloExcel L5300)  paridade legacy.
 // O front lê o .xlsx/.csv (SheetJS) e manda linhas JÁ mapeadas; aqui grava no sub-livro
-// e lança no RAZÃO (origem 'manual', conta por nome da categoria — DRE/Fluxo enxergam).
+// e lança no RAZÃO (origem 'manual', conta por nome da categoria  DRE/Fluxo enxergam).
 // =============================================================================
 export type ImportRecebivelItem = { unidade: string; categoria: string; descricao: string; valor: number; vencimento: string | null; status: string }
 export type ImportDespesaItem = { categoria: string; descricao: string; escopo: string; valor: number; vencimento: string | null; prioridade: string; status: string }

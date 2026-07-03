@@ -1,5 +1,5 @@
 /**
- * Helpers server-only em volta do Supabase — centralizam o que estava copiado
+ * Helpers server-only em volta do Supabase  centralizam o que estava copiado
  * em todos os actions.ts. Ver docs/CONSOLIDACAO.md (D1/D2/D5/I5).
  */
 import { createClient } from '@/lib/supabase/server'

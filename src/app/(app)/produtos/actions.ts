@@ -8,7 +8,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
  * Catálogo de produtos é por EMPRESA (não escopamos por unidade, mesmo a tabela tendo
- * unidade_id — o catálogo é compartilhado). RBAC: só gestor/admin_geral cria/edita/inativa.
+ * unidade_id  o catálogo é compartilhado). RBAC: só gestor/admin_geral cria/edita/inativa.
  * Tabela `produtos` (vazia no momento, mas o CRUD está pronto): id, empresa_id, unidade_id,
  * nome, descricao, grupo, preco_padrao, custo, estoque_atual, estoque_minimo,
  * default_product, feedstock, ativo, bemp_id, criado_em, atualizado_em.
@@ -24,7 +24,7 @@ export type ProdutoInput = {
   grupo?: string | null
   descricao?: string | null
   preco_padrao?: number | null
-  desc_max?: number | null // legado PRODUTOS[2] — desconto máximo (%)
+  desc_max?: number | null // legado PRODUTOS[2]  desconto máximo (%)
   custo?: number | null
   estoque_atual?: number | null
   estoque_minimo?: number | null

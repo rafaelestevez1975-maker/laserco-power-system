@@ -8,7 +8,7 @@ import { RelTabs, relQuery } from '@/components/relatorios/RelTabs'
 export const dynamic = 'force-dynamic'
 
 /**
- * Relatório · Exportações — réplica do REL_DEFS.exportacoes do legado
+ * Relatório · Exportações  réplica do REL_DEFS.exportacoes do legado
  * (legacy/index.html ~4350: data-rep="exportacoes", "Relatório de Exportações").
  *
  * No legado os KPIs ("37 exportações", "35 concluídas", "1 em processamento",
@@ -46,7 +46,7 @@ type Dataset = {
 }
 
 // Datasets espelham os de /exportacoes (ExportacoesHub). Todas as tabelas abaixo
-// já são consultadas em src/app/(app)/exportacoes/page.tsx — existência confirmada.
+// já são consultadas em src/app/(app)/exportacoes/page.tsx  existência confirmada.
 const DATASETS: Dataset[] = [
   { key: 'clientes', label: 'Clientes', icon: 'ti-users', desc: 'Nome, contato, CPF, cidade, pontos, créditos e status.', tabela: 'clientes', unidadeCol: 'unidade_origem_id' },
   { key: 'contas', label: 'Contas a pagar / receber', icon: 'ti-coins', desc: 'Lançamentos financeiros: valor, vencimento, status, categoria.', tabela: 'lancamentos_financeiros', unidadeCol: 'unidade_id' },
@@ -110,7 +110,7 @@ export default async function RelExportacoesPage({ searchParams }: { searchParam
             Não existe ainda um histórico de exportações no backend (downloads não são
             registrados). Abaixo está o que pode ser exportado em <b>CSV</b> (separador{' '}
             <code>;</code>, compatível com Excel pt-BR), com a contagem real de registros
-            por fonte — escopada pela unidade ativa: <b>{escopoUnidade ? ctx?.activeUnitName : 'Todas as unidades'}</b>.
+            por fonte  escopada pela unidade ativa: <b>{escopoUnidade ? ctx?.activeUnitName : 'Todas as unidades'}</b>.
             {' '}Limite de <b>{EXPORT_LIMIT.toLocaleString('pt-BR')}</b> linhas por arquivo.
           </div>
           <div style={{ marginTop: 10 }}>
@@ -121,7 +121,7 @@ export default async function RelExportacoesPage({ searchParams }: { searchParam
         </div>
       </div>
 
-      {/* KPIs (metric-box) — visão consolidada das fontes exportáveis. */}
+      {/* KPIs (metric-box)  visão consolidada das fontes exportáveis. */}
       <div className="rel-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <div className="metric-box">
           <span>Registros exportáveis (unidade)</span>
@@ -178,7 +178,7 @@ export default async function RelExportacoesPage({ searchParams }: { searchParam
                       {l.redeInteira ? 'Rede inteira (fonte externa)' : escopoUnidade ? 'Unidade ativa' : 'Todas as unidades'}
                     </td>
                     <td className="num-r" style={{ fontWeight: 600 }}>
-                      {l.count != null ? l.count.toLocaleString('pt-BR') : '—'}
+                      {l.count != null ? l.count.toLocaleString('pt-BR') : ''}
                     </td>
                     <td>
                       <span className={`os-st ${stCls}`}>{stTxt}</span>

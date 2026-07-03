@@ -14,7 +14,7 @@ export default async function CrmPage() {
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
 
-  // pipeline='cliente' separa o CRM de clientes do funil de Expansão (franquia) — migration 050
+  // pipeline='cliente' separa o CRM de clientes do funil de Expansão (franquia)  migration 050
   const { data: etapasRaw } = await sb
     .from('crm_etapas').select('id, nome, ordem, cor').eq('ativo', true).eq('pipeline', 'cliente').order('ordem', { ascending: true })
   const etapas = (etapasRaw ?? []) as Etapa[]
@@ -28,7 +28,7 @@ export default async function CrmPage() {
   const { data: leadsRaw } = await q
   const leadRows = (leadsRaw ?? []) as LeadRow[]
 
-  // Contagem REAL por etapa (não cai no teto de 500 — mesmo padrão do SAC Kanban). O
+  // Contagem REAL por etapa (não cai no teto de 500  mesmo padrão do SAC Kanban). O
   // cabeçalho de cada coluna e os KPIs de número usam isto; a lista de cards continua
   // capada em 500 por etapa do board.
   // PERF: antes era 1 query `count:'exact'` POR etapa (fan-out que saturava o pool do
@@ -64,7 +64,7 @@ export default async function CrmPage() {
     responsavel_nome: l.responsavel_id ? (nomePorId.get(l.responsavel_id) ?? null) : null,
   }))
 
-  // KPIs reais — usam a CONTAGEM exata por etapa (não o array capado em 500).
+  // KPIs reais  usam a CONTAGEM exata por etapa (não o array capado em 500).
   // Etapas de fechamento (ganho/perdido) por nome, p/ separar do "funil ativo".
   const ehGanho = (n: string) => /convert|ganho|fechad/i.test(n)
   const ehPerdido = (n: string) => /perdid/i.test(n)
@@ -74,7 +74,7 @@ export default async function CrmPage() {
   const totalFunil = ativos.reduce((s, e) => s + (totaisPorEtapa[e.id] ?? 0), 0)
   const conv = ganho + perdido > 0 ? Math.round((ganho / (ganho + perdido)) * 100) : 0
   const agora = Date.now()
-  // Valor em negociação e prazos 48h vencidos dependem de valor/criado_em por lead —
+  // Valor em negociação e prazos 48h vencidos dependem de valor/criado_em por lead 
   // calculados sobre os leads carregados (até 500 mais recentes por unidade).
   const idsAtivos = new Set(ativos.map((e) => e.id))
   const leadsAtivos = leads.filter((l) => l.etapa_id && idsAtivos.has(l.etapa_id))

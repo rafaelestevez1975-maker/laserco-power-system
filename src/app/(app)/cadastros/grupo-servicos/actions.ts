@@ -7,7 +7,7 @@ import { ehAdmin } from '@/lib/rbac'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * Grupo de serviços — paridade com o legado (buildGrpserv / GRPSERV).
+ * Grupo de serviços  paridade com o legado (buildGrpserv / GRPSERV).
  * Cadastro por EMPRESA. RBAC: admin_geral / gestor.
  * Tabela `grupo_servicos` (migration scripts/migrations/catalogo.sql):
  *   id, empresa_id, nome, ativo, ordem.

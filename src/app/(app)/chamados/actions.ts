@@ -15,7 +15,7 @@ export type ChamadoForm = {
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 export type MensagemRow = { id: string; autor_nome: string | null; papel_remetente: string; mensagem: string; criada_em: string }
 
-// rlsMsg = msgErro (compartilhado em @/lib/sb — DRY, ver docs/CONSOLIDACAO.md D1)
+// rlsMsg = msgErro (compartilhado em @/lib/sb  DRY, ver docs/CONSOLIDACAO.md D1)
 
 async function ctxUser() {
   const sb = await createClient()

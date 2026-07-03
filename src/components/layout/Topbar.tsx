@@ -65,7 +65,7 @@ export function Topbar({
         </div>
       </div>
 
-      {/* Seletor de unidade removido do header (pedido do cliente 03/07) — o escopo
+      {/* Seletor de unidade removido do header (pedido do cliente 03/07)  o escopo
           por unidade agora vem só do perfil do usuário (franqueado vê a própria loja). */}
 
       <NotificacoesSino />
@@ -85,7 +85,7 @@ export function Topbar({
               <div className="dd-head">{user.email}</div>
               {user.papel === 'sac' && (
                 <div className="role-opt" onClick={togglePresenca} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                  <span><i className="ti ti-circle-filled" style={{ color: online ? 'var(--green)' : 'var(--text-3)', fontSize: 10 }} /> {online ? 'Online' : 'Offline'} — atendimento</span>
+                  <span><i className="ti ti-circle-filled" style={{ color: online ? 'var(--green)' : 'var(--text-3)', fontSize: 10 }} /> {online ? 'Online' : 'Offline'}  atendimento</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand-600)' }}>{presBusy ? '…' : (online ? 'Ficar offline' : 'Ficar online')}</span>
                 </div>
               )}

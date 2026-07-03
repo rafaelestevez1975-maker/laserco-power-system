@@ -55,7 +55,7 @@ function normCanal(v?: string | null): string | null {
 }
 
 /** Importa reclamações de planilha (Reclame Aqui/Procon/Sults/CSV) como chamados SAC em lote.
- *  Canal e unidade podem vir POR LINHA (colunas mapeadas) — paridade com o legado (r.Canal/r.Unidade);
+ *  Canal e unidade podem vir POR LINHA (colunas mapeadas)  paridade com o legado (r.Canal/r.Unidade);
  *  quando ausentes na linha, usa o padrão do lote (canalPadrao / unidadeIdPadrao). */
 export async function importarTickets(payload: {
   linhas: LinhaImport[]
@@ -77,7 +77,7 @@ export async function importarTickets(payload: {
   const permitidas = new Set((payload.unidadesPermitidas ?? []).filter(Boolean))
   const unidadeIdPadrao = payload.unidadeIdPadrao && permitidas.has(payload.unidadeIdPadrao) ? payload.unidadeIdPadrao : null
 
-  // empresa_id por unidade (cache) — chamados sem unidade caem na empresa única.
+  // empresa_id por unidade (cache)  chamados sem unidade caem na empresa única.
   const empresaPorUnidade = new Map<string, string | null>()
   async function resolverEmpresa(unidadeId: string | null): Promise<string | undefined> {
     if (unidadeId) {
@@ -107,7 +107,7 @@ export async function importarTickets(payload: {
 
     const canal = normCanal(l.canal) ?? canalPadrao
     // Data da reclamação e (se houver) data do reembolso vão no prefixo das observações
-    // — mesmo padrão de NovoChamado/montarObs (sac_tickets não tem colunas próprias p/ datas).
+    //  mesmo padrão de NovoChamado/montarObs (sac_tickets não tem colunas próprias p/ datas).
     const dataTxt = (l.data || '').trim()
     const reembTxt = (l.data_reembolso || '').trim()
     const texto = [l.obs?.trim() || '', reembTxt ? `Reembolso em: ${reembTxt}` : ''].filter(Boolean).join(' · ')

@@ -31,7 +31,7 @@ const ORIGEM_LABEL: Record<string, string> = {
 }
 
 /**
- * Ordens de serviço — réplica do REL_DEFS['ordens-servico'] do legado (legacy/index.html ~4406).
+ * Ordens de serviço  réplica do REL_DEFS['ordens-servico'] do legado (legacy/index.html ~4406).
  * Sobre dado REAL (tabela os). KPIs: OS no período / Finalizadas / Em aberto / Canceladas.
  * Colunas: OS/Cliente/Origem/Status/Abertura/Valor.
  */
@@ -84,9 +84,9 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
   ]
 
   const csvRows = detalhe.map((r) => [
-    r.cliente_id ? (nomesC[r.cliente_id] ?? '—') : '—',
-    ORIGEM_LABEL[r.origem || 'avulsa'] ?? r.origem ?? '—',
-    STATUS_META[r.status || '']?.label ?? r.status ?? '—',
+    r.cliente_id ? (nomesC[r.cliente_id] ?? '') : '',
+    ORIGEM_LABEL[r.origem || 'avulsa'] ?? r.origem ?? '',
+    STATUS_META[r.status || '']?.label ?? r.status ?? '',
     dataBR(r.criado_em),
     Math.round(Number(r.total) || 0),
   ])
@@ -147,13 +147,13 @@ export default async function RelOrdensServicoPage({ searchParams }: { searchPar
                 </tr>
               )}
               {detalhe.map((r) => {
-                const meta = STATUS_META[r.status || ''] ?? { label: r.status ?? '—', cls: 'os-aberta' }
+                const meta = STATUS_META[r.status || ''] ?? { label: r.status ?? '', cls: 'os-aberta' }
                 return (
                   <tr key={r.id}>
                     <td>
-                      <span className="cli-name">{r.cliente_id ? (nomesC[r.cliente_id] ?? '—') : '—'}</span>
+                      <span className="cli-name">{r.cliente_id ? (nomesC[r.cliente_id] ?? '') : ''}</span>
                     </td>
-                    <td>{ORIGEM_LABEL[r.origem || 'avulsa'] ?? r.origem ?? '—'}</td>
+                    <td>{ORIGEM_LABEL[r.origem || 'avulsa'] ?? r.origem ?? ''}</td>
                     <td>
                       <span className={`os-st ${meta.cls}`}>{meta.label}</span>
                     </td>

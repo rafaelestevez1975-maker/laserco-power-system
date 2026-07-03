@@ -16,7 +16,7 @@ type SP = { periodo?: string; di?: string; df?: string }
 const PULL_CAP = 8000
 const PAGE = 1000
 
-// Cores das linhas de oferta — espelha o legado EXP_TIPOS (legacy/index.html ~8537):
+// Cores das linhas de oferta  espelha o legado EXP_TIPOS (legacy/index.html ~8537):
 // Ultracell/Quanta são as máquinas da rede; Franquia é a modalidade de franqueamento.
 const TIPO_COR: Record<string, string> = {
   Ultracell: '#2f44a0',
@@ -89,7 +89,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes — migration 050).
+  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes  migration 050).
   // Se a coluna pipeline não existir (migration não aplicada), a query falha → estado sem fonte.
   const { data: etapasRaw, error: etapasErr } = await sb
     .from('crm_etapas')
@@ -103,8 +103,8 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
   const semFonte = !!etapasErr || erro
   const etapas = (etapasErr ? [] : (etapasRaw ?? [])) as EtapaRow[]
 
-  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '—']))
-  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '—' : '—')
+  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '']))
+  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
   const ehGanho = (l: LeadRow) =>
     nomeDe(l.etapa_id) === 'Convertido' ||
     nomeDe(l.etapa_id) === 'Fechado' ||
@@ -153,7 +153,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
     },
     {
       label: 'Linha mais ativa',
-      value: tipoTop ? tipoTop.tipo : '—',
+      value: tipoTop ? tipoTop.tipo : '',
       icon: 'ti-trophy',
       delta: tipoTop ? `${tipoTop.total.toLocaleString('pt-BR')} lead(s)` : 'sem leads',
       deltaTone: tipoTop ? 'up' : 'flat',
@@ -190,7 +190,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
         <div>
           <h2>Expansão · Tipo de Lead</h2>
           <p>
-            Distribuição dos candidatos a franqueado por <b>linha de oferta</b> — Ultracell e Quanta são as máquinas da rede;{' '}
+            Distribuição dos candidatos a franqueado por <b>linha de oferta</b>  Ultracell e Quanta são as máquinas da rede;{' '}
             <b>Franquia</b> é a modalidade de franqueamento. Cada tipo segmenta o funil e os gráficos de Expansão.
           </p>
         </div>
@@ -217,7 +217,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
       {semFonte ? (
         <div className="rel-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados de tipos de lead de Expansão
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados de tipos de lead de Expansão
             disponível no momento (pipeline de franquia indisponível para o seu perfil/unidade ou migration ainda não
             aplicada).
           </div>
@@ -244,7 +244,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
 
           <div className="crm-note">
             <i className="ti ti-tag" /> O <b>Tipo de Lead</b> é a linha de oferta de cada candidato (campo{' '}
-            <code>tipo_lead</code> do funil de franquia). Esta visão é somente leitura — para editar tipos por lead, use{' '}
+            <code>tipo_lead</code> do funil de franquia). Esta visão é somente leitura  para editar tipos por lead, use{' '}
             <b>Expansão · Leads</b>.
           </div>
 
@@ -307,7 +307,7 @@ export default async function ExpansaoTiposPage({ searchParams }: { searchParams
                       <td className="num-r">{t.perdidos.toLocaleString('pt-BR')}</td>
                       <td className="num-r">{t.quentes.toLocaleString('pt-BR')}</td>
                       <td className="num-r" style={{ fontWeight: 600 }}>
-                        {t.valor > 0 ? moedaBR(t.valor) : '—'}
+                        {t.valor > 0 ? moedaBR(t.valor) : ''}
                       </td>
                     </tr>
                   ))}

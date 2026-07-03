@@ -1,12 +1,12 @@
 /**
- * Matriz de comissões — fiel ao legado buildComissoes / COM_CATS (legacy/index.html ~7324..7460).
+ * Matriz de comissões  fiel ao legado buildComissoes / COM_CATS (legacy/index.html ~7324..7460).
  *
  * A matriz agora PERSISTE na tabela matriz_comissoes (scripts/migrations/comissoes.sql).
  * Este arquivo guarda o SEED de fallback (igual ao legado) usado APENAS quando a tabela
- * ainda não foi aplicada/está vazia — nesse caso o board mostra banner de empty-state.
+ * ainda não foi aplicada/está vazia  nesse caso o board mostra banner de empty-state.
  *
  * Cada categoria mapeia (por nome/cargo) a um cargo do enum `cargo_colaborador`
- * (gerente | subgerente | consultora_vendas | aplicadora) quando aplicável — usado pelo
+ * (gerente | subgerente | consultora_vendas | aplicadora) quando aplicável  usado pelo
  * simulador para pré-selecionar a categoria ao escolher um colaborador real.
  */
 
@@ -22,7 +22,7 @@ export const META_UNIDADE = 100000
 /** Divisor de período → rótulo (legado PERIODO_LBL). 1=mês, 2=quinzena, 3=dezena. */
 export const PERIODO_LBL: Record<number, string> = { 1: 'mês', 2: 'quinzena', 3: 'dezena' }
 
-/** Seed da matriz — espelho exato do COM_CATS do legado, com cargo do backend mapeado. */
+/** Seed da matriz  espelho exato do COM_CATS do legado, com cargo do backend mapeado. */
 export const COM_CATS_SEED: ComCat[] = [
   { nome: 'Gerente', cargo: 'gerente', base: { individual: { on: true, pct: 2 }, loja: { on: true, pct: 1.5 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 10, t100: 25, t120: 50, t130: 65 }, fech: { f100: 1, f120: 2, f130: 3 } },
   { nome: 'Sub Gerente', cargo: 'subgerente', base: { individual: { on: true, pct: 1.5 }, loja: { on: true, pct: 1 }, sessao: { on: false, pct: 0 } }, tiers: { t80: 8, t100: 20, t120: 40, t130: 55 }, fech: { f100: 0.8, f120: 1.5, f130: 2.5 } },

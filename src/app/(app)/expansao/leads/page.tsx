@@ -38,7 +38,7 @@ const ORIGEM_LABEL: Record<string, string> = {
 }
 const ORIGEM_KEYS = Object.keys(ORIGEM_LABEL)
 
-// Temperatura — legado EXP_TEMPS (8539): 5 níveis (ver expansao/actions.ts TEMPERATURAS).
+// Temperatura  legado EXP_TEMPS (8539): 5 níveis (ver expansao/actions.ts TEMPERATURAS).
 const TEMP_LABEL: Record<string, string> = {
   gelado: 'Gelado',
   frio: 'Frio',
@@ -141,7 +141,7 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
   const fEtapa = (sp.etapa || '').trim()
   const busca = (sp.q || '').trim().toLowerCase()
 
-  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes — migration 050).
+  // Etapas do funil de FRANQUIA (pipeline='franquia' separa do CRM de clientes  migration 050).
   // Se a coluna pipeline não existir (migration não aplicada), a query falha → estado sem fonte.
   const { data: etapasRaw, error: etapasErr } = await sb
     .from('crm_etapas')
@@ -163,8 +163,8 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
   const semFonte = !!etapasErr || erro
   const etapas = (etapasErr ? [] : (etapasRaw ?? [])) as EtapaRow[]
 
-  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '—']))
-  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '—' : '—')
+  const nomeEtapa = new Map(etapas.map((e) => [e.id, e.nome ?? '']))
+  const nomeDe = (id: string | null) => (id ? nomeEtapa.get(id) ?? '' : '')
 
   // Busca textual aplicada sobre o lote já paginado (PostgREST .ilike não cobre múltiplas colunas
   // de forma simples; o lote é pequeno por unidade/período).
@@ -205,7 +205,7 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
       label: 'Quentes / ardentes',
       value: quentes.toLocaleString('pt-BR'),
       icon: 'ti-flame',
-      delta: total > 0 ? `${((quentes / total) * 100).toFixed(0)}% do total` : '—',
+      delta: total > 0 ? `${((quentes / total) * 100).toFixed(0)}% do total` : '',
       deltaTone: quentes > 0 ? 'up' : 'flat',
     },
     {
@@ -228,21 +228,21 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
   const detalhe = filtrados.slice(0, LISTA_MAX)
   const csvRows = detalhe.map((l) => [
     dataBR(l.criado_em),
-    l.nome || '—',
-    l.empresa || '—',
-    l.uf || '—',
-    l.tipo_lead || '—',
-    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—',
+    l.nome || '',
+    l.empresa || '',
+    l.uf || '',
+    l.tipo_lead || '',
+    ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '',
     nomeDe(l.etapa_id),
-    TEMP_LABEL[l.temperatura || ''] ?? '—',
-    l.telefone || '—',
-    l.email || '—',
+    TEMP_LABEL[l.temperatura || ''] ?? '',
+    l.telefone || '',
+    l.email || '',
     Math.round(l.valor_estimado || 0),
   ])
 
   const origens: [string, string][] = ORIGEM_KEYS.map((k) => [k, ORIGEM_LABEL[k]])
   const temperaturas: [string, string][] = TEMP_KEYS.map((k) => [k, TEMP_LABEL[k]])
-  const etapaOpts: [string, string][] = etapas.map((e) => [e.id, e.nome ?? '—'])
+  const etapaOpts: [string, string][] = etapas.map((e) => [e.id, e.nome ?? ''])
 
   return (
     <div className="view active">
@@ -253,7 +253,7 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
         <div>
           <h2>Expansão · Leads</h2>
           <p>
-            Lista de candidatos a franqueado (pipeline de <b>franquia</b>) — busca e filtros por origem, temperatura e etapa.
+            Lista de candidatos a franqueado (pipeline de <b>franquia</b>)  busca e filtros por origem, temperatura e etapa.
             Para a visão de funil consolidada, use <b>Expansão · Funil de Vendas</b>.
           </p>
         </div>
@@ -280,7 +280,7 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
       {semFonte ? (
         <div className="rel-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados de leads de Expansão disponível no
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados de leads de Expansão disponível no
             momento (pipeline de franquia indisponível para o seu perfil/unidade ou migration ainda não aplicada).
           </div>
         </div>
@@ -355,12 +355,12 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
                     <tr key={l.id}>
                       <td>{dataBR(l.criado_em)}</td>
                       <td>
-                        <span className="cli-name">{l.nome || '—'}</span>
+                        <span className="cli-name">{l.nome || ''}</span>
                       </td>
                       <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
                         {l.telefone || l.email ? (
                           <>
-                            {l.telefone || '—'}
+                            {l.telefone || ''}
                             {l.email ? (
                               <>
                                 <br />
@@ -369,13 +369,13 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
                             ) : null}
                           </>
                         ) : (
-                          '—'
+                          ''
                         )}
                       </td>
-                      <td>{l.empresa || '—'}</td>
-                      <td>{l.uf || '—'}</td>
-                      <td>{l.tipo_lead || '—'}</td>
-                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? '—'}</td>
+                      <td>{l.empresa || ''}</td>
+                      <td>{l.uf || ''}</td>
+                      <td>{l.tipo_lead || ''}</td>
+                      <td>{ORIGEM_LABEL[l.origem || 'outros'] ?? l.origem ?? ''}</td>
                       <td>{nomeDe(l.etapa_id)}</td>
                       <td>
                         {l.temperatura ? (
@@ -384,11 +384,11 @@ export default async function ExpansaoLeadsPage({ searchParams }: { searchParams
                             {TEMP_LABEL[l.temperatura] ?? l.temperatura}
                           </span>
                         ) : (
-                          '—'
+                          ''
                         )}
                       </td>
                       <td className="num-r" style={{ fontWeight: 600 }}>
-                        {l.valor_estimado ? moedaBR(l.valor_estimado) : '—'}
+                        {l.valor_estimado ? moedaBR(l.valor_estimado) : ''}
                       </td>
                     </tr>
                   ))}

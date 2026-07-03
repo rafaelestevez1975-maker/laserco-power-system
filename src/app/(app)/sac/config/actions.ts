@@ -95,7 +95,7 @@ async function gravarPesos(sb: SB, eid: string, pesos: Record<string, unknown>, 
 }
 
 // ─── Premiação monetária do SAC (sac_premiacao_config.pesos = PremMonetaria jsonb) ───
-// Legado: SAC_PREM (index.html 8913) — prêmio em R$ por atendente. Guardamos os 9 parâmetros
+// Legado: SAC_PREM (index.html 8913)  prêmio em R$ por atendente. Guardamos os 9 parâmetros
 // no jsonb `pesos`; a coluna `premios` (modelo antigo de texto) deixa de ser usada.
 export async function salvarPremiacaoConfig(prem: PremMonetaria): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
@@ -109,10 +109,10 @@ export async function salvarPremiacaoConfig(prem: PremMonetaria): Promise<Action
   revalidatePath('/sac/ranking'); return { ok: true }
 }
 
-// ─── SLA de atendimento (horas) — paridade com o legado (SAC_CFG.slaHoras=48, index.html 9149) ───
+// ─── SLA de atendimento (horas)  paridade com o legado (SAC_CFG.slaHoras=48, index.html 9149) ───
 // Guardado no jsonb `pesos` da sac_premiacao_config (campo flexível já existente) para
 // não exigir nova coluna. Usado para marcar "Em atraso" quando o prazo de resolução estoura.
-// (O default `SLA_HORAS_DEFAULT` fica em @/lib/sac-config — arquivos 'use server' só exportam funções.)
+// (O default `SLA_HORAS_DEFAULT` fica em @/lib/sac-config  arquivos 'use server' só exportam funções.)
 export async function salvarSlaHoras(horas: number): Promise<ActionResult> {
   const { sb, error } = await guard(); if (!sb) return { ok: false, error }
   const h = Math.round(Number(horas))

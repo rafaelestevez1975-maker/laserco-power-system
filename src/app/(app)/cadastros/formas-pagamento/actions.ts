@@ -8,7 +8,7 @@ import { TIPOS_PAGAMENTO, ehRecorrente, type TipoForma } from '@/lib/catalogo'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * Formas de pagamento — paridade com o legado (buildPgto / PGTO / pgForm / pgSaveForm).
+ * Formas de pagamento  paridade com o legado (buildPgto / PGTO / pgForm / pgSaveForm).
  * Catálogo por EMPRESA (sem escopo de unidade). RBAC: admin_geral / gestor / financeiro.
  * Tabela `formas_pagamento` (migration scripts/migrations/catalogo.sql):
  *   id, empresa_id, nome, tipo, taxa, taxa_comissao, ativo, ordem,
@@ -68,7 +68,7 @@ function validar(input: FormaInput): string | null {
   const eTaxaC = checarPct(input.taxa_comissao, 'Taxa a descontar na comissão')
   if (eTaxaC) return eTaxaC
 
-  // Bloco PagoLivre — só validamos quando é recorrente
+  // Bloco PagoLivre  só validamos quando é recorrente
   if (ehRecorrente(nome, input.tipo)) {
     if (input.rec_max_parc != null) {
       const m = Number(input.rec_max_parc)

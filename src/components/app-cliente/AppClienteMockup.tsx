@@ -7,7 +7,7 @@ import {
 } from '@/lib/app-cliente'
 
 /**
- * App do Cliente (prévia navegável) — paridade com buildAppCliente/appRender do
+ * App do Cliente (prévia navegável)  paridade com buildAppCliente/appRender do
  * legado. Tab bar de 5 abas + telas Início, Agendar, Serviços, Sessões, Fidelidade,
  * Unidades e fluxo Indique&Ganhe. Os DADOS são REAIS (vêm de `data`, montado no
  * server a partir do banco); as AÇÕES dentro do telefone são demonstrativas

@@ -75,7 +75,7 @@ export function UnificarClienteModal({ clienteId, onClose }: { clienteId: string
                       {pref && <span className="os-st os-fechada" style={{ marginLeft: 'auto' }}>Cadastro preferido</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4, marginLeft: 24 }}>
-                      Tel: {c.telefone || '—'} · CPF: {c.cpf || '—'} · desde {c.criado_em ? dataBR(c.criado_em) : '—'} · score {c.score}
+                      Tel: {c.telefone || ''} · CPF: {c.cpf || ''} · desde {c.criado_em ? dataBR(c.criado_em) : ''} · score {c.score}
                     </div>
                   </label>
                 )

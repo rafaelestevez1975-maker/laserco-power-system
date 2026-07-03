@@ -96,7 +96,7 @@ export function SignatariosPanel({ doc, onClose, onChanged }: { doc: DocRow; onC
 
           {!editavel && (
             <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
-              <i className="ti ti-lock" /> O documento não está mais em rascunho — a lista de signatários é somente leitura.
+              <i className="ti ti-lock" /> O documento não está mais em rascunho  a lista de signatários é somente leitura.
             </div>
           )}
 
@@ -116,10 +116,10 @@ export function SignatariosPanel({ doc, onClose, onChanged }: { doc: DocRow; onC
                   )}
                   {(sigs ?? []).map((s) => (
                     <tr key={s.id}>
-                      <td>{s.ordem ?? '—'}</td>
-                      <td><b>{s.nome || '—'}</b>{s.cpf && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>CPF {s.cpf}</div>}</td>
-                      <td style={{ fontSize: 12 }}>{s.email || '—'}</td>
-                      <td style={{ fontSize: 12 }}>{s.papel_signatario || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                      <td>{s.ordem ?? ''}</td>
+                      <td><b>{s.nome || ''}</b>{s.cpf && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>CPF {s.cpf}</div>}</td>
+                      <td style={{ fontSize: 12 }}>{s.email || ''}</td>
+                      <td style={{ fontSize: 12 }}>{s.papel_signatario || <span style={{ color: 'var(--text-3)' }}></span>}</td>
                       <td>{sigPill(s.status)}{s.visualizado_em && <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>visto {dataBR(s.visualizado_em)}</div>}</td>
                       {editavel && (
                         <td style={{ textAlign: 'right' }}>

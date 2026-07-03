@@ -72,11 +72,11 @@ export async function toggleAtivaUnidade(id: string, ativa: boolean): Promise<Ac
   return { ok: true }
 }
 
-// TODO(legado: buildUnidades) — status 'Teste' (unidade fora dos relatórios): o schema
+// TODO(legado: buildUnidades)  status 'Teste' (unidade fora dos relatórios): o schema
 //   real só tem boolean `ativa`. Sem coluna de status tri-estado não dá para persistir
 //   "Em teste" de verdade. //TODO(needs-table/coluna: unidades.status enum ativa|teste|inativa)
-// TODO(legado: buildUnidades) — Escritórios (locais administrativos da rede). Não há
+// TODO(legado: buildUnidades)  Escritórios (locais administrativos da rede). Não há
 //   tabela de escritórios no lkii. //TODO(needs-table: escritorios)
-// TODO(legado: buildUnidades) — criar nova unidade só Proprietário. Criação envolve
+// TODO(legado: buildUnidades)  criar nova unidade só Proprietário. Criação envolve
 //   empresa_id + provisionamento (bemp_salon_id) e foge do escopo de cadastro simples;
 //   deixado adiado. //TODO(legado: criar unidade)

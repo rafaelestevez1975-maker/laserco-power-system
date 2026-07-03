@@ -27,7 +27,7 @@ export default async function PerfilEditorPage({ params }: { params: Promise<{ c
   const isAdmin = ehAdmin(ctx?.papel)
   const admin = adminClient()
 
-  // bate_ponto pode não existir ainda (migration rbac.sql) — tolera coluna ausente.
+  // bate_ponto pode não existir ainda (migration rbac.sql)  tolera coluna ausente.
   let cargo: CargoRow | null = null
   let temBatePonto = true
   {
@@ -133,7 +133,7 @@ export default async function PerfilEditorPage({ params }: { params: Promise<{ c
         </div>
       )}
 
-      {/* Dados do perfil (legado: card "Dados do perfil" — Nome + Ativo) */}
+      {/* Dados do perfil (legado: card "Dados do perfil"  Nome + Ativo) */}
       <DadosPerfilCard
         cargoId={cargo.id}
         nome={cargo.nome}

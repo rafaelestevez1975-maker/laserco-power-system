@@ -33,7 +33,7 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
 // helpers de soma
 const sum = <T,>(arr: T[], f: (x: T) => number | null | undefined) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0)
 
-// ── Excel (SheetJS) — paridade finImportExcel/finModeloExcel do legacy ──
+// ── Excel (SheetJS)  paridade finImportExcel/finModeloExcel do legacy ──
 async function lerPlanilha(file: File): Promise<string[][]> {
   const XLSX = await import('xlsx')
   const buf = await file.arrayBuffer()
@@ -57,7 +57,7 @@ async function baixarModeloExcel(ctx: 'receber' | 'pagar') {
   const XLSX = await import('xlsx')
   const aoa = ctx === 'pagar'
     ? [['Categoria', 'Descrição', 'Escopo/Unidade', 'Valor', 'Vencimento', 'Prioridade', 'Status'],
-       ['Salários', 'Folha de pagamento — equipe', 'Florianópolis - Centro', '14200,00', '05/07/2026', 'alta', 'aberto'],
+       ['Salários', 'Folha de pagamento  equipe', 'Florianópolis - Centro', '14200,00', '05/07/2026', 'alta', 'aberto'],
        ['Aluguel', 'Aluguel da matriz', 'Escritório', '12000,00', '10/07/2026', 'media', 'aberto'],
        ['Impostos', 'DAS Simples Nacional', 'Escritório', '9800,50', '20/07/2026', 'alta', 'aberto']]
     : [['Unidade/Cliente', 'Categoria', 'Descrição', 'Valor', 'Vencimento', 'Status'],
@@ -71,7 +71,7 @@ async function baixarModeloExcel(ctx: 'receber' | 'pagar') {
   XLSX.writeFile(wb, `modelo-lancamentos-contas-a-${ctx}.xlsx`)
 }
 
-// ── Modal "Editar filtros" (finFiltroOpen L5431) — período/status/categoria/pessoa/descrição ──
+// ── Modal "Editar filtros" (finFiltroOpen L5431)  período/status/categoria/pessoa/descrição ──
 type FiltrosFin = { d1: string; d2: string; pessoa: string; desc: string }
 const FILTROS_ZERO: FiltrosFin = { d1: '', d2: '', pessoa: '', desc: '' }
 function FiltroFinModal({ titulo, pessoaLabel, pessoas, filtros, onApply, onClose }: {
@@ -98,7 +98,7 @@ function FiltroFinModal({ titulo, pessoaLabel, pessoas, filtros, onApply, onClos
           </div>
           <div><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>{pessoaLabel}</label>
             <select value={f.pessoa} onChange={(e) => setF({ ...f, pessoa: e.target.value })} style={inp}>
-              <option value="">{pessoaLabel} — todos</option>
+              <option value="">{pessoaLabel}  todos</option>
               {pessoas.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </div>
@@ -148,7 +148,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
-  // Troca de aba reflete na URL (/financeiro/<aba>) sem recarregar — o menu lateral acompanha.
+  // Troca de aba reflete na URL (/financeiro/<aba>) sem recarregar  o menu lateral acompanha.
   const trocarAba = (k: TabKey) => {
     setTab(k)
     try { window.history.replaceState(null, '', k === 'fluxo' ? '/financeiro' : `/financeiro/${k}`) } catch { /* noop */ }
@@ -181,7 +181,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {truncado && (
         <div className="rel-legend" style={{ background: '#FFF8E1', color: 'var(--text)', border: '1px solid var(--amber)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <i className="ti ti-alert-triangle" style={{ color: 'var(--amber)', fontSize: 18 }} />
-          <span>O volume de lançamentos ultrapassou o limite de leitura desta tela — <b>os totais e KPIs abaixo são parciais</b> (somam apenas os registros carregados). Filtre por período/unidade para ver os valores completos.</span>
+          <span>O volume de lançamentos ultrapassou o limite de leitura desta tela  <b>os totais e KPIs abaixo são parciais</b> (somam apenas os registros carregados). Filtre por período/unidade para ver os valores completos.</span>
         </div>
       )}
 
@@ -225,7 +225,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
     { ic: 'ti-wallet', cor: '#6A1B9A', bg: '#F3E5F5', lbl: 'Resultado projetado', val: resultado, sub: 'Entradas − saídas' },
   ]
 
-  // Série de 6 meses terminando no mês corrente — preenche 0 nos meses sem lançamento (estado honesto).
+  // Série de 6 meses terminando no mês corrente  preenche 0 nos meses sem lançamento (estado honesto).
   const MES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
   const p2 = (n: number) => String(n).padStart(2, '0')
   const hoje = new Date(hojeISO + 'T00:00:00')
@@ -254,7 +254,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
         </>)}
         {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
       </div>
-      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única) — visão <b>{escSel.label}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. {escSel.hint}</div>
+      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única)  visão <b>{escSel.label}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. {escSel.hint}</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
         {kpis.map((k) => (
@@ -327,7 +327,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
         </div>
       </div>
 
-      {/* Projeção de caixa próximos N dias — paridade com o legacy (finProxSemanaHTML). */}
+      {/* Projeção de caixa próximos N dias  paridade com o legacy (finProxSemanaHTML). */}
       <ProjecaoCaixa recebiveis={recebiveis} contasPagar={contasPagar} hojeISO={hojeISO} />
     </div>
   )
@@ -398,7 +398,7 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
 
   return (
     <div>
-      <div className="rel-legend">Todo recebível das unidades entra aqui, com <b>categorias separadas</b>: Royalties (10% do bruto), Taxa de franquia, Fundo de marketing, Aluguel de máquinas e outros — cadastráveis em Configurações.</div>
+      <div className="rel-legend">Todo recebível das unidades entra aqui, com <b>categorias separadas</b>: Royalties (10% do bruto), Taxa de franquia, Fundo de marketing, Aluguel de máquinas e outros  cadastráveis em Configurações.</div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
       <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
         <span className="flabel">Categoria</span>
@@ -426,7 +426,7 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
             {list.length === 0 && <tr><td colSpan={7} style={{ padding: 20, color: 'var(--text-3)' }}>Nenhum recebível com esse filtro.</td></tr>}
             {list.slice(0, 400).map((r) => (
               <tr key={r.id}>
-                <td><span className="cli-name"><i className="ti ti-building-store" style={{ color: 'var(--brand-500)', marginRight: 6, verticalAlign: -2 }} />{r.unidade_nome || '—'}</span></td>
+                <td><span className="cli-name"><i className="ti ti-building-store" style={{ color: 'var(--brand-500)', marginRight: 6, verticalAlign: -2 }} />{r.unidade_nome || ''}</span></td>
                 <td>{r.categoria}</td>
                 <td style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{r.competencia}{r.bruto ? <><br />bruto {moedaBR(r.bruto)}</> : null}</td>
                 <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(r.valor)}</td>
@@ -457,11 +457,11 @@ function RecAcoes({ r, busy, run }: { r: Recebivel; busy: string | null; run: (i
   return <>{acts.map((a, i) => <span key={i}>{i > 0 && ' · '}{a}</span>)}</>
 }
 
-// Ver boleto (finVerBoleto L5230) — exibe boleto simulado
+// Ver boleto (finVerBoleto L5230)  exibe boleto simulado
 function VerBoletoLink({ r }: { r: Recebivel }) {
   return (
     <span className="os-link" onClick={() => alert(
-      `PRÉVIA DO BOLETO — emissão bancária em integração\n(dados reais do lançamento)\n\nBeneficiário: Laser&Co Franqueadora Ltda\nPagador: ${r.unidade_nome || ''}\nReferência: ${r.categoria} · ${r.competencia || ''}\nValor: ${moedaBR(r.valor)}\nVencimento: ${dataBR(r.vencimento)}\n\nLinha digitável:\n${r.boleto}\n\nEnviado para: ${finFranqEmail(r.unidade_nome)}`,
+      `PRÉVIA DO BOLETO  emissão bancária em integração\n(dados reais do lançamento)\n\nBeneficiário: Laser&Co Franqueadora Ltda\nPagador: ${r.unidade_nome || ''}\nReferência: ${r.categoria} · ${r.competencia || ''}\nValor: ${moedaBR(r.valor)}\nVencimento: ${dataBR(r.vencimento)}\n\nLinha digitável:\n${r.boleto}\n\nEnviado para: ${finFranqEmail(r.unidade_nome)}`,
     )}><i className="ti ti-eye" /> Ver boleto</span>
   )
 }
@@ -541,7 +541,7 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
 
   return (
     <div>
-      <div className="rel-legend">Despesas da rede — vinculadas a cada unidade ou em conjunto (escritório/rede). Cada pagamento tem um <b>nível de prioridade</b> (Alta, Média, Baixa): se o caixa apertar, pague primeiro os de <b>prioridade alta</b>.</div>
+      <div className="rel-legend">Despesas da rede  vinculadas a cada unidade ou em conjunto (escritório/rede). Cada pagamento tem um <b>nível de prioridade</b> (Alta, Média, Baixa): se o caixa apertar, pague primeiro os de <b>prioridade alta</b>.</div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         {[['Em aberto · Prioridade ALTA', pAlta, 'var(--red)'], ['Prioridade Média', pMedia, '#B26A00'], ['Prioridade Baixa', pBaixa, '#1565C0']].map(([lbl, v, cor]) => (
@@ -691,7 +691,7 @@ function ConciliacaoTab({ conciliacao }: { conciliacao: Conciliacao[] }) {
               <div><b style={{ color: 'var(--red)' }}>{div.length} inconsistência(s) detectada(s)</b><div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>O cruzamento entre vendas, extrato bancário e taxas das adquirentes apontou divergências.</div></div>
             </div>
           ) : (
-            <div className="rel-card" style={{ background: 'var(--green-bg)', marginBottom: 14 }}><b style={{ color: '#0f6b3a' }}><i className="ti ti-circle-check" /> Sem inconsistências</b> — todas as vendas conciliadas com o extrato.</div>
+            <div className="rel-card" style={{ background: 'var(--green-bg)', marginBottom: 14 }}><b style={{ color: '#0f6b3a' }}><i className="ti ti-circle-check" /> Sem inconsistências</b>  todas as vendas conciliadas com o extrato.</div>
           )}
           <div className="cli-card"><div className="cli-scroll">
             <table className="cli-table">
@@ -742,7 +742,7 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     const r = await gerarCobrancaRoyalties(); setBusy('')
     if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
     if (!r.geradas) { addLog('Nenhum royalty pendente de boleto.'); return }
-    addLog(`✓ ${r.geradas} boletos gerados no ${banco.nome} — total ${moedaBR(r.total || 0)}`, '✓ Crédito a receber lançado no financeiro da franqueadora', `✓ Enviado por e-mail e WhatsApp aos franqueados (${r.geradas} destinatários)`)
+    addLog(`✓ ${r.geradas} boletos gerados no ${banco.nome}  total ${moedaBR(r.total || 0)}`, '✓ Crédito a receber lançado no financeiro da franqueadora', `✓ Enviado por e-mail e WhatsApp aos franqueados (${r.geradas} destinatários)`)
     router.refresh()
   }
   const apurar = async () => {
@@ -756,9 +756,9 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     if (!rf.ok) { addLog('✗ ' + (rf.error || 'Erro no faturamento')); return }
     if (!r.ok) { addLog('✗ ' + (r.error || 'Erro nos royalties')); return }
     addLog(
-      `✓ Apuração ${comp} — faturamento BEMP ${moedaBR(rf.faturamento || 0)} em ${rf.unidades || 0} unidade(s) → ${rf.lancamentos || 0} lançamento(s) de receita no razão`,
+      `✓ Apuração ${comp}  faturamento BEMP ${moedaBR(rf.faturamento || 0)} em ${rf.unidades || 0} unidade(s) → ${rf.lancamentos || 0} lançamento(s) de receita no razão`,
       r.geradas ? `✓ Royalties (${config.royalty_pct}%) + Fundo: ${r.geradas} recebível(is) e ${r.lancamentos || 0} lançamento(s) no razão` : 'Royalties já apurados nesta competência.')
-    if (rf.semCentro && rf.semCentro > 0) addLog(`⚠ ${rf.semCentro} unidade(s) sem centro de custo — a receita entra no consolidado, mas as despesas de config não incidem sobre elas. Verifique o cadastro.`)
+    if (rf.semCentro && rf.semCentro > 0) addLog(`⚠ ${rf.semCentro} unidade(s) sem centro de custo  a receita entra no consolidado, mas as despesas de config não incidem sobre elas. Verifique o cadastro.`)
     if (rd.ok) {
       const totDesp = (rd.imposto || 0) + (rd.comissao || 0) + (rd.taxaCartao || 0)
       addLog(totDesp > 0
@@ -771,7 +771,7 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
     setBusy('baixar')
     const r = await processarRetornoBancario(); setBusy('')
     if (!r.ok) { addLog('✗ ' + (r.error || 'Erro')); return }
-    addLog(`✓ Retorno bancário processado — ${r.baixados || 0} boletos baixados (${moedaBR(r.total || 0)})`)
+    addLog(`✓ Retorno bancário processado  ${r.baixados || 0} boletos baixados (${moedaBR(r.total || 0)})`)
     router.refresh()
   }
   const regua = async () => {
@@ -786,9 +786,9 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
 
   return (
     <div>
-      <div className="rel-legend">Automação de cobrança de <b>royalties</b> — sempre <b>{config.royalty_pct}% do faturamento bruto</b>, com vencimento <b>todo dia {config.venc_dia}</b> do mês seguinte. O sistema gera o boleto, lança o crédito a receber, envia ao franqueado e agenda a baixa no retorno bancário.</div>
+      <div className="rel-legend">Automação de cobrança de <b>royalties</b>  sempre <b>{config.royalty_pct}% do faturamento bruto</b>, com vencimento <b>todo dia {config.venc_dia}</b> do mês seguinte. O sistema gera o boleto, lança o crédito a receber, envia ao franqueado e agenda a baixa no retorno bancário.</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12, marginBottom: 14 }}>
-        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Banco de cobrança</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}><i className="ti ti-building-bank" style={{ color: 'var(--brand-500)' }} /> {banco.nome || 'Não configurado'}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{banco.nome ? `Ag. ${banco.agencia || '—'} · C/C ${banco.conta || '—'}` : 'Configure em Configurações'}</div></div>
+        <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Banco de cobrança</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}><i className="ti ti-building-bank" style={{ color: 'var(--brand-500)' }} /> {banco.nome || 'Não configurado'}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{banco.nome ? `Ag. ${banco.agencia || ''} · C/C ${banco.conta || ''}` : 'Configure em Configurações'}</div></div>
         <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{mesRefBR(hojeISO)}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Vencimento dia {config.venc_dia}</div></div>
         <div className="rel-card" style={{ padding: 14 }}><div style={{ fontSize: 12, color: 'var(--text-2)' }}>Total de royalties</div><div style={{ fontSize: 15, fontWeight: 800, marginTop: 3, color: '#0f6b3a' }}>{moedaBR(totRoy)}</div><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{pend.length} unidade(s) · {semBoleto} sem boleto</div></div>
       </div>
@@ -821,7 +821,7 @@ function RoyaltiesTab({ recebiveis, config, hojeISO }: { recebiveis: Recebivel[]
       </div>
       <div className="rel-card" style={{ background: '#FFF8E1', border: '1px solid #f0e0a8', marginTop: 14, display: 'flex', gap: 11, alignItems: 'flex-start' }}>
         <i className="ti ti-shield-lock" style={{ fontSize: 20, color: '#B26A00' }} />
-        <div style={{ fontSize: 12.5, color: '#6b5800' }}><b>Integração bancária real (produção):</b> a conexão com o banco para registrar boletos e dar baixa é feita por <b>API/Open Finance ou CNAB</b>, com credenciais guardadas em cofre seguro no servidor — <b>nunca</b> no navegador. Este módulo <b>simula</b> o ciclo para validação do fluxo.</div>
+        <div style={{ fontSize: 12.5, color: '#6b5800' }}><b>Integração bancária real (produção):</b> a conexão com o banco para registrar boletos e dar baixa é feita por <b>API/Open Finance ou CNAB</b>, com credenciais guardadas em cofre seguro no servidor  <b>nunca</b> no navegador. Este módulo <b>simula</b> o ciclo para validação do fluxo.</div>
       </div>
     </div>
   )
@@ -894,13 +894,13 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 }
 
 // =============================================================================
-// DRE (finDreHTML L5642 — versão simplificada sobre os dados reais)
+// DRE (finDreHTML L5642  versão simplificada sobre os dados reais)
 // =============================================================================
 const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-// Segmentos do DRE — mesmos do legacy (finDreHTML): consolidado / próprias / franquias / franqueadora,
+// Segmentos do DRE  mesmos do legacy (finDreHTML): consolidado / próprias / franquias / franqueadora,
 // + 'todas as unidades' (agregado) e detalhamento por loja.
 const DRE_ESCOPOS: { valor: string; label: string; hint: string }[] = [
-  { valor: 'consolidado', label: 'Consolidado (tudo junto)', hint: 'Toda a rede — franqueadora + lojas. Os royalties se anulam entre si.' },
+  { valor: 'consolidado', label: 'Consolidado (tudo junto)', hint: 'Toda a rede  franqueadora + lojas. Os royalties se anulam entre si.' },
   { valor: 'proprias', label: 'Lojas próprias', hint: 'Só as lojas PRÓPRIAS (marque quais são em Configurações → Royalties por unidade).' },
   { valor: 'franquias', label: 'Franquias', hint: 'Só as unidades FRANQUEADAS: faturamento menos royalties e despesas.' },
   { valor: 'franqueadora', label: 'Franqueadora', hint: 'Resultado da franqueadora: royalties recebidos das franquias.' },
@@ -931,8 +931,8 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
   const totCusto = sum(custos, (l) => l.total)
   const totDespesa = sum(despesas, (l) => l.total)
   const resultado = totReceita - totCusto - totDespesa
-  const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : '—'
-  const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : '—'
+  const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : ''
+  const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : ''
 
   const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
   const seletor = (
@@ -959,7 +959,7 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
     return (
       <div>
         {seletor}
-        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Sem lançamentos em <b>{compLabel}</b> — vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties dessa competência; o DRE aparece aqui automaticamente.</div>
+        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Sem lançamentos em <b>{compLabel}</b>  vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties dessa competência; o DRE aparece aqui automaticamente.</div>
       </div>
     )
   }
@@ -982,10 +982,10 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
   return (
     <div>
       {seletor}
-      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única) — competência <b>{compLabel}</b> · visão <b>{escSel.label}</b>. {escSel.hint} <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
+      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  competência <b>{compLabel}</b> · visão <b>{escSel.label}</b>. {escSel.hint} <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
-          <thead><tr><th>Demonstração do resultado — {compLabel}</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
+          <thead><tr><th>Demonstração do resultado  {compLabel}</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
           <tbody>
             {linhaTotal('Receita bruta', totReceita)}
             {receitas.map((l) => linhaConta(l, 1))}
@@ -1002,9 +1002,9 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
 }
 
 // =============================================================================
-// CÁLCULOS (finCalcHTML L5534 — atualização de débito: correção+multa+juros)
+// CÁLCULOS (finCalcHTML L5534  atualização de débito: correção+multa+juros)
 // =============================================================================
-// Índices REAIS (API SGS do Banco Central, buscados no servidor — src/lib/indices-bcb).
+// Índices REAIS (API SGS do Banco Central, buscados no servidor  src/lib/indices-bcb).
 // Sem valor embarcado: se a API não respondeu, a correção monetária fica DESATIVADA (honesto).
 type Indices = Record<string, { label: string; acum12m: number }>
 function CalcTab({ recebiveis, hojeISO, indices = {} }: { recebiveis: Recebivel[]; hojeISO: string; indices?: Indices }) {
@@ -1032,7 +1032,7 @@ function CalcTab({ recebiveis, hojeISO, indices = {} }: { recebiveis: Recebivel[
   return (
     <div>
       <div className="rel-legend">Atualização de débitos em atraso: <b>correção monetária</b> por índice oficial + <b>multa {multaPct}%</b> + <b>juros de mora {jurosMesPct}% a.m.</b>. Índices <b>reais do Banco Central</b> (API SGS · acumulado 12 meses), atualizados automaticamente.</div>
-      {chaves.length === 0 && <div className="rel-legend" style={{ background: '#FFF8E1', border: '1px solid var(--amber)' }}><i className="ti ti-alert-triangle" style={{ color: 'var(--amber)' }} /> Os índices do Banco Central estão indisponíveis no momento — a <b>correção monetária</b> foi desativada (multa e juros seguem valendo). Recarregue mais tarde.</div>}
+      {chaves.length === 0 && <div className="rel-legend" style={{ background: '#FFF8E1', border: '1px solid var(--amber)' }}><i className="ti ti-alert-triangle" style={{ color: 'var(--amber)' }} /> Os índices do Banco Central estão indisponíveis no momento  a <b>correção monetária</b> foi desativada (multa e juros seguem valendo). Recarregue mais tarde.</div>}
       <div className="rel-card" style={{ marginBottom: 14 }}>
         <div className="set-sec" style={{ marginTop: 0 }}>Parâmetros</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -1046,7 +1046,7 @@ function CalcTab({ recebiveis, hojeISO, indices = {} }: { recebiveis: Recebivel[
             <select value={modo} onChange={(e) => setModo(e.target.value as 'nominal' | 'acrescimos')}><option value="acrescimos">Com acréscimos</option><option value="nominal">Nominal</option></select>
           </div>
         </div>
-        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}><i className="ti ti-building-bank" /> Fonte dos índices: <b>Banco Central do Brasil</b> (API SGS — séries 189 IGP-M, 433 IPCA, 188 INPC, 432 SELIC, 4389 CDI), com cache de 6h no servidor.</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}><i className="ti ti-building-bank" /> Fonte dos índices: <b>Banco Central do Brasil</b> (API SGS  séries 189 IGP-M, 433 IPCA, 188 INPC, 432 SELIC, 4389 CDI), com cache de 6h no servidor.</div>
       </div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
@@ -1142,13 +1142,15 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   }
 
   const setAdqField = (i: number, k: keyof AdqRow, v: string) => setAdq(adq.map((a, j) => j === i ? { ...a, [k]: k === 'nome' ? v : (parseFloat(v) || 0) } : a))
+  const addAdq = () => setAdq([...adq, { nome: '', deb: 0, cred: 0, parc: 0, pix: 0, prazo: 30 }])
+  const rmAdq = (i: number) => setAdq(adq.filter((_, j) => j !== i))
   const setReguaField = (i: number, k: keyof ReguaPasso, v: string) => setRegua(regua.map((p, j) => j === i ? { ...p, [k]: k === 'dias' ? (parseInt(v) || 0) : v } : p))
 
   const inputStyle: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 7, padding: '5px 8px', fontSize: 12.5, fontFamily: 'inherit' }
 
   return (
     <div>
-      <div className="rel-legend">Parâmetros do financeiro da franqueadora. As credenciais do banco são usadas <b>apenas no servidor seguro</b> em produção — aqui ficam mascaradas.</div>
+      <div className="rel-legend">Parâmetros do financeiro da franqueadora. As credenciais do banco são usadas <b>apenas no servidor seguro</b> em produção  aqui ficam mascaradas.</div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="rel-card">
@@ -1180,7 +1182,7 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
             <div className="mf" style={{ flex: 1 }}><label>Usuário (API)</label><input value={String(banco.login ?? '')} onChange={(e) => setBanco({ ...banco, login: e.target.value })} /></div>
             <div className="mf" style={{ flex: 1 }}><label>Senha / Token</label><input type="password" value="••••••••" disabled style={{ background: 'var(--surface-2)', cursor: 'not-allowed' }} /></div>
           </div>
-          <div style={{ fontSize: 11, color: '#B26A00', marginTop: 7 }}><i className="ti ti-lock" /> Senha/token nunca trafegam pelo navegador — ficam em cofre no servidor (produção).</div>
+          <div style={{ fontSize: 11, color: '#B26A00', marginTop: 7 }}><i className="ti ti-lock" /> Senha/token nunca trafegam pelo navegador  ficam em cofre no servidor (produção).</div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 12.5, cursor: 'pointer' }}>
             <input type="checkbox" checked={!!banco.autoBaixa} onChange={(e) => setBanco({ ...banco, autoBaixa: e.target.checked })} /> Baixa automática pelo retorno bancário
           </label>
@@ -1188,23 +1190,23 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
-        <div className="set-sec" style={{ marginTop: 0 }}>Regras de despesa <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— alimentam o DRE e o Fluxo pelo razão</span></div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 12px' }}>Percentuais aplicados sobre o <b>faturamento real do BEMP</b> ao apurar o mês (Royalties → Apurar mês). <b>0 = não lança</b> a despesa. Ajuste conforme seu contador — o DRE recalcula na próxima apuração.</div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Regras de despesa <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}> alimentam o DRE e o Fluxo pelo razão</span></div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 12px' }}>Percentuais aplicados sobre o <b>faturamento real do BEMP</b> ao apurar o mês (Royalties → Apurar mês). <b>0 = não lança</b> a despesa. Ajuste conforme seu contador  o DRE recalcula na próxima apuração.</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 12 }}>
-          <div className="mf full"><label>Imposto — regime</label><input value={impostoRegime} onChange={(e) => setImpostoRegime(e.target.value)} placeholder="Simples Nacional" /></div>
-          <div className="mf full"><label>Imposto — alíquota efetiva (%)</label><input type="number" step="0.1" min={0} max={100} value={imposto} onChange={(e) => setImposto(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Imposto  regime</label><input value={impostoRegime} onChange={(e) => setImpostoRegime(e.target.value)} placeholder="Simples Nacional" /></div>
+          <div className="mf full"><label>Imposto  alíquota efetiva (%)</label><input type="number" step="0.1" min={0} max={100} value={imposto} onChange={(e) => setImposto(parseFloat(e.target.value) || 0)} /></div>
           <div className="mf full"><label>Comissão (%)</label><input type="number" step="0.1" min={0} max={100} value={comissao} onChange={(e) => setComissao(parseFloat(e.target.value) || 0)} /></div>
-          <div className="mf full"><label>Comissão — base de cálculo</label>
+          <div className="mf full"><label>Comissão  base de cálculo</label>
             <select value={comissaoBase} onChange={(e) => setComissaoBase(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
               {COMISSAO_BASE_OPCOES.map((o) => <option key={o.valor} value={o.valor}>{o.label}</option>)}
             </select>
           </div>
-          <div className="mf full"><label>Taxa de cartão — MDR médio (%)</label><input type="number" step="0.1" min={0} max={100} value={taxaCartao} onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Taxa de cartão  MDR médio (%)</label><input type="number" step="0.1" min={0} max={100} value={taxaCartao} onChange={(e) => setTaxaCartao(parseFloat(e.target.value) || 0)} /></div>
         </div>
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
-        <div className="set-sec" style={{ marginTop: 0 }}>Royalties por unidade <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— exceções à regra geral (vazio = usa a regra geral + desconto automático)</span></div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Royalties por unidade <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}> exceções à regra geral (vazio = usa a regra geral + desconto automático)</span></div>
         {ruMsg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{ruMsg}</div>}
         <input value={ruBusca} onChange={(e) => setRuBusca(e.target.value)} placeholder="🔎 Buscar franquia…" style={{ ...inputStyle, padding: '8px 11px', width: '100%', marginBottom: 8 }} />
         <div className="cli-scroll" style={{ maxHeight: 280 }}>
@@ -1225,8 +1227,8 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
                         <option value="propria">Própria</option>
                       </select>
                     </td>
-                    <td className="num-r"><input type="number" step="0.5" min={0} max={100} placeholder="—" value={v.pct} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, pct: e.target.value } })} style={{ ...inputStyle, width: 74, textAlign: 'right' }} /></td>
-                    <td className="num-r"><input type="number" min={1} max={28} placeholder="—" value={v.dia} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, dia: e.target.value } })} style={{ ...inputStyle, width: 64, textAlign: 'right' }} /></td>
+                    <td className="num-r"><input type="number" step="0.5" min={0} max={100} placeholder="" value={v.pct} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, pct: e.target.value } })} style={{ ...inputStyle, width: 74, textAlign: 'right' }} /></td>
+                    <td className="num-r"><input type="number" min={1} max={28} placeholder="" value={v.dia} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, dia: e.target.value } })} style={{ ...inputStyle, width: 64, textAlign: 'right' }} /></td>
                     <td style={{ textAlign: 'right' }}><button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} disabled={ruBusy === u.id} onClick={() => salvarRU(u)}>{ruBusy === u.id ? '…' : 'Salvar'}</button></td>
                   </tr>
                 )
@@ -1238,8 +1240,8 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
-        <div className="set-sec" style={{ marginTop: 0 }}>Plano de contas (DRE) <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— crie as suas categorias de receita/custo/despesa</span></div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 10px' }}>As categorias organizam o <b>DRE</b> e classificam as despesas lançadas em <b>Contas a Pagar</b> (a despesa com categoria de mesmo nome cai na conta certa; sem correspondente vai para “Outras despesas”). Categorias do sistema (com código) não podem ser desativadas.</div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Plano de contas (DRE) <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}> crie as suas categorias de receita/custo/despesa</span></div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 10px' }}>As categorias organizam o <b>DRE</b> e classificam as despesas lançadas em <b>Contas a Pagar</b> (a despesa com categoria de mesmo nome cai na conta certa; sem correspondente vai para “Outras despesas”). Desativar uma categoria não apaga lançamentos — ela só some dos seletores.</div>
         {pcMsg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{pcMsg}</div>}
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           <input value={pcNome} onChange={(e) => setPcNome(e.target.value)} placeholder="Nova categoria (ex.: Frete e Logística)" style={{ flex: 1, minWidth: 220, ...inputStyle, padding: '8px 11px' }} />
@@ -1256,13 +1258,13 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
             <tbody>
               {planoContas.map((c) => (
                 <tr key={c.id} style={c.ativo ? undefined : { opacity: 0.55 }}>
-                  <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.codigo || '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.codigo || ''}</td>
                   <td>{c.nome}</td>
                   <td style={{ fontSize: 12 }}>{c.natureza}</td>
-                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.grupo || '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.grupo || ''}</td>
                   <td style={{ textAlign: 'center' }}>
                     <input type="checkbox" checked={c.ativo} disabled={pcBusy || (!!c.codigo && c.ativo)} onChange={() => toggleConta(c)}
-                      title={c.codigo ? 'Categoria do sistema — sempre ativa' : (c.ativo ? 'Desativar' : 'Reativar')} style={{ cursor: c.codigo ? 'not-allowed' : 'pointer' }} />
+                      title={c.codigo ? 'Categoria do sistema  sempre ativa' : (c.ativo ? 'Desativar' : 'Reativar')} style={{ cursor: c.codigo ? 'not-allowed' : 'pointer' }} />
                   </td>
                 </tr>
               ))}
@@ -1287,16 +1289,17 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
-        <div className="set-sec" style={{ marginTop: 0 }}>Taxas das adquirentes (%) — usadas na conciliação</div>
+        <div className="set-sec" style={{ marginTop: 0 }}>Taxas das adquirentes (%)  usadas na conciliação</div>
         <div className="cli-scroll">
           <table className="cli-table">
-            <thead><tr><th>Adquirente</th><th className="num-r">Débito</th><th className="num-r">Crédito</th><th className="num-r">Parcelado</th><th className="num-r">Pix</th><th className="num-r">Prazo (d)</th></tr></thead>
+            <thead><tr><th>Adquirente</th><th className="num-r">Débito</th><th className="num-r">Crédito</th><th className="num-r">Parcelado</th><th className="num-r">Pix</th><th className="num-r">Prazo (d)</th><th /></tr></thead>
             <tbody>
               {adq.map((a, i) => (
                 <tr key={i}>
                   <td><input value={a.nome} onChange={(e) => setAdqField(i, 'nome', e.target.value)} style={{ ...inputStyle, width: 90 }} /></td>
                   {(['deb', 'cred', 'parc', 'pix'] as const).map((k) => <td key={k} className="num-r"><input type="number" step="0.01" value={a[k]} onChange={(e) => setAdqField(i, k, e.target.value)} style={{ ...inputStyle, width: 62, textAlign: 'right' }} /></td>)}
                   <td className="num-r"><input type="number" value={a.prazo} onChange={(e) => setAdqField(i, 'prazo', e.target.value)} style={{ ...inputStyle, width: 52, textAlign: 'right' }} /></td>
+                  <td style={{ textAlign: 'right' }}><button className="btn" style={{ padding: '3px 8px', color: 'var(--red)' }} onClick={() => rmAdq(i)} title="Remover adquirente (salve as configurações ao final)"><i className="ti ti-trash" /></button></td>
                 </tr>
               ))}
             </tbody>
@@ -1305,7 +1308,11 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
-        <div className="set-sec" style={{ marginTop: 0 }}>Régua de cobrança / jurídico</div>
+        <div className="set-sec" style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>Régua de cobrança / jurídico</span>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.5px', padding: '2px 8px', borderRadius: 20, background: '#FFF3E0', color: '#B26A00', border: '1px solid #F0C987' }}>🚧 EM CONSTRUÇÃO</span>
+        </div>
+        <div style={{ fontSize: 12, color: '#B26A00', margin: '2px 0 10px' }}><i className="ti ti-alert-triangle" /> Os <b>disparos automáticos</b> (e-mail/WhatsApp) da régua ainda <b>não estão ligados</b> — a configuração abaixo fica salva e passa a valer quando a automação de cobrança entrar no ar.</div>
         <div className="cli-scroll">
           <table className="cli-table">
             <thead><tr><th>Dias após venc.</th><th>Ação</th><th>Canal</th></tr></thead>
@@ -1363,14 +1370,14 @@ function ProjecaoCaixa({ recebiveis, contasPagar, hojeISO }: { recebiveis: Receb
   return (
     <div className="rel-card" style={{ marginTop: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div className="set-sec" style={{ marginTop: 0, flex: 1 }}><i className="ti ti-calendar-due" /> Projeção de caixa — próximos {N} dias ({fmt(lista[0])} a {fmt(lista[lista.length - 1])})</div>
+        <div className="set-sec" style={{ marginTop: 0, flex: 1 }}><i className="ti ti-calendar-due" /> Projeção de caixa  próximos {N} dias ({fmt(lista[0])} a {fmt(lista[lista.length - 1])})</div>
         <div style={{ minWidth: 200 }}>
           <label style={{ fontSize: 11, display: 'block' }}>Período da projeção</label>
           <select value={presets.includes(N) ? N : 'custom'} onChange={(e) => {
             if (e.target.value === 'custom') { const n = parseInt(prompt('Projetar o caixa para quantos dias à frente?', '20') || ''); if (n && n >= 1) setDias(Math.min(180, n)) }
             else setDias(+e.target.value)
           }} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '6px 8px', fontSize: 12.5, fontFamily: 'inherit' }}>
-            <option value={7}>1 semana (7 dias) — padrão</option>
+            <option value={7}>1 semana (7 dias)  padrão</option>
             <option value={10}>10 dias</option>
             <option value={15}>15 dias</option>
             <option value={30}>30 dias</option>

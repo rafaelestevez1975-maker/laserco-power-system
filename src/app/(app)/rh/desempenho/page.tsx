@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const PAPEIS_ESCRITA = ['gestor', 'gerente', 'rh']
 
 /**
- * RH · Desempenho — módulo REAL (substitui o snapshot estático do protótipo).
+ * RH · Desempenho  módulo REAL (substitui o snapshot estático do protótipo).
  *
  * Tabelas: avaliacoes_desempenho, pdi, metas_colaborador (resumo). Nenhuma tem coluna
  * unidade_id → o escopo multitenant é aplicado via os colaboradores da unidade ativa
@@ -47,7 +47,7 @@ export default async function DesempenhoPage() {
     const { data: avalRaw } = await aq
     avaliacoes = ((avalRaw ?? []) as Omit<AvaliacaoRow, 'colaboradorNome'>[]).map((a) => ({
       ...a,
-      colaboradorNome: mapaColab.get(a.colaborador_id) ?? '—',
+      colaboradorNome: mapaColab.get(a.colaborador_id) ?? '',
     }))
   }
 
@@ -63,11 +63,11 @@ export default async function DesempenhoPage() {
     const { data: pdiRaw } = await pq
     pdis = ((pdiRaw ?? []) as Omit<PdiRow, 'colaboradorNome'>[]).map((p) => ({
       ...p,
-      colaboradorNome: mapaColab.get(p.colaborador_id) ?? '—',
+      colaboradorNome: mapaColab.get(p.colaborador_id) ?? '',
     }))
   }
 
-  // ── Metas (resumo — CRUD completo vive em /cadastros/metas) ──
+  // ── Metas (resumo  CRUD completo vive em /cadastros/metas) ──
   let metas: MetaResumo[] = []
   if (!semDados) {
     let mq = sb
@@ -79,7 +79,7 @@ export default async function DesempenhoPage() {
     const { data: metasRaw } = await mq
     metas = ((metasRaw ?? []) as Omit<MetaResumo, 'colaboradorNome'>[]).map((m) => ({
       ...m,
-      colaboradorNome: mapaColab.get(m.colaborador_id) ?? '—',
+      colaboradorNome: mapaColab.get(m.colaborador_id) ?? '',
     }))
   }
 

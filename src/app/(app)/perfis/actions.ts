@@ -35,11 +35,11 @@ async function gateAdmin() {
  * Salva as permissões de um cargo a partir do diff de células do grid.
  *
  * Modelo: cada par (recurso, ação) admite no máximo 1 escopo selecionado no editor
- * (o escopo é hierárquico — escolher "empresa" cobre unidade/próprio na lógica de RLS).
+ * (o escopo é hierárquico  escolher "empresa" cobre unidade/próprio na lógica de RLS).
  * Persistir = para cada célula alterada, remover as permissoes daquele (recurso,ação)
  * que o cargo tinha e inserir a do novo escopo (se houver).
  *
- * Usa adminClient (service-role, server-only) — RBAC não depende de RLS, igual ao
+ * Usa adminClient (service-role, server-only)  RBAC não depende de RLS, igual ao
  * resolveRecursos() de lib/session. Gate forte: só admin_geral chega aqui.
  */
 export async function salvarPermissoesCargo(
@@ -62,7 +62,7 @@ export async function salvarPermissoesCargo(
   const cargo = cargoRow as { id: string; nome: string; slug: string; is_sistema: boolean; ativo: boolean } | null
   if (eCargo) return { ok: false, error: 'Falha ao carregar o cargo.' }
   if (!cargo) return { ok: false, error: 'Cargo não encontrado.' }
-  // Super Admin é a âncora do sistema — não deixamos editar pelo painel (evita lockout).
+  // Super Admin é a âncora do sistema  não deixamos editar pelo painel (evita lockout).
   if (cargo.slug === 'super_admin') return { ok: false, error: 'O cargo Super Admin é protegido e não pode ser editado.' }
 
   // ── Validação por campo + resolução das permissao_id pelo schema real ──
@@ -76,7 +76,7 @@ export async function salvarPermissoesCargo(
     limpos.push({ recurso_id: c.recurso_id, acao_id: c.acao_id, escopo: c.escopo })
   }
 
-  // Recursos e ações afetados — pega TODAS as permissoes desses pares para saber o que remover/inserir.
+  // Recursos e ações afetados  pega TODAS as permissoes desses pares para saber o que remover/inserir.
   const recursoIds = [...new Set(limpos.map((c) => c.recurso_id))]
   const acaoIds = [...new Set(limpos.map((c) => c.acao_id))]
   const { data: permsRaw, error: ePerms } = await admin
@@ -96,7 +96,7 @@ export async function salvarPermissoesCargo(
     permsDoPar.set(k, [...(permsDoPar.get(k) ?? []), p.id])
   }
 
-  // O que o cargo JÁ tem nesses pares — p/ preservar o escopo existente e NUNCA escalar.
+  // O que o cargo JÁ tem nesses pares  p/ preservar o escopo existente e NUNCA escalar.
   // (A matriz é binária: concede/revoga. Ela não deve regredir nem escalar o escopo de
   //  um par já concedido com escopo 'unidade'/'proprio' para 'global'.)
   const allPermIds = perms.map((p) => p.id)
@@ -118,7 +118,7 @@ export async function salvarPermissoesCargo(
     // Par sem permissão cadastrada (checkbox-fantasma): pula a célula, NÃO aborta o cargo inteiro.
     if (todosDoPar.length === 0) { puladas++; continue }
     if (c.escopo) {
-      // CONCEDER: só concede ('global') se o par ainda NÃO está concedido — preserva o escopo de quem já tem.
+      // CONCEDER: só concede ('global') se o par ainda NÃO está concedido  preserva o escopo de quem já tem.
       if (paresJaConcedidos.has(par)) continue
       const pid = permId.get(`${par}|${c.escopo}`)
       if (!pid) { puladas++; continue } // escopo pedido inexistente no schema → pula
@@ -165,7 +165,7 @@ export async function salvarPermissoesCargo(
   return { ok: true, gravadas, removidas }
 }
 
-/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação principal).
+/** Grava 1 linha em audit_log (best-effort  nunca derruba a operação principal).
  *  `acaoVerbo` define o sufixo de `acao` (ex.: 'criar' → rbac.cargo.criar). */
 async function registrarAuditoria(
   userId: string,
@@ -264,7 +264,7 @@ export async function aplicarPreset(
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-//  CRUD de cargos (perfis de acesso) — paridade com o legado buildPerfis/perfisRows
+//  CRUD de cargos (perfis de acesso)  paridade com o legado buildPerfis/perfisRows
 //  (legacy/index.html L7178-7293). O legado era 100% mock; aqui PERSISTE de verdade.
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -338,7 +338,7 @@ export async function criarCargo(input: {
     criado_por: op.userId,
   }
   // Tenta com bate_ponto; se a coluna ainda não existe (migration rbac.sql não aplicada),
-  // refaz sem ela — o perfil ainda é criado normalmente.
+  // refaz sem ela  o perfil ainda é criado normalmente.
   let inserted: { id: string; nome: string; slug: string } | null = null
   {
     const r = await admin.from('cargos')
@@ -364,7 +364,7 @@ export async function criarCargo(input: {
 
 /**
  * Edita os dados básicos de um cargo. Legado: card "Dados do perfil" (input permNome +
- * select Ativo) — L7274/HTML 1736-1741. UPDATE em cargos (nome, descrição, ativo, bate_ponto).
+ * select Ativo)  L7274/HTML 1736-1741. UPDATE em cargos (nome, descrição, ativo, bate_ponto).
  * Não permite editar o Super Admin (âncora do RBAC).
  */
 export async function atualizarCargo(
@@ -428,7 +428,7 @@ export async function alternarAtivoCargo(cargoId: string): Promise<ActionResult 
 }
 
 /**
- * Alterna a flag "Bate ponto" do cargo. Legado: perfTogglePonto (L7213) — auditLog + toast.
+ * Alterna a flag "Bate ponto" do cargo. Legado: perfTogglePonto (L7213)  auditLog + toast.
  * Persiste cargos.bate_ponto (coluna nova, ver scripts/migrations/rbac.sql).
  */
 export async function alternarBatePonto(cargoId: string): Promise<ActionResult & { batePonto?: boolean }> {
@@ -457,7 +457,7 @@ export async function alternarBatePonto(cargoId: string): Promise<ActionResult &
 }
 
 /**
- * Exclui um perfil de acesso. Legado: perfDel (L7214) — confirm + auditLog + toast.
+ * Exclui um perfil de acesso. Legado: perfDel (L7214)  confirm + auditLog + toast.
  * Valida ausência de usuario_cargos vinculados (não orfana usuários). As cargo_permissoes
  * caem em cascata (FK on delete cascade). Não exclui cargos do sistema.
  */
@@ -493,7 +493,7 @@ export async function excluirCargo(cargoId: string): Promise<ActionResult> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-//  Vínculo usuário ↔ cargo (usuario_cargos) — atribuir / remover
+//  Vínculo usuário ↔ cargo (usuario_cargos)  atribuir / remover
 // ────────────────────────────────────────────────────────────────────────────
 
 /** Atribui um cargo a um usuário (usuario_cargos). empresa_id resolvido do cargo;
@@ -578,4 +578,4 @@ export async function removerCargoUsuario(input: { cargoId: string; perfilId: st
   return { ok: true }
 }
 
-// TODO(legado: buildPerfis) — exportar a matriz de permissões (Excel/CSV) do cargo.
+// TODO(legado: buildPerfis)  exportar a matriz de permissões (Excel/CSV) do cargo.

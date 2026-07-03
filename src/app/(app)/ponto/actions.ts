@@ -29,7 +29,7 @@ export type RegistrarPontoInput = {
 
 /** Bate o PRÓPRIO ponto do colaborador logado (botões Entrada/Almoço/Saída).
  *  Resolve o colaborador pelo perfil_id do usuário; calcula a distância (Haversine)
- *  até a base (unidade ou casa) e valida a cerca virtual (dist<=raio) no servidor —
+ *  até a base (unidade ou casa) e valida a cerca virtual (dist<=raio) no servidor 
  *  porta da regra do legado (pontoMarcar, index.html ~8433-8448). */
 export async function registrarPonto(input: RegistrarPontoInput): Promise<{ ok: boolean; error?: string; validado?: boolean; distancia?: number | null }> {
   const { op, error } = await requireOperador()
@@ -102,7 +102,7 @@ export type PontoConfig = {
 }
 
 /** Salva a configuração do ponto (chave Maps, raio, lat/lng) da unidade ativa.
- *  Só admin — porta do bloco admin do legado (pontoCfgSalvar, index.html ~8450). */
+ *  Só admin  porta do bloco admin do legado (pontoCfgSalvar, index.html ~8450). */
 export async function salvarPontoConfig(unidadeId: string | null, cfg: PontoConfig): Promise<{ ok: boolean; error?: string }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }

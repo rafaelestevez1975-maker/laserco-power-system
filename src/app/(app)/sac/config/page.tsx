@@ -14,7 +14,7 @@ export default async function SacConfigPage() {
   const activeUnit = ctx?.activeUnitId ?? null
   const sb = await createClient()
 
-  // Contagem real por canal (sac_tickets), escopada pela unidade ativa — substitui a
+  // Contagem real por canal (sac_tickets), escopada pela unidade ativa  substitui a
   // lista estática de "Canais ativos" por algo derivado do uso real (count exact, head).
   // Filtro de unidade aplicado inline (não pelo helper genérico) p/ não disparar a
   // recursão de tipos do Supabase (TS2589) no encadeamento do query builder.
@@ -37,7 +37,7 @@ export default async function SacConfigPage() {
   const slaRaw = (cfgRes.data as { pesos?: { slaHoras?: number } } | null)?.pesos?.slaHoras
   const slaHoras = Number.isFinite(Number(slaRaw)) && Number(slaRaw) > 0 ? Number(slaRaw) : SLA_HORAS_DEFAULT
 
-  // Regras de premiação do SAC (mesma fonte sac_premiacao_config.pesos) — vivem AQUI na config.
+  // Regras de premiação do SAC (mesma fonte sac_premiacao_config.pesos)  vivem AQUI na config.
   const prem: PremMonetaria = { ...PREM_DEFAULT, ...((cfgRes.data as { pesos?: Partial<PremMonetaria> } | null)?.pesos ?? {}) }
 
   const canais: CanalUso[] = CANAIS.map((nome, i) => ({ nome, n: canaisRes[i].count ?? 0 }))

@@ -12,7 +12,7 @@ export type MinhaContaInput = {
 }
 
 /** Atualiza o perfil do PRÓPRIO usuário logado (perfis_usuario).
- *  Sempre escopado por id = op.userId — ninguém edita o perfil de outro por aqui.
+ *  Sempre escopado por id = op.userId  ninguém edita o perfil de outro por aqui.
  *  Nome e telefone são editáveis; e-mail/papel não (gerenciados em RH/auth). */
 export async function salvarMinhaConta(input: MinhaContaInput): Promise<ActionResult> {
   const { op, error } = await requireOperador()
@@ -39,8 +39,8 @@ export async function salvarMinhaConta(input: MinhaContaInput): Promise<ActionRe
   return { ok: true }
 }
 
-// TODO(legado: buildUni) — tema/cor da marca e subdomínio da organização (Minha Conta no
+// TODO(legado: buildUni)  tema/cor da marca e subdomínio da organização (Minha Conta no
 //   legado tinha abas de personalização visual + subdomínio). Sem colunas/tabela no lkii.
-//   //TODO(needs-table: org_config — tema, subdominio)
-// TODO(legado: buildUni) — troca de senha / e-mail: fluxo via Supabase Auth (auth.updateUser),
+//   //TODO(needs-table: org_config  tema, subdominio)
+// TODO(legado: buildUni)  troca de senha / e-mail: fluxo via Supabase Auth (auth.updateUser),
 //   não via perfis_usuario. Deixado adiado.

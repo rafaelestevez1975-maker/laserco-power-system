@@ -29,7 +29,7 @@ const IND_LABEL: Record<string, string> = {
 }
 
 /**
- * Metas — réplica do REL_DEFS.metas do legado (legacy/index.html ~4394). Sobre dado REAL:
+ * Metas  réplica do REL_DEFS.metas do legado (legacy/index.html ~4394). Sobre dado REAL:
  * lê metas_colaborador (escopadas pela unidade via colaboradores), apura meta vs realizado e
  * % atingido por colaborador. KPIs: Meta do período / Realizado / % Atingido / Premiação
  * (liberada quando atingimento >= 80%, regra do legado). Filtro Visualizar (% Atingido | Valor).
@@ -43,7 +43,7 @@ export default async function RelMetasPage({ searchParams }: { searchParams: Pro
 
   const PAGE = 1000
 
-  // Colaboradores da unidade ativa (multitenant — metas_colaborador não tem unidade_id).
+  // Colaboradores da unidade ativa (multitenant  metas_colaborador não tem unidade_id).
   // Paginação completa: numa unidade com >500 ativos a lista era cortada e os agregados
   // (meta/realizado/% e a decisão Premiação ≥80%) não batiam com a realidade.
   const colaboradores: { id: string; nome: string }[] = []
@@ -59,7 +59,7 @@ export default async function RelMetasPage({ searchParams }: { searchParams: Pro
   const mapaColab = new Map(colaboradores.map((c) => [c.id, c.nome]))
   const colabIds = colaboradores.map((c) => c.id)
 
-  // Metas dos colaboradores da unidade — paginadas + chunk no .in (evita corte e URL longa).
+  // Metas dos colaboradores da unidade  paginadas + chunk no .in (evita corte e URL longa).
   const metas: MetaLin[] = []
   if (!unidadeId || colabIds.length > 0) {
     // Sem unidade ativa (rede): paginação direta. Com unidade: por lotes de colaboradores.
@@ -88,8 +88,8 @@ export default async function RelMetasPage({ searchParams }: { searchParams: Pro
     const ehVenda = (m.indicador || '') === 'venda'
     return {
       id: m.id,
-      colaborador: mapaColab.get(m.colaborador_id) ?? '—',
-      indicador: IND_LABEL[m.indicador || ''] ?? m.indicador ?? '—',
+      colaborador: mapaColab.get(m.colaborador_id) ?? '',
+      indicador: IND_LABEL[m.indicador || ''] ?? m.indicador ?? '',
       ehVenda,
       alvo,
       real,
@@ -97,7 +97,7 @@ export default async function RelMetasPage({ searchParams }: { searchParams: Pro
     }
   })
 
-  // KPIs agregados sobre metas de VENDA (R$) — espelha "Meta do período / Realizado".
+  // KPIs agregados sobre metas de VENDA (R$)  espelha "Meta do período / Realizado".
   const metasVenda = linhas.filter((l) => l.ehVenda)
   const metaTotal = metasVenda.reduce((a, l) => a + l.alvo, 0)
   const realizadoTotal = metasVenda.reduce((a, l) => a + l.real, 0)

@@ -55,7 +55,7 @@ export function GruposServicosManager({ grupos, podeEscrever, vazio }: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-list-details" /> Grupos de serviços da rede — organizam o catálogo (Depilação, Estético,
+        <i className="ti ti-list-details" /> Grupos de serviços da rede  organizam o catálogo (Depilação, Estético,
         Ultrassom…). Renomear um grupo atualiza todos os serviços vinculados.
       </div>
 

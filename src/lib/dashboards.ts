@@ -68,8 +68,8 @@ export function calcRoyalties(
 }
 
 // ── Funil de vendas ──
-// (Os RATIOS/tickets HARDCODED do legado — compRate/convRate/ticketN, "Dashboard de Revenda"
-//  ilustrativo — foram REMOVIDOS: o funil usa dado real do ERP, agendamentos → OS fechadas → receita.)
+// (Os RATIOS/tickets HARDCODED do legado  compRate/convRate/ticketN, "Dashboard de Revenda"
+//  ilustrativo  foram REMOVIDOS: o funil usa dado real do ERP, agendamentos → OS fechadas → receita.)
 
 /** % inteiro a/b (réplica do pct() do legado). */
 export function pctInt(a: number, b: number): number {

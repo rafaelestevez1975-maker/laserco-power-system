@@ -30,7 +30,7 @@ export default async function ServicosPage({ searchParams }: { searchParams: Pro
   const page = Math.max(1, Number(pageRaw) || 1)
   const from = (page - 1) * PAGE_SIZE
 
-  // ── KPIs reais (head:true → só count) — catálogo por empresa, sem escopo de unidade ──
+  // ── KPIs reais (head:true → só count)  catálogo por empresa, sem escopo de unidade ──
   const base = () => sb.from('servicos').select('id', { count: 'exact', head: true })
   const [totalRes, ativosRes, comissRes] = await Promise.all([
     base(),

@@ -94,7 +94,7 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
                 </div>
                 <div style={col}><label style={flab}>Responsável</label>
                   <select style={fin} value={f.atribuido_para} onChange={(e) => set('atribuido_para', e.target.value)}>
-                    <option value="">— Não atribuído</option>
+                    <option value=""> Não atribuído</option>
                     {atendentes.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
                   </select>
                 </div>

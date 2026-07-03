@@ -22,7 +22,7 @@ export type CountOpts = {
 }
 
 /**
- * Erro de agregação de dashboard — lançado quando o Supabase devolve `{ error }`.
+ * Erro de agregação de dashboard  lançado quando o Supabase devolve `{ error }`.
  * Garante que o dashboard NÃO mostre 0/valores parciais silenciosos (reclamação de
  * "números que não batem"): a tela cai no error boundary com aviso real em vez de fingir zero.
  */
@@ -33,7 +33,7 @@ export class DashAggError extends Error {
   }
 }
 
-/** Conta linhas de uma tabela aplicando filtros — head:true (zero linhas transferidas). */
+/** Conta linhas de uma tabela aplicando filtros  head:true (zero linhas transferidas). */
 export async function contar(sb: SB, tabela: string, opts: CountOpts = {}): Promise<number> {
   let q = sb.from(tabela).select('id', { count: 'exact', head: true })
   for (const [c, v] of Object.entries(opts.eq ?? {})) q = q.eq(c, v)
@@ -84,7 +84,7 @@ const SUM_CAP = 20000
 const PAGE = 1000
 
 /**
- * Pagina lançamentos (valor/categoria/data + status + forma de pagamento) com filtros —
+ * Pagina lançamentos (valor/categoria/data + status + forma de pagamento) com filtros 
  * usado p/ somar receita/despesa por categoria, mês, status (previsto×realizado) e forma.
  * 12.9k linhas no total; com filtro de período fica enxuto. Caps em SUM_CAP.
  */
@@ -141,7 +141,7 @@ export function somaPorChave(rows: LancMin[], chave: (r: LancMin) => string | nu
   return m
 }
 
-/** Agregado por serviço: faturamento + sessões (qtd) — para o ranking do gerencial. */
+/** Agregado por serviço: faturamento + sessões (qtd)  para o ranking do gerencial. */
 export type ServAgg = { nome: string; faturamento: number; sessoes: number }
 
 /**
@@ -188,7 +188,7 @@ export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAg
 }
 
 /**
- * Faturamento (receita) realizado do MÊS ANTERIOR de uma unidade — base p/ royalties.
+ * Faturamento (receita) realizado do MÊS ANTERIOR de uma unidade  base p/ royalties.
  * Conta só `status='pago'` (faturamento de fato), via paginação enxuta do mês anterior.
  */
 export async function faturamentoMesAnterior(sb: SB, unidadeId: string | null, hoje: Date = new Date()): Promise<number> {

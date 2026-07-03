@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — COMISSÕES + COLABORADORES (paridade com o legado: legacy/index.html)
+-- Migration  COMISSÕES + COLABORADORES (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
 --   Dois módulos do legado dependiam de estado que o schema lkii ainda não cobria:
@@ -10,12 +10,12 @@
 --      edições de percentuais/faixas/base PERSISTAM e possam alimentar a apuração
 --      de premiação (premRoster) no futuro. Cada categoria guarda:
 --        · base (individual/loja/sessao) → on + pct
---        · Parte 1 — tiers por dezena (t80/t100/t120/t130)
---        · Parte 2 — fechamento do mês (f100/f120/f130)
+--        · Parte 1  tiers por dezena (t80/t100/t120/t130)
+--        · Parte 2  fechamento do mês (f100/f120/f130)
 --        · cargo (mapeia a categoria a um cargo do enum p/ o simulador casar
 --          colaborador → categoria).
 --
---   2. Ficha do Colaborador — abas "Acesso ao sistema" e "Agenda & Serviços"
+--   2. Ficha do Colaborador  abas "Acesso ao sistema" e "Agenda & Serviços"
 --      (view-colaborador-form, index.html ~2121..2149 + colabServRender ~7120).
 --      Faltavam colunas em `colaboradores` (exibe_agenda, disponivel_online,
 --      comissao_pct, ordem_app, forcar_troca_senha, ultimo_acesso) e a tabela de
@@ -33,14 +33,14 @@
 --   CREATE TABLE/COLUMN/POLICY IF NOT EXISTS / DROP POLICY IF EXISTS / contagem
 --   antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/comissoes.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) MATRIZ DE COMISSÕES (COM_CATS) — uma linha por categoria, por empresa.
+-- 1) MATRIZ DE COMISSÕES (COM_CATS)  uma linha por categoria, por empresa.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS matriz_comissoes (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,19 +48,19 @@ CREATE TABLE IF NOT EXISTS matriz_comissoes (
   nome            text NOT NULL,                      -- nome da categoria (ex.: 'Consultoras de Vendas')
   cargo           text,                               -- cargo do enum correspondente (p/ pré-seleção no simulador)
   ordem           integer NOT NULL DEFAULT 0,
-  -- Premiação base (marque um ou mais) — on + pct
+  -- Premiação base (marque um ou mais)  on + pct
   base_individual_on  boolean NOT NULL DEFAULT false,
   base_individual_pct numeric(6,2) NOT NULL DEFAULT 0,
   base_loja_on        boolean NOT NULL DEFAULT false,
   base_loja_pct       numeric(6,2) NOT NULL DEFAULT 0,
   base_sessao_on      boolean NOT NULL DEFAULT false,
   base_sessao_pct     numeric(6,2) NOT NULL DEFAULT 0,
-  -- Parte 1 — adicional por dezena (sobre a premiação base)
+  -- Parte 1  adicional por dezena (sobre a premiação base)
   tier_t80        numeric(6,2) NOT NULL DEFAULT 0,
   tier_t100       numeric(6,2) NOT NULL DEFAULT 0,
   tier_t120       numeric(6,2) NOT NULL DEFAULT 0,
   tier_t130       numeric(6,2) NOT NULL DEFAULT 0,
-  -- Parte 2 — adicional no fechamento do mês (sobre o valor final da unidade)
+  -- Parte 2  adicional no fechamento do mês (sobre o valor final da unidade)
   fech_f100       numeric(6,2) NOT NULL DEFAULT 0,
   fech_f120       numeric(6,2) NOT NULL DEFAULT 0,
   fech_f130       numeric(6,2) NOT NULL DEFAULT 0,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS matriz_comissoes (
 CREATE INDEX IF NOT EXISTS idx_matriz_comissoes_empresa ON matriz_comissoes (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 2) COLABORADORES — colunas das abas "Acesso ao sistema" e "Agenda & Serviços".
+-- 2) COLABORADORES  colunas das abas "Acesso ao sistema" e "Agenda & Serviços".
 --    exibe_agenda        : aparece como coluna na agenda (default true)
 --    disponivel_online   : disponível p/ agendamento online (default true)
 --    comissao_pct        : "% Comissão padrão" (default 0)
@@ -87,7 +87,7 @@ ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS forcar_troca_senha boolean NO
 ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ultimo_acesso      timestamptz;
 
 -- ----------------------------------------------------------------------------
--- 3) COLABORADOR_SERVICOS (colabServRender) — "Serviços que o colaborador executa".
+-- 3) COLABORADOR_SERVICOS (colabServRender)  "Serviços que o colaborador executa".
 --    Junção N:N entre colaboradores e servicos. UNIQUE para evitar duplicidade.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS colaborador_servicos (
@@ -137,7 +137,7 @@ CREATE POLICY colaborador_servicos_rw ON colaborador_servicos
                  AND p.papel IN ('admin_geral','gestor','recepcao')));
 
 -- ----------------------------------------------------------------------------
--- 5) SEED — espelha COM_CATS do legado (5 categorias). Idempotente por empresa.
+-- 5) SEED  espelha COM_CATS do legado (5 categorias). Idempotente por empresa.
 -- ----------------------------------------------------------------------------
 DO $$
 DECLARE

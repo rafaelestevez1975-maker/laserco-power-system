@@ -6,7 +6,7 @@
  *   IGP-M 189 · IPCA 433 · INPC 188
  * Séries anualizadas (% a.a., último valor): SELIC meta 432 · CDI 4389
  *
- * Server-only. Cache de 6h por série (revalidate) — índice não muda intradiário.
+ * Server-only. Cache de 6h por série (revalidate)  índice não muda intradiário.
  * Falha de rede → índice ausente; a tela avisa e desativa a correção (nunca chuta).
  */
 export type IndiceEco = { label: string; acum12m: number }

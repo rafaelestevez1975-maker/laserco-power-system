@@ -10,7 +10,7 @@ type AtendPerf = { nome: string; total: number; resolvidos: number; slaPct: numb
 type Reembolso = { ref: string; cliente: string; unidade: string; valor: number; multa: boolean; pago: boolean }
 type ReembResumo = { total: number; count: number; pagos: number }
 
-// Presets de período — paridade com o helper compartilhado (@/lib/periodo) e com o legado
+// Presets de período  paridade com o helper compartilhado (@/lib/periodo) e com o legado
 // (REL_PERIODS: Hoje/Ontem/Última semana/Mês atual/Mês passado/Período…). "Qualquer
 // período" = "Tudo". Default da tela: "mes" (Mês atual), igual ao Dashboard.
 const PERIOD_PILLS: [string, string][] = [
@@ -99,26 +99,26 @@ export function SacRelatorios({
         </div>
       </div>
 
-      {/* Por canal / Por motivo — grid 2 cols dash-w, motivo dourado (paridade legado sacRelatorios). */}
+      {/* Por canal / Por motivo  grid 2 cols dash-w, motivo dourado (paridade legado sacRelatorios). */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         <BarChart title="Por canal" icon="ti-radio" rows={toRows(canais)} />
         <BarChart title="Por motivo" icon="ti-list-details" rows={toRows(motivos)} gold emptyMsg="Sem dados no período." />
       </div>
 
-      {/* Por fase / Por prioridade — melhorias da migração, mesmo visual dash-w. */}
+      {/* Por fase / Por prioridade  melhorias da migração, mesmo visual dash-w. */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         <BarChart title="Por fase" icon="ti-layout-kanban" rows={toRows(fases)} />
         <BarChart title="Por prioridade" icon="ti-flag" rows={toRows(prioridades.map((p) => ({ nome: p.nome.replace(/^\w/, (c) => c.toUpperCase()), n: p.n })))} />
       </div>
 
-      {/* Chamados por unidade (Top 10) — restaurado do legado; só na visão "Todas as unidades". */}
+      {/* Chamados por unidade (Top 10)  restaurado do legado; só na visão "Todas as unidades". */}
       {mostrarUnidade && (
         <div style={{ marginBottom: 14 }}>
           <BarChart title="Chamados por unidade (Top 10)" icon="ti-building" rows={toRows(porUnidade)} emptyMsg="Sem chamados por unidade no período." />
         </div>
       )}
 
-      {/* Performance por atendente — melhoria da migração; tabela com markup legado (cli-card/cli-scroll/cli-table). */}
+      {/* Performance por atendente  melhoria da migração; tabela com markup legado (cli-card/cli-scroll/cli-table). */}
       {atendentes.length > 0 && (
         <div className="dash-w" style={{ marginBottom: 14 }}>
           <h4><i className="ti ti-users" /> Performance por atendente</h4>
@@ -132,7 +132,7 @@ export function SacRelatorios({
                       <td><b>{a.nome}</b></td>
                       <td className="num-r">{a.total}</td>
                       <td className="num-r">{a.resolvidos}</td>
-                      <td className="num-r" style={{ color: a.slaPct >= 80 ? 'var(--green)' : a.slaPct >= 50 ? '#9A6700' : 'var(--red)', fontWeight: 700 }}>{a.total ? `${a.slaPct}%` : '—'}</td>
+                      <td className="num-r" style={{ color: a.slaPct >= 80 ? 'var(--green)' : a.slaPct >= 50 ? '#9A6700' : 'var(--red)', fontWeight: 700 }}>{a.total ? `${a.slaPct}%` : ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -142,7 +142,7 @@ export function SacRelatorios({
         </div>
       )}
 
-      {/* Reembolsos — restaurado do legado: dashWidget('Reembolsos','ti-cash', relTable([Protocolo,Cliente,Unidade,Valor,Multa,Pagamento])). */}
+      {/* Reembolsos  restaurado do legado: dashWidget('Reembolsos','ti-cash', relTable([Protocolo,Cliente,Unidade,Valor,Multa,Pagamento])). */}
       <div className="dash-w" style={{ marginBottom: 14 }}>
         <h4><i className="ti ti-cash" /> Reembolsos</h4>
         <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginBottom: 12 }}>
@@ -159,7 +159,7 @@ export function SacRelatorios({
                   {reembolsos.map((r, i) => (
                     <tr key={`${r.ref}-${i}`}>
                       <td><b>{r.ref}</b></td>
-                      <td>{r.cliente || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+                      <td>{r.cliente || <span style={{ color: 'var(--text-3)' }}></span>}</td>
                       <td>{r.unidade}</td>
                       <td className="num-r">{moedaBR(r.valor)}</td>
                       <td>{r.multa ? 'Sim' : <span style={{ color: 'var(--text-3)' }}>Não</span>}</td>
@@ -176,7 +176,7 @@ export function SacRelatorios({
       </div>
 
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 10 }}>
-        <i className="ti ti-info-circle" /> Tempo médio de resposta/resolução ainda não é medido nos chamados importados — passa a aparecer conforme o SAC operar pelo sistema.
+        <i className="ti ti-info-circle" /> Tempo médio de resposta/resolução ainda não é medido nos chamados importados  passa a aparecer conforme o SAC operar pelo sistema.
       </div>
     </>
   )

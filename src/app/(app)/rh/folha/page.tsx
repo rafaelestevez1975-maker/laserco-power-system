@@ -20,7 +20,7 @@ function competenciasRecentes(n = 12): string[] {
 }
 
 /**
- * RH · Folha de Pagamento — porta a tela "Folha" do portal RH (legacy/portal-rh.html):
+ * RH · Folha de Pagamento  porta a tela "Folha" do portal RH (legacy/portal-rh.html):
  * Salário Bruto/Líquido, INSS, IRRF, FGTS, 13º e holerite por colaborador.
  * Cálculos em src/lib/rh.ts; dados persistidos em folha_pagamento (migration rh.sql).
  */
@@ -58,7 +58,7 @@ export default async function FolhaPage({ searchParams }: { searchParams: Promis
     if (!error) {
       rows = ((data ?? []) as Omit<FolhaRow, 'colaboradorNome' | 'cargo'>[]).map((r) => {
         const c = mapaColab.get(r.colaborador_id)
-        return { ...r, colaboradorNome: c?.nome ?? '—', cargo: c?.cargo ?? null }
+        return { ...r, colaboradorNome: c?.nome ?? '', cargo: c?.cargo ?? null }
       })
       semDados = rows.length === 0
     }

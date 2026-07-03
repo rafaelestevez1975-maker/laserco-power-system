@@ -15,12 +15,12 @@ const PAPEIS_ESCRITA = ['admin_geral', 'gerente', 'recepcao', 'gestor', 'rh']
 type SP = { q?: string; status?: string; regime?: string; cargo?: string; area?: string; page?: string }
 
 /**
- * RH · Colaboradores — porta a tela "Colaboradores" do portal RH (legacy/portal-rh.html)
+ * RH · Colaboradores  porta a tela "Colaboradores" do portal RH (legacy/portal-rh.html)
  * e o cadastro completo de admissão (_empFromColab, index.html ~7059: nome, cpf, rg,
  * nascimento, contatos, endereços, dados bancários, cargo, salário, contrato, horário/escala).
  *
  * Reaproveita os componentes do cadastro de colaboradores do PowerSystem (a "bridge"
- * COLAB ⇄ rh_employees do legado vira a MESMA tabela `colaboradores` aqui — sem
+ * COLAB ⇄ rh_employees do legado vira a MESMA tabela `colaboradores` aqui  sem
  * sincronização localStorage). O formulário de admissão tem os ~30 campos do schema.
  */
 export default async function RhColaboradoresPage({ searchParams }: { searchParams: Promise<SP> }) {

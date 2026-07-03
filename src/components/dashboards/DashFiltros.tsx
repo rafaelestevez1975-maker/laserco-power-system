@@ -15,7 +15,7 @@ type Props = {
   basePath: string
   /** unidades disponíveis para o select (vazio = oculta o select) */
   unidades?: UnidadeOpt[]
-  /** unidade selecionada na querystring (?unidade=) — 'todas' = sem filtro */
+  /** unidade selecionada na querystring (?unidade=)  'todas' = sem filtro */
   unidade?: string
   /** quando true, mostra também o select 'Tipo de unidade' (funil) */
   tipoUni?: boolean
@@ -26,7 +26,7 @@ type Props = {
 }
 
 /**
- * Filtro dos DASHBOARDS — réplica do bloco de filtros do buildDashb() do legado
+ * Filtro dos DASHBOARDS  réplica do bloco de filtros do buildDashb() do legado
  * (legacy/index.html ~4611): Período (8 presets) + Unidade + [Tipo de unidade no funil]
  * + ações Pesquisar/Exportar. Muda a querystring e navega (a página RSC re-renderiza).
  */

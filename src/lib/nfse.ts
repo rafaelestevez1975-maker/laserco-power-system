@@ -1,11 +1,11 @@
 /**
- * NFS-e — constantes e helpers puros (client-safe). Portados do legado
+ * NFS-e  constantes e helpers puros (client-safe). Portados do legado
  * (legacy/index.html ~8493-8500). Integração com provedores municipais
  * (ABRASF, Betha, WebISS, ISSNet, Nota Carioca, NFS-e Paulistana) + padrão
  * Nacional ADN.
  */
 
-// ── Mapa de provedores municipais (26 cidades) — legado NFSE_PROVEDORES L8493 ──
+// ── Mapa de provedores municipais (26 cidades)  legado NFSE_PROVEDORES L8493 ──
 export const NFSE_PROVEDORES: Record<string, string> = {
   'São Paulo': 'NFS-e Paulistana',
   'Rio de Janeiro': 'Nota Carioca',
@@ -40,7 +40,7 @@ export function nfseProvedor(cidade: string | null | undefined): string {
   return NFSE_PROVEDORES[(cidade || '').trim()] || 'NFS-e Nacional (padrão ADN)'
 }
 
-/** Hash determinístico de string (legado hashStr) — usado por alíquota/conexão. */
+/** Hash determinístico de string (legado hashStr)  usado por alíquota/conexão. */
 export function hashStr(s: string): number {
   let h = 0
   const str = s || ''
@@ -82,7 +82,7 @@ export type NfseStatus = 'autorizada' | 'cancelada' | 'processando' | 'erro'
 export type NfseTipo = 'nfse' | 'nfe'
 export type NfseFato = 'venda' | 'sessao'
 
-/** Badge (classe os-st + rótulo) por status — espelha buildNotas emit. */
+/** Badge (classe os-st + rótulo) por status  espelha buildNotas emit. */
 export function badgeStatus(st: string): { cls: string; label: string } {
   switch (st) {
     case 'autorizada':

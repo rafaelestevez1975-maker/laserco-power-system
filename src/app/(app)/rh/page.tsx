@@ -5,7 +5,7 @@ import { getSessionContext } from '@/lib/session'
 export const dynamic = 'force-dynamic'
 
 /**
- * RH · Dashboard — porta a tela inicial do portal RH (legacy/portal-rh.html, tela
+ * RH · Dashboard  porta a tela inicial do portal RH (legacy/portal-rh.html, tela
  * "Dashboard"): KPIs/cards (Colaboradores, Pendências para Aprovação, vagas abertas)
  * + métricas por departamento + atalhos para as demais telas do portal.
  *
@@ -77,7 +77,7 @@ export default async function RhDashboardPage() {
         <div className="ri" style={{ background: '#E7F0EC', color: '#0f6b3a' }}><i className="ti ti-briefcase" /></div>
         <div>
           <h2>Recursos Humanos</h2>
-          <p>Portal de RH · {ctx?.activeUnitName ?? 'Todas as unidades'} — colaboradores, ponto, folha, férias e desempenho.</p>
+          <p>Portal de RH · {ctx?.activeUnitName ?? 'Todas as unidades'}  colaboradores, ponto, folha, férias e desempenho.</p>
         </div>
       </div>
 

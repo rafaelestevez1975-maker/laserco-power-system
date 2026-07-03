@@ -5,14 +5,14 @@ import { dataHoraBR } from '@/lib/fmt'
 export const dynamic = 'force-dynamic'
 
 /**
- * Expansão · WhatsApp CRM — relatório read-only.
+ * Expansão · WhatsApp CRM  relatório read-only.
  *
  * Intenção (legado, exppage="whatsapp" + linhas ~6592/6631): conversas de WhatsApp que
- * alimentam o CRM — respondentes de disparos viram leads e a equipe segue o fluxo de
+ * alimentam o CRM  respondentes de disparos viram leads e a equipe segue o fluxo de
  * fechamento pela aba Conversas ("Abrir no CRM"). Aqui mostramos os KPIs das conversas
  * (abertas, não lidas, em atendimento, no bot) e a lista das conversas mais recentes.
  *
- * Fonte real CONFIRMADA: sac_whatsapp_chats / sac_whatsapp_mensagens — as únicas tabelas de
+ * Fonte real CONFIRMADA: sac_whatsapp_chats / sac_whatsapp_mensagens  as únicas tabelas de
  * conversas de WhatsApp usadas no código (src/app/(app)/sac/triagem/page.tsx e o webhook
  * src/app/api/webhooks/uazapi/route.ts). As tabelas hipotéticas whatsapp_conversas /
  * whatsapp_mensagens NÃO existem no código, portanto NÃO são consultadas.
@@ -64,7 +64,7 @@ function diasDesde(iso: string | null): number | null {
   return Math.max(0, Math.floor((Date.now() - t) / DIA_MS))
 }
 
-// Pill de status — reaproveita as variantes do legacy.css (wa-pill ok/run/pend/done/draft).
+// Pill de status  reaproveita as variantes do legacy.css (wa-pill ok/run/pend/done/draft).
 function statusPill(status: string | null) {
   const s = status || 'aberto'
   const variante =
@@ -82,7 +82,7 @@ export default async function ExpansaoWhatsappPage() {
   const ctx = await getSessionContext()
   const sb = await createClient()
 
-  // ── Conversas (sac_whatsapp_chats) — mais recentes primeiro ──
+  // ── Conversas (sac_whatsapp_chats)  mais recentes primeiro ──
   const { data: chatsRaw, error: chatsErr } = await sb
     .from('sac_whatsapp_chats')
     .select('id, telefone, nome, ultima_msg, ultima_msg_em, nao_lidas, bot_ativo, atendente_id, status')
@@ -104,7 +104,7 @@ export default async function ExpansaoWhatsappPage() {
   // A amostra carregada (chats) bateu no teto? Então KPIs derivados só da amostra são parciais.
   const chatsCapped = totalConversas > chats.length
 
-  // ── Volume de mensagens (sac_whatsapp_mensagens) — só consultamos se a fonte respondeu ──
+  // ── Volume de mensagens (sac_whatsapp_mensagens)  só consultamos se a fonte respondeu ──
   let totalMsgs = 0
   let entrada = 0
   let saida = 0
@@ -164,7 +164,7 @@ export default async function ExpansaoWhatsappPage() {
       </div>
 
       <div className="crm-note">
-        <i className="ti ti-brand-whatsapp" /> Conversas de <b>WhatsApp</b> da rede — respondentes de disparos e
+        <i className="ti ti-brand-whatsapp" /> Conversas de <b>WhatsApp</b> da rede  respondentes de disparos e
         clientes que escrevem entram aqui e alimentam o CRM, onde a equipe segue o fluxo de fechamento. Use a{' '}
         <b>Conversa</b> (SAC) para responder; este painel é o resumo gerencial das conversas.
       </div>
@@ -172,7 +172,7 @@ export default async function ExpansaoWhatsappPage() {
       {semFonte ? (
         <div className="cli-card" style={{ padding: '22px 18px' }}>
           <div className="crm-note" style={{ marginBottom: 0 }}>
-            <i className="ti ti-database-off" /> Relatório em preparação — sem fonte de dados de conversas de WhatsApp
+            <i className="ti ti-database-off" /> Relatório em preparação  sem fonte de dados de conversas de WhatsApp
             disponível no momento (consulta indisponível para o seu perfil/unidade). Assim que as conversas começarem a
             ser registradas, os números aparecerão aqui automaticamente.
           </div>
@@ -219,7 +219,7 @@ export default async function ExpansaoWhatsappPage() {
             </div>
             <div className="metric-box">
               <span>Taxa de resposta</span>
-              <b>{taxaResposta != null ? `${taxaResposta}%` : '—'}</b>
+              <b>{taxaResposta != null ? `${taxaResposta}%` : ''}</b>
             </div>
           </div>
 
@@ -299,11 +299,11 @@ export default async function ExpansaoWhatsappPage() {
                   {detalhe.map((c) => (
                     <tr key={c.id}>
                       <td>
-                        <span className="cli-name">{c.nome || c.telefone || '—'}</span>
+                        <span className="cli-name">{c.nome || c.telefone || ''}</span>
                       </td>
-                      <td>{c.telefone || '—'}</td>
+                      <td>{c.telefone || ''}</td>
                       <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.ultima_msg || '—'}
+                        {c.ultima_msg || ''}
                       </td>
                       <td>{statusPill(c.status)}</td>
                       <td>
@@ -320,9 +320,9 @@ export default async function ExpansaoWhatsappPage() {
                         )}
                       </td>
                       <td className="num-r" style={{ fontWeight: 600 }}>
-                        {(c.nao_lidas ?? 0) > 0 ? (c.nao_lidas ?? 0).toLocaleString('pt-BR') : '—'}
+                        {(c.nao_lidas ?? 0) > 0 ? (c.nao_lidas ?? 0).toLocaleString('pt-BR') : ''}
                       </td>
-                      <td>{c.ultima_msg_em ? dataHoraBR(c.ultima_msg_em) : '—'}</td>
+                      <td>{c.ultima_msg_em ? dataHoraBR(c.ultima_msg_em) : ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -334,7 +334,7 @@ export default async function ExpansaoWhatsappPage() {
             <i className="ti ti-affiliate" /> Cada respondente vira um lead no CRM como <b>Disparo WhatsApp</b> para a
             equipe seguir o fluxo de fechamento. Para responder e atribuir atendentes, use a{' '}
             <b>Conversa</b> em SAC. Última atualização:{' '}
-            <b>{chats[0]?.ultima_msg_em ? dataHoraBR(chats[0].ultima_msg_em) : '—'}</b>.
+            <b>{chats[0]?.ultima_msg_em ? dataHoraBR(chats[0].ultima_msg_em) : ''}</b>.
           </div>
         </>
       )}

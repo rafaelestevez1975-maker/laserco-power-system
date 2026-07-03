@@ -116,7 +116,7 @@ export function AutomacoesView(props: Props) {
             <i className="ti ti-brand-whatsapp" style={{ fontSize: 23 }} />
           </div>
           <div style={{ flex: 1, minWidth: 240 }}>
-            <div style={{ fontWeight: 700 }}>WhatsApp da unidade — {unidadeNome}</div>
+            <div style={{ fontWeight: 700 }}>WhatsApp da unidade  {unidadeNome}</div>
             <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
               Cada unidade integra o <b>seu próprio WhatsApp</b> para disparar e gerir as automações.{' '}
               {!wa.configurado
@@ -131,16 +131,16 @@ export function AutomacoesView(props: Props) {
           </a>
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 9 }}>
-          <i className="ti ti-info-circle" /> Todas as automações são enviadas por <b>WhatsApp</b> — o <b>envio por e-mail está suspenso</b>. A unidade dispara automações apenas com o WhatsApp conectado.
+          <i className="ti ti-info-circle" /> Todas as automações são enviadas por <b>WhatsApp</b>  o <b>envio por e-mail está suspenso</b>. A unidade dispara automações apenas com o WhatsApp conectado.
         </div>
       </div>
 
       {/* 4 KPIs (autosKpi 3928) */}
       <div className="metric-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div className="metric-box"><span>Automações ativas</span><b>{kpis.ativas} / {kpis.total}</b></div>
-        <div className="metric-box"><span>Mensagens enviadas (mês)</span><b>{kpis.enviadasMes != null ? kpis.enviadasMes.toLocaleString('pt-BR') : '—'}</b></div>
-        <div className="metric-box"><span>Taxa de resposta</span><b>{kpis.taxaResposta != null ? `${kpis.taxaResposta}%` : '—'}</b></div>
-        <div className="metric-box"><span>Agendamentos recuperados</span><b>{kpis.recuperados != null ? kpis.recuperados : '—'}</b></div>
+        <div className="metric-box"><span>Mensagens enviadas (mês)</span><b>{kpis.enviadasMes != null ? kpis.enviadasMes.toLocaleString('pt-BR') : ''}</b></div>
+        <div className="metric-box"><span>Taxa de resposta</span><b>{kpis.taxaResposta != null ? `${kpis.taxaResposta}%` : ''}</b></div>
+        <div className="metric-box"><span>Agendamentos recuperados</span><b>{kpis.recuperados != null ? kpis.recuperados : ''}</b></div>
       </div>
 
       {/* Ações */}
@@ -178,7 +178,7 @@ export function AutomacoesView(props: Props) {
         </div>
       )}
 
-      {/* Automação de não comparecimento (no-show) — view-motivos 1762-1788 */}
+      {/* Automação de não comparecimento (no-show)  view-motivos 1762-1788 */}
       <NoShowCard noshow={props.noshow} podeEscrever={podeEscrever} temUnidadeAtiva={temUnidadeAtiva} />
     </div>
   )
@@ -328,7 +328,7 @@ function NoShowCard({ noshow, podeEscrever, temUnidadeAtiva }: { noshow: NoShow;
 
       <label style={{ ...rule, background: '#F7E7EB', borderColor: 'var(--brand-300, #e8b9c5)', marginTop: 12 }}>
         <input type="checkbox" checked={form.ativa} disabled={!podeEscrever} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} />
-        <span><b>Ativar automação de não comparecimento</b> — quando o cliente não comparece, o sistema dispara mensagens automáticas oferecendo o reagendamento.</span>
+        <span><b>Ativar automação de não comparecimento</b>  quando o cliente não comparece, o sistema dispara mensagens automáticas oferecendo o reagendamento.</span>
       </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, margin: '12px 0' }}>

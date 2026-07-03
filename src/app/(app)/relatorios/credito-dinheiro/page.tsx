@@ -17,11 +17,11 @@ const LISTA_MAX = 300
 const MESES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 /**
- * Crédito em dinheiro — réplica da intenção do legado (REL_DEFS['credito-dinheiro'],
+ * Crédito em dinheiro  réplica da intenção do legado (REL_DEFS['credito-dinheiro'],
  * legacy/index.html ~4317: abas Situação/Movimentação de crédito em dinheiro por cliente).
  *
  * Não existe no backend lkii nenhuma tabela de carteira/saldo de crédito
- * (movimentos_caixa / caixas / sessoes_caixa / creditos NÃO existem — confirmado por
+ * (movimentos_caixa / caixas / sessoes_caixa / creditos NÃO existem  confirmado por
  * grep ".from('<tabela>')" em src). A fonte REAL disponível são os pagamentos de OS
  * feitos em DINHEIRO (os_pagamentos.metodo = 'dinheiro'), que é exatamente o "dinheiro
  * recebido por cliente" que o relatório descreve. Aqui apuramos:
@@ -54,7 +54,7 @@ export default async function RelCreditoDinheiroPage({ searchParams }: { searchP
 
   const ehAprovado = (s: string | null) => s === 'aprovado'
 
-  // KPIs — só recebimentos aprovados contam como dinheiro efetivamente em caixa.
+  // KPIs  só recebimentos aprovados contam como dinheiro efetivamente em caixa.
   let totalDinheiro = 0
   let qtdAprovados = 0
   for (const r of rows) {
@@ -85,9 +85,9 @@ export default async function RelCreditoDinheiroPage({ searchParams }: { searchP
     Object.assign(nomeCliente, await nomesClientes(sb, cliIds))
   }
   const nomeDoPag = (osId: string | null): string => {
-    if (!osId) return '—'
+    if (!osId) return ''
     const cid = clienteIdDaOs[osId]
-    return cid ? (nomeCliente[cid] ?? '—') : '—'
+    return cid ? (nomeCliente[cid] ?? '') : ''
   }
   const chaveCliente = (osId: string | null): string => {
     if (!osId) return '∅'
@@ -157,7 +157,7 @@ export default async function RelCreditoDinheiroPage({ searchParams }: { searchP
     dataBR(r.data_pagamento),
     nomeDoPag(r.os_id),
     Math.round(Number(r.valor) || 0),
-    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '—',
+    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '',
   ])
 
   return (

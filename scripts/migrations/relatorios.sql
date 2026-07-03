@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — RELATÓRIOS · CONTRATOS (planos/contratos por cliente)
+-- Migration  RELATÓRIOS · CONTRATOS (planos/contratos por cliente)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html · REL_DEFS.contratos L4311) tem um relatório de
@@ -23,14 +23,14 @@
 --   papel (admin_geral / gestor / financeiro). Modelo: perfis_usuario(papel,
 --   unidade_id) → unidades(empresa_id).
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/relatorios.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) CONTRATOS (planos/assinaturas de cliente) — espelha REL_DEFS.contratos
+-- 1) CONTRATOS (planos/assinaturas de cliente)  espelha REL_DEFS.contratos
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS contratos (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_contratos_status  ON contratos (status);
 CREATE INDEX IF NOT EXISTS idx_contratos_criado  ON contratos (criado_em);
 
 -- ----------------------------------------------------------------------------
--- 2) RLS — habilitar + policy por papel (admin_geral / gestor / financeiro)
+-- 2) RLS  habilitar + policy por papel (admin_geral / gestor / financeiro)
 -- ----------------------------------------------------------------------------
 ALTER TABLE contratos ENABLE ROW LEVEL SECURITY;
 
@@ -64,7 +64,7 @@ CREATE POLICY contratos_rw ON contratos
                  AND p.papel IN ('admin_geral','gestor','financeiro')));
 
 -- ----------------------------------------------------------------------------
--- 3) SEED — contratos demo a partir de clientes reais (só se a tabela estiver vazia).
+-- 3) SEED  contratos demo a partir de clientes reais (só se a tabela estiver vazia).
 --    Distribui planos/status/valores determinísticos espelhando o legado.
 -- ----------------------------------------------------------------------------
 DO $$

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 type Binding = { id: string; instancia_nome: string; escopo: 'unidade' | 'geral'; unidade_id: string | null; rotulo: string | null; delay_min: number; delay_max: number; atendente_id: string | null }
 
 /**
- * Canais do SAC — CENTRALIZADO na franqueadora (pedido do Julio). NÃO há canal por franquia:
+ * Canais do SAC  CENTRALIZADO na franqueadora (pedido do Julio). NÃO há canal por franquia:
  * um WhatsApp central do SAC + os números PRÓPRIOS das atendentes (auto-serviço, no login delas).
  * Mais as origens de atendimento (Site → chamado). Tela isolada da de Gestão (/canais).
  */
@@ -27,7 +27,7 @@ export default async function SacCanaisPage() {
       const todas = (await listInstances()).filter((i) => /laser/i.test(i.name))
       const sb = await createClient()
       const [{ data }, atFull] = await Promise.all([
-        // SAC = só canais centrais (franqueadora) — escopo 'geral'. Nunca por unidade.
+        // SAC = só canais centrais (franqueadora)  escopo 'geral'. Nunca por unidade.
         sb.from('canais_whatsapp').select('id, instancia_nome, escopo, unidade_id, rotulo, delay_min, delay_max, atendente_id').eq('escopo', 'geral'),
         listAtendentesSac(sb, false),
       ])

@@ -1,5 +1,5 @@
 /**
- * Financeiro da FRANQUEADORA — helpers puros (client-safe) espelhando a lógica do
+ * Financeiro da FRANQUEADORA  helpers puros (client-safe) espelhando a lógica do
  * legado (legacy/index.html · buildFinFranq L5099+). Paridade fiel:
  *  - categorias fixas FIN_CATS_REC (Royalties protegida)
  *  - prioridade padrão por categoria (finPrioPadrao L5113)
@@ -86,7 +86,7 @@ export function normalizaFluxo(serieRaw: unknown, resumoRaw: unknown, compRaw: u
     .map((c) => ({ conta: c.conta, total: Number(c.total) || 0 })).filter((c) => c.total > 0).sort((a, b) => b.total - a.total)
   return { serie, resumo, composicao }
 }
-// Competência (mês de referência) a partir de uma data ISO — ex.: "Junho/2026".
+// Competência (mês de referência) a partir de uma data ISO  ex.: "Junho/2026".
 // Substitui o antigo FIN_MESREF chumbado ('Maio/2026'). Saldo inicial das projeções
 // agora vem da posição realizada real (recebido − pago), não de número inventado.
 const MESES_BR = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -132,7 +132,7 @@ export function finBoletoNum(seq: number): string {
   return `${a}.${pad(b)} ${pad(c)}.${pad(d)} 91020.150008 8 ${val}`
 }
 
-// ── Dias de atraso por vencimento (calcDias L5516) — base hoje. ──
+// ── Dias de atraso por vencimento (calcDias L5516)  base hoje. ──
 export function calcDiasAtraso(vencimento: string | null | undefined, hojeISO?: string): number {
   if (!vencimento) return 0
   const v = new Date(vencimento)
@@ -148,7 +148,7 @@ export function proximoPassoRegua(diasAtraso: number, regua: ReguaPasso[] = FIN_
   return passo ?? regua[1] ?? regua[0]
 }
 
-// ── E-mail/telefone do franqueado (finFranqEmail L5043) — fallback por slug ──
+// ── E-mail/telefone do franqueado (finFranqEmail L5043)  fallback por slug ──
 export function finFranqEmail(unidadeNome: string | null | undefined): string {
   const slug = (unidadeNome || '').split(' - ')[0]
     .toLowerCase()
@@ -158,7 +158,7 @@ export function finFranqEmail(unidadeNome: string | null | undefined): string {
   return slug ? `franqueado.${slug}@laserco.com.br` : 'franqueado@laserco.com.br'
 }
 
-// % formatado (finPct) — 1 casa
+// % formatado (finPct)  1 casa
 export function finPct(v: number): string {
   return (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'
 }

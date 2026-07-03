@@ -136,7 +136,7 @@ export function MotivosManager({ motivos, podeEscrever, contador, noshow, semTab
                             )}
                           </>
                         ) : (
-                          <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
+                          <span style={{ color: 'var(--text-3)', fontSize: 12 }}></span>
                         )}
                       </td>
                     </tr>
@@ -199,7 +199,7 @@ function NoshowBlock({ noshow, podeEscrever }: { noshow: NoshowRow | null; podeE
 
       <label style={{ ...rule, background: '#F7E7EB', borderColor: 'var(--brand-300)' }}>
         <input type="checkbox" checked={cfg.ativa} disabled={!podeEscrever} onChange={(e) => set('ativa', e.target.checked)} style={{ marginTop: 3 }} />
-        <span><b>Ativar automação de não comparecimento</b> — quando o cliente não comparece, o sistema dispara mensagens automáticas oferecendo o reagendamento.</span>
+        <span><b>Ativar automação de não comparecimento</b>  quando o cliente não comparece, o sistema dispara mensagens automáticas oferecendo o reagendamento.</span>
       </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, margin: '12px 0' }}>
@@ -218,7 +218,7 @@ function NoshowBlock({ noshow, podeEscrever }: { noshow: NoshowRow | null; podeE
       </div>
 
       <div className="field" style={{ marginBottom: 16 }}>
-        <label>Mensagem automática (WhatsApp) — variáveis: {'{cliente}'} {'{serviço}'} {'{hora}'}</label>
+        <label>Mensagem automática (WhatsApp)  variáveis: {'{cliente}'} {'{serviço}'} {'{hora}'}</label>
         <textarea style={{ ...inp, minHeight: 90, lineHeight: 1.6 }} value={cfg.mensagem} disabled={!podeEscrever} onChange={(e) => set('mensagem', e.target.value)} />
       </div>
 

@@ -175,7 +175,7 @@ export const REGRAS_REDE: Regra[] = [
       'Unhas curtas e sem esmalte colorido para profissionais de saúde.',
       'Maquiagem discreta; perfumes leves e não invasivos.',
       'Uso de piercing visível ou tatuagens expostas deve ser avaliado pelo gestor de unidade.',
-      'Celular pessoal guardado durante o atendimento — uso apenas no intervalo.',
+      'Celular pessoal guardado durante o atendimento  uso apenas no intervalo.',
     ],
   },
   {
@@ -194,7 +194,7 @@ export const REGRAS_REDE: Regra[] = [
     itens: [
       'Tratamento respeitoso entre todos os colegas, independente de cargo ou função.',
       'Bullying, assédio moral ou sexual são motivos de demissão por justa causa.',
-      'Conflitos internos devem ser comunicados ao RH — não nas redes sociais.',
+      'Conflitos internos devem ser comunicados ao RH  não nas redes sociais.',
       'Fofocas e comentários negativos sobre colegas ou a empresa são proibidos.',
       'Consumo de álcool ou drogas durante o expediente é vedado.',
     ],
@@ -204,7 +204,7 @@ export const REGRAS_REDE: Regra[] = [
     id: 'r5', titulo: 'Saúde, Higiene e Segurança', categoria: 'Saúde e Segurança', nivel: 'obrigatorio',
     itens: [
       'Use todos os EPI indicados para o seu cargo (luvas, óculos, jaleco, etc.).',
-      'Higienize as mãos antes e após cada atendimento — sem exceções.',
+      'Higienize as mãos antes e após cada atendimento  sem exceções.',
       'Equipamentos e materiais devem ser esterilizados conforme o protocolo da unidade.',
       'Mantenha seu espaço de trabalho limpo e organizado durante e após o atendimento.',
       'Acidentes ou incidentes de segurança devem ser reportados ao gestor imediatamente.',
@@ -234,7 +234,7 @@ export const REGRAS_REDE: Regra[] = [
   {
     id: 'r8', titulo: 'Desenvolvimento e Carreira', categoria: 'Carreira', nivel: 'recomendado',
     itens: [
-      'Participe das avaliações trimestrais de desempenho — são ferramentas de crescimento.',
+      'Participe das avaliações trimestrais de desempenho  são ferramentas de crescimento.',
       'Treinamentos oferecidos pela empresa são obrigatórios; cursos externos devem ser comunicados ao RH.',
       'Vagas internas são divulgadas no portal RH antes de abertas ao mercado.',
       'Promoções levam em conta assiduidade, desempenho e alinhamento com a cultura Laser&Co.',

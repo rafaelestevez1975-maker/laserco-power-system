@@ -56,7 +56,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
     setBusy(null)
     if (!r.ok) setMsg(r.error || 'Erro ao alterar status.')
     else {
-      setMsg(!u.ativa ? `Unidade ativada: ${u.nome}.` : `Unidade inativada — acesso do franqueado cortado: ${u.nome}.`)
+      setMsg(!u.ativa ? `Unidade ativada: ${u.nome}.` : `Unidade inativada  acesso do franqueado cortado: ${u.nome}.`)
       router.refresh()
     }
   }
@@ -76,8 +76,8 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
           {!podeGerir && (
             <span className="os-st os-cancelada"><i className="ti ti-eye" /> Somente leitura</span>
           )}
-          {/* TODO(legado: criar unidade) — criação só Proprietário (precisa empresa_id + provisionamento). */}
-          <button className="btn" disabled title="Criação de unidade — restrita ao Proprietário (em breve)">
+          {/* TODO(legado: criar unidade)  criação só Proprietário (precisa empresa_id + provisionamento). */}
+          <button className="btn" disabled title="Criação de unidade  restrita ao Proprietário (em breve)">
             <i className="ti ti-plus" /> Nova unidade
           </button>
         </div>
@@ -89,7 +89,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
         <div className="metric-box"><span>Ativas</span><b style={{ color: 'var(--green)' }}>{kpis.ativas.toLocaleString('pt-BR')}</b></div>
         <div className="metric-box"><span>Inativas</span><b style={{ color: 'var(--red)' }}>{kpis.inativas.toLocaleString('pt-BR')}</b></div>
       </div>
-      {/* TODO(legado: buildUnidades) — KPI "Em teste" e seção Escritórios: schema só tem boolean `ativa`. */}
+      {/* TODO(legado: buildUnidades)  KPI "Em teste" e seção Escritórios: schema só tem boolean `ativa`. */}
 
       {/* Filtros (GET → server re-renderiza) */}
       <form method="GET" action="/unidades" className="rel-card" style={{ marginBottom: 14 }}>
@@ -156,7 +156,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
                   <td>
                     <span className="cli-name" style={{ fontWeight: 600 }}>
                       <i className="ti ti-building-store" style={{ color: 'var(--brand-500)', marginRight: 8, verticalAlign: '-2px' }} />
-                      {u.nome || '—'}
+                      {u.nome || ''}
                     </span>
                     {u.endereco && (
                       <span style={{ display: 'block', fontSize: 11, color: 'var(--text-3)', marginTop: 3, maxWidth: 360 }}>
@@ -165,9 +165,9 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
                     )}
                   </td>
                   <td style={{ fontSize: 12.5 }}>
-                    {u.cidade || <span className="muted">—</span>}{u.estado ? ` / ${u.estado}` : ''}
+                    {u.cidade || <span className="muted"></span>}{u.estado ? ` / ${u.estado}` : ''}
                   </td>
-                  <td style={{ fontSize: 12 }}>{u.cnpj || <span className="muted">—</span>}</td>
+                  <td style={{ fontSize: 12 }}>{u.cnpj || <span className="muted"></span>}</td>
                   <td>
                     {u.ativa === false
                       ? <span className="os-st os-cancelada"><i className="ti ti-ban" /> Inativa</span>
@@ -188,7 +188,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
                         </button>
                       </>
                     ) : (
-                      <span className="muted" style={{ fontSize: 11 }}>—</span>
+                      <span className="muted" style={{ fontSize: 11 }}></span>
                     )}
                   </td>
                 </tr>

@@ -115,7 +115,7 @@ function SlaCard({ slaHoras, podeEditar, busy, run }: { slaHoras: number; podeEd
 }
 
 // Canais ativos: derivado do USO REAL em sac_tickets (count por canal, escopado pela unidade).
-// Substitui a lista estática do legado por contagens reais — canal "em uso" aparece com o nº de
+// Substitui a lista estática do legado por contagens reais  canal "em uso" aparece com o nº de
 // chamados; os demais ficam atenuados como "sem chamados".
 function CanaisCard({ canais, unidadeAtiva }: { canais: CanalUso[]; unidadeAtiva: string }) {
   const emUso = canais.filter((c) => c.n > 0)

@@ -73,7 +73,7 @@ function classeStatus(status: string | null): string {
     case 'confirmado': return 'confirmado'
     case 'em_atendimento': return 'os'
     case 'concluido': return 'finalizado'
-    case 'no_show': return 'block' // falta — cinza riscado
+    case 'no_show': return 'block' // falta  cinza riscado
     default: return 'agendado' // aberto/outros
   }
 }
@@ -82,7 +82,7 @@ function rotuloStatus(status: string | null): string {
     aberto: 'Agendado', confirmado: 'Confirmado', em_atendimento: 'Em atendimento',
     concluido: 'Concluído', cancelado: 'Cancelado', no_show: 'Falta',
   }
-  return m[status || ''] || (status || '—')
+  return m[status || ''] || (status || '')
 }
 
 const COL_SEM_PROF = '__sem_prof__'
@@ -292,7 +292,7 @@ export function AgendaGrade(props: AgGridProps) {
                       if (h <= 0) return null
                       return (
                         <div key={b.id} className="evt block" style={{ top, height: h - 3 }}
-                          title={`${b.nome} · Bloqueio de horário — edição restrita aos administradores`}
+                          title={`${b.nome} · Bloqueio de horário  edição restrita aos administradores`}
                           onClick={(e) => { e.stopPropagation(); alert(`Bloqueio de horário · ${b.nome}\nClique em Configurações para editar (restrito aos administradores).`) }}>
                           <div className="en"><i className="ti ti-lock" style={{ fontSize: 11 }} /> {b.nome}</div>
                         </div>
@@ -315,7 +315,7 @@ export function AgendaGrade(props: AgGridProps) {
                           title={`${a.clienteNome || 'Cliente'} · ${rotuloStatus(a.status)}`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (lock) { alert('Atendimento finalizado — edição restrita aos administradores.'); return }
+                            if (lock) { alert('Atendimento finalizado  edição restrita aos administradores.'); return }
                             setDetalhe(a)
                           }}
                         >
@@ -395,7 +395,7 @@ function OcupacaoBar({ o }: { o: OcupacaoInfo }) {
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
           <b>{o.agendados}</b> agendamentos hoje · meta com sobreposição: <b>{o.alvo}</b> <span style={{ color: 'var(--text-3)' }}>({o.nProf} profissionais × {o.horas}h ÷ 30min, +45% de faltas)</span>.<br />
-          <span style={{ color: 'var(--text-3)' }}>Como ~45% dos agendamentos faltam, faça <b>sobreposição</b> para ocupar o tempo ocioso — faltam <b>{o.faltam}</b> para a meta.</span>
+          <span style={{ color: 'var(--text-3)' }}>Como ~45% dos agendamentos faltam, faça <b>sobreposição</b> para ocupar o tempo ocioso  faltam <b>{o.faltam}</b> para a meta.</span>
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 160, maxWidth: 340 }}>
@@ -434,9 +434,9 @@ function DetalheModal({ ag, onClose, onDone }: { ag: Agendamento; onClose: () =>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)' }}>{err}</div>}
-          <Linha rotulo="Cliente" valor={ag.clienteNome || '—'} />
-          <Linha rotulo="Profissional" valor={ag.profissionalNome || '—'} />
-          <Linha rotulo="Serviço" valor={ag.servicoNome || '—'} />
+          <Linha rotulo="Cliente" valor={ag.clienteNome || ''} />
+          <Linha rotulo="Profissional" valor={ag.profissionalNome || ''} />
+          <Linha rotulo="Serviço" valor={ag.servicoNome || ''} />
           <Linha rotulo="Horário" valor={`${hhmm(minDoDia(ag.inicio))}${ag.fim ? '–' + hhmm(minDoDia(ag.fim)) : ''}`} />
           <Linha rotulo="Status" valor={rotuloStatus(ag.status)} />
           {ag.observacao && <Linha rotulo="Observação" valor={ag.observacao} />}
@@ -572,7 +572,7 @@ function CriarModal({
     setErr(''); setSaving(true)
     const idsValidos = linhasServico.filter((id) => id && id !== AVALIACAO.id)
     const servicoId = idsValidos[0] || ''
-    // Se só houver "Avaliação" (serviço sintético), não há servico_id real — exige um serviço de catálogo.
+    // Se só houver "Avaliação" (serviço sintético), não há servico_id real  exige um serviço de catálogo.
     if (!servicoId) {
       setSaving(false)
       setErr('Selecione ao menos um serviço do catálogo (Avaliação é apenas estimativa de tempo).')
@@ -690,7 +690,7 @@ function CriarModal({
             </span>
             <div style={{ marginTop: 8, fontSize: 12.5, background: 'var(--surface-2)', borderRadius: 8, padding: '8px 10px', color: 'var(--text-2)' }}>
               <i className="ti ti-clock" style={{ color: 'var(--brand-500)' }} /> Tempo dos serviços: <b>{somaMin} min</b> · ocupa <b>{ocupaMin} min</b> na agenda.
-              {capped && <b style={{ color: 'var(--amber)' }}> ⚠ Acima de 1h — limitado a 60 min.</b>}
+              {capped && <b style={{ color: 'var(--amber)' }}> ⚠ Acima de 1h  limitado a 60 min.</b>}
             </div>
           </div>
 

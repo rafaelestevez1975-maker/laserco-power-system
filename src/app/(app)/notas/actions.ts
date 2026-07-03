@@ -9,7 +9,7 @@ import type { NfsePolitica } from '@/lib/nfse'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * NOTAS FISCAIS (NFS-e) — backend lkii (migration scripts/migrations/nfse.sql):
+ * NOTAS FISCAIS (NFS-e)  backend lkii (migration scripts/migrations/nfse.sql):
  *   nfse_politica(empresa_id, politica[nenhuma|venda|execucao], por_sessao)
  *   nfse_config_unidade(empresa_id, unidade_id, provedor, aliquota_iss,
  *     inscricao_municipal, certificado_token, ambiente, status_conexao)
@@ -19,7 +19,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
  * EMISSÃO FISCAL REAL fica como TODO (integração com provedores municipais).
  * Aqui só registramos/listamos notas e administramos política/config.
  *
- * RBAC (espelha o legado, PERMISSOES L7249 — "Notas fiscais", 9 ações):
+ * RBAC (espelha o legado, PERMISSOES L7249  "Notas fiscais", 9 ações):
  *   configurar política / integração / emitir / cancelar / reprocessar /
  *   alterar status manual = admin_geral / gestor / financeiro.
  */
@@ -49,7 +49,7 @@ async function empresaDaUnidade(sb: SB, unidadeId: string): Promise<string | nul
   return (uni as { empresa_id?: string } | null)?.empresa_id ?? null
 }
 
-/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação). */
+/** Grava 1 linha em audit_log (best-effort  nunca derruba a operação). */
 async function audit(userId: string, acao: string, label: string, dados: Record<string, unknown>): Promise<void> {
   try {
     await adminClient().from('audit_log').insert({
@@ -178,7 +178,7 @@ export type EmitirInput = {
 /**
  * Emissão MANUAL de NFS-e (legado: botão "Emitir NFS-e manual" no cabeçalho de
  * Notas emitidas, emitidasCard L8529). A emissão fiscal real (integração com a
- * prefeitura) fica como TODO — aqui registramos a nota como 'processando'.
+ * prefeitura) fica como TODO  aqui registramos a nota como 'processando'.
  */
 export async function emitirManual(input: EmitirInput): Promise<ActionResult> {
   const { op, error } = await requireOperador()

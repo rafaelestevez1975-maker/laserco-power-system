@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration 050 — Pipeline de EXPANSÃO (CRM de captação de FRANQUIA)
+-- Migration 050  Pipeline de EXPANSÃO (CRM de captação de FRANQUIA)
 -- =============================================================================
 -- CONTEXTO
 --   O legado tinha um módulo "Expansão" (buildExpansao) que é um CRM separado do
@@ -13,7 +13,7 @@
 --   Em vez de criar uma tabela nova (e duplicar RLS/policies/índices), adicionamos
 --   um discriminador `pipeline` em crm_leads ('cliente' | 'franquia'). O mesmo
 --   discriminador é adicionado em crm_etapas, para que a Expansão tenha SEU PRÓPRIO
---   conjunto de etapas (funil) sem poluir o funil de clientes — as 6 etapas globais
+--   conjunto de etapas (funil) sem poluir o funil de clientes  as 6 etapas globais
 --   do sistema (empresa_id null) permanecem 'cliente' e ganham 6 etapas paralelas
 --   'franquia'. Assim o app filtra etapas e leads por pipeline.
 --
@@ -30,7 +30,7 @@
 --   duas vezes não quebra. NÃO altera RLS existente: as policies de crm_leads /
 --   crm_etapas continuam valendo (o app usa o client server com RLS).
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/050_expansao_pipeline.sql
 -- =============================================================================
 
@@ -60,7 +60,7 @@ ALTER TABLE crm_leads
   ADD CONSTRAINT crm_leads_pipeline_check
   CHECK (pipeline IN ('cliente', 'franquia'));
 
--- CHECK de temperatura (aceita NULL — leads de cliente não usam).
+-- CHECK de temperatura (aceita NULL  leads de cliente não usam).
 -- Legado EXP_TEMPS (8539): 5 níveis (gelado/frio/morno/quente/ardente).
 ALTER TABLE crm_leads DROP CONSTRAINT IF EXISTS crm_leads_temperatura_check;
 ALTER TABLE crm_leads

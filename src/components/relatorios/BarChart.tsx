@@ -1,5 +1,5 @@
 /**
- * Gráfico de barras CSS puro — réplica do barChart()/dashWidget() do legado
+ * Gráfico de barras CSS puro  réplica do barChart()/dashWidget() do legado
  * (legacy/index.html ~4440/4444). Server-safe (sem 'use client').
  * Cada barra: [label, valorNumérico, displayOpcional].
  */
@@ -17,7 +17,7 @@ type Props = {
   title: string
   icon?: string
   rows: BarRow[]
-  /** barras douradas (g) — usado para valores R$ no legado */
+  /** barras douradas (g)  usado para valores R$ no legado */
   gold?: boolean
   /** formata o display como moeda quando display não vier */
   asMoeda?: boolean

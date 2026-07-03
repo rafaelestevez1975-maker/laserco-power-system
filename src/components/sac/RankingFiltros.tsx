@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 /**
  * Filtro de período do Ranking/Premiação do SAC. Recorta as métricas por mês (default)
- * para que o card "Destaque do mês" e a coluna Prêmio sejam honestos — paridade com o
+ * para que o card "Destaque do mês" e a coluna Prêmio sejam honestos  paridade com o
  * recorte temporal do Dashboard do SAC (SacDashFiltros). Pílulas `sac-chip`, empurra
  * ?periodo (+ ?di/?df no custom) para /sac/ranking.
  */
@@ -16,7 +16,7 @@ const PERIOD_PILLS: [string, string][] = [
 export function RankingFiltros() {
   const router = useRouter()
   const sp = useSearchParams()
-  // Default "mes" (Mês atual) — coerente com o rótulo "Destaque do mês".
+  // Default "mes" (Mês atual)  coerente com o rótulo "Destaque do mês".
   const periodo = sp.get('periodo') ?? 'mes'
 
   function push(params: URLSearchParams) {

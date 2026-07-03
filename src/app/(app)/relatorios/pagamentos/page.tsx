@@ -16,7 +16,7 @@ type SP = { periodo?: string; di?: string; df?: string }
 const LISTA_MAX = 300
 
 /**
- * Pagamentos — réplica da aba Pagamentos do legado (assinaturas.Pagamentos / relPremiacoes
+ * Pagamentos  réplica da aba Pagamentos do legado (assinaturas.Pagamentos / relPremiacoes
  * ~4266/6926). Sobre dado REAL: agrega os_pagamentos (Previsto/Recebido/Pendente/Com erro/Taxa
  * de sucesso) e breakdown por método. Para escopar por unidade, restringe pelas OS da unidade
  * ativa (os_pagamentos não tem unidade_id). Default '90d' (pagamentos são históricos).
@@ -89,7 +89,7 @@ export default async function RelPagamentosPage({ searchParams }: { searchParams
     const nomesC = await nomesClientes(sb, cliIds)
     for (const id of Object.keys(clienteDaOs)) {
       const cid = clienteDaOs[id]
-      clienteDaOs[id] = cid ? (nomesC[cid] ?? '—') : '—'
+      clienteDaOs[id] = cid ? (nomesC[cid] ?? '') : ''
     }
   }
 
@@ -109,10 +109,10 @@ export default async function RelPagamentosPage({ searchParams }: { searchParams
 
   const csvRows = detalhe.map((r) => [
     dataBR(r.data_pagamento),
-    (r.os_id && clienteDaOs[r.os_id]) || '—',
-    METODO_LABEL[r.metodo || 'outros'] ?? r.metodo ?? '—',
+    (r.os_id && clienteDaOs[r.os_id]) || '',
+    METODO_LABEL[r.metodo || 'outros'] ?? r.metodo ?? '',
     Math.round(Number(r.valor) || 0),
-    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '—',
+    PAG_STATUS_LABEL[r.status || ''] ?? r.status ?? '',
   ])
 
   return (
@@ -190,9 +190,9 @@ export default async function RelPagamentosPage({ searchParams }: { searchParams
                 <tr key={i}>
                   <td>{dataBR(r.data_pagamento)}</td>
                   <td>
-                    <span className="cli-name">{(r.os_id && clienteDaOs[r.os_id]) || '—'}</span>
+                    <span className="cli-name">{(r.os_id && clienteDaOs[r.os_id]) || ''}</span>
                   </td>
-                  <td>{METODO_LABEL[r.metodo || 'outros'] ?? r.metodo ?? '—'}</td>
+                  <td>{METODO_LABEL[r.metodo || 'outros'] ?? r.metodo ?? ''}</td>
                   <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(Number(r.valor) || 0)}</td>
                   <td>{statusPill(r.status)}</td>
                 </tr>

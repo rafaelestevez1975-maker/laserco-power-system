@@ -151,7 +151,7 @@ export function FolhaView(props: Props) {
                     <td className="num-r" style={{ color: '#D85563' }}>{moedaBR(r.inss)}</td>
                     <td className="num-r" style={{ color: '#D85563' }}>{moedaBR(r.irrf)}</td>
                     <td className="num-r" style={{ color: 'var(--text-3)' }}>{moedaBR(r.fgts)}</td>
-                    <td className="num-r">{r.decimo_terceiro ? moedaBR(r.decimo_terceiro) : '—'}</td>
+                    <td className="num-r">{r.decimo_terceiro ? moedaBR(r.decimo_terceiro) : ''}</td>
                     <td className="num-r"><b style={{ color: '#15803D' }}>{moedaBR(r.salario_liquido)}</b></td>
                     <td><span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: st.bg, color: st.color }}>{st.label}</span></td>
                     <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>

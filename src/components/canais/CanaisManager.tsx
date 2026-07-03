@@ -18,13 +18,13 @@ const conectado = (s: string) => s === 'connected'
 
 // Origens de atendimento exibidas como cards (além das instâncias de WhatsApp).
 // O "Site" aqui é o FORMULÁRIO DE SAC do site: ele vira CHAMADO no SAC (canal='formulario'),
-// que a atendente/consultora abre direto em Chamados — NÃO a caixa de leads do comercial.
+// que a atendente/consultora abre direto em Chamados  NÃO a caixa de leads do comercial.
 // Reclame Aqui / Instagram / E-mail ficam OCULTOS por enquanto (pedido do Julio); reativar
 // é só descomentar o item correspondente.
 type Origem = { nome: string; icon: string; status: 'ativo' | 'breve'; desc: string; href?: string; cta?: string }
 const ORIGENS: Origem[] = [
   { nome: 'Site', icon: 'ti-world', status: 'ativo', desc: 'O formulário de SAC do site vira chamado no SAC.', href: '/sac/chamados?canal=formulario', cta: 'Ver chamados' },
-  // Integrações futuras (ocultas por enquanto — reativar quando entrarem):
+  // Integrações futuras (ocultas por enquanto  reativar quando entrarem):
   // { nome: 'Reclame Aqui', icon: 'ti-message-report', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'Instagram', icon: 'ti-brand-instagram', status: 'breve', desc: 'Integração em desenvolvimento.' },
   // { nome: 'E-mail', icon: 'ti-mail', status: 'breve', desc: 'Integração em desenvolvimento.' },
@@ -78,7 +78,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
     setBusy(nome); setMsg('')
     const r = await sincronizarCanal(nome)
     setBusy(null)
-    setMsg(r.ok ? `Canal "${nome}" sincronizado — as mensagens vão cair na Triagem. ✅` : (r.error || 'Falha ao sincronizar.'))
+    setMsg(r.ok ? `Canal "${nome}" sincronizado  as mensagens vão cair na Triagem. ✅` : (r.error || 'Falha ao sincronizar.'))
   }
 
   function escopoBadge(c: Canal) {
@@ -100,12 +100,12 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
 
       <div style={{ fontSize: 12.5, color: 'var(--text-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
         {central
-          ? <><i className="ti ti-info-circle" /> O SAC é <b>centralizado na franqueadora</b> (não há canal por franquia). Conecte o <b>WhatsApp central do SAC</b> via QR — tudo cai na <b>Conversa</b>. Cada atendente também pode conectar o <b>próprio número</b> aqui (cai só pra ela). O <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.</>
+          ? <><i className="ti ti-info-circle" /> O SAC é <b>centralizado na franqueadora</b> (não há canal por franquia). Conecte o <b>WhatsApp central do SAC</b> via QR  tudo cai na <b>Conversa</b>. Cada atendente também pode conectar o <b>próprio número</b> aqui (cai só pra ela). O <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.</>
           : <><i className="ti ti-info-circle" /> <b>Canais</b> são as origens dos atendimentos. Conecte o <b>WhatsApp</b> via QR (as mensagens caem na <b>Conversa</b>); o <b>formulário de SAC do site</b> vira <b>chamado</b> automaticamente.</>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: 14 }}>
-        {canais.length === 0 && <div style={{ color: 'var(--text-3)', fontSize: 13, gridColumn: '1 / -1' }}>WhatsApp ainda não conectado — clique em “Novo canal” e depois em “Conectar (QR)”.</div>}
+        {canais.length === 0 && <div style={{ color: 'var(--text-3)', fontSize: 13, gridColumn: '1 / -1' }}>WhatsApp ainda não conectado  clique em “Novo canal” e depois em “Conectar (QR)”.</div>}
         {canais.map((c) => (
           <div key={c.name} className="rel-card" style={{ padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -128,7 +128,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
               <div style={{ display: 'flex', gap: 8 }}>
                 {conectado(c.status)
                   ? <>
-                      <button className="btn" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => sincronizar(c.name)} title="Reaplica o webhook — garante que as mensagens recebidas apareçam na Triagem em tempo real"><i className="ti ti-refresh" /> Sincronizar</button>
+                      <button className="btn" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => sincronizar(c.name)} title="Reaplica o webhook  garante que as mensagens recebidas apareçam na Triagem em tempo real"><i className="ti ti-refresh" /> Sincronizar</button>
                       <button className="btn" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => desconectar(c.name)}><i className="ti ti-plug-off" /> Desconectar</button>
                     </>
                   : <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy === c.name} onClick={() => abrirQr(c.name)}>{busy === c.name ? '…' : <><i className="ti ti-qrcode" /> Conectar (QR)</>}</button>}
@@ -140,7 +140,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
             </div>
           </div>
         ))}
-        {/* Origens de leads (Site ativo + integrações futuras) — pedido do Julio: Canais = de onde vêm os leads. */}
+        {/* Origens de leads (Site ativo + integrações futuras)  pedido do Julio: Canais = de onde vêm os leads. */}
         {ORIGENS.map((o) => (
           <div key={o.nome} className="rel-card" style={{ padding: 16, opacity: o.status === 'breve' ? 0.7 : 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -264,7 +264,7 @@ function CanalModal({ base, isAdmin, unidades, atendentes, activeUnitId, activeU
               </div>
             </>
           )}
-          {/* Delay (anti-ban) é só pra DISPAROS/campanha — não faz sentido no SAC (recebe/responde). */}
+          {/* Delay (anti-ban) é só pra DISPAROS/campanha  não faz sentido no SAC (recebe/responde). */}
           {!central && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

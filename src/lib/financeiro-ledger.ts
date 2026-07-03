@@ -1,13 +1,13 @@
 /**
- * Núcleo do razão financeiro (`fin_lancamento`) — a ÚNICA porta de escrita.
+ * Núcleo do razão financeiro (`fin_lancamento`)  a ÚNICA porta de escrita.
  *
  * Arquitetura (revisão do arquiteto): o financeiro é um SERVIÇO CENTRAL. Os módulos
  * (royalties, SAC, folha, compras, taxas…) são PRODUTORES: chamam `postLancamento` com
  * {natureza, valor, plano de conta, centro de custo, competência, origem}. As telas
- * (DRE, fluxo de caixa, a receber/a pagar) DERIVAM do razão — não guardam valor próprio.
+ * (DRE, fluxo de caixa, a receber/a pagar) DERIVAM do razão  não guardam valor próprio.
  * Assim o número bate igual em todas as telas (sem divergência).
  *
- * Server-only (usa service role — a AUTORIZAÇÃO é feita na action que chama). Idempotente
+ * Server-only (usa service role  a AUTORIZAÇÃO é feita na action que chama). Idempotente
  * por `idem_key`.
  */
 import { adminClient } from '@/lib/supabase/admin'
@@ -42,7 +42,7 @@ export async function postLancamento(eventos: LancamentoEvento | LancamentoEvent
     documento: e.documento ?? null, status: e.status ?? 'previsto',
   }))
   const keys = rows.map((r) => r.idem_key).filter(Boolean) as string[]
-  // Dedup em LOTES de 100 — com centenas de chaves (royalties de dezenas de franquias) um
+  // Dedup em LOTES de 100  com centenas de chaves (royalties de dezenas de franquias) um
   // único .in(keys) estoura o tamanho da URL (414). O índice único já barra duplicata, mas
   // checar em lote evita reinserção desnecessária e mantém o request pequeno.
   const jaTem = new Set<string>()
@@ -63,9 +63,9 @@ export async function postLancamento(eventos: LancamentoEvento | LancamentoEvent
  *
  * IMPORTANTE: NÃO engole erro. O PostgREST não dá transação cross-request, então o DELETE
  * comita antes do INSERT; se o post falhar, LANÇAMOS o erro para o chamador sinalizar e o
- * operador reapurar (self-heal na próxima execução — o DELETE seguinte não acha nada e o post
+ * operador reapurar (self-heal na próxima execução  o DELETE seguinte não acha nada e o post
  * grava). Engolir aqui (como no best-effort de produtores que só inserem) apagaria os dados e
- * reportaria sucesso — inflando o resultado no DRE. */
+ * reportaria sucesso  inflando o resultado no DRE. */
 export async function repostLancamento(origem: string, competencia: string, eventos: LancamentoEvento[]): Promise<{ inseridos: number }> {
   const sb = adminClient()
   const { error } = await sb.from('fin_lancamento').delete().eq('origem', origem).eq('competencia', competencia)

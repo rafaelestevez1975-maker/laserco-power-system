@@ -94,7 +94,7 @@ function NovaOSModal({
                     ))}
                   </div>
                 )}
-                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Opcional — deixe vazio para OS sem cliente (balcão).</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Opcional  deixe vazio para OS sem cliente (balcão).</p>
               </>
             )}
           </div>

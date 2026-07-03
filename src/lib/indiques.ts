@@ -1,5 +1,5 @@
 /**
- * Helpers da Gestão de Indiques (client-safe — funções puras).
+ * Helpers da Gestão de Indiques (client-safe  funções puras).
  * Paridade com o legado (legacy/index.html, bloco "Indiques" ~8059-8296).
  */
 

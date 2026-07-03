@@ -120,7 +120,7 @@ export function PlanoModal({
         {sugestoes.length > 0 && (
           <div className="sim-msg warn-msg" style={{ marginBottom: 14 }}>
             <i className="ti ti-bulb" />
-            <span>{sugestoes.length} indicador(es) abaixo da meta — pré-preenchemos tarefas sugeridas (PDCA · Plan→Do). Ajuste como quiser.</span>
+            <span>{sugestoes.length} indicador(es) abaixo da meta  pré-preenchemos tarefas sugeridas (PDCA · Plan→Do). Ajuste como quiser.</span>
           </div>
         )}
 
@@ -128,7 +128,7 @@ export function PlanoModal({
           <div style={{ gridColumn: unidades.length > 1 ? 'auto' : '1 / -1' }}>
             <label style={lbl}>Unidade <span style={{ color: 'var(--red)' }}>*</span></label>
             <select style={inp} value={unidadeId} onChange={(e) => setUnidadeId(e.target.value)}>
-              {unidades.length === 0 && <option value="">— nenhuma unidade —</option>}
+              {unidades.length === 0 && <option value=""> nenhuma unidade </option>}
               {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
             </select>
           </div>
@@ -141,11 +141,11 @@ export function PlanoModal({
             </select>
           </div>
           <div>
-            <label style={lbl}>Semana — início <span style={{ color: 'var(--red)' }}>*</span></label>
+            <label style={lbl}>Semana  início <span style={{ color: 'var(--red)' }}>*</span></label>
             <input style={inp} type="date" value={semIni} onChange={(e) => { setSemIni(e.target.value); if (e.target.value && (!semFim || semFim < e.target.value)) setSemFim(fimSemana(e.target.value)) }} />
           </div>
           <div>
-            <label style={lbl}>Semana — fim <span style={{ color: 'var(--red)' }}>*</span></label>
+            <label style={lbl}>Semana  fim <span style={{ color: 'var(--red)' }}>*</span></label>
             <input style={inp} type="date" value={semFim} onChange={(e) => setSemFim(e.target.value)} />
           </div>
           <div style={{ gridColumn: '1 / -1' }}>

@@ -1,5 +1,5 @@
 /**
- * Jurídico — helpers puros (client-safe) espelhando a lógica do legado
+ * Jurídico  helpers puros (client-safe) espelhando a lógica do legado
  * (legacy/index.html · bloco "Jurídico" 4896-5009). Paridade fiel:
  *  - montagem automática do corpo da notificação (jurMontarCorpo 4915)
  *  - assunto com regra de reincidência >=20 dias (finGerarNotifJuridica 4924)
@@ -46,12 +46,12 @@ export function franqueadoNome(resp: string | null | undefined): string {
 /**
  * Assunto da notificação automática (finGerarNotifJuridica 4926):
  *   reincidência (dias>=20) → '2ª Notificação', senão 'Notificação'
- *   '… — {categoria} em atraso · {unidade}'
+ *   '…  {categoria} em atraso · {unidade}'
  */
 export function montarAssunto(r: RecebivelAtraso): string {
   const reincid = (r.dias_atraso ?? 0) >= 20
   const prefixo = reincid ? '2ª Notificação' : 'Notificação'
-  return `${prefixo} — ${r.categoria ?? 'Débito'} em atraso · ${r.unidade_nome ?? ''}`
+  return `${prefixo}  ${r.categoria ?? 'Débito'} em atraso · ${r.unidade_nome ?? ''}`
 }
 
 /**
@@ -62,7 +62,7 @@ export function montarAssunto(r: RecebivelAtraso): string {
 export function montarCorpo(r: RecebivelAtraso): string {
   const fr = franqueadoNome(r.franqueado)
   const cnpj = r.cnpj ?? ''
-  const refTxt = r.ref ? ' — ' + r.ref : ''
+  const refTxt = r.ref ? '  ' + r.ref : ''
   return (
     `Prezado(a) ${fr},\n\n` +
     `Na qualidade de franqueadora da rede Laser&Co, constatamos que a unidade ${r.unidade_nome ?? ''} (CNPJ ${cnpj}) encontra-se em atraso com a seguinte obrigação financeira:\n\n` +
@@ -73,7 +73,7 @@ export function montarCorpo(r: RecebivelAtraso): string {
     `Solicitamos a REGULARIZAÇÃO no prazo de 15 (quinze) dias a contar do recebimento desta notificação, sob pena da incidência dos encargos contratuais e da adoção das medidas previstas no Contrato de Franquia e na Lei nº 13.966/2019, incluindo protesto e eventual rescisão.\n\n` +
     `Permanecemos à disposição para tratar de eventual repactuação.\n\n` +
     `Atenciosamente,\n` +
-    `Departamento Jurídico — Laser&Co\n` +
+    `Departamento Jurídico  Laser&Co\n` +
     `${hojeBR()}`
   )
 }
@@ -106,5 +106,5 @@ export const NOVO_TEMPLATE = {
   nome: 'Novo modelo de notificação',
   assunto: 'Notificação · {unidade}',
   corpo:
-    'Prezado(a) {franqueado},\n\n[texto da notificação]\n\nAtenciosamente,\nDepartamento Jurídico — Laser&Co\n{data}',
+    'Prezado(a) {franqueado},\n\n[texto da notificação]\n\nAtenciosamente,\nDepartamento Jurídico  Laser&Co\n{data}',
 }

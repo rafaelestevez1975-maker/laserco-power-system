@@ -53,7 +53,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const profissionais: Profissional[] = ((colsRaw ?? []) as Array<{ id: string; nome: string | null; cargo: string | null; perfil_id: string | null }>)
     .map((c) => ({ id: c.id, perfilId: c.perfil_id, nome: (c.nome || 'Profissional').trim(), cargo: c.cargo }))
 
-  // ── Agendamentos do dia (só o dia/unidade — nunca os 136k) ──
+  // ── Agendamentos do dia (só o dia/unidade  nunca os 136k) ──
   // FK profissional_id → perfis_usuario (embed desambiguado). cliente/servico via FK direto.
   let qAg = sb
     .from('agendamentos')

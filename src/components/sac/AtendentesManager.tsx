@@ -24,7 +24,7 @@ const pill = (bg: string, color: string): React.CSSProperties => ({ fontSize: 11
 const brl = (n: number) => `R$ ${Math.round(Number(n) || 0).toLocaleString('pt-BR')}`
 
 /** Gera uma senha provisória forte com CSPRNG (crypto.getRandomValues; fallback p/ Math.random
- *  em ambientes sem WebCrypto). Só letras/números — evita & # que se corrompem ao copiar. */
+ *  em ambientes sem WebCrypto). Só letras/números  evita & # que se corrompem ao copiar. */
 function gerarSenha(): string {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ', num = '23456789', min = 'abcdefghijkmnpqrstuvwxyz'
   const rnd = (n: number): number => {
@@ -79,7 +79,7 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
     const r = await reequilibrarBacklog()
     setBusy(false)
     if (!r.ok) { setMsg(r.error || 'Não foi possível reequilibrar.'); return }
-    setMsg((r.movidas ?? 0) > 0 ? `Backlog reequilibrado: ${r.movidas} conversa(s) redistribuída(s) entre ${r.atendentes} atendente(s) online.` : 'Já estava equilibrado — nada a mover.')
+    setMsg((r.movidas ?? 0) > 0 ? `Backlog reequilibrado: ${r.movidas} conversa(s) redistribuída(s) entre ${r.atendentes} atendente(s) online.` : 'Já estava equilibrado  nada a mover.')
     router.refresh()
   }
 
@@ -104,7 +104,7 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
 
   return (
     <>
-      {/* Card de apresentação — paridade com o legado (rel-card, título + "Cadastrar no Colaboradores").
+      {/* Card de apresentação  paridade com o legado (rel-card, título + "Cadastrar no Colaboradores").
           Mantém as features novas: status da fila, "Novo atendente" e "Distribuir fila". */}
       <div className="rel-card" style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -159,13 +159,13 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                 return (
                   <tr key={a.id} style={a.ativo ? undefined : { opacity: 0.6 }}>
                     <td><b>{a.nome}</b>{a.email && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.email}</div>}</td>
-                    <td>{a.cargo || <span style={{ color: 'var(--text-3)' }}>— sem ficha RH</span>}{a.area && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.area}</div>}</td>
+                    <td>{a.cargo || <span style={{ color: 'var(--text-3)' }}> sem ficha RH</span>}{a.area && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{a.area}</div>}</td>
                     <td>
                       {podeCriar ? (
                         <select value={a.cargoSac ?? ''} disabled={toggling === a.id + ':cargo'} onChange={(e) => trocarCargo(a, e.target.value)}
                           style={{ padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, fontFamily: 'inherit' }}
                           title="Trocar o cargo SAC (Consulta fica fora da distribuição)">
-                          {!a.cargoSac && <option value="">— sem cargo —</option>}
+                          {!a.cargoSac && <option value=""> sem cargo </option>}
                           {SAC_CARGOS.map((c) => <option key={c.slug} value={c.slug}>{c.label}</option>)}
                         </select>
                       ) : (
@@ -175,7 +175,7 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                     <td style={{ textAlign: 'center' }}>
                       {podeCriar ? (
                         <button className="btn btn-icon" disabled={toggling === a.id + ':online' || !a.ativo} onClick={() => alternarOnline(a)}
-                          title={!a.ativo ? 'Atendente inativa' : a.sacOnline ? 'Online — recebe conversas. Clique para tirar da distribuição.' : 'Offline — não recebe. Clique para pôr na distribuição.'}
+                          title={!a.ativo ? 'Atendente inativa' : a.sacOnline ? 'Online  recebe conversas. Clique para tirar da distribuição.' : 'Offline  não recebe. Clique para pôr na distribuição.'}
                           style={{ color: a.sacOnline ? '#15803D' : 'var(--text-3)' }}>
                           <i className={`ti ${toggling === a.id + ':online' ? 'ti-loader' : a.sacOnline ? 'ti-circle-filled' : 'ti-circle'}`} />
                         </button>
@@ -188,8 +188,8 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                     <td style={{ textAlign: 'center' }}>{a.tickets}</td>
                     <td style={{ textAlign: 'center' }}><b style={{ color: carga === 0 ? 'var(--green)' : carga > 8 ? '#C2410C' : 'var(--brand-600)' }}>{carga}</b></td>
                     <td style={{ textAlign: 'center' }}>{a.resolvidos}<span style={{ color: 'var(--text-3)', fontSize: 11 }}>/{a.chamadosTotal}</span></td>
-                    <td style={{ textAlign: 'center', color: slaCor, fontWeight: a.slaPct != null ? 700 : 400 }}>{a.slaPct == null ? '—' : `${a.slaPct}%`}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: a.premio > 0 ? 'var(--brand-600)' : 'var(--text-3)' }}>{a.premio > 0 ? brl(a.premio) : '—'}</td>
+                    <td style={{ textAlign: 'center', color: slaCor, fontWeight: a.slaPct != null ? 700 : 400 }}>{a.slaPct == null ? '' : `${a.slaPct}%`}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: a.premio > 0 ? 'var(--brand-600)' : 'var(--text-3)' }}>{a.premio > 0 ? brl(a.premio) : ''}</td>
                     <td><span style={a.ativo ? pill('#E7F0EC', '#15803D') : pill('#FBE9EB', '#D85563')}>{a.ativo ? 'Ativo' : 'Inativo'}</span></td>
                     {podeCriar && (
                       <td style={{ textAlign: 'right' }}>
@@ -207,7 +207,7 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
         </div>
       </div>
 
-      {/* Premiação por desempenho — paridade visual com o card do legado: rel-card fundo
+      {/* Premiação por desempenho  paridade visual com o card do legado: rel-card fundo
           surface-2, ícone ouro ti-percentage e link à Matriz de Comissões. Mantém os atalhos
           novos (Ranking SAC, Colaboradores). */}
       <div className="rel-card" style={{ marginTop: 12, background: 'var(--surface-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -223,12 +223,12 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link className="btn" href="/sac/ranking" title="Ranking e regras de premiação do SAC"><i className="ti ti-medal" /> Ranking SAC</Link>
           <Link className="btn" href="/cadastros/comissoes" title="Matriz de comissões da rede"><i className="ti ti-table" /> Matriz de comissões</Link>
-          <Link className="btn" href="/colaboradores" title="Cadastro de colaborador (RH) — fonte da ficha do atendente"><i className="ti ti-user-star" /> Cadastrar no Colaboradores</Link>
+          <Link className="btn" href="/colaboradores" title="Cadastro de colaborador (RH)  fonte da ficha do atendente"><i className="ti ti-user-star" /> Cadastrar no Colaboradores</Link>
         </div>
       </div>
 
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). <b>Conversas novas caem automaticamente só em quem está <span style={{ color: '#15803D' }}>Online</span></b> — e sempre no de menor carga (contando só conversas <b>abertas</b>). Se só uma pessoa está online, tudo cai nela: {podeCriar ? 'ponha as demais online na coluna Online.' : 'peça ao admin para pôr as demais online.'} <b>Consulta</b> fica de fora da distribuição. SLA% = casos no prazo ÷ total atendido.
+        <i className="ti ti-info-circle" /> Atendente = colaborador com papel SAC (a mesma pessoa de Colaboradores / RH). <b>Conversas novas caem automaticamente só em quem está <span style={{ color: '#15803D' }}>Online</span></b>  e sempre no de menor carga (contando só conversas <b>abertas</b>). Se só uma pessoa está online, tudo cai nela: {podeCriar ? 'ponha as demais online na coluna Online.' : 'peça ao admin para pôr as demais online.'} <b>Consulta</b> fica de fora da distribuição. SLA% = casos no prazo ÷ total atendido.
         {podeCriar && <> Como admin, você pode <b>pôr online</b>, <b>trocar o cargo</b> e ativar/desativar cada atendente aqui.</>}
         {podeDistribuir && !podeCriar && <> Gestor/SAC pode distribuir a fila; apenas o administrador cria, ativa ou desativa acessos.</>}
       </div>
@@ -319,9 +319,9 @@ function NovoAtendenteModal({ unidades, onClose, onCriado }: { unidades: Unidade
             <div>
               <label style={lbl}>Cargo no SAC *</label>
               <select style={inp} value={cargo} onChange={(e) => setCargo(e.target.value)}>
-                <option value="atendente_sac">Atendente SAC — atende tickets e conversas</option>
-                <option value="supervisor_sac">Supervisor SAC — acesso total ao módulo SAC</option>
-                <option value="consulta_sac">Consulta SAC — somente leitura do SAC</option>
+                <option value="atendente_sac">Atendente SAC  atende tickets e conversas</option>
+                <option value="supervisor_sac">Supervisor SAC  acesso total ao módulo SAC</option>
+                <option value="consulta_sac">Consulta SAC  somente leitura do SAC</option>
               </select>
               <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Todos enxergam apenas o módulo SAC e caem no Dashboard do SAC ao entrar.</div>
             </div>

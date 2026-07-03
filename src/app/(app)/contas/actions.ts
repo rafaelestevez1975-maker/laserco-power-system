@@ -171,5 +171,5 @@ export async function editarLancamento(input: EditarLancamentoInput): Promise<Ac
   return { ok: true }
 }
 
-// TODO(legado): buildContas — importação de lançamentos via Excel (Import Excel).
+// TODO(legado): buildContas  importação de lançamentos via Excel (Import Excel).
 //   Requer parse de planilha + de-para de categorias; deixado para depois.

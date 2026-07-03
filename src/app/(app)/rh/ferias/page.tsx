@@ -6,7 +6,7 @@ import { FeriasManager, type FeriasRow, type AtestadoRow, type ColabOpt } from '
 
 export const dynamic = 'force-dynamic'
 
-/** Papéis que gerenciam (aprovam/recusam/lançam p/ terceiros) — legado "Férias e Afastamentos · Gerenciar". */
+/** Papéis que gerenciam (aprovam/recusam/lançam p/ terceiros)  legado "Férias e Afastamentos · Gerenciar". */
 const PAPEIS_APROVA = ['gestor', 'gerente', 'rh']
 const LIMIT = 1000
 
@@ -15,7 +15,7 @@ const LIMIT = 1000
  *
  * Solicitações de férias (período aquisitivo, abono pecuniário, aprovação) +
  * atestados médicos (afastamentos, entrega ao RH). Tabelas reais no lkii:
- * solicitacoes_ferias e atestados — sem unidade_id, então o escopo multitenant
+ * solicitacoes_ferias e atestados  sem unidade_id, então o escopo multitenant
  * é feito pelos colaboradores da unidade ativa (colaboradores.unidade_id).
  */
 export default async function FeriasPage() {
@@ -73,11 +73,11 @@ export default async function FeriasPage() {
     } else {
       ferias = ((fData ?? []) as Omit<FeriasRow, 'colaboradorNome'>[]).map((r) => ({
         ...r,
-        colaboradorNome: mapaColab.get(r.colaborador_id) ?? '—',
+        colaboradorNome: mapaColab.get(r.colaborador_id) ?? '',
       }))
       atestados = ((aData ?? []) as Omit<AtestadoRow, 'colaboradorNome'>[]).map((r) => ({
         ...r,
-        colaboradorNome: mapaColab.get(r.colaborador_id) ?? '—',
+        colaboradorNome: mapaColab.get(r.colaborador_id) ?? '',
       }))
     }
   }

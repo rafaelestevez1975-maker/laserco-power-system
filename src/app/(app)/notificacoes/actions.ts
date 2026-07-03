@@ -19,7 +19,7 @@ const SLA_MS = 48 * 3600 * 1000
  *  O escopo dos chamados já é filtrado pela RLS (admin vê tudo). */
 export async function carregarNotificacoes(): Promise<{ total: number; itens: Notificacao[] }> {
   const sb = await createClient()
-  // getSession() lê/valida o token localmente (sem round-trip de rede ao Auth do Supabase) —
+  // getSession() lê/valida o token localmente (sem round-trip de rede ao Auth do Supabase) 
   // suficiente para a contagem de notificações (não-sensível; a RLS ainda protege as queries).
   const { data: { session } } = await sb.auth.getSession()
   const user = session?.user

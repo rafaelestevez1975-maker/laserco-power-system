@@ -13,10 +13,10 @@ export const dynamic = 'force-dynamic'
 type SP = { tipo?: string }
 
 /**
- * Relatório de Anamnese / Ficha Técnica — réplica do REL_DEFS.anamnese do legado
+ * Relatório de Anamnese / Ficha Técnica  réplica do REL_DEFS.anamnese do legado
  * (legacy/index.html ~4425). No legado os KPIs ("488 preenchidos", "212 anamneses",
  * "14 pendentes de assinatura", "94% de preenchimento") e as linhas por cliente
- * (Data/Cliente/Documento/Profissional/Status) eram 100% MOCK — não há nenhuma
+ * (Data/Cliente/Documento/Profissional/Status) eram 100% MOCK  não há nenhuma
  * tabela de PREENCHIMENTOS por cliente no backend atual:
  *   documentos_preenchidos / documento_respostas / anamneses / fichas / assinaturas_documento
  *   → nenhuma existe (nenhum from('...') no código nem migration).
@@ -24,8 +24,8 @@ type SP = { tipo?: string }
  * A única fonte real é a tabela `documentos` (scripts/migrations/anamnese.sql), o
  * CATÁLOGO de fichas digitais (Anamnese, Termo de Sessão, Ficha Técnica, Consentimento
  * LGPD…) usado em /cadastros/anamnese. Este relatório, portanto, é o relatório do
- * catálogo de documentos por unidade — números reais (quantos documentos, ativos,
- * obrigatórios, perguntas, perguntas que inviabilizam) — e deixa explícito que o
+ * catálogo de documentos por unidade  números reais (quantos documentos, ativos,
+ * obrigatórios, perguntas, perguntas que inviabilizam)  e deixa explícito que o
  * acompanhamento de preenchimento POR CLIENTE ainda não tem fonte de dados.
  *
  * Colunas de `documentos` confirmadas em /cadastros/anamnese/page.tsx e na migration:
@@ -111,12 +111,12 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
   const csvRows = visiveis.map((d) => {
     const { perguntas, inviabiliza } = resumoDocumento(d.secoes)
     return [
-      d.nome || '—',
+      d.nome || '',
       d.tipo || 'Anamnese',
-      d.preenchimento || '—',
+      d.preenchimento || '',
       d.obrigatorio ? 'Sim' : 'Não',
       d.acumulativo ? 'Sim' : 'Não',
-      STATUS_META[d.status || '']?.label ?? d.status ?? '—',
+      STATUS_META[d.status || '']?.label ?? d.status ?? '',
       perguntas,
       inviabiliza,
       dataBR(d.atualizado_em),
@@ -143,7 +143,7 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
         >
           <i className="ti ti-hourglass" style={{ fontSize: 20, color: 'var(--brand-600)', marginTop: 2 }} />
           <div>
-            <b>Relatório em preparação — sem fonte de dados ainda.</b>
+            <b>Relatório em preparação  sem fonte de dados ainda.</b>
             <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 4 }}>
               A tabela de documentos (anamnese / fichas digitais) ainda não existe no backend. Aplique a
               migration <code>scripts/migrations/anamnese.sql</code> no lkii para criar a tabela{' '}
@@ -189,7 +189,7 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
 
           <RelKpis kpis={kpis} />
 
-          {/* Métricas clínicas adicionais (metric-box) — perguntas que inviabilizam o procedimento. */}
+          {/* Métricas clínicas adicionais (metric-box)  perguntas que inviabilizam o procedimento. */}
           <div className="rel-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <div className="metric-box">
               <span>Perguntas que inviabilizam o procedimento</span>
@@ -240,11 +240,11 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
                   )}
                   {visiveis.map((d) => {
                     const { perguntas, inviabiliza } = resumoDocumento(d.secoes)
-                    const meta = STATUS_META[d.status || ''] ?? { label: d.status ?? '—', cls: 'os-aberta' }
+                    const meta = STATUS_META[d.status || ''] ?? { label: d.status ?? '', cls: 'os-aberta' }
                     return (
                       <tr key={d.id}>
                         <td>
-                          <span className="cli-name">{d.nome || '—'}</span>
+                          <span className="cli-name">{d.nome || ''}</span>
                           {d.obrigatorio && (
                             <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--gold-600)', fontWeight: 700 }} title="Obrigatório">
                               <i className="ti ti-asterisk" />
@@ -257,7 +257,7 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
                           )}
                         </td>
                         <td>{d.tipo || 'Anamnese'}</td>
-                        <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{d.preenchimento || '—'}</td>
+                        <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{d.preenchimento || ''}</td>
                         <td>
                           <span className={`os-st ${meta.cls}`}>{meta.label}</span>
                         </td>
@@ -281,7 +281,7 @@ export default async function RelAnamnesePage({ searchParams }: { searchParams: 
               Este relatório mostra o <b>catálogo</b> de fichas digitais por unidade (números reais da tabela{' '}
               <code>documentos</code>). O acompanhamento de <b>preenchimento e assinatura por cliente</b>{' '}
               (quantas anamneses preenchidas, pendentes de assinatura, taxa de preenchimento) ainda não tem
-              fonte de dados no backend — não existe tabela de preenchimentos. Assim que esses registros
+              fonte de dados no backend  não existe tabela de preenchimentos. Assim que esses registros
               passarem a ser coletados, os KPIs por cliente serão adicionados aqui.
             </span>
           </div>

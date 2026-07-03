@@ -12,7 +12,7 @@ const PAPEIS_ESCRITA = ['gestor']
 type SP = { ativo?: string; nome?: string }
 
 /**
- * /cadastros/contratos — Modelos de contrato (paridade com buildContratos do legado).
+ * /cadastros/contratos  Modelos de contrato (paridade com buildContratos do legado).
  * DB-backed: tabela contratos_modelo (migration scripts/migrations/categorias.sql).
  * Era um CLONE estático (snapshot inerte); agora é funcional (lista + editor + anexo).
  */
@@ -41,7 +41,7 @@ export default async function ContratosPage({ searchParams }: { searchParams: Pr
   const modelos = (data ?? []) as ContratoRow[]
   const semTabela = !!error
 
-  // KPIs (lista pequena — ~7 modelos no seed). Para "ativos" total, contagem leve.
+  // KPIs (lista pequena  ~7 modelos no seed). Para "ativos" total, contagem leve.
   const { count: totalAtivos } = await sb
     .from('contratos_modelo')
     .select('id', { count: 'exact', head: true })

@@ -8,7 +8,7 @@ type Unidade = { id: string; nome: string }
 
 const GENEROS: [string, string][] = [['', 'Selecione...'], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
 
-// "Onde nos conheceu?" — 9 opções do legado (cliModal, legacy 2724-2737).
+// "Onde nos conheceu?"  9 opções do legado (cliModal, legacy 2724-2737).
 const CANAIS = [
   'Indicação de amigo', 'Instagram', 'Facebook', 'Google / Busca', 'Site da rede',
   'Landing Page', 'WhatsApp', 'Passei em frente à loja', 'Outro',
@@ -70,7 +70,7 @@ export function NovoClienteModal({
         const cpfInfo = (f.cpf || '').replace(/\D/g, '')
         // Legado (cliSalvarNovo, 3066-3067): dup de NOME sem CPF é BLOQUEIO, não permite forçar.
         if (dup.duplicado.criterio === 'nome' && cpfInfo.length !== 11) {
-          setErr(`Já existe cliente com este nome ("${dup.duplicado.nome}"). Informe um documento (CPF) para distinguir — ou trata-se de duplicidade.`)
+          setErr(`Já existe cliente com este nome ("${dup.duplicado.nome}"). Informe um documento (CPF) para distinguir  ou trata-se de duplicidade.`)
           setSaving(false)
           return
         }
@@ -128,7 +128,7 @@ export function NovoClienteModal({
               {!unidadeFixa && (
                 <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Unidade de origem</label>
                   <select style={inp} value={f.unidade_origem_id ?? ''} onChange={(e) => set('unidade_origem_id', e.target.value)}>
-                    <option value="">— Sem unidade —</option>
+                    <option value=""> Sem unidade </option>
                     {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                   </select>
                 </div>

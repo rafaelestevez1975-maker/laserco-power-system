@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic'
 const PAPEIS_ESCRITA = ['gestor']
 
 /**
- * Metas — duas seções:
+ * Metas  duas seções:
  *  1) Painel de metas da UNIDADE (venda mín. R$100k, agendamentos, clientes novos 25%,
- *     indicações) com apuração mensal/quinzenal/decendial. É SIMULADOR — não há tabela
+ *     indicações) com apuração mensal/quinzenal/decendial. É SIMULADOR  não há tabela
  *     metas_unidade no backend lkii. //TODO(needs-table: metas_unidade).
  *  2) CRUD real de metas POR COLABORADOR sobre a tabela `metas_colaborador` (estava vazia).
  *
@@ -27,7 +27,7 @@ export default async function MetasPage() {
   const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
 
   // Baseline REAL do simulador de metas (antes era 274/305 chumbado): agendamentos
-  // não-cancelados do MÊS ANTERIOR — média da rede (total / nº unidades) e a própria
+  // não-cancelados do MÊS ANTERIOR  média da rede (total / nº unidades) e a própria
   // unidade ativa. A RLS limita a leitura ao que o perfil enxerga.
   const _h = new Date()
   const mesAntDe = new Date(_h.getFullYear(), _h.getMonth() - 1, 1).toISOString()
@@ -73,7 +73,7 @@ export default async function MetasPage() {
     const metasBase = (metasRaw ?? []) as Omit<MetaRow, 'colaboradorNome'>[]
 
     // Sem escopo de unidade (admin/todas) as metas vêm globalmente, mas mapaColab cobre só
-    // os 500 primeiros colaboradores em ordem alfabética → nomes ficariam '—'. Resolve os
+    // os 500 primeiros colaboradores em ordem alfabética → nomes ficariam ''. Resolve os
     // nomes faltantes consultando exatamente os colaborador_id presentes nestas metas.
     const idsFaltantes = Array.from(new Set(metasBase.map((m) => m.colaborador_id).filter((id) => id && !mapaColab.has(id))))
     if (idsFaltantes.length > 0) {
@@ -83,7 +83,7 @@ export default async function MetasPage() {
 
     metas = metasBase.map((m) => ({
       ...m,
-      colaboradorNome: mapaColab.get(m.colaborador_id) ?? '—',
+      colaboradorNome: mapaColab.get(m.colaborador_id) ?? '',
     }))
   }
 
@@ -94,7 +94,7 @@ export default async function MetasPage() {
   return (
     <div className="view active">
       <p style={{ color: 'var(--text-2)', fontSize: 13.5, marginBottom: 16 }}>
-        Metas da unidade — ficam visíveis no Dashboard principal ao acessar o sistema. Defina meta de venda, de agendamentos e de clientes novos (avaliações), com apuração por mês, quinzena ou dezena e alertas em tempo real. Abaixo, gerencie também as <b>metas individuais por colaborador</b>.
+        Metas da unidade  ficam visíveis no Dashboard principal ao acessar o sistema. Defina meta de venda, de agendamentos e de clientes novos (avaliações), com apuração por mês, quinzena ou dezena e alertas em tempo real. Abaixo, gerencie também as <b>metas individuais por colaborador</b>.
       </p>
 
       {colabErr && (

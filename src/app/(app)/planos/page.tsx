@@ -31,7 +31,7 @@ export default async function PlanosPage({ searchParams }: { searchParams: Promi
   ])
   const kpiTotal = totalRes.count ?? 0
   const kpiAtivos = ativosRes.count ?? 0
-  // "ticket médio" dos planos ativos (média da mensalidade) — KPI real do catálogo.
+  // "ticket médio" dos planos ativos (média da mensalidade)  KPI real do catálogo.
   const valores = ((mrrRes.data ?? []) as { valor_mensal: number | null }[]).map((r) => r.valor_mensal || 0)
   const ticketMedio = valores.length ? Math.round(valores.reduce((a, b) => a + b, 0) / valores.length) : 0
 

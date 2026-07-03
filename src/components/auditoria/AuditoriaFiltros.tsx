@@ -10,7 +10,7 @@ type Props = {
   valores: Valores
 }
 
-/** Filtros da auditoria — form GET (server re-renderiza com os params). */
+/** Filtros da auditoria  form GET (server re-renderiza com os params). */
 export function AuditoriaFiltros({ acoes, usuarios, valores }: Props) {
   const temFiltro = !!(valores.q || valores.acao || valores.usuario || valores.resultado || valores.di || valores.df)
   return (

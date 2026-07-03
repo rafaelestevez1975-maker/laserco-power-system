@@ -3,10 +3,10 @@
  *
  * O backend lkii não tem sequence/default para `os.numero`. Calcular max(numero)+1 e inserir em
  * dois fluxos simultâneos na mesma unidade (duas vendas no PDV, ou abrirOS concorrente) lê o mesmo
- * max e gera NÚMERO DUPLICADO de OS — bug de corrida real (cliente reclamou de confiabilidade).
+ * max e gera NÚMERO DUPLICADO de OS  bug de corrida real (cliente reclamou de confiabilidade).
  *
  * Mitigação possível na camada de app, sem migration: insert otimista + retry. Se a base rejeitar
- * por unique violation (23505) — quando há índice único em (unidade_id, numero) — recomputamos o
+ * por unique violation (23505)  quando há índice único em (unidade_id, numero)  recomputamos o
  * próximo número e tentamos de novo. É a defesa mais segura/simples sem mexer no schema.
  * //TODO(needs-migration: sequence/índice único por unidade para `os.numero` garantirem unicidade no banco).
  */

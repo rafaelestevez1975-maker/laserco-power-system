@@ -1,8 +1,8 @@
 /**
- * Construtor de documentos / Anamnese Digital — tipos e helpers compartilhados.
+ * Construtor de documentos / Anamnese Digital  tipos e helpers compartilhados.
  * Paridade com o legado (legacy/index.html): typeSelect (8 tipos), fldRow (flags
  * obr/inv), DOCS_LIST/DOC_MODELS, e a regra clínica "inviabiliza" (inv:true).
- * Namespeado para este módulo — não toca em libs compartilhadas.
+ * Namespeado para este módulo  não toca em libs compartilhadas.
  */
 
 /** 8 tipos de campo de pergunta (typeSelect 7991-7994 do legado). */

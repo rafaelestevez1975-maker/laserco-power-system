@@ -32,7 +32,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 const LISTA_MAX = 1000
 
 /**
- * Contratos — réplica do REL_DEFS.contratos do legado (legacy/index.html ~4311).
+ * Contratos  réplica do REL_DEFS.contratos do legado (legacy/index.html ~4311).
  * Lê da tabela `contratos` (migration scripts/migrations/relatorios.sql). KPIs: contratos
  * ativos / assinados no período / inadimplentes / valor contratado (MRR ativo). Colunas:
  * Cliente/Plano/Status/Criação/Assinatura/Valor.
@@ -63,7 +63,7 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
   }
 
   // PERF: antes esta tela disparava ~7 + N(planos) queries `count:'exact'` separadas
-  // (1 por status/período + 1 por plano ativo) + 1 scan próprio para o MRR — todas na
+  // (1 por status/período + 1 por plano ativo) + 1 scan próprio para o MRR  todas na
   // MESMA tabela `contratos` com o mesmo escopo de unidade. Agora é UMA varredura
   // paginada das colunas necessárias, tabulada em JS (Map). Mesmos números.
   let total = 0, ativos = 0, inadimplentes = 0, assinadosPeriodo = 0, encerrados = 0, cancelados = 0
@@ -92,7 +92,7 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
         if (dentro) assinadosPeriodo++
         if (ativo) {
           valorContratado += Number(r.valor_mensal) || 0
-          const p = r.plano || '—'
+          const p = r.plano || ''
           planoAtivoMap.set(p, (planoAtivoMap.get(p) ?? 0) + 1)
         }
       }
@@ -100,15 +100,15 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
     }
   }
 
-  // KPIs — contagens REAIS (não derivadas da lista capada).
-  const planosUnicos = [...new Set(rows.filter((r) => r.status === 'ativo').map((r) => r.plano || '—'))]
+  // KPIs  contagens REAIS (não derivadas da lista capada).
+  const planosUnicos = [...new Set(rows.filter((r) => r.status === 'ativo').map((r) => r.plano || ''))]
 
-  // Breakdown por plano (contratos ativos) — contagens exatas da varredura.
+  // Breakdown por plano (contratos ativos)  contagens exatas da varredura.
   const barPlano: BarRow[] = planosUnicos
     .map((p) => { const value = planoAtivoMap.get(p) ?? 0; return { label: p, value, display: value.toLocaleString('pt-BR') } })
     .sort((a, b) => b.value - a.value)
 
-  // Breakdown por status — contagens exatas.
+  // Breakdown por status  contagens exatas.
   const statusCount: Record<string, number> = { ativo: ativos, encerrado: encerrados, cancelado: cancelados, inadimplente: inadimplentes }
   const barStatus: BarRow[] = Object.keys(STATUS_META).map((k) => {
     const c = statusCount[k] ?? 0
@@ -123,9 +123,9 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
   ]
 
   const csvRows = rows.map((r) => [
-    r.cliente_nome || '—',
-    r.plano || '—',
-    STATUS_META[r.status || '']?.label ?? r.status ?? '—',
+    r.cliente_nome || '',
+    r.plano || '',
+    STATUS_META[r.status || '']?.label ?? r.status ?? '',
     dataBR(r.criado_em),
     r.assinado_em ? dataBR(r.assinado_em) : 'Pendente',
     Math.round(Number(r.valor_mensal) || 0),
@@ -194,13 +194,13 @@ export default async function RelContratosPage({ searchParams }: { searchParams:
                 </tr>
               )}
               {rows.map((r) => {
-                const meta = STATUS_META[r.status || ''] ?? { label: r.status ?? '—', cls: 'os-aberta' }
+                const meta = STATUS_META[r.status || ''] ?? { label: r.status ?? '', cls: 'os-aberta' }
                 return (
                   <tr key={r.id}>
                     <td>
-                      <span className="cli-name">{r.cliente_nome || '—'}</span>
+                      <span className="cli-name">{r.cliente_nome || ''}</span>
                     </td>
-                    <td>{r.plano || '—'}</td>
+                    <td>{r.plano || ''}</td>
                     <td>
                       <span className={`os-st ${meta.cls}`}>{meta.label}</span>
                     </td>

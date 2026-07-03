@@ -22,7 +22,7 @@ const STATUS_SIG = ['pendente', 'visualizado', 'assinado', 'recusado'] as const
 
 const ROTA = '/juridico'
 
-/** Só admin geral opera o Jurídico (módulo restrito — igual ao legado). */
+/** Só admin geral opera o Jurídico (módulo restrito  igual ao legado). */
 function exigeAdmin(papel: string): string | null {
   return ehAdmin(papel) ? null : 'Módulo restrito a administradores.'
 }
@@ -263,13 +263,13 @@ export type R = { ok: boolean; error?: string; id?: string }
 
 const DOC_TIPOS_VALIDOS: DocTipo[] = ['contrato', 'pre', 'cof']
 
-/** Empresa default (1ª — matriz/franqueadora), igual ao Financeiro Franqueadora. */
+/** Empresa default (1ª  matriz/franqueadora), igual ao Financeiro Franqueadora. */
 async function empresaIdJur(sb: SB): Promise<string | null> {
   const { data } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
   return (data as { id?: string } | null)?.id ?? null
 }
 
-/** Grava 1 linha em audit_log (best-effort — nunca derruba a operação). */
+/** Grava 1 linha em audit_log (best-effort  nunca derruba a operação). */
 async function auditJur(userId: string, acao: string, label: string, dados: Record<string, unknown>): Promise<void> {
   try {
     await adminClient().from('audit_log').insert({
@@ -391,7 +391,7 @@ export async function salvarAjusteNotif(id: string, assunto: string, corpo: stri
 /**
  * Envia a notificação (jurEnviarNotif 4962): salva ajuste, status='enviada',
  * grava data de envio, marca o recebível como notificado (enviado=true) e audita.
- * (Envio de e-mail real ao franqueado é placeholder — sem provedor configurado.)
+ * (Envio de e-mail real ao franqueado é placeholder  sem provedor configurado.)
  */
 export async function enviarNotif(id: string, assunto?: string, corpo?: string): Promise<R> {
   const { op, error } = await requireOperador()

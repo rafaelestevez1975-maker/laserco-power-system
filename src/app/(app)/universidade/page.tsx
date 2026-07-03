@@ -41,7 +41,7 @@ export default async function UniversidadePage() {
     }
   }
 
-  // Progresso do usuário logado (uni_progresso) — perfil_id é o auth.uid.
+  // Progresso do usuário logado (uni_progresso)  perfil_id é o auth.uid.
   const meuProgresso: ProgressoUsuario = {}
   {
     const { data: { user } } = await sb.auth.getUser()

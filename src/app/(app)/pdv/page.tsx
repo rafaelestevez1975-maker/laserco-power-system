@@ -39,7 +39,7 @@ export default async function PdvPage() {
   // ── Cortesias já usadas no mês nesta unidade (p/ exibir saldo do teto) ──
   // Gate por `criado_em` (sempre preenchido) e não por `fechada_em`: cortesias importadas/legadas
   // sem `fechada_em` ficavam fora da conta e furavam o teto. Mesma regra usada no bloqueio real
-  // em finalizarVenda (actions.ts) — saldo exibido e bloqueio precisam bater.
+  // em finalizarVenda (actions.ts)  saldo exibido e bloqueio precisam bater.
   let cortesiaUsada = 0
   if (unidadeId) {
     const { data: cort, error: eCort } = await sb

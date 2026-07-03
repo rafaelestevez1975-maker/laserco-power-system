@@ -35,7 +35,7 @@ export type FinConfig = {
 }
 // Franquia com override de royalty (CEO: % e vencimento por unidade; null = regra geral).
 export type RoyaltyUnidade = { id: string; nome: string; royalty_pct_override: number | null; venc_dia_override: number | null; tipo_loja: 'propria' | 'franquia' }
-// DRE derivado do RAZÃO (fin_lancamento) — cada linha é uma conta do plano de contas somada.
+// DRE derivado do RAZÃO (fin_lancamento)  cada linha é uma conta do plano de contas somada.
 export type DreLinha = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
 
 const ABAS_VALIDAS = ['fluxo', 'dre', 'calc', 'receber', 'pagar', 'conciliacao', 'royalties', 'cobranca', 'config'] as const
@@ -133,7 +133,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     banco: {}, adquirentes: [...FIN_ADQUIRENTES], categorias: [...FIN_CATS_REC], regua: [...FIN_REGUA],
   }
 
-  // DRE derivado do RAZÃO (fonte única) — última competência apurada no razão.
+  // DRE derivado do RAZÃO (fonte única)  última competência apurada no razão.
   let dre: DreLinha[] = []
   let dreCompetencia: string | null = null
   {
@@ -155,16 +155,16 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   const planoContas = (pcRaw ?? []) as { id: string; codigo: string | null; nome: string; natureza: string; grupo: string | null; ordem: number; ativo: boolean }[]
   const unidadesOpt = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
 
-  // Índices REAIS do Banco Central (API SGS, cache 6h) — aba Cálculos (fim do mock acum12m).
+  // Índices REAIS do Banco Central (API SGS, cache 6h)  aba Cálculos (fim do mock acum12m).
   const indices = await indicesEconomicos()
 
-  // Franquias com override de royalty (% e vencimento POR unidade — regra do CEO).
+  // Franquias com override de royalty (% e vencimento POR unidade  regra do CEO).
   const { data: ruRaw } = await sb.from('unidades')
     .select('id, nome, royalty_pct_override, venc_dia_override, tipo_loja')
     .not('bemp_salon_id', 'is', null).eq('ativa', true).order('nome')
   const royaltiesUnidade = (ruRaw ?? []) as RoyaltyUnidade[]
 
-  // Fluxo de caixa DERIVADO do razão (fonte única) — visão inicial 'consolidado'; o seletor de
+  // Fluxo de caixa DERIVADO do razão (fonte única)  visão inicial 'consolidado'; o seletor de
   // escopo na aba refaz via server action. Série de 6 meses + KPIs por status + composição.
   let fluxoSerie: FluxoSerie[] = []
   let fluxoResumo: FluxoResumo | null = null

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — RH (Portal de RH nativo) + PONTO DIGITAL GPS
+-- Migration  RH (Portal de RH nativo) + PONTO DIGITAL GPS
 --   Paridade com o legado: legacy/index.html (Ponto Digital, buildPontoDigital ~8458;
 --   PONTO_CFG ~8415) e legacy/portal-rh.html (Dashboard, Colaboradores, Ponto, Folha,
 --   Férias e Ausências, Desempenho, Regras da Rede).
@@ -9,12 +9,12 @@
 --   e o Ponto Digital guardava tudo em localStorage (PONTO_CFG / PONTO_REG). Aqui
 --   recriamos cada tela como rota Next nativa, persistindo o estado em tabelas reais:
 --
---     ponto_config        : a config do ponto (PONTO_CFG) por UNIDADE — raio da cerca
+--     ponto_config        : a config do ponto (PONTO_CFG) por UNIDADE  raio da cerca
 --                           virtual, lat/lng da base, chave Google Maps, modo padrão.
---     registros_ponto     : o espelho de ponto (PONTO_REG) — uma linha por marcação,
+--     registros_ponto     : o espelho de ponto (PONTO_REG)  uma linha por marcação,
 --                           com GPS, distância da base e validação da cerca (Haversine).
 --     folha_pagamento     : a Folha (Salário Bruto/Líquido, INSS, IRRF, FGTS, 13º).
---     solicitacoes_ferias : Férias e Ausências (vacationRequests) — período aquisitivo,
+--     solicitacoes_ferias : Férias e Ausências (vacationRequests)  período aquisitivo,
 --                           dias, aprovação.
 --     atestados           : atestados médicos (collection atestados do portal).
 --     rh_departamentos    : departamentos (tela Configurações do portal RH).
@@ -28,14 +28,14 @@
 --   existir no schema base do lkii, o IF NOT EXISTS apenas a preserva. Rodar duas
 --   vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/rh.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) PONTO_CONFIG — config do Ponto Digital por unidade (legado PONTO_CFG).
+-- 1) PONTO_CONFIG  config do Ponto Digital por unidade (legado PONTO_CFG).
 --    Defaults do legado: raio 150 m, Florianópolis-Centro (-27.5954, -48.5480).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ponto_config (
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS ponto_config (
 CREATE INDEX IF NOT EXISTS idx_ponto_config_unidade ON ponto_config (unidade_id);
 
 -- ----------------------------------------------------------------------------
--- 2) REGISTROS_PONTO — espelho de ponto (legado PONTO_REG). Consumida por /ponto.
+-- 2) REGISTROS_PONTO  espelho de ponto (legado PONTO_REG). Consumida por /ponto.
 --    tipo segue PONTO_TIPOS; validado_geo = dentro da cerca (dist<=raio, Haversine).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS registros_ponto (
@@ -84,7 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_reg_ponto_unidade ON registros_ponto (unidade_id)
 CREATE INDEX IF NOT EXISTS idx_reg_ponto_data    ON registros_ponto (data_hora DESC);
 
 -- ----------------------------------------------------------------------------
--- 3) RH_DEPARTAMENTOS — tela Configurações do portal (cadastro de departamentos).
+-- 3) RH_DEPARTAMENTOS  tela Configurações do portal (cadastro de departamentos).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS rh_departamentos (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS rh_departamentos (
 CREATE INDEX IF NOT EXISTS idx_rh_dep_empresa ON rh_departamentos (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) FOLHA_PAGAMENTO — Folha (legado tela Folha de Pagamento).
+-- 4) FOLHA_PAGAMENTO  Folha (legado tela Folha de Pagamento).
 --    Proventos/descontos por competência (mês/ano) e colaborador.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS folha_pagamento (
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS folha_pagamento (
   salario_bruto   numeric(12,2) NOT NULL DEFAULT 0,
   inss            numeric(12,2) NOT NULL DEFAULT 0,
   irrf            numeric(12,2) NOT NULL DEFAULT 0,
-  fgts            numeric(12,2) NOT NULL DEFAULT 0,        -- depósito (8%) — não desconta do líquido
+  fgts            numeric(12,2) NOT NULL DEFAULT 0,        -- depósito (8%)  não desconta do líquido
   outros_proventos numeric(12,2) NOT NULL DEFAULT 0,
   outros_descontos numeric(12,2) NOT NULL DEFAULT 0,
   decimo_terceiro numeric(12,2) NOT NULL DEFAULT 0,
@@ -123,7 +123,7 @@ CREATE INDEX IF NOT EXISTS idx_folha_colab ON folha_pagamento (colaborador_id);
 CREATE INDEX IF NOT EXISTS idx_folha_comp  ON folha_pagamento (competencia);
 
 -- ----------------------------------------------------------------------------
--- 5) SOLICITACOES_FERIAS — Férias e Ausências (legado vacationRequests).
+-- 5) SOLICITACOES_FERIAS  Férias e Ausências (legado vacationRequests).
 --    Período aquisitivo + dias solicitados + aprovação (pendência do dashboard).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS solicitacoes_ferias (
@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_ferias_colab  ON solicitacoes_ferias (colaborador
 CREATE INDEX IF NOT EXISTS idx_ferias_status ON solicitacoes_ferias (status);
 
 -- ----------------------------------------------------------------------------
--- 6) ATESTADOS — atestados médicos (legado collection atestados).
+-- 6) ATESTADOS  atestados médicos (legado collection atestados).
 --    Regra de entrega ao RH em até 2 dias úteis (campo data_entrega para conferir).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS atestados (
@@ -165,8 +165,8 @@ CREATE INDEX IF NOT EXISTS idx_atestados_colab  ON atestados (colaborador_id);
 CREATE INDEX IF NOT EXISTS idx_atestados_status ON atestados (status);
 
 -- ----------------------------------------------------------------------------
--- 7) DESEMPENHO — avaliacoes_desempenho / pdi / metas_colaborador.
---    (Consumidas por /rh/desempenho — criadas aqui se o base ainda não as tiver.)
+-- 7) DESEMPENHO  avaliacoes_desempenho / pdi / metas_colaborador.
+--    (Consumidas por /rh/desempenho  criadas aqui se o base ainda não as tiver.)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS avaliacoes_desempenho (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS metas_colaborador (
 CREATE INDEX IF NOT EXISTS idx_metacolab_colab ON metas_colaborador (colaborador_id);
 
 -- ----------------------------------------------------------------------------
--- 8) RECRUTAMENTO — vagas / candidatos (consumidas por /rh/recrutamento).
+-- 8) RECRUTAMENTO  vagas / candidatos (consumidas por /rh/recrutamento).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS vagas (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -242,7 +242,7 @@ CREATE INDEX IF NOT EXISTS idx_cand_vaga    ON candidatos (vaga_id);
 CREATE INDEX IF NOT EXISTS idx_cand_estagio ON candidatos (estagio_kanban);
 
 -- ----------------------------------------------------------------------------
--- 9) RLS — leitura para qualquer autenticado; escrita para gestão de RH.
+-- 9) RLS  leitura para qualquer autenticado; escrita para gestão de RH.
 --    Papéis de gestão (espelham PAPEIS_GESTAO/ESCRITA usados nos actions):
 --    admin_geral, gestor, gerente, recepcao, rh.
 -- ----------------------------------------------------------------------------
@@ -301,7 +301,7 @@ CREATE POLICY registros_ponto_self_ins ON registros_ponto FOR INSERT
   );
 
 -- ----------------------------------------------------------------------------
--- 10) SEED — config de ponto por unidade ativa + departamentos padrão.
+-- 10) SEED  config de ponto por unidade ativa + departamentos padrão.
 --     Idempotente (só insere o que falta).
 -- ----------------------------------------------------------------------------
 INSERT INTO ponto_config (unidade_id)

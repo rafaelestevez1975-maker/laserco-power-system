@@ -156,7 +156,7 @@ function DadosBasicos({ dados, podeEditar }: { dados: UnidadeDados; podeEditar: 
         </div>
       ) : (
         <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 12 }}>
-          <i className="ti ti-eye" /> Somente leitura — edição restrita à gestão da unidade.
+          <i className="ti ti-eye" /> Somente leitura  edição restrita à gestão da unidade.
         </p>
       )}
     </form>
@@ -166,7 +166,7 @@ function DadosBasicos({ dados, podeEditar }: { dados: UnidadeDados; podeEditar: 
 // ─────────────────────────── Estado-vazio honesto (sem tabela no lkii) ───────────────────────────
 
 function NeedsTable({ titulo, tabela, descricao, icon }: { titulo: string; tabela: string; descricao: string; icon: string }) {
-  // TODO(needs-table) — feature fiel ao legado, mas sem tabela no backend lkii ainda.
+  // TODO(needs-table)  feature fiel ao legado, mas sem tabela no backend lkii ainda.
   return (
     <div className="rel-card">
       <div className="rel-card-h" style={{ cursor: 'default' }}>

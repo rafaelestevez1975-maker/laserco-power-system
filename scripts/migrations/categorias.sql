@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration — CATEGORIAS / CONTAS / METAS / CONTRATOS (paridade com o legado)
+-- Migration  CATEGORIAS / CONTAS / METAS / CONTRATOS (paridade com o legado)
 -- =============================================================================
 -- CONTEXTO
 --   Módulo "Categorias + Contas (unidade) + Metas + Modelos de contrato" precisava de:
@@ -11,10 +11,10 @@
 --        No Next isso era um CLONE estático (snapshot inerte). Criamos a tabela
 --        contratos_modelo (DB-backed) + bucket de Storage p/ o arquivo.
 --
---     2. CONTAS — coluna "Fornecedor" (view-contas tem filtro/coluna Fornecedor).
+--     2. CONTAS  coluna "Fornecedor" (view-contas tem filtro/coluna Fornecedor).
 --        lancamentos_financeiros não tinha a coluna → ADD COLUMN IF NOT EXISTS.
 --
---     3. CATEGORIAS — seed completo do plano_contas espelhando CATP_SEED (~10 grupos
+--     3. CATEGORIAS  seed completo do plano_contas espelhando CATP_SEED (~10 grupos
 --        de despesa) e CATR_SEED (Vendas das Unidades) do legado, para a paridade do
 --        conteúdo inicial das categorias a pagar / a receber.
 --
@@ -22,14 +22,14 @@
 --   CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS /
 --   contagem antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/categorias.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) MODELOS DE CONTRATO (contratos_modelo) — buildContratos / CONTRATO_TXT
+-- 1) MODELOS DE CONTRATO (contratos_modelo)  buildContratos / CONTRATO_TXT
 --    Catálogo por EMPRESA, habilitável para todas as unidades. RBAC: admin_geral /
 --    gestor escrevem; demais leem (catálogo compartilhado).
 --    quando_emitido: as 5 opções do select do editor do legado.
@@ -75,13 +75,13 @@ CREATE POLICY contratos_modelo_rw ON contratos_modelo
                  AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 2) CONTAS — coluna "Fornecedor" em lancamentos_financeiros (view-contas)
+-- 2) CONTAS  coluna "Fornecedor" em lancamentos_financeiros (view-contas)
 -- ----------------------------------------------------------------------------
 ALTER TABLE lancamentos_financeiros
   ADD COLUMN IF NOT EXISTS fornecedor text;
 
 -- ----------------------------------------------------------------------------
--- 3) STORAGE — bucket 'contratos' para os arquivos dos modelos (PDF/DOC/DOCX).
+-- 3) STORAGE  bucket 'contratos' para os arquivos dos modelos (PDF/DOC/DOCX).
 --    Idempotente (ON CONFLICT). Acesso de escrita pelo papel admin_geral/gestor;
 --    leitura autenticada. (Se o schema storage não existir no ambiente, ignore.)
 -- ----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 4) SEED de modelos de contrato — espelha CONTRATOS / CONTRATO_TXT do legado
+-- 4) SEED de modelos de contrato  espelha CONTRATOS / CONTRATO_TXT do legado
 --    (7 modelos). Idempotente: só insere se a tabela estiver vazia para a empresa.
 --    Os termos completos são editados na UI; aqui guardamos o cabeçalho/título.
 -- ----------------------------------------------------------------------------
@@ -120,7 +120,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 5) SEED de categorias (plano_contas) — CATP_SEED (despesa) + CATR_SEED (receita)
+-- 5) SEED de categorias (plano_contas)  CATP_SEED (despesa) + CATR_SEED (receita)
 --    Espelha os grupos/itens do legado. Idempotente: só semeia grupos ainda
 --    ausentes (por nome+tipo) e itens ainda ausentes dentro do grupo.
 --    natureza: despesa => devedora, receita => credora.
@@ -134,7 +134,7 @@ DECLARE
   v_gid     uuid;
   v_gcod    int;
   v_icod    int;
-  -- CATP_SEED (despesa) — grupos na ordem do legado
+  -- CATP_SEED (despesa)  grupos na ordem do legado
   v_pag jsonb := '[
     {"g":"Impostos","itens":["ISS","PIS e COFINS","IRPJ","CSLL","INSS","FGTS","IOF","IPTU","Taxas Administrativas","Parcelamento de tributos","Outros Impostos e Taxas","Devoluções e Abatimentos"]},
     {"g":"Custos Fixos","itens":["Aluguel","Condomínio","Cessão de Direitos","Energia Elétrica","Água e Esgoto","Telefone e Internet","Seguros","Locação de Equipamentos","Segurança e Portaria","Mensalidades e Sistemas","Odorização"]},

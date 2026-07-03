@@ -55,7 +55,7 @@ export default async function MarketingPage({ searchParams }: { searchParams: Pr
     else noticias = (data ?? []) as NoticiaRow[]
   }
 
-  // Árvore de materiais (mkt_materiais) — carrega tudo da empresa e monta a árvore no client.
+  // Árvore de materiais (mkt_materiais)  carrega tudo da empresa e monta a árvore no client.
   let materiais: MaterialNode[] = []
   {
     const { data, error } = await sb

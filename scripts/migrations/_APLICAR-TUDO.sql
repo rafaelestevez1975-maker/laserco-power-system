@@ -1,5 +1,5 @@
 -- ============================================================================
--- APLICAR-TUDO — Onda 4 (paridade legado). Cole no SQL Editor do Supabase e rode.
+-- APLICAR-TUDO  Onda 4 (paridade legado). Cole no SQL Editor do Supabase e rode.
 -- Idempotente (CREATE TABLE IF NOT EXISTS). SEM seeds de dado de negócio FAKE
 -- (removidos: recebíveis/contas-a-pagar/contratos/conteúdo de marketing fictícios).
 -- As tabelas nascem VAZIAS e recebem dado REAL. 050_expansao já foi aplicada.
@@ -7,7 +7,7 @@
 
 -- ██  rbac.sql  ████████████████████████████████████████████████████████
 -- ============================================================================
--- Módulo: RBAC — Perfis de acesso (cargos) + matriz de permissões
+-- Módulo: RBAC  Perfis de acesso (cargos) + matriz de permissões
 -- Paridade com o legado: PERFIS[] / perfisRows / perfTogglePonto / perfDel /
 --   renderPerfilEditor (legacy/index.html L7178-7293).
 --
@@ -43,27 +43,27 @@ where bate_ponto is true
 
 -- ██  catalogo.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — CATÁLOGO (paridade com o legado: legacy/index.html)
+-- Migration  CATÁLOGO (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
 --   O legado tem, no módulo de catálogo, campos que o schema lkii ainda não cobria:
---     · Serviços  — "Desc. Máx (%)" (SERVICOS[2]) e "Pagar comissão" timing
+--     · Serviços   "Desc. Máx (%)" (SERVICOS[2]) e "Pagar comissão" timing
 --                   Venda/Execução/Não pagar (SERVICOS[7], default 'Execução').
---     · Produtos  — "Desc. Máx (%)" (PRODUTOS[2]). "Insumo" já existe como
---                   produtos.feedstock no schema — só falta expor na UI.
---     · Pacotes   — "Cobertura de créditos" (Qualquer unidade / Unidade que realiza
+--     · Produtos   "Desc. Máx (%)" (PRODUTOS[2]). "Insumo" já existe como
+--                   produtos.feedstock no schema  só falta expor na UI.
+--     · Pacotes    "Cobertura de créditos" (Qualquer unidade / Unidade que realiza
 --                   a venda), "Desconto máximo (%)" e "Pagar comissão" timing.
 --   Além disso o legado tem duas telas funcionais que não existiam como tabela:
---     · Formas de pagamento (buildPgto / PGTO) — lista de formas com tipo, taxa,
+--     · Formas de pagamento (buildPgto / PGTO)  lista de formas com tipo, taxa,
 --       taxa a descontar na comissão, ativo + bloco de integração PagoLivre
 --       (Crédito Recorrente: token, parcelamento, valor mínimo, base de royalties).
---     · Grupo de serviços (buildGrpserv / GRPSERV) — grupos com flag Ativo.
+--     · Grupo de serviços (buildGrpserv / GRPSERV)  grupos com flag Ativo.
 --
 -- DECISÃO ADOTADA
 --   1. Colunas novas (ADD COLUMN IF NOT EXISTS) em servicos / produtos / pacotes,
 --      com defaults seguros para não quebrar o catálogo existente.
 --   2. Tabelas novas formas_pagamento e grupo_servicos com RLS por papel
---      (admin_geral / gestor / financeiro escrevem; demais leem) — mesmo modelo
+--      (admin_geral / gestor / financeiro escrevem; demais leem)  mesmo modelo
 --      das demais migrations (perfis_usuario.papel). Catálogo é por EMPRESA.
 --   3. Seeds idempotentes (só se a tabela estiver vazia) espelhando PGTO/GRPSERV.
 --
@@ -71,16 +71,16 @@ where bate_ponto is true
 --   ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS /
 --   contagem antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/catalogo.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) SERVIÇOS — Desc. Máx (%) + Pagar comissão (timing)
+-- 1) SERVIÇOS  Desc. Máx (%) + Pagar comissão (timing)
 --    desc_max:       SERVICOS[2] do legado (percentual, default 0).
---    pagar_comissao: SERVICOS[7] — 'Venda' | 'Execução' | 'Não pagar'.
+--    pagar_comissao: SERVICOS[7]  'Venda' | 'Execução' | 'Não pagar'.
 --                    Legado normaliza vazio para 'Execução'.
 -- ----------------------------------------------------------------------------
 ALTER TABLE servicos
@@ -95,7 +95,7 @@ ALTER TABLE servicos
   CHECK (pagar_comissao IN ('Venda', 'Execução', 'Não pagar'));
 
 -- ----------------------------------------------------------------------------
--- 2) PRODUTOS — Desc. Máx (%) + Insumo (feedstock)
+-- 2) PRODUTOS  Desc. Máx (%) + Insumo (feedstock)
 --    produtos.feedstock normalmente já existe no schema lkii; o ADD COLUMN
 --    IF NOT EXISTS garante a coluna "Insumo" mesmo onde ela faltar.
 -- ----------------------------------------------------------------------------
@@ -106,10 +106,10 @@ ALTER TABLE produtos
   ADD COLUMN IF NOT EXISTS feedstock boolean NOT NULL DEFAULT false;
 
 -- ----------------------------------------------------------------------------
--- 3) PACOTES — Cobertura de créditos + Desconto máximo (%) + Pagar comissão
+-- 3) PACOTES  Cobertura de créditos + Desconto máximo (%) + Pagar comissão
 --    cobertura_creditos: 'Qualquer unidade' | 'Unidade que realiza a venda'.
 --    desc_max:           PACOTES[4] (percentual).
---    pagar_comissao:     PACOTES[5] — Venda/Execução/Não pagar (default 'Execução').
+--    pagar_comissao:     PACOTES[5]  Venda/Execução/Não pagar (default 'Execução').
 -- ----------------------------------------------------------------------------
 ALTER TABLE pacotes
   ADD COLUMN IF NOT EXISTS cobertura_creditos text NOT NULL DEFAULT 'Qualquer unidade';
@@ -133,7 +133,7 @@ ALTER TABLE pacotes
 -- ----------------------------------------------------------------------------
 -- 4) FORMAS DE PAGAMENTO (buildPgto / PGTO + bloco PagoLivre)
 --    Catálogo por empresa. A integração PagoLivre (Crédito Recorrente) vive nas
---    colunas rec_* — só preenchidas quando tipo = 'Crédito Recorrente'.
+--    colunas rec_*  só preenchidas quando tipo = 'Crédito Recorrente'.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS formas_pagamento (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS formas_pagamento (
   taxa_comissao   numeric(6,2) NOT NULL DEFAULT 0,   -- taxa a descontar na comissão (%)
   ativo           boolean NOT NULL DEFAULT true,
   ordem           integer NOT NULL DEFAULT 0,
-  -- Integração PagoLivre (Crédito Recorrente) — só usado quando tipo='Crédito Recorrente'
+  -- Integração PagoLivre (Crédito Recorrente)  só usado quando tipo='Crédito Recorrente'
   rec_modo        text DEFAULT 'Integrado' CHECK (rec_modo IS NULL OR rec_modo IN ('Integrado','Manual')),
   rec_parceiro    text DEFAULT 'PagoLivre',
   rec_token       text,
@@ -160,7 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_formas_pagamento_empresa ON formas_pagamento (emp
 CREATE INDEX IF NOT EXISTS idx_formas_pagamento_ativo   ON formas_pagamento (ativo);
 
 -- ----------------------------------------------------------------------------
--- 5) GRUPO DE SERVIÇOS (buildGrpserv / GRPSERV) — grupos com flag Ativo
+-- 5) GRUPO DE SERVIÇOS (buildGrpserv / GRPSERV)  grupos com flag Ativo
 --    É a "tabela de grupos" que o legado tinha como lista fixa. O catálogo de
 --    serviços referencia o grupo por NOME (servicos.grupo é texto), então aqui
 --    guardamos os grupos como cadastro próprio (nome + ativo) para a tela
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS grupo_servicos (
 CREATE INDEX IF NOT EXISTS idx_grupo_servicos_empresa ON grupo_servicos (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 6) RLS — habilitar + policies por papel.
+-- 6) RLS  habilitar + policies por papel.
 --    Leitura: qualquer perfil autenticado (catálogo é compartilhado).
 --    Escrita: admin_geral / gestor / financeiro (gestores da rede).
 -- ----------------------------------------------------------------------------
@@ -213,7 +213,7 @@ CREATE POLICY grupo_servicos_rw ON grupo_servicos
                  AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 7) SEED — espelha PGTO (30+ formas) e GRPSERV (3 grupos) do legado.
+-- 7) SEED  espelha PGTO (30+ formas) e GRPSERV (3 grupos) do legado.
 --    Idempotente: só insere se a tabela estiver vazia para a empresa.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -223,7 +223,7 @@ BEGIN
   SELECT id INTO v_empresa FROM empresas ORDER BY 1 LIMIT 1;
   IF v_empresa IS NULL THEN RETURN; END IF;
 
-  -- Grupos de serviços (GRPSERV) — só se vazio
+  -- Grupos de serviços (GRPSERV)  só se vazio
   IF (SELECT count(*) FROM grupo_servicos WHERE empresa_id = v_empresa) = 0 THEN
     INSERT INTO grupo_servicos (empresa_id, nome, ativo, ordem) VALUES
       (v_empresa, 'Depilação', true, 1),
@@ -231,7 +231,7 @@ BEGIN
       (v_empresa, 'Ultrassom', true, 3);
   END IF;
 
-  -- Formas de pagamento (PGTO) — só se vazio
+  -- Formas de pagamento (PGTO)  só se vazio
   IF (SELECT count(*) FROM formas_pagamento WHERE empresa_id = v_empresa) = 0 THEN
     -- Forma especial: Crédito Recorrente PagoLivre (sempre primeira)
     INSERT INTO formas_pagamento (empresa_id, nome, tipo, taxa, taxa_comissao, ativo, ordem,
@@ -282,7 +282,7 @@ COMMIT;
 
 -- ██  categorias.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — CATEGORIAS / CONTAS / METAS / CONTRATOS (paridade com o legado)
+-- Migration  CATEGORIAS / CONTAS / METAS / CONTRATOS (paridade com o legado)
 -- =============================================================================
 -- CONTEXTO
 --   Módulo "Categorias + Contas (unidade) + Metas + Modelos de contrato" precisava de:
@@ -294,10 +294,10 @@ COMMIT;
 --        No Next isso era um CLONE estático (snapshot inerte). Criamos a tabela
 --        contratos_modelo (DB-backed) + bucket de Storage p/ o arquivo.
 --
---     2. CONTAS — coluna "Fornecedor" (view-contas tem filtro/coluna Fornecedor).
+--     2. CONTAS  coluna "Fornecedor" (view-contas tem filtro/coluna Fornecedor).
 --        lancamentos_financeiros não tinha a coluna → ADD COLUMN IF NOT EXISTS.
 --
---     3. CATEGORIAS — seed completo do plano_contas espelhando CATP_SEED (~10 grupos
+--     3. CATEGORIAS  seed completo do plano_contas espelhando CATP_SEED (~10 grupos
 --        de despesa) e CATR_SEED (Vendas das Unidades) do legado, para a paridade do
 --        conteúdo inicial das categorias a pagar / a receber.
 --
@@ -305,14 +305,14 @@ COMMIT;
 --   CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS /
 --   contagem antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/categorias.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) MODELOS DE CONTRATO (contratos_modelo) — buildContratos / CONTRATO_TXT
+-- 1) MODELOS DE CONTRATO (contratos_modelo)  buildContratos / CONTRATO_TXT
 --    Catálogo por EMPRESA, habilitável para todas as unidades. RBAC: admin_geral /
 --    gestor escrevem; demais leem (catálogo compartilhado).
 --    quando_emitido: as 5 opções do select do editor do legado.
@@ -358,13 +358,13 @@ CREATE POLICY contratos_modelo_rw ON contratos_modelo
                  AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 2) CONTAS — coluna "Fornecedor" em lancamentos_financeiros (view-contas)
+-- 2) CONTAS  coluna "Fornecedor" em lancamentos_financeiros (view-contas)
 -- ----------------------------------------------------------------------------
 ALTER TABLE lancamentos_financeiros
   ADD COLUMN IF NOT EXISTS fornecedor text;
 
 -- ----------------------------------------------------------------------------
--- 3) STORAGE — bucket 'contratos' para os arquivos dos modelos (PDF/DOC/DOCX).
+-- 3) STORAGE  bucket 'contratos' para os arquivos dos modelos (PDF/DOC/DOCX).
 --    Idempotente (ON CONFLICT). Acesso de escrita pelo papel admin_geral/gestor;
 --    leitura autenticada. (Se o schema storage não existir no ambiente, ignore.)
 -- ----------------------------------------------------------------------------
@@ -379,7 +379,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 4) SEED de modelos de contrato — espelha CONTRATOS / CONTRATO_TXT do legado
+-- 4) SEED de modelos de contrato  espelha CONTRATOS / CONTRATO_TXT do legado
 --    (7 modelos). Idempotente: só insere se a tabela estiver vazia para a empresa.
 --    Os termos completos são editados na UI; aqui guardamos o cabeçalho/título.
 -- ----------------------------------------------------------------------------
@@ -403,7 +403,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 5) SEED de categorias (plano_contas) — CATP_SEED (despesa) + CATR_SEED (receita)
+-- 5) SEED de categorias (plano_contas)  CATP_SEED (despesa) + CATR_SEED (receita)
 --    Espelha os grupos/itens do legado. Idempotente: só semeia grupos ainda
 --    ausentes (por nome+tipo) e itens ainda ausentes dentro do grupo.
 --    natureza: despesa => devedora, receita => credora.
@@ -417,7 +417,7 @@ DECLARE
   v_gid     uuid;
   v_gcod    int;
   v_icod    int;
-  -- CATP_SEED (despesa) — grupos na ordem do legado
+  -- CATP_SEED (despesa)  grupos na ordem do legado
   v_pag jsonb := '[
     {"g":"Impostos","itens":["ISS","PIS e COFINS","IRPJ","CSLL","INSS","FGTS","IOF","IPTU","Taxas Administrativas","Parcelamento de tributos","Outros Impostos e Taxas","Devoluções e Abatimentos"]},
     {"g":"Custos Fixos","itens":["Aluguel","Condomínio","Cessão de Direitos","Energia Elétrica","Água e Esgoto","Telefone e Internet","Seguros","Locação de Equipamentos","Segurança e Portaria","Mensalidades e Sistemas","Odorização"]},
@@ -506,7 +506,7 @@ COMMIT;
 
 -- ██  financeiro.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — FINANCEIRO DA FRANQUEADORA (Franqueadora A + B)
+-- Migration  FINANCEIRO DA FRANQUEADORA (Franqueadora A + B)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html · buildFinFranq L5099+) tem um módulo financeiro
@@ -522,20 +522,20 @@ COMMIT;
 -- DECISÃO ADOTADA (tabelas próprias do financeiro da franqueadora)
 --   Em vez de poluir lancamentos_financeiros (que é por unidade), criamos tabelas
 --   dedicadas com prefixo fin_:
---     fin_recebiveis   — royalties/taxas/aluguéis cobrados das unidades pela matriz
---     fin_contas_pagar — despesas da franqueadora (folha, impostos, fornecedores)
---     fin_conciliacao  — cruzamento venda x extrato x taxa adquirente
---     fin_config       — parâmetros (royaltyPct/fundoPct/vencDia, banco, adquirentes, régua)
+--     fin_recebiveis    royalties/taxas/aluguéis cobrados das unidades pela matriz
+--     fin_contas_pagar  despesas da franqueadora (folha, impostos, fornecedores)
+--     fin_conciliacao   cruzamento venda x extrato x taxa adquirente
+--     fin_config        parâmetros (royaltyPct/fundoPct/vencDia, banco, adquirentes, régua)
 --
 --   Categorias de recebíveis são FIXAS (FIN_CATS_REC do legado), guardadas como
---   texto na coluna categoria (não usam plano_contas — são conceitos da matriz).
+--   texto na coluna categoria (não usam plano_contas  são conceitos da matriz).
 --
 -- SEGURANÇA / IDEMPOTÊNCIA
 --   CREATE TABLE IF NOT EXISTS / ON CONFLICT DO NOTHING. RLS habilitada com policy
 --   por empresa (admin_geral e perfil financeiro). O seed usa a 1ª empresa e as
 --   unidades ativas existentes, espelhando o finSeed do legado.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/financeiro.sql
 -- =============================================================================
 
@@ -616,7 +616,7 @@ CREATE TABLE IF NOT EXISTS fin_conciliacao (
 CREATE INDEX IF NOT EXISTS idx_fin_conciliacao_empresa ON fin_conciliacao (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) CONFIG DO FINANCEIRO (1 linha por empresa) — parâmetros do legado FIN_CFG
+-- 4) CONFIG DO FINANCEIRO (1 linha por empresa)  parâmetros do legado FIN_CFG
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS fin_config (
   empresa_id   uuid PRIMARY KEY REFERENCES empresas(id) ON DELETE CASCADE,
@@ -631,7 +631,7 @@ CREATE TABLE IF NOT EXISTS fin_config (
 );
 
 -- ----------------------------------------------------------------------------
--- 5) RLS — habilitar + policies por empresa (admin_geral e perfil financeiro)
+-- 5) RLS  habilitar + policies por empresa (admin_geral e perfil financeiro)
 --    Modelo: perfis_usuario(papel, unidade_id) → unidades(empresa_id).
 -- ----------------------------------------------------------------------------
 ALTER TABLE fin_recebiveis   ENABLE ROW LEVEL SECURITY;
@@ -671,7 +671,7 @@ CREATE POLICY fin_config_rw ON fin_config
                  AND p.papel IN ('admin_geral','financeiro','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 6) SEED — espelha finSeed do legado, sobre as unidades ativas reais.
+-- 6) SEED  espelha finSeed do legado, sobre as unidades ativas reais.
 --    Royalty = 10% do bruto; Fundo = 2% do bruto. Vencimento 10/06/2026.
 --    Só insere se a tabela estiver vazia (idempotente por contagem).
 -- ----------------------------------------------------------------------------
@@ -708,7 +708,7 @@ COMMIT;
 
 -- ██  comissoes.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — COMISSÕES + COLABORADORES (paridade com o legado: legacy/index.html)
+-- Migration  COMISSÕES + COLABORADORES (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
 --   Dois módulos do legado dependiam de estado que o schema lkii ainda não cobria:
@@ -719,12 +719,12 @@ COMMIT;
 --      edições de percentuais/faixas/base PERSISTAM e possam alimentar a apuração
 --      de premiação (premRoster) no futuro. Cada categoria guarda:
 --        · base (individual/loja/sessao) → on + pct
---        · Parte 1 — tiers por dezena (t80/t100/t120/t130)
---        · Parte 2 — fechamento do mês (f100/f120/f130)
+--        · Parte 1  tiers por dezena (t80/t100/t120/t130)
+--        · Parte 2  fechamento do mês (f100/f120/f130)
 --        · cargo (mapeia a categoria a um cargo do enum p/ o simulador casar
 --          colaborador → categoria).
 --
---   2. Ficha do Colaborador — abas "Acesso ao sistema" e "Agenda & Serviços"
+--   2. Ficha do Colaborador  abas "Acesso ao sistema" e "Agenda & Serviços"
 --      (view-colaborador-form, index.html ~2121..2149 + colabServRender ~7120).
 --      Faltavam colunas em `colaboradores` (exibe_agenda, disponivel_online,
 --      comissao_pct, ordem_app, forcar_troca_senha, ultimo_acesso) e a tabela de
@@ -742,14 +742,14 @@ COMMIT;
 --   CREATE TABLE/COLUMN/POLICY IF NOT EXISTS / DROP POLICY IF EXISTS / contagem
 --   antes de semear. Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/comissoes.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) MATRIZ DE COMISSÕES (COM_CATS) — uma linha por categoria, por empresa.
+-- 1) MATRIZ DE COMISSÕES (COM_CATS)  uma linha por categoria, por empresa.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS matriz_comissoes (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -757,19 +757,19 @@ CREATE TABLE IF NOT EXISTS matriz_comissoes (
   nome            text NOT NULL,                      -- nome da categoria (ex.: 'Consultoras de Vendas')
   cargo           text,                               -- cargo do enum correspondente (p/ pré-seleção no simulador)
   ordem           integer NOT NULL DEFAULT 0,
-  -- Premiação base (marque um ou mais) — on + pct
+  -- Premiação base (marque um ou mais)  on + pct
   base_individual_on  boolean NOT NULL DEFAULT false,
   base_individual_pct numeric(6,2) NOT NULL DEFAULT 0,
   base_loja_on        boolean NOT NULL DEFAULT false,
   base_loja_pct       numeric(6,2) NOT NULL DEFAULT 0,
   base_sessao_on      boolean NOT NULL DEFAULT false,
   base_sessao_pct     numeric(6,2) NOT NULL DEFAULT 0,
-  -- Parte 1 — adicional por dezena (sobre a premiação base)
+  -- Parte 1  adicional por dezena (sobre a premiação base)
   tier_t80        numeric(6,2) NOT NULL DEFAULT 0,
   tier_t100       numeric(6,2) NOT NULL DEFAULT 0,
   tier_t120       numeric(6,2) NOT NULL DEFAULT 0,
   tier_t130       numeric(6,2) NOT NULL DEFAULT 0,
-  -- Parte 2 — adicional no fechamento do mês (sobre o valor final da unidade)
+  -- Parte 2  adicional no fechamento do mês (sobre o valor final da unidade)
   fech_f100       numeric(6,2) NOT NULL DEFAULT 0,
   fech_f120       numeric(6,2) NOT NULL DEFAULT 0,
   fech_f130       numeric(6,2) NOT NULL DEFAULT 0,
@@ -780,7 +780,7 @@ CREATE TABLE IF NOT EXISTS matriz_comissoes (
 CREATE INDEX IF NOT EXISTS idx_matriz_comissoes_empresa ON matriz_comissoes (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 2) COLABORADORES — colunas das abas "Acesso ao sistema" e "Agenda & Serviços".
+-- 2) COLABORADORES  colunas das abas "Acesso ao sistema" e "Agenda & Serviços".
 --    exibe_agenda        : aparece como coluna na agenda (default true)
 --    disponivel_online   : disponível p/ agendamento online (default true)
 --    comissao_pct        : "% Comissão padrão" (default 0)
@@ -796,7 +796,7 @@ ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS forcar_troca_senha boolean NO
 ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ultimo_acesso      timestamptz;
 
 -- ----------------------------------------------------------------------------
--- 3) COLABORADOR_SERVICOS (colabServRender) — "Serviços que o colaborador executa".
+-- 3) COLABORADOR_SERVICOS (colabServRender)  "Serviços que o colaborador executa".
 --    Junção N:N entre colaboradores e servicos. UNIQUE para evitar duplicidade.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS colaborador_servicos (
@@ -846,7 +846,7 @@ CREATE POLICY colaborador_servicos_rw ON colaborador_servicos
                  AND p.papel IN ('admin_geral','gestor','recepcao')));
 
 -- ----------------------------------------------------------------------------
--- 5) SEED — espelha COM_CATS do legado (5 categorias). Idempotente por empresa.
+-- 5) SEED  espelha COM_CATS do legado (5 categorias). Idempotente por empresa.
 -- ----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -874,7 +874,7 @@ COMMIT;
 
 -- ██  agenda.sql  ████████████████████████████████████████████████████████
 -- ============================================================================
--- Módulo: Agenda — Eventos da rede (banda de eventos no topo da agenda)
+-- Módulo: Agenda  Eventos da rede (banda de eventos no topo da agenda)
 -- Paridade com o legado: REDE_EVENTOS / EVT_TYPES / renderRede / saveEvt
 --   (legacy/index.html L9591-9627). No legado os eventos são MOCK em memória;
 --   aqui viram tabela real, multi-tenant por empresa, lidos por DATA na agenda.
@@ -960,7 +960,7 @@ create policy rede_eventos_del on public.rede_eventos
 
 -- ██  indiques.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — Gestão de Indiques (paridade com o legado: Prêmio & Link + Sorteio)
+-- Migration  Gestão de Indiques (paridade com o legado: Prêmio & Link + Sorteio)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html, blocos indPremioHTML / indSorteioHTML ~8195-8296)
@@ -972,7 +972,7 @@ create policy rede_eventos_del on public.rede_eventos
 --   Esta migration cria as duas tabelas de config/registro e adiciona as duas
 --   colunas que faltavam em `indicacoes`. Tudo idempotente.
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/indiques.sql
 -- =============================================================================
 
@@ -993,7 +993,7 @@ ALTER TABLE indicacoes
   CHECK (origem IN ('balcao', 'site', 'link'));
 
 -- ----------------------------------------------------------------------------
--- 2) PRÊMIO DO MÊS — config por (empresa, unidade, mês).
+-- 2) PRÊMIO DO MÊS  config por (empresa, unidade, mês).
 --    Legado IND_PREMIO (8063): { premio, valor, obs }. Um registro por unidade/mês.
 --    mes_ref no formato 'YYYY-MM' (legado IND_MES_KEY = '2026-06').
 -- ----------------------------------------------------------------------------
@@ -1013,7 +1013,7 @@ CREATE TABLE IF NOT EXISTS indique_config (
 );
 
 -- ----------------------------------------------------------------------------
--- 3) ÚLTIMO SORTEIO — registro do ganhador do mês (legado IND_ULTIMO_SORTEIO 8279).
+-- 3) ÚLTIMO SORTEIO  registro do ganhador do mês (legado IND_ULTIMO_SORTEIO 8279).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS indique_sorteios (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1033,7 +1033,7 @@ CREATE INDEX IF NOT EXISTS idx_indique_config_emp_uni  ON indique_config (empres
 CREATE INDEX IF NOT EXISTS idx_indique_sorteios_emp_uni ON indique_sorteios (empresa_id, unidade_id, mes_ref);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — habilita e cria policies básicas por empresa (alinhado às demais tabelas).
+-- 4) RLS  habilita e cria policies básicas por empresa (alinhado às demais tabelas).
 --    Leitura/escrita restritas à empresa do usuário autenticado (via perfis_usuario).
 -- ----------------------------------------------------------------------------
 ALTER TABLE indique_config   ENABLE ROW LEVEL SECURITY;
@@ -1078,7 +1078,7 @@ COMMIT;
 
 -- ██  relatorios.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — RELATÓRIOS · CONTRATOS (planos/contratos por cliente)
+-- Migration  RELATÓRIOS · CONTRATOS (planos/contratos por cliente)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html · REL_DEFS.contratos L4311) tem um relatório de
@@ -1102,14 +1102,14 @@ COMMIT;
 --   papel (admin_geral / gestor / financeiro). Modelo: perfis_usuario(papel,
 --   unidade_id) → unidades(empresa_id).
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/relatorios.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) CONTRATOS (planos/assinaturas de cliente) — espelha REL_DEFS.contratos
+-- 1) CONTRATOS (planos/assinaturas de cliente)  espelha REL_DEFS.contratos
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS contratos (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1131,7 +1131,7 @@ CREATE INDEX IF NOT EXISTS idx_contratos_status  ON contratos (status);
 CREATE INDEX IF NOT EXISTS idx_contratos_criado  ON contratos (criado_em);
 
 -- ----------------------------------------------------------------------------
--- 2) RLS — habilitar + policy por papel (admin_geral / gestor / financeiro)
+-- 2) RLS  habilitar + policy por papel (admin_geral / gestor / financeiro)
 -- ----------------------------------------------------------------------------
 ALTER TABLE contratos ENABLE ROW LEVEL SECURITY;
 
@@ -1143,7 +1143,7 @@ CREATE POLICY contratos_rw ON contratos
                  AND p.papel IN ('admin_geral','gestor','financeiro')));
 
 -- ----------------------------------------------------------------------------
--- 3) SEED — contratos demo a partir de clientes reais (só se a tabela estiver vazia).
+-- 3) SEED  contratos demo a partir de clientes reais (só se a tabela estiver vazia).
 --    Distribui planos/status/valores determinísticos espelhando o legado.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -1182,7 +1182,7 @@ COMMIT;
 
 -- ██  anamnese.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — ANAMNESE / DOCUMENTOS + ORIGENS + MOTIVOS
+-- Migration  ANAMNESE / DOCUMENTOS + ORIGENS + MOTIVOS
 --   (paridade com o legado: legacy/index.html)
 -- =============================================================================
 -- CONTEXTO
@@ -1194,21 +1194,21 @@ COMMIT;
 --          acumulativo, unidades com acesso);
 --        · seções e perguntas dinâmicas (8 tipos de campo: simnao, textocurto,
 --          textolongo, numero, selecao, consent, assinatura, imagem);
---        · flags por pergunta: obrig. e "inviabiliza" (regra clínica — respondida
+--        · flags por pergunta: obrig. e "inviabiliza" (regra clínica  respondida
 --          positivamente bloqueia os serviços).
 --      8 documentos seed: Anamnese, Termo de Sessão (acumulativo), Autorização
 --      para Menor, Uso de Imagem, Cancelamento, Transferência de Pacotes,
 --      Troca p/ Crédito e Orientações Pós-Laser (Rascunho / subconjunto de unidades).
 --
---   2. Origens de Cliente (buildOrigens / ORIGENS) — CRUD de canais de captação,
+--   2. Origens de Cliente (buildOrigens / ORIGENS)  CRUD de canais de captação,
 --      com flags auto (Geolocalizado) e campo (Outros).
 --
---   3. Motivos de Cancelamento (buildMotivos / MOTIVOS) — CRUD com flag "sistema"
+--   3. Motivos de Cancelamento (buildMotivos / MOTIVOS)  CRUD com flag "sistema"
 --      (padrão do sistema: só inativa, não exclui).
 --
 -- DECISÃO ADOTADA
 --   · Catálogo por EMPRESA (config da rede), espelhando catalogo.sql.
---   · documentos.secoes em JSONB (lista de {titulo, campos:[{q,t,obr,inv}]}) —
+--   · documentos.secoes em JSONB (lista de {titulo, campos:[{q,t,obr,inv}]}) 
 --     o construtor do legado já trabalha com esse formato; evita N tabelas filhas.
 --   · documentos.unidades_ids uuid[] = subconjunto de unidades com acesso
 --     (NULL/[] = "Todas as unidades da rede").
@@ -1220,7 +1220,7 @@ COMMIT;
 --   CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS / contagem antes de semear.
 --   Rodar duas vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/anamnese.sql
 -- =============================================================================
 
@@ -1295,7 +1295,7 @@ CREATE TABLE IF NOT EXISTS motivos_cancelamento (
 CREATE INDEX IF NOT EXISTS idx_motivos_cancelamento_empresa ON motivos_cancelamento (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) AUTOMAÇÃO DE NÃO COMPARECIMENTO (WhatsApp) — bloco de config dos Motivos.
+-- 4) AUTOMAÇÃO DE NÃO COMPARECIMENTO (WhatsApp)  bloco de config dos Motivos.
 --    1 linha por empresa (config singleton). Espelha view-motivos (1762-1788).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS noshow_automacao (
@@ -1313,7 +1313,7 @@ CREATE TABLE IF NOT EXISTS noshow_automacao (
 );
 
 -- ----------------------------------------------------------------------------
--- 5) RLS — habilitar + policies por papel.
+-- 5) RLS  habilitar + policies por papel.
 --    Leitura: qualquer perfil autenticado. Escrita: admin_geral / gestor.
 -- ----------------------------------------------------------------------------
 ALTER TABLE documentos          ENABLE ROW LEVEL SECURITY;
@@ -1346,7 +1346,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- 6) SEED — espelha ORIGENS, MOTIVOS, DOCS_LIST e DOC_MODELS do legado.
+-- 6) SEED  espelha ORIGENS, MOTIVOS, DOCS_LIST e DOC_MODELS do legado.
 --    Idempotente: só insere se a tabela estiver vazia para a empresa.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -1366,7 +1366,7 @@ BEGIN
       (v_empresa, 'Outros',        true, false, true,  5);
   END IF;
 
-  -- Motivos de cancelamento (MOTIVOS) — 3 do sistema + 3 personalizados
+  -- Motivos de cancelamento (MOTIVOS)  3 do sistema + 3 personalizados
   IF (SELECT count(*) FROM motivos_cancelamento WHERE empresa_id = v_empresa) = 0 THEN
     INSERT INTO motivos_cancelamento (empresa_id, nome, sistema, ativo, ordem) VALUES
       (v_empresa, 'Cliente Cancelou (antecipadamente)',               true,  true, 1),
@@ -1571,7 +1571,7 @@ BEGIN
        ]}
      ]$json$::jsonb);
 
-    -- Orientações Pós-Laser (Rascunho, subconjunto de unidades — demonstra status)
+    -- Orientações Pós-Laser (Rascunho, subconjunto de unidades  demonstra status)
     INSERT INTO documentos (empresa_id, nome, tipo, descricao, preenchimento, obrigatorio, status, secoes) VALUES
     (v_empresa, 'Orientações Pós-Laser', 'Termo', 'Orientações de cuidados pós-procedimento a laser',
      'Opcional', false, 'Rascunho',
@@ -1609,7 +1609,7 @@ COMMIT;
 -- reais, multi-tenant por empresa, escopo opcional por unidade.
 --
 -- O catálogo das 22 automações PADRÃO (texto/gatilho/ação/categoria) vive no código
--- (src/lib/automacoes.ts AUTOS_PADRAO) — espelho fiel do AUTOS do legado. Aqui só
+-- (src/lib/automacoes.ts AUTOS_PADRAO)  espelho fiel do AUTOS do legado. Aqui só
 -- persistimos o ESTADO por unidade (ativa/inativa) e as personalizadas.
 --
 -- Aplicar este arquivo no projeto lkii (Supabase) antes de usar as telas.
@@ -1751,7 +1751,7 @@ create table if not exists public.vip_grupos (
 create index if not exists vip_grupos_emp_idx on public.vip_grupos (empresa_id);
 
 -- ============================================================================
--- RLS — leitura pela empresa do usuário; escrita por papéis de gestão.
+-- RLS  leitura pela empresa do usuário; escrita por papéis de gestão.
 --   A empresa do usuário é resolvida via perfis_usuario → unidades → empresa_id.
 -- ============================================================================
 
@@ -1829,7 +1829,7 @@ end $$;
 
 -- ██  implantacao.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — IMPLANTAÇÃO DE UNIDADE (/implantacao)
+-- Migration  IMPLANTAÇÃO DE UNIDADE (/implantacao)
 -- =============================================================================
 -- CONTEXTO
 --   O legado tinha buildImpl / implRender (legacy ~4852): fluxo completo de
@@ -1842,9 +1842,9 @@ end $$;
 --   (IMPL_FASES) para um projeto demo, para a tela não nascer vazia.
 --
 -- MODELO
---   implantacao_projetos   — 1 projeto por unidade em implantação (cabeçalho).
---   implantacao_etapas     — as fases F01..F05 do projeto (cod, nome, ordem).
---   implantacao_tarefas    — tarefas da etapa (cod, descricao, responsavel,
+--   implantacao_projetos    1 projeto por unidade em implantação (cabeçalho).
+--   implantacao_etapas      as fases F01..F05 do projeto (cod, nome, ordem).
+--   implantacao_tarefas     tarefas da etapa (cod, descricao, responsavel,
 --                            duracao_dias, situacao).
 --
 --   responsavel ∈ IMPL_WF (9 áreas) · situacao ∈ IMPL_ST (4 estados).
@@ -1852,16 +1852,16 @@ end $$;
 -- SEGURANÇA / IDEMPOTÊNCIA
 --   Tudo IF NOT EXISTS / ON CONFLICT. RLS habilitada: leitura p/ qualquer
 --   autenticado; escrita p/ admin_geral / gestor (espelha o "só admin edita"
---   do legado — demais perfis só atualizam a situação, regra reforçada na action).
+--   do legado  demais perfis só atualizam a situação, regra reforçada na action).
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/implantacao.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) PROJETO DE IMPLANTAÇÃO (cabeçalho — IMPL_PROJ do legado)
+-- 1) PROJETO DE IMPLANTAÇÃO (cabeçalho  IMPL_PROJ do legado)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS implantacao_projetos (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1915,7 +1915,7 @@ CREATE TABLE IF NOT EXISTS implantacao_tarefas (
 CREATE INDEX IF NOT EXISTS idx_impl_tarefas_etapa ON implantacao_tarefas (etapa_id, ordem);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — leitura p/ autenticado; escrita p/ admin_geral / gestor.
+-- 4) RLS  leitura p/ autenticado; escrita p/ admin_geral / gestor.
 -- ----------------------------------------------------------------------------
 ALTER TABLE implantacao_projetos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE implantacao_etapas   ENABLE ROW LEVEL SECURITY;
@@ -1958,7 +1958,7 @@ CREATE POLICY impl_tarefas_del ON implantacao_tarefas
   FOR DELETE USING (EXISTS (SELECT 1 FROM perfis_usuario p WHERE p.id = auth.uid() AND p.papel IN ('admin_geral','gestor')));
 
 -- ----------------------------------------------------------------------------
--- 5) SEED — template padrão (IMPL_FASES: 5 etapas, 65 tarefas) num projeto demo.
+-- 5) SEED  template padrão (IMPL_FASES: 5 etapas, 65 tarefas) num projeto demo.
 --    Idempotente: só cria o projeto demo se ainda não houver nenhum projeto.
 -- ----------------------------------------------------------------------------
 DO $$
@@ -2080,31 +2080,31 @@ COMMIT;
 
 -- ██  juridico.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — Jurídico (paridade com o legado: Notificações extrajudiciais,
+-- Migration  Jurídico (paridade com o legado: Notificações extrajudiciais,
 --             documentos contratuais e modelos de notificação)
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html, bloco "Jurídico" ~4896-5009) tem três peças
 --   que NÃO existem no backend lkii:
 --     1) FILA DE NOTIFICAÇÕES geradas a partir de recebíveis em atraso
---        (JUR_NOTIFS 4911) — assunto + corpo padrão montados com os dados da
+--        (JUR_NOTIFS 4911)  assunto + corpo padrão montados com os dados da
 --        unidade, status pendente/enviada, vínculo com o recebível (fin_recebiveis).
---     2) MODELOS de notificação editáveis (JUR_TEMPLATES 4900) — 7 pré-prontos
+--     2) MODELOS de notificação editáveis (JUR_TEMPLATES 4900)  7 pré-prontos
 --        com merge fields {unidade},{franqueado},{cnpj},{prazo},{data}.
---     3) DOCUMENTOS contratuais por unidade (JUR_DOCS 4897) — Contrato de
+--     3) DOCUMENTOS contratuais por unidade (JUR_DOCS 4897)  Contrato de
 --        Franquia, Pré-contrato e COF (arquivo + data).
 --
 --   Integração: a fila de notificações se liga ao Financeiro Franqueadora pela
 --   coluna fin_recebiveis.jur_id (já existente em scripts/migrations/financeiro.sql).
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/juridico.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) NOTIFICAÇÕES JURÍDICAS — fila gerada a partir de recebíveis em atraso.
+-- 1) NOTIFICAÇÕES JURÍDICAS  fila gerada a partir de recebíveis em atraso.
 --    Espelha JUR_NOTIFS (legado 4911) + finGerarNotifJuridica (4920-4931).
 --    Snapshot dos dados da unidade/débito no momento da geração (relatório histórico).
 -- ----------------------------------------------------------------------------
@@ -2140,7 +2140,7 @@ CREATE INDEX IF NOT EXISTS idx_jur_notif_fin     ON juridico_notificacoes (fin_i
 CREATE UNIQUE INDEX IF NOT EXISTS uq_jur_notif_fin ON juridico_notificacoes (fin_id) WHERE fin_id IS NOT NULL;
 
 -- ----------------------------------------------------------------------------
--- 2) MODELOS DE NOTIFICAÇÃO — templates editáveis por empresa.
+-- 2) MODELOS DE NOTIFICAÇÃO  templates editáveis por empresa.
 --    Espelha JUR_TEMPLATES (legado 4900-4908). Merge fields no corpo:
 --    {unidade},{franqueado},{cnpj},{prazo},{data}.
 -- ----------------------------------------------------------------------------
@@ -2181,7 +2181,7 @@ CREATE INDEX IF NOT EXISTS idx_jur_docs_empresa ON juridico_documentos (empresa_
 CREATE INDEX IF NOT EXISTS idx_jur_docs_unidade ON juridico_documentos (unidade_id);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — habilita e cria policies por empresa (alinhado às demais tabelas).
+-- 4) RLS  habilita e cria policies por empresa (alinhado às demais tabelas).
 -- ----------------------------------------------------------------------------
 ALTER TABLE juridico_notificacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE juridico_templates    ENABLE ROW LEVEL SECURITY;
@@ -2227,7 +2227,7 @@ CREATE POLICY jur_docs_emp ON juridico_documentos
   ));
 
 -- ----------------------------------------------------------------------------
--- 5) SEED — 7 modelos de notificação pré-prontos (JUR_TEMPLATES 4900-4908).
+-- 5) SEED  7 modelos de notificação pré-prontos (JUR_TEMPLATES 4900-4908).
 --    Aplicado para a 1ª empresa (matriz) apenas se ainda não houver templates.
 --    Textos COPIADOS FIELMENTE do legado.
 -- ----------------------------------------------------------------------------
@@ -2238,44 +2238,44 @@ BEGIN
   SELECT id INTO v_empresa FROM empresas ORDER BY criada_em ASC LIMIT 1;
   IF v_empresa IS NOT NULL AND NOT EXISTS (SELECT 1 FROM juridico_templates WHERE empresa_id = v_empresa) THEN
     INSERT INTO juridico_templates (empresa_id, nome, assunto, corpo, ordem) VALUES
-    (v_empresa, 'Royalties em atraso — 1ª notificação',
-     'Notificação — Royalties em atraso · {unidade}',
+    (v_empresa, 'Royalties em atraso  1ª notificação',
+     'Notificação  Royalties em atraso · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Constatamos que os royalties referentes à unidade {unidade} (CNPJ {cnpj}) encontram-se em atraso. Solicitamos a regularização no prazo de {prazo} a contar do recebimento desta.' || E'\n\n' ||
      'Permanecemos à disposição para tratar de eventual repactuação.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 1),
-    (v_empresa, 'Royalties em atraso — 2ª notificação',
-     '2ª Notificação — Royalties em atraso · {unidade}',
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 1),
+    (v_empresa, 'Royalties em atraso  2ª notificação',
+     '2ª Notificação  Royalties em atraso · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Reiteramos a notificação anterior quanto ao atraso dos royalties da unidade {unidade}. A persistência da inadimplência poderá ensejar as medidas previstas no contrato de franquia, inclusive a sua rescisão.' || E'\n\n' ||
      'Concedemos prazo final de {prazo} para a quitação.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 2),
-    (v_empresa, 'Uso indevido da marca — 1ª notificação',
-     'Notificação — Uso indevido da marca · {unidade}',
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 2),
+    (v_empresa, 'Uso indevido da marca  1ª notificação',
+     'Notificação  Uso indevido da marca · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Identificamos uso da marca Laser&Co em desacordo com o Manual de Identidade e o contrato de franquia na unidade {unidade}. Solicitamos a imediata adequação e a remoção de qualquer material irregular no prazo de {prazo}.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 3),
-    (v_empresa, 'Uso indevido da marca — 2ª notificação',
-     '2ª Notificação — Uso indevido da marca · {unidade}',
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 3),
+    (v_empresa, 'Uso indevido da marca  2ª notificação',
+     '2ª Notificação  Uso indevido da marca · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Apesar da notificação anterior, persiste o uso indevido da marca na unidade {unidade}. Notificamos, em caráter final, para cessar o uso irregular em {prazo}, sob pena das sanções contratuais e legais cabíveis.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 4),
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 4),
     (v_empresa, 'Notificação de rescisão contratual',
      'Notificação de rescisão contratual · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Nos termos do contrato de franquia e da Lei 13.966/2019, notificamos a rescisão do contrato relativo à unidade {unidade} (CNPJ {cnpj}), em razão de descumprimento de obrigações essenciais, a produzir efeitos conforme as cláusulas pactuadas.' || E'\n\n' ||
      'Ficam mantidas as obrigações de não concorrência e de cessação do uso da marca.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 5),
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 5),
     (v_empresa, 'Descumprimento de padrões da rede',
-     'Notificação — Descumprimento de padrões · {unidade}',
+     'Notificação  Descumprimento de padrões · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Em auditoria/checklist da unidade {unidade} foram constatados desvios aos padrões operacionais da rede. Solicitamos plano de ação e regularização no prazo de {prazo}, sob acompanhamento da equipe de Operações.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 6),
-    (v_empresa, 'Inadimplência — taxa de franquia / fundo de marketing',
-     'Notificação — Inadimplência de taxas · {unidade}',
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 6),
+    (v_empresa, 'Inadimplência  taxa de franquia / fundo de marketing',
+     'Notificação  Inadimplência de taxas · {unidade}',
      'Prezado(a) {franqueado},' || E'\n\n' ||
      'Constatamos inadimplência relativa à taxa de franquia/fundo de marketing da unidade {unidade}. Solicitamos a regularização em {prazo}, evitando a incidência de encargos e medidas contratuais.' || E'\n\n' ||
-     'Atenciosamente,' || E'\n' || 'Departamento Jurídico — Laser&Co' || E'\n' || '{data}', 7);
+     'Atenciosamente,' || E'\n' || 'Departamento Jurídico  Laser&Co' || E'\n' || '{data}', 7);
   END IF;
 END $$;
 
@@ -2291,7 +2291,7 @@ COMMIT;
 
 -- ██  marketing.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — Marketing + Disco Virtual + Universidade Corporativa
+-- Migration  Marketing + Disco Virtual + Universidade Corporativa
 -- Paridade com o legado (legacy/index.html):
 --   · MARKETING        : buildMarketing (~8372), MKT_TREE/MKT_UPDATES/MKT_NEWS (8302-8349)
 --   · DISCO VIRTUAL    : buildDisco (~9417), DISCO_FOLDERS/DISCO_FILES (9383-9401)
@@ -2305,7 +2305,7 @@ COMMIT;
 --   Arquivos (Disco) usam o bucket de Storage 'disco-virtual' (PRIVADO). O caminho
 --   do objeto fica em disco_arquivos.arquivo_path; o download é via signed URL.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/marketing.sql
 --   E crie o bucket de Storage 'disco-virtual' (privado) no painel do Supabase.
 -- =============================================================================
@@ -2454,7 +2454,7 @@ CREATE INDEX IF NOT EXISTS idx_uni_progresso_emp ON uni_progresso (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_uni_progresso_perfil ON uni_progresso (perfil_id);
 
 -- ===========================================================================
--- RLS — habilita e cria policies por empresa (alinhado às demais tabelas).
+-- RLS  habilita e cria policies por empresa (alinhado às demais tabelas).
 -- ===========================================================================
 DO $$
 DECLARE t text;
@@ -2482,7 +2482,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- uni_etapas não tem empresa_id direto — herda da trilha.
+-- uni_etapas não tem empresa_id direto  herda da trilha.
 ALTER TABLE uni_etapas ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS uni_etapas_emp ON uni_etapas;
 CREATE POLICY uni_etapas_emp ON uni_etapas
@@ -2506,7 +2506,7 @@ CREATE POLICY uni_etapas_emp ON uni_etapas
 COMMIT;
 
 -- =============================================================================
--- SEED — popula a 1ª empresa com o conteúdo do legado (idempotente: só insere
+-- SEED  popula a 1ª empresa com o conteúdo do legado (idempotente: só insere
 -- se a empresa ainda não tiver registros). Roda fora da transação principal.
 -- =============================================================================
 DO $$
@@ -2532,29 +2532,29 @@ END $$;
 
 -- ██  nfse.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — Notas Fiscais (NFS-e) + Integração com prefeituras
+-- Migration  Notas Fiscais (NFS-e) + Integração com prefeituras
 -- =============================================================================
 -- CONTEXTO
 --   O legado (legacy/index.html, buildNotas ~8502-8531) tem a tela de Notas
 --   Fiscais com três peças que NÃO existem no backend lkii:
 --     1) NOTAS EMITIDAS (numero, competencia, tipo, cliente, fato gerador,
---        valor, status) — tabela `nfse`.
+--        valor, status)  tabela `nfse`.
 --     2) CONFIGURAÇÃO FISCAL POR UNIDADE (provedor municipal, alíquota ISS,
 --        inscrição municipal, certificado/token, ambiente, status de conexão)
---        — tabela `nfse_config_unidade`.
+--         tabela `nfse_config_unidade`.
 --     3) POLÍTICA DE EMISSÃO DA REDE (nenhuma|venda|execucao) + flag
---        "calcular por sessão" — tabela `nfse_politica` (1 registro por empresa).
+--        "calcular por sessão"  tabela `nfse_politica` (1 registro por empresa).
 --
 --   Tudo idempotente. Espelha as colunas que a UI de /notas lê.
 --
--- COMO APLICAR (manual — esta migration NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  esta migration NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/nfse.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) POLÍTICA DE EMISSÃO DA REDE — 1 registro por empresa.
+-- 1) POLÍTICA DE EMISSÃO DA REDE  1 registro por empresa.
 --    Legado: NFSE_POLICY ('nenhuma'|'venda'|'execucao', default 'execucao')
 --            + NFSE_POR_SESSAO (boolean, default true).
 -- ----------------------------------------------------------------------------
@@ -2574,7 +2574,7 @@ ALTER TABLE nfse_politica
   CHECK (politica IN ('nenhuma', 'venda', 'execucao'));
 
 -- ----------------------------------------------------------------------------
--- 2) CONFIGURAÇÃO FISCAL POR UNIDADE — 1 registro por unidade.
+-- 2) CONFIGURAÇÃO FISCAL POR UNIDADE  1 registro por unidade.
 --    Legado: nfseProvedor(cidade), nfseAliquota(cidade), nfseConectada(nome),
 --            nfseConfigUnidade(nome) → inscrição municipal, certificado/token,
 --            ambiente (Produção/Homologação).
@@ -2605,7 +2605,7 @@ ALTER TABLE nfse_config_unidade
   CHECK (status_conexao IN ('conectada', 'pendente'));
 
 -- ----------------------------------------------------------------------------
--- 3) NOTAS EMITIDAS — registro/listagem de NFS-e (emissão fiscal real = TODO).
+-- 3) NOTAS EMITIDAS  registro/listagem de NFS-e (emissão fiscal real = TODO).
 --    Legado emit: Número, Competência, Tipo, Cliente, Fato gerador, Valor, Status.
 --    fato_gerador: 'Sessão executada' (por sessão) ou 'Venda'.
 --    status: autorizada | cancelada | processando | erro.
@@ -2647,7 +2647,7 @@ CREATE INDEX IF NOT EXISTS idx_nfse_status        ON nfse (empresa_id, status);
 CREATE INDEX IF NOT EXISTS idx_nfse_cfg_uni       ON nfse_config_unidade (empresa_id, unidade_id);
 
 -- ----------------------------------------------------------------------------
--- 4) RLS — habilita e cria policies por empresa (alinhado às demais tabelas).
+-- 4) RLS  habilita e cria policies por empresa (alinhado às demais tabelas).
 --    Leitura/escrita restritas à empresa do usuário autenticado (via perfis_usuario).
 -- ----------------------------------------------------------------------------
 ALTER TABLE nfse_politica       ENABLE ROW LEVEL SECURITY;
@@ -2705,7 +2705,7 @@ COMMIT;
 
 -- ██  rh.sql  ████████████████████████████████████████████████████████
 -- =============================================================================
--- Migration — RH (Portal de RH nativo) + PONTO DIGITAL GPS
+-- Migration  RH (Portal de RH nativo) + PONTO DIGITAL GPS
 --   Paridade com o legado: legacy/index.html (Ponto Digital, buildPontoDigital ~8458;
 --   PONTO_CFG ~8415) e legacy/portal-rh.html (Dashboard, Colaboradores, Ponto, Folha,
 --   Férias e Ausências, Desempenho, Regras da Rede).
@@ -2715,12 +2715,12 @@ COMMIT;
 --   e o Ponto Digital guardava tudo em localStorage (PONTO_CFG / PONTO_REG). Aqui
 --   recriamos cada tela como rota Next nativa, persistindo o estado em tabelas reais:
 --
---     ponto_config        : a config do ponto (PONTO_CFG) por UNIDADE — raio da cerca
+--     ponto_config        : a config do ponto (PONTO_CFG) por UNIDADE  raio da cerca
 --                           virtual, lat/lng da base, chave Google Maps, modo padrão.
---     registros_ponto     : o espelho de ponto (PONTO_REG) — uma linha por marcação,
+--     registros_ponto     : o espelho de ponto (PONTO_REG)  uma linha por marcação,
 --                           com GPS, distância da base e validação da cerca (Haversine).
 --     folha_pagamento     : a Folha (Salário Bruto/Líquido, INSS, IRRF, FGTS, 13º).
---     solicitacoes_ferias : Férias e Ausências (vacationRequests) — período aquisitivo,
+--     solicitacoes_ferias : Férias e Ausências (vacationRequests)  período aquisitivo,
 --                           dias, aprovação.
 --     atestados           : atestados médicos (collection atestados do portal).
 --     rh_departamentos    : departamentos (tela Configurações do portal RH).
@@ -2734,14 +2734,14 @@ COMMIT;
 --   existir no schema base do lkii, o IF NOT EXISTS apenas a preserva. Rodar duas
 --   vezes não quebra.
 --
--- COMO APLICAR (manual — NÃO é aplicada automaticamente):
+-- COMO APLICAR (manual  NÃO é aplicada automaticamente):
 --   psql "$DATABASE_URL" -f scripts/migrations/rh.sql
 -- =============================================================================
 
 BEGIN;
 
 -- ----------------------------------------------------------------------------
--- 1) PONTO_CONFIG — config do Ponto Digital por unidade (legado PONTO_CFG).
+-- 1) PONTO_CONFIG  config do Ponto Digital por unidade (legado PONTO_CFG).
 --    Defaults do legado: raio 150 m, Florianópolis-Centro (-27.5954, -48.5480).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ponto_config (
@@ -2760,7 +2760,7 @@ CREATE TABLE IF NOT EXISTS ponto_config (
 CREATE INDEX IF NOT EXISTS idx_ponto_config_unidade ON ponto_config (unidade_id);
 
 -- ----------------------------------------------------------------------------
--- 2) REGISTROS_PONTO — espelho de ponto (legado PONTO_REG). Consumida por /ponto.
+-- 2) REGISTROS_PONTO  espelho de ponto (legado PONTO_REG). Consumida por /ponto.
 --    tipo segue PONTO_TIPOS; validado_geo = dentro da cerca (dist<=raio, Haversine).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS registros_ponto (
@@ -2790,7 +2790,7 @@ CREATE INDEX IF NOT EXISTS idx_reg_ponto_unidade ON registros_ponto (unidade_id)
 CREATE INDEX IF NOT EXISTS idx_reg_ponto_data    ON registros_ponto (data_hora DESC);
 
 -- ----------------------------------------------------------------------------
--- 3) RH_DEPARTAMENTOS — tela Configurações do portal (cadastro de departamentos).
+-- 3) RH_DEPARTAMENTOS  tela Configurações do portal (cadastro de departamentos).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS rh_departamentos (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2803,7 +2803,7 @@ CREATE TABLE IF NOT EXISTS rh_departamentos (
 CREATE INDEX IF NOT EXISTS idx_rh_dep_empresa ON rh_departamentos (empresa_id);
 
 -- ----------------------------------------------------------------------------
--- 4) FOLHA_PAGAMENTO — Folha (legado tela Folha de Pagamento).
+-- 4) FOLHA_PAGAMENTO  Folha (legado tela Folha de Pagamento).
 --    Proventos/descontos por competência (mês/ano) e colaborador.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS folha_pagamento (
@@ -2813,7 +2813,7 @@ CREATE TABLE IF NOT EXISTS folha_pagamento (
   salario_bruto   numeric(12,2) NOT NULL DEFAULT 0,
   inss            numeric(12,2) NOT NULL DEFAULT 0,
   irrf            numeric(12,2) NOT NULL DEFAULT 0,
-  fgts            numeric(12,2) NOT NULL DEFAULT 0,        -- depósito (8%) — não desconta do líquido
+  fgts            numeric(12,2) NOT NULL DEFAULT 0,        -- depósito (8%)  não desconta do líquido
   outros_proventos numeric(12,2) NOT NULL DEFAULT 0,
   outros_descontos numeric(12,2) NOT NULL DEFAULT 0,
   decimo_terceiro numeric(12,2) NOT NULL DEFAULT 0,
@@ -2829,7 +2829,7 @@ CREATE INDEX IF NOT EXISTS idx_folha_colab ON folha_pagamento (colaborador_id);
 CREATE INDEX IF NOT EXISTS idx_folha_comp  ON folha_pagamento (competencia);
 
 -- ----------------------------------------------------------------------------
--- 5) SOLICITACOES_FERIAS — Férias e Ausências (legado vacationRequests).
+-- 5) SOLICITACOES_FERIAS  Férias e Ausências (legado vacationRequests).
 --    Período aquisitivo + dias solicitados + aprovação (pendência do dashboard).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS solicitacoes_ferias (
@@ -2851,7 +2851,7 @@ CREATE INDEX IF NOT EXISTS idx_ferias_colab  ON solicitacoes_ferias (colaborador
 CREATE INDEX IF NOT EXISTS idx_ferias_status ON solicitacoes_ferias (status);
 
 -- ----------------------------------------------------------------------------
--- 6) ATESTADOS — atestados médicos (legado collection atestados).
+-- 6) ATESTADOS  atestados médicos (legado collection atestados).
 --    Regra de entrega ao RH em até 2 dias úteis (campo data_entrega para conferir).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS atestados (
@@ -2871,8 +2871,8 @@ CREATE INDEX IF NOT EXISTS idx_atestados_colab  ON atestados (colaborador_id);
 CREATE INDEX IF NOT EXISTS idx_atestados_status ON atestados (status);
 
 -- ----------------------------------------------------------------------------
--- 7) DESEMPENHO — avaliacoes_desempenho / pdi / metas_colaborador.
---    (Consumidas por /rh/desempenho — criadas aqui se o base ainda não as tiver.)
+-- 7) DESEMPENHO  avaliacoes_desempenho / pdi / metas_colaborador.
+--    (Consumidas por /rh/desempenho  criadas aqui se o base ainda não as tiver.)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS avaliacoes_desempenho (
   id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2916,7 +2916,7 @@ CREATE TABLE IF NOT EXISTS metas_colaborador (
 CREATE INDEX IF NOT EXISTS idx_metacolab_colab ON metas_colaborador (colaborador_id);
 
 -- ----------------------------------------------------------------------------
--- 8) RECRUTAMENTO — vagas / candidatos (consumidas por /rh/recrutamento).
+-- 8) RECRUTAMENTO  vagas / candidatos (consumidas por /rh/recrutamento).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS vagas (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2948,7 +2948,7 @@ CREATE INDEX IF NOT EXISTS idx_cand_vaga    ON candidatos (vaga_id);
 CREATE INDEX IF NOT EXISTS idx_cand_estagio ON candidatos (estagio_kanban);
 
 -- ----------------------------------------------------------------------------
--- 9) RLS — leitura para qualquer autenticado; escrita para gestão de RH.
+-- 9) RLS  leitura para qualquer autenticado; escrita para gestão de RH.
 --    Papéis de gestão (espelham PAPEIS_GESTAO/ESCRITA usados nos actions):
 --    admin_geral, gestor, gerente, recepcao, rh.
 -- ----------------------------------------------------------------------------
@@ -3007,7 +3007,7 @@ CREATE POLICY registros_ponto_self_ins ON registros_ponto FOR INSERT
   );
 
 -- ----------------------------------------------------------------------------
--- 10) SEED — config de ponto por unidade ativa + departamentos padrão.
+-- 10) SEED  config de ponto por unidade ativa + departamentos padrão.
 --     Idempotente (só insere o que falta).
 -- ----------------------------------------------------------------------------
 INSERT INTO ponto_config (unidade_id)

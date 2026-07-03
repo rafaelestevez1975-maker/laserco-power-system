@@ -15,7 +15,7 @@ const PERIODOS = ['Hoje', 'Ontem', 'Semana passada', 'Últimos 30 dias', 'Mês a
 const PARTES = ['Comercial', 'Marketing', 'Financeiro', 'Operações', 'SAC', 'Expansão', 'RH', 'Área Técnica']
 // CHAM_PARTIES (legado 6303): 8 departamentos + as entradas 'Franqueado · <unidade>'.
 // Admin pode abrir chamado em nome de um franqueado e cair em "Recebidos".
-// As unidades vêm REAIS do banco (ctx.unidades) — antes eram 3 nomes fixos fictícios.
+// As unidades vêm REAIS do banco (ctx.unidades)  antes eram 3 nomes fixos fictícios.
 const ETIQUETAS = ['Solicitação', 'Suporte', 'Financeiro', 'Implantação', 'Projeto', 'Expansão']
 const DEPTS = ['Todos', ...PARTES]
 const TAGS_FILTRO = ['Todos', ...ETIQUETAS]

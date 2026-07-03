@@ -34,7 +34,7 @@ export function calcReembolso(
 }
 
 // ───────────────────────── Acordo: 1º pagamento após o dia 15 ─────────────────────────
-// Legado: sacAcPreview/sacAcordoSalvar (index.html 9302, 9339) — bloqueia dia <= 15.
+// Legado: sacAcPreview/sacAcordoSalvar (index.html 9302, 9339)  bloqueia dia <= 15.
 /** Dia do mês (1–31) de uma data ISO 'YYYY-MM-DD', sem ruído de fuso (igual ao split do legado). */
 export function diaDoMes(dataISO: string | null | undefined): number {
   return Number((dataISO || '').split('-')[2]) || 0
@@ -47,7 +47,7 @@ export const MSG_DIA15 = 'A data do 1º pagamento deve ser após o dia 15.'
 
 // ───────────────────────── Observações: prefixo Tipo/Reclamação ─────────────────────────
 // sac_tickets não tem colunas próprias para "tipo da unidade" (Franquia/Própria) nem
-// "data da reclamação" — o legado guardava esses campos no formulário. Para manter a
+// "data da reclamação"  o legado guardava esses campos no formulário. Para manter a
 // paridade SEM tocar no banco, gravamos esses dados no PREFIXO de observações no padrão
 // "Tipo: <tipo> · Reclamação: <YYYY-MM-DD>" (mesmo padrão da importação). Estes helpers
 // extraem/reconstroem esse prefixo para exibir na lista e reeditar no modal.
@@ -78,7 +78,7 @@ export function montarObs(tipo: string, dataRecl: string, texto: string): string
 // ───────────────────────── Acordo: observação ao credor + previsão ─────────────────────────
 // Paridade com o legado (sacAcordoObs 9361-9368): após o acordo ser validado, o operador
 // pode gravar uma "Observação ao credor" (motivo de não pagamento / andamento) + uma data de
-// "Previsão" de atualização — exibidas num banner destacado no card, visível a todos.
+// "Previsão" de atualização  exibidas num banner destacado no card, visível a todos.
 // O schema só tem a coluna `sac_acordos.observacao` (não há `data_prev`/`observacao_credor`),
 // então gravamos AMBOS num único campo com o padrão "Previsão: <data> · <texto>" e os
 // lemos de volta para exibição/reedição (mesmo princípio do prefixo Tipo/Reclamação dos tickets).
@@ -138,7 +138,7 @@ export type PremMetricas = {
   vendas: number; pacotes: number; csat: number
 }
 
-/** Prêmio em R$ — fórmula idêntica ao legado (sacPremValor). */
+/** Prêmio em R$  fórmula idêntica ao legado (sacPremValor). */
 export function premioValor(m: PremMetricas, P: PremMonetaria): number {
   return (
     m.tot * P.porAtendimento +

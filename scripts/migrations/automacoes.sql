@@ -11,7 +11,7 @@
 -- reais, multi-tenant por empresa, escopo opcional por unidade.
 --
 -- O catálogo das 22 automações PADRÃO (texto/gatilho/ação/categoria) vive no código
--- (src/lib/automacoes.ts AUTOS_PADRAO) — espelho fiel do AUTOS do legado. Aqui só
+-- (src/lib/automacoes.ts AUTOS_PADRAO)  espelho fiel do AUTOS do legado. Aqui só
 -- persistimos o ESTADO por unidade (ativa/inativa) e as personalizadas.
 --
 -- Aplicar este arquivo no projeto lkii (Supabase) antes de usar as telas.
@@ -153,7 +153,7 @@ create table if not exists public.vip_grupos (
 create index if not exists vip_grupos_emp_idx on public.vip_grupos (empresa_id);
 
 -- ============================================================================
--- RLS — leitura pela empresa do usuário; escrita por papéis de gestão.
+-- RLS  leitura pela empresa do usuário; escrita por papéis de gestão.
 --   A empresa do usuário é resolvida via perfis_usuario → unidades → empresa_id.
 -- ============================================================================
 

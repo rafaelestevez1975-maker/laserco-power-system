@@ -30,7 +30,7 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
   // Métricas reais por atendente (sac_tickets). Vendas/pacotes/CSAT ainda não têm fonte
   // real ligada ao atendente → entram como 0 (o prêmio usa o que é mensurável hoje).
   // Escopo por unidade ativa (.eq('unidade_id', activeUnit)) + recorte de período
-  // (gte/lt criado_em) — mesmos filtros do Dashboard SAC, para os números baterem.
+  // (gte/lt criado_em)  mesmos filtros do Dashboard SAC, para os números baterem.
   // PERF: UMA varredura paginada tabulando por atribuido_para em JS (não 4 counts por
   // atendente). Inclui a regra de "reversão" (concluído, não pago, motivo cancel/reembolso/retenç).
   const reCancel = /cancel|reembolso|retenç/i
@@ -111,7 +111,7 @@ export default async function SacRankingPage({ searchParams }: { searchParams: P
           ) : (
             <div className="rel-card" style={{ marginBottom: 12, color: 'var(--text-3)' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{destaqueLabel}</div>
-              <div style={{ fontSize: 13, marginTop: 4 }}>Sem premiação a destacar neste período — nenhum atendimento atribuído ainda.</div>
+              <div style={{ fontSize: 13, marginTop: 4 }}>Sem premiação a destacar neste período  nenhum atendimento atribuído ainda.</div>
             </div>
           )}
 

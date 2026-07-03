@@ -32,7 +32,7 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
   const ctx = await getSessionContext()
   const isAdmin = ctx?.isAdmin ?? false
 
-  // Módulo restrito (buildJur 4940 — isAdmin): só administrador geral opera.
+  // Módulo restrito (buildJur 4940  isAdmin): só administrador geral opera.
   if (!isAdmin) {
     return (
       <div className="view active">
@@ -56,7 +56,7 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
 
   let migrationPendente = false
 
-  // ── Notificações jurídicas (juridico_notificacoes) — tolerante à migration ausente ──
+  // ── Notificações jurídicas (juridico_notificacoes)  tolerante à migration ausente ──
   let notificacoes: NotifRow[] = []
   // KPIs reais (server-side): a lista é capada, mas os totais NÃO podem sub-contar.
   let kpiPendentes = 0
@@ -120,7 +120,7 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
     else docsContratuais = (data ?? []) as DocContratual[]
   }
 
-  // Unidades visíveis (RLS) com cnpj — para a aba Unidades & documentos.
+  // Unidades visíveis (RLS) com cnpj  para a aba Unidades & documentos.
   const { data: unisRaw } = await sb
     .from('unidades')
     .select('id, nome, cnpj, ativa')
@@ -145,7 +145,7 @@ export default async function JuridicoPage({ searchParams }: { searchParams: Pro
     }))
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Documentos para assinatura (documentos_assinatura) — recurso já existente.
+  // Documentos para assinatura (documentos_assinatura)  recurso já existente.
   // ────────────────────────────────────────────────────────────────────────────
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE

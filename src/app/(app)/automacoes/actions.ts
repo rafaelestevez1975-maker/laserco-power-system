@@ -112,7 +112,7 @@ export async function excluirAutomacao(id: string): Promise<{ ok: boolean; error
   return { ok: true }
 }
 
-// ─── Config da automação de NÃO COMPARECIMENTO (no-show) — view-motivos 1762-1788 ───
+// ─── Config da automação de NÃO COMPARECIMENTO (no-show)  view-motivos 1762-1788 ───
 export type NoShowForm = {
   ativa: boolean
   primeiraApos: string

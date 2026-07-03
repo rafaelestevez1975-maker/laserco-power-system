@@ -11,7 +11,7 @@ export type ActionResult = { ok: boolean; error?: string; id?: string }
 const BUCKET = 'contratos'
 
 /**
- * Modelos de contrato — paridade com o legado (buildContratos / openContratoEditor /
+ * Modelos de contrato  paridade com o legado (buildContratos / openContratoEditor /
  * contSalvar / contInativar). Catálogo por EMPRESA. RBAC: admin_geral / gestor.
  * Tabela `contratos_modelo` (migration scripts/migrations/categorias.sql):
  *   id, empresa_id, nome, quando_emitido, enviar_email, todas_unidades, titulo,

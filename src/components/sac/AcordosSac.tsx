@@ -33,7 +33,7 @@ export function AcordosSac({ acordos, totalAcordos, podeValidar, children }: { a
     const r = await validarAcordo(id)
     setBusy(null)
     if (!r.ok) { setMsg(r.error || 'Erro ao validar.'); return }
-    setMsg('Acordo validado — parcelas lançadas em Contas a Pagar.'); router.refresh()
+    setMsg('Acordo validado  parcelas lançadas em Contas a Pagar.'); router.refresh()
   }
 
   // Linha-resumo (KPI) do legado: "N acordo(s) · X aguardando OK · total R$ Y".

@@ -13,7 +13,7 @@ import { FRANQUEADORA_EMPRESA_ID, resolverMotivoSac } from '@/lib/sac-ingest'
  * Configurar na UAZAPI: https://<dominio>/api/webhooks/uazapi?secret=<UAZAPI_WEBHOOK_SECRET>
  *
  * Cobre as DUAS formas de envelope documentadas (spec UAZAPI):
- *  (a) { EventType:'messages', message:{...} }            — forma "legada" plana
+ *  (a) { EventType:'messages', message:{...} }             forma "legada" plana
  *  (b) WebhookEvent { event:'message'|'messages_update'|'connection', instance, token, data:{...} }
  * O canal de ORIGEM (instance/token/owner) é resolvido contra canais_whatsapp para propagar
  * unidade_id ao chat (escopo por unidade) e rotear a resposta pelo MESMO número que recebeu.
@@ -47,7 +47,7 @@ const PREVIEW: Record<string, string> = { text: '', image: '📷 Imagem', audio:
 function preview(tipo: string, texto: string) { return tipo === 'text' ? texto.slice(0, 120) : (texto ? `${PREVIEW[tipo]} · ${texto.slice(0, 100)}` : PREVIEW[tipo]) }
 
 /** Em produção SEMPRE exige secret OU token. Só aceita anônimo em desenvolvimento
- *  (NODE_ENV !== 'production') quando nenhum secret está configurado — evita que uma env
+ *  (NODE_ENV !== 'production') quando nenhum secret está configurado  evita que uma env
  *  ausente no deploy abra o endpoint para gravações não autenticadas. */
 function autorizado(req: NextRequest, body: WebhookBody): boolean {
   const secret = process.env.UAZAPI_WEBHOOK_SECRET
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     : rawEvent === 'connection' ? 'connection'
     : (rawEvent === 'messages' || rawEvent === 'message') ? 'messages'
     : rawEvent
-  // O payload da mensagem vem em `message` (forma a) OU `data` (forma b — WebhookEvent).
+  // O payload da mensagem vem em `message` (forma a) OU `data` (forma b  WebhookEvent).
   const msg = body.message ?? body.data
   const sb = adminClient()
 
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   if (eventKind !== 'messages' || !msg?.chatid) return NextResponse.json({ ignored: rawEvent || 'no-message' })
   if (msg.isGroup) return NextResponse.json({ ignored: 'group' })
   // NÃO ignorar wasSentByApi: as "mensagens automáticas" configuradas na própria UAZAPI (e
-  // qualquer envio via API feito fora do sistema) chegam só com essa flag — ignorá-las deixava
+  // qualquer envio via API feito fora do sistema) chegam só com essa flag  ignorá-las deixava
   // a conversa "Sem mensagens" no sistema enquanto o WhatsApp mostrava a resposta. Os envios do
   // PRÓPRIO sistema não duplicam: eles gravam o wa_id na hora do envio e o dedup abaixo segura.
 
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert com escopo (unidade_id/canal_nome). Se as colunas não existirem no schema,
-  // degrada para o insert mínimo — sem quebrar a entrada das mensagens.
+  // degrada para o insert mínimo  sem quebrar a entrada das mensagens.
   let chat: ChatRow | null = null
   const { data: chatRaw } = await sb.from('sac_whatsapp_chats').select('id, nome, nao_lidas, bot_ativo, atendente_id, ticket_id').eq('telefone', telefone).maybeSingle()
   chat = chatRaw as ChatRow | null
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       telefone, wa_chatid: msg.chatid, nome: !fromMe ? (msg.senderName || null) : null,
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando, nao_lidas: fromMe ? 0 : 1,
     }
-    // Só inclui as chaves de escopo quando há valor — evita forçar null numa coluna NOT NULL.
+    // Só inclui as chaves de escopo quando há valor  evita forçar null numa coluna NOT NULL.
     const comEscopo = { ...baseInsert, ...(unidadeOrigem ? { unidade_id: unidadeOrigem } : {}), ...(canalNome ? { canal_nome: canalNome } : {}) }
     let ins = await sb.from('sac_whatsapp_chats').insert(comEscopo).select('id, nome, nao_lidas, bot_ativo, atendente_id, ticket_id').single()
     if (ins.error && isColMissing(ins.error.message)) {
@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
 
   // Mídia recebida: a UAZAPI nem sempre manda `fileURL` no webhook. Quando não vem, baixa via
   // /message/download (igual ao sistema antigo) usando o id interno da mensagem + token do canal
-  // de origem, e re-hospeda no bucket permanente `sac-midia` — resolve o "[image]"/áudio que não
+  // de origem, e re-hospeda no bucket permanente `sac-midia`  resolve o "[image]"/áudio que não
   // tocava E a expiração da URL temporária da UAZAPI (~2 dias).
   let midiaUrl: string | null = null
   let midiaMime: string | null = null
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Se a gravação da MENSAGEM falhar, responde 500 → a UAZAPI reenvia o evento e nada se perde.
-  // (Antes o erro era engolido: o chat já tinha atualizado o preview, mas a mensagem sumia — o
+  // (Antes o erro era engolido: o chat já tinha atualizado o preview, mas a mensagem sumia  o
   // "cliente mandou e não apareceu no sistema" relatado pelas atendentes.)
   const { error: eMsg } = await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chat.id, wa_id: waId, direcao: fromMe ? 'saida' : 'entrada',
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
       const r = await gerarRespostaSAC(historico)
       if (r?.resposta) {
         // Responde pelo MESMO canal que recebeu (origem). Só cai pra heurística se a origem
-        // não foi resolvida (envelope sem instance/token) — e nunca por outro número conectado.
+        // não foi resolvida (envelope sem instance/token)  e nunca por outro número conectado.
         const canal = (inst && inst.status === 'connected' && inst.token)
           ? inst
           : instancias.find((i) => /laser/i.test(i.name) && i.status === 'connected')
@@ -255,12 +255,12 @@ export async function POST(req: NextRequest) {
             const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
             if (alvo) patch.atendente_id = alvo
             // Pedido do Julio (02/07): quando a IA identifica o problema, ela JÁ ABRE o chamado
-            // (nome/CPF/motivo coletados) e distribui — a atendente não precisa abrir manual.
+            // (nome/CPF/motivo coletados) e distribui  a atendente não precisa abrir manual.
             if (!chat.ticket_id) {
               try {
                 const cpfDig = (r.cpf || '').replace(/\D/g, '')
                 const { data: tIns, error: eT } = await sb.from('sac_tickets').insert({
-                  empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: unidadeOrigem, // SAC centralizado (rede) — carimba a unidade se o canal tiver
+                  empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: unidadeOrigem, // SAC centralizado (rede)  carimba a unidade se o canal tiver
                   nome_cliente: (r.nomeCliente || chat.nome || telefone).trim(),
                   cpf_cliente: cpfDig.length === 11 ? cpfDig : null,
                   telefone_cliente: telefone,

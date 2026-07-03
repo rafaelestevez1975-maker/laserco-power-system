@@ -138,7 +138,7 @@ function montarPayloadBase(input: ColaboradorInput) {
   }
 }
 
-/** Colunas das abas novas (scripts/migrations/comissoes.sql) — só existem pós-migration. */
+/** Colunas das abas novas (scripts/migrations/comissoes.sql)  só existem pós-migration. */
 function montarPayloadExt(input: ColaboradorInput) {
   return {
     exibe_agenda: input.exibe_agenda === undefined ? true : !!input.exibe_agenda,
@@ -173,7 +173,7 @@ export async function checarCpfDuplicado(
   const d = dig(cpf)
   if (!d) return { ok: true, duplicado: null }
 
-  // CPF é UNIQUE GLOBAL no banco (colaboradores_cpf_key) — checa duplicidade sem escopo de unidade.
+  // CPF é UNIQUE GLOBAL no banco (colaboradores_cpf_key)  checa duplicidade sem escopo de unidade.
   void unidadeId
   const { data } = await op.sb.from('colaboradores').select('id, nome').eq('cpf', d).limit(1).maybeSingle()
   const row = (data as { id: string; nome: string } | null) ?? null
@@ -335,5 +335,5 @@ export async function salvarServicosColaborador(colaboradorId: string, servicoId
 // TODO(legado: buildInatividadeAuto): a regra de inatividade automática (>15 dias sem
 // acesso, legacy aplicarRegraInatividade / INATIVIDADE_DIAS) usa a coluna
 // colaboradores.ultimo_acesso (criada em scripts/migrations/comissoes.sql). A inativação
-// em lote ainda depende de job agendado (pg_cron) — fica como ação futura; a lista já
+// em lote ainda depende de job agendado (pg_cron)  fica como ação futura; a lista já
 // exibe os dias sem acesso e destaca o alerta de +15d.

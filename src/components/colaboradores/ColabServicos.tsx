@@ -7,7 +7,7 @@ import { carregarServicosColaborador, salvarServicosColaborador, type ServicoOpc
 const GRP_ORDER = ['Depilação', 'Estético', 'Ultrassom']
 
 /**
- * "Serviços que o colaborador executa" — grupos colapsáveis com checkbox por serviço,
+ * "Serviços que o colaborador executa"  grupos colapsáveis com checkbox por serviço,
  * marcar grupo inteiro e marcar todos os serviços ativos. Fiel a colabServRender do
  * legado (~7120). Persiste em colaborador_servicos (action salvarServicosColaborador).
  */

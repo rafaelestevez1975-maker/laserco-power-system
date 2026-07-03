@@ -51,7 +51,7 @@ export async function moverTicketFase(ticketId: string, fase: string): Promise<{
 }
 
 /** Gera o PEDIDO DE CANCELAMENTO (paridade sacGerarPedido do legado, index.html:9225).
- *  NÃO lança no Financeiro — apenas registra o pedido no chamado: marca motivo=Reembolso,
+ *  NÃO lança no Financeiro  apenas registra o pedido no chamado: marca motivo=Reembolso,
  *  move para "Em pagamento", grava o valor de reembolso solicitado (valor_devolucao) e
  *  ANEXA na observação o texto "PEDIDO DE CANCELAMENTO anexado à ficha. Reembolso calculado
  *  automaticamente: R$ X (saldo de N sessões restantes, …)". O lançamento financeiro fica a

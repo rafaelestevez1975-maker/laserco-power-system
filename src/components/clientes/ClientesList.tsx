@@ -92,17 +92,17 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       </Link>
                     </td>
                     <td>
-                      {fmtTel(c.telefone) || <span className="muted">—</span>}
+                      {fmtTel(c.telefone) || <span className="muted"></span>}
                       {wa && (
                         <a href={wa} target="_blank" rel="noopener" className="wa-link" title="Enviar mensagem no WhatsApp" onClick={(e) => e.stopPropagation()}>
                           <i className="ti ti-brand-whatsapp wa" />
                         </a>
                       )}
                     </td>
-                    <td>{c.email || <span className="muted">—</span>}</td>
-                    <td>{fmtCpf(c.cpf) || <span className="muted">—</span>}</td>
-                    <td>{generoLabel(c.genero) || <span className="muted">—</span>}</td>
-                    <td>{local || <span className="muted">—</span>}</td>
+                    <td>{c.email || <span className="muted"></span>}</td>
+                    <td>{fmtCpf(c.cpf) || <span className="muted"></span>}</td>
+                    <td>{generoLabel(c.genero) || <span className="muted"></span>}</td>
+                    <td>{local || <span className="muted"></span>}</td>
                     <td className="num-r">
                       <span style={{ fontWeight: 600 }}>{(c.saldo_pontos ?? 0).toLocaleString('pt-BR')} pts</span>
                       <span style={{ color: 'var(--text-3)' }}> · </span>

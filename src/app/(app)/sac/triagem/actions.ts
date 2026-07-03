@@ -37,13 +37,13 @@ async function carregarChat(sb: SB, chatId: string): Promise<ChatCanal | null> {
 }
 
 /** Localiza o canal de ENVIO certo para ESTE chat: prioriza o canal de origem da conversa
- *  (canal_nome gravado pelo webhook) e, na falta, o canal vinculado à unidade do chat —
+ *  (canal_nome gravado pelo webhook) e, na falta, o canal vinculado à unidade do chat 
  *  evitando responder a unidade B pelo número da unidade A. Só cai para "qualquer canal
  *  Laser conectado" quando a conversa não tem origem registrada (chats antigos). */
 async function canalConectado(chat: ChatCanal | null): Promise<{ token?: string; nome?: string; error?: string }> {
   const all: Instancia[] = await listInstances().catch(() => [])
   const conectadas = all.filter((i) => i.status === 'connected' && i.token)
-  if (conectadas.length === 0) return { error: 'Nenhum canal WhatsApp conectado — conecte um número em Canais.' }
+  if (conectadas.length === 0) return { error: 'Nenhum canal WhatsApp conectado  conecte um número em Canais.' }
 
   // 1) Canal de origem da conversa (registrado pelo webhook).
   if (chat?.canal_nome) {
@@ -111,7 +111,7 @@ export async function enviarMidia(chatId: string, m: { tipo: 'image' | 'audio' |
   if (!env.ok) return { ok: false, error: env.error || 'Falha no envio da mídia.' }
 
   // Guarda a mídia ENVIADA num bucket público p/ exibir de volta no chat (a UAZAPI
-  // nem sempre devolve URL pública) — usa a fileURL da UAZAPI se houver, senão o arquivo local.
+  // nem sempre devolve URL pública)  usa a fileURL da UAZAPI se houver, senão o arquivo local.
   const midiaUrl = await reHostMidia(env.fileURL || m.file, { mime: m.mimetype, prefixo: 'enviadas' })
 
   const agora = new Date().toISOString()
@@ -139,7 +139,7 @@ export async function assumirConversa(chatId: string): Promise<{ ok: boolean; er
   return { ok: true, responsavel: nome }
 }
 
-/** Devolve a conversa para a fila (sem dono) — base da transferência. */
+/** Devolve a conversa para a fila (sem dono)  base da transferência. */
 export async function devolverConversa(chatId: string): Promise<{ ok: boolean; error?: string }> {
   const g = await guardTriagem()
   if (!g.ok) return { ok: false, error: g.error }
@@ -177,7 +177,7 @@ export type ClienteResumo = {
 }
 
 /** Auto-import: identifica o cliente por CPF (caminho preferencial) ou telefone e traz um
- *  resumo do histórico (agendamentos, sessões concluídas, total gasto, saldos) — base para o
+ *  resumo do histórico (agendamentos, sessões concluídas, total gasto, saldos)  base para o
  *  atendimento e o cálculo de devolução. */
 export async function buscarClientePorContato(telefone?: string | null, cpf?: string | null): Promise<ClienteResumo> {
   const g = await guardTriagem()
@@ -195,7 +195,7 @@ export async function buscarClientePorContato(telefone?: string | null, cpf?: st
     cli = data as Record<string, unknown> | null
   }
   if (!cli && telDig.length >= 8) {
-    // Casa por telefone com DESEMPATE seguro (o cálculo de reembolso puxa a ficha do cliente —
+    // Casa por telefone com DESEMPATE seguro (o cálculo de reembolso puxa a ficha do cliente 
     // não pode pegar outra pessoa que compartilhe os 8 dígitos finais). Buscamos os candidatos
     // pelos últimos 8 dígitos e escolhemos por sufixo cada vez mais específico:
     //   1) número completo normalizado (com/sem DDI 55)  → match exato
@@ -302,7 +302,7 @@ async function resolverEmpresa(sb: SB, unidadeId?: string | null): Promise<strin
 }
 
 /** Abre um chamado no SAC a partir da conversa e vincula o chat ao ticket.
- *  Porta o "Fluxo inicial — dados do cliente" do legado (sacTriAbrir): captura
+ *  Porta o "Fluxo inicial  dados do cliente" do legado (sacTriAbrir): captura
  *  nome, CPF, WhatsApp, e-mail, unidade e motivo; valida nome + unidade obrigatórios. */
 export async function abrirChamadoDaConversa(chatId: string, input: AbrirChamadoInput = {}): Promise<{ ok: boolean; error?: string; jaExistia?: boolean }> {
   const g = await guardTriagem()
@@ -377,7 +377,7 @@ export async function excluirRespostaRapida(id: string): Promise<{ ok: boolean; 
 
 // ── Iniciar NOVA conversa (pedido das atendentes: começar um atendimento no WhatsApp do sistema) ──
 /** Envia a primeira mensagem para um número novo, cria/abre o chat e assume para o atendente.
- *  ticketId (opcional): vincula o CHAMADO do site à conversa — é o "usar o chamado no WhatsApp". */
+ *  ticketId (opcional): vincula o CHAMADO do site à conversa  é o "usar o chamado no WhatsApp". */
 export async function iniciarConversa(telefoneRaw: string, texto: string, ticketId?: string | null): Promise<{ ok: boolean; error?: string; chatId?: string }> {
   const g = await guardTriagem()
   if (!g.ok) return { ok: false, error: g.error }
@@ -424,7 +424,7 @@ export async function iniciarConversa(telefoneRaw: string, texto: string, ticket
 
 /** Fio COMPLETO de uma conversa (mensagens + notas), buscado sob demanda ao abrir/pollar.
  *  Garante o histórico integral da conversa aberta independente do teto global da página
- *  (o PostgREST corta ~1000 linhas — com o SAC crescendo, o fio vem daqui, por conversa). */
+ *  (o PostgREST corta ~1000 linhas  com o SAC crescendo, o fio vem daqui, por conversa). */
 export async function mensagensDaConversa(chatId: string): Promise<{ ok: boolean; error?: string; msgs?: unknown[]; notas?: unknown[] }> {
   const g = await guardTriagem()
   if (!g.ok) return { ok: false, error: g.error }

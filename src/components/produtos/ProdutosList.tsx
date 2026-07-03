@@ -93,10 +93,10 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
                       <span className="cli-name">{p.nome || '(sem nome)'}</span>
                       {p.descricao && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.descricao}</div>}
                     </td>
-                    <td>{p.grupo ? <span className="orig-tag">{p.grupo}</span> : <span className="muted">—</span>}</td>
+                    <td>{p.grupo ? <span className="orig-tag">{p.grupo}</span> : <span className="muted"></span>}</td>
                     <td className="num-r"><b>{moedaBR(p.preco_padrao)}</b></td>
-                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted">—</span>}</td>
-                    <td className="num-r">{p.custo != null ? moedaBR(p.custo) : <span className="muted">—</span>}</td>
+                    <td className="num-r">{p.desc_max != null && p.desc_max > 0 ? `${p.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted"></span>}</td>
+                    <td className="num-r">{p.custo != null ? moedaBR(p.custo) : <span className="muted"></span>}</td>
                     <td className="num-r">
                       {(p.estoque_atual ?? 0).toLocaleString('pt-BR')}
                       {baixo && (

@@ -5,7 +5,7 @@ import { dataBR } from '@/lib/fmt'
 
 export const dynamic = 'force-dynamic'
 
-/** Jornada esperada (h/dia) — base do saldo. O legado calcula sobre a carga diária do
+/** Jornada esperada (h/dia)  base do saldo. O legado calcula sobre a carga diária do
  *  colaborador; sem essa coluna no schema, usamos 8h/dia úteis como padrão. */
 const HORAS_DIA = 8
 
@@ -30,7 +30,7 @@ function horasNoDia(marcacoes: Reg[]): number {
 }
 
 /**
- * RH · Ponto (Jornada e Ponto) — porta a tela "Ponto" do portal RH (distinta do módulo
+ * RH · Ponto (Jornada e Ponto)  porta a tela "Ponto" do portal RH (distinta do módulo
  * Ponto Digital GPS): jornada da semana, saldo semanal e banco de horas, a partir das
  * marcações reais (registros_ponto). Para bater o ponto por GPS use /ponto.
  */
@@ -132,7 +132,7 @@ export default async function RhPontoPage() {
               {linhas.map((l) => (
                 <tr key={l.id}>
                   <td><b>{l.nome}</b>{l.cargo ? <span style={{ display: 'block', fontSize: 11, color: 'var(--text-3)' }}>{l.cargo}</span> : null}</td>
-                  {l.porDia.map((h, i) => <td key={i} className="num-r" style={{ color: h > 0 ? 'var(--text-1)' : 'var(--text-3)' }}>{h > 0 ? `${h}h` : '—'}</td>)}
+                  {l.porDia.map((h, i) => <td key={i} className="num-r" style={{ color: h > 0 ? 'var(--text-1)' : 'var(--text-3)' }}>{h > 0 ? `${h}h` : ''}</td>)}
                   <td className="num-r"><b>{l.total}h</b></td>
                   <td className="num-r" style={{ color: l.saldo >= 0 ? '#15803D' : '#D85563', fontWeight: 700 }}>{l.saldo >= 0 ? '+' : ''}{l.saldo}h</td>
                 </tr>

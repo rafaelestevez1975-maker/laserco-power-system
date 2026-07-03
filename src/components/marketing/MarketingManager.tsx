@@ -35,7 +35,7 @@ type Props = {
 type Aba = MktTab | 'campanhas'
 
 /**
- * MARKETING — orquestra as 3 abas da central de materiais (legado buildMarketing
+ * MARKETING  orquestra as 3 abas da central de materiais (legado buildMarketing
  * ~8372: Atualizações / Materiais / Notícias) + a aba Campanhas WhatsApp (feature
  * da rede já existente, sem equivalente no legado /marketing).
  */

@@ -48,7 +48,7 @@ function notaPill(n: number | null): React.CSSProperties {
   return { ...base, background: '#FBE9EB', color: '#D85563' }
 }
 
-const fmtNota = (n: number | null) => (n == null ? '—' : n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }))
+const fmtNota = (n: number | null) => (n == null ? '' : n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }))
 
 export function DesempenhoManager(props: Props) {
   const { avaliacoes, pdis, metas, colaboradores, podeEscrever, activeUnitName, kpis } = props
@@ -106,7 +106,7 @@ export function DesempenhoManager(props: Props) {
 
   async function onProgresso(row: PdiRow) {
     const atual = row.progresso ?? 0
-    const v = prompt(`Atualizar progresso (%) do PDI "${row.titulo ?? ''}" — ${row.colaboradorNome}:`, String(atual))
+    const v = prompt(`Atualizar progresso (%) do PDI "${row.titulo ?? ''}"  ${row.colaboradorNome}:`, String(atual))
     if (v == null) return
     const n = Number(v.replace('%', '').trim())
     if (!Number.isInteger(n) || n < 0 || n > 100) { setErro('Progresso deve ser inteiro entre 0 e 100.'); return }
@@ -120,7 +120,7 @@ export function DesempenhoManager(props: Props) {
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
-        <i className="ti ti-chart-bar" /> Gestão de desempenho da unidade <b>{activeUnitName}</b> — avaliações, planos de desenvolvimento (PDI) e acompanhamento de metas individuais.
+        <i className="ti ti-chart-bar" /> Gestão de desempenho da unidade <b>{activeUnitName}</b>  avaliações, planos de desenvolvimento (PDI) e acompanhamento de metas individuais.
       </div>
 
       {/* KPIs reais */}
@@ -132,7 +132,7 @@ export function DesempenhoManager(props: Props) {
         <div className="metric-box">
           <span>Nota média</span>
           <b style={{ color: kpis.notaMedia == null ? 'var(--text-3)' : kpis.notaMedia >= 4 ? '#15803D' : kpis.notaMedia >= 3 ? '#9A6700' : '#D85563' }}>
-            {kpis.notaMedia == null ? '—' : kpis.notaMedia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+            {kpis.notaMedia == null ? '' : kpis.notaMedia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
           </b>
         </div>
         <div className="metric-box">
@@ -241,20 +241,20 @@ export function DesempenhoManager(props: Props) {
                 {avaliacoesFiltradas.map((a) => (
                   <tr key={a.id} style={busy === a.id ? { opacity: 0.5 } : undefined}>
                     <td><b>{a.colaboradorNome}</b></td>
-                    <td>{a.periodo || '—'}</td>
+                    <td>{a.periodo || ''}</td>
                     <td className="num-r">{fmtNota(a.nota_produtividade)}</td>
                     <td className="num-r">{fmtNota(a.nota_qualidade)}</td>
                     <td className="num-r">{fmtNota(a.nota_comportamento)}</td>
                     <td className="num-r">{fmtNota(a.nota_trabalho_equipe)}</td>
                     <td><span style={notaPill(a.nota_geral)}>{fmtNota(a.nota_geral)}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{dataBR(a.criado_em) || '—'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{dataBR(a.criado_em) || ''}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       {podeEscrever ? (
                         <>
                           <span className="os-link" onClick={() => { setErro(''); setModalAval({ modo: 'editar', row: a }) }}><i className="ti ti-edit" /> Editar</span>
                           <span className="os-link" style={{ color: 'var(--red)', marginLeft: 12 }} onClick={() => onExcluirAval(a)}><i className="ti ti-trash" /> Excluir</span>
                         </>
-                      ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
+                      ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}></span>}
                     </td>
                   </tr>
                 ))}
@@ -297,10 +297,10 @@ export function DesempenhoManager(props: Props) {
                     <tr key={p.id} style={busy === p.id ? { opacity: 0.5 } : undefined}>
                       <td><b>{p.colaboradorNome}</b></td>
                       <td>
-                        <span className="cli-name">{p.titulo || '—'}</span>
+                        <span className="cli-name">{p.titulo || ''}</span>
                         {p.descricao && <div style={{ fontSize: 11.5, color: 'var(--text-3)', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>}
                       </td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{p.prazo ? dataBR(p.prazo) : '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{p.prazo ? dataBR(p.prazo) : ''}</td>
                       <td style={{ minWidth: 120 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ flex: 1, height: 6, borderRadius: 4, background: '#EEF2F7', overflow: 'hidden' }}>
@@ -317,7 +317,7 @@ export function DesempenhoManager(props: Props) {
                             <span className="os-link" style={{ marginLeft: 12 }} onClick={() => { setErro(''); setModalPdi({ modo: 'editar', row: p }) }}><i className="ti ti-edit" /> Editar</span>
                             <span className="os-link" style={{ color: 'var(--red)', marginLeft: 12 }} onClick={() => onExcluirPdi(p)}><i className="ti ti-trash" /> Excluir</span>
                           </>
-                        ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
+                        ) : <span style={{ color: 'var(--text-3)', fontSize: 12 }}></span>}
                       </td>
                     </tr>
                   )
@@ -329,7 +329,7 @@ export function DesempenhoManager(props: Props) {
         </div>
       )}
 
-      {/* ── Aba Metas (resumo — CRUD em Cadastros · Metas) ── */}
+      {/* ── Aba Metas (resumo  CRUD em Cadastros · Metas) ── */}
       {aba === 'metas' && (
         <div className="cli-card">
           <div style={{ fontSize: 12, color: 'var(--text-2)', padding: '10px 14px 0' }}>
@@ -361,7 +361,7 @@ export function DesempenhoManager(props: Props) {
                   return (
                     <tr key={m.id}>
                       <td><b>{m.colaboradorNome}</b></td>
-                      <td>{INDICADOR_LBL[m.indicador ?? ''] ?? (m.indicador || '—')}</td>
+                      <td>{INDICADOR_LBL[m.indicador ?? ''] ?? (m.indicador || '')}</td>
                       <td className="num-r">{alvo.toLocaleString('pt-BR')}</td>
                       <td className="num-r">{real.toLocaleString('pt-BR')}</td>
                       <td><span className={`os-st ${ok ? 'os-fechada' : 'os-aberta'}`}>{pct}%</span></td>

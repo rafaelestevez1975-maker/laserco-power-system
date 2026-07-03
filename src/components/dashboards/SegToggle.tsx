@@ -3,7 +3,7 @@ import Link from 'next/link'
 export type SegOpt = { slug: string; label: string; icon: string }
 
 /**
- * Segment control (3 vias) server-safe — réplica do .seg do legado (renderFunil L4484).
+ * Segment control (3 vias) server-safe  réplica do .seg do legado (renderFunil L4484).
  * Cada botão é um Link que troca ?<param>= mantendo o resto da querystring.
  */
 export function SegToggle({

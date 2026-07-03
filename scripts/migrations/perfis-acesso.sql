@@ -1,14 +1,14 @@
 -- ============================================================================
--- PERFIS DE ACESSO pré-configurados — sugestão do cliente (Rafael, 01/07/2026)
+-- PERFIS DE ACESSO pré-configurados  sugestão do cliente (Rafael, 01/07/2026)
 -- "Perfis definem o que o usuário ACESSA; cargos identificam a FUNÇÃO (texto no
 --  cadastro do colaborador)." Os perfis viram linhas em `cargos` (is_sistema),
--- com permissões por módulo (recursos.modulo × acoes) — mesmo RBAC da migration 009.
+-- com permissões por módulo (recursos.modulo × acoes)  mesmo RBAC da migration 009.
 -- Idempotente: roda de novo sem duplicar.
 -- Módulos existentes: comercial, crm, financeiro, marketing, operacoes, rh, sac,
 -- sistema, treinamento. Ações: admin, aprovar, criar, deletar, editar, exportar, ler.
 -- ============================================================================
 
--- 1) Cria os perfis (cargos de sistema, rede — empresa_id null)
+-- 1) Cria os perfis (cargos de sistema, rede  empresa_id null)
 insert into cargos (empresa_id, nome, slug, descricao, is_sistema, ativo)
 select null, v.nome, v.slug, v.descricao, true, true
 from (values

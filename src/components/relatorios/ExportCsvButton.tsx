@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Botão Exportar (CSV) — réplica do botão 'Exportar' (ti-download) presente em todo relatório
+ * Botão Exportar (CSV)  réplica do botão 'Exportar' (ti-download) presente em todo relatório
  * do legado (rel-acts, legacy/index.html ~6990). Gera o CSV no client a partir das linhas já
  * renderizadas e dispara o download (sem lib externa). Header + linhas em UTF-8 com BOM p/ Excel.
  */

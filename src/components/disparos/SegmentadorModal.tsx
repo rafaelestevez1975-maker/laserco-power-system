@@ -7,7 +7,7 @@ import { SEG_CAMPOS, segLabel, type SegCriterio } from '@/lib/automacoes'
  * Segmentador de base (legado segModal 6678 / SEG_CAMPOS 6645).
  * Combina vários critérios. Ao confirmar, chama onApply(criterios) e o servidor
  * conta DE VERDADE os contatos na base de clientes (não mostramos mais a
- * estimativa fabricada do legado — 1248 × fatores fixos — que não batia com o real).
+ * estimativa fabricada do legado  1248 × fatores fixos  que não batia com o real).
  * Os valores de serviço/unidade vêm de dados reais.
  */
 export function SegmentadorModal({
@@ -54,7 +54,7 @@ export function SegmentadorModal({
         </div>
         <div style={{ padding: '16px 18px' }}>
           <div style={{ fontSize: 12.5, color: 'var(--text-2)', background: 'var(--surface-2)', padding: 10, borderRadius: 9, marginBottom: 12 }}>
-            <i className="ti ti-info-circle" /> Combine <b>vários critérios</b> para filtrar a base — ex.: <i>Verificado = Sim</i> + <i>Contratou = Depilação Virilha</i> + <i>NÃO contratou = Clareamento Virilha</i> + <i>Gasto maior que 500</i>.
+            <i className="ti ti-info-circle" /> Combine <b>vários critérios</b> para filtrar a base  ex.: <i>Verificado = Sim</i> + <i>Contratou = Depilação Virilha</i> + <i>NÃO contratou = Clareamento Virilha</i> + <i>Gasto maior que 500</i>.
           </div>
           {crit.map((c, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>

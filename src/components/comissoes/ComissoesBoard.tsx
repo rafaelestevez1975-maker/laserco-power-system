@@ -35,7 +35,7 @@ export function ComissoesBoard({
   podeEditar: boolean
 }) {
   const router = useRouter()
-  // Estado da matriz (cópia editável do que veio do banco — ou seed se a tabela está vazia).
+  // Estado da matriz (cópia editável do que veio do banco  ou seed se a tabela está vazia).
   const [cats, setCats] = useState<ComCat[]>(() => matriz.map((c) => structuredClone(c)))
   const [divisor, setDivisor] = useState<number>(3) // 1=mês, 2=quinzena, 3=dezena (legado default 3)
   // Salvar matriz
@@ -123,7 +123,7 @@ export function ComissoesBoard({
     const att = (vendido / meta) * 100
     const cur = total(vendido)
 
-    // Parte 2 — fechamento do mês
+    // Parte 2  fechamento do mês
     const attMes = (fatMes / META_UNIDADE) * 100
     const fpct = attMes >= 130 ? c.fech.f130 : attMes >= 120 ? c.fech.f120 : attMes >= 100 ? c.fech.f100 : 0
     const part2 = (fpct / 100) * fatMes
@@ -141,14 +141,14 @@ export function ComissoesBoard({
   const inputPct: React.CSSProperties = { width: 56, padding: '5px 7px', border: '1px solid var(--line)', borderRadius: 7, fontSize: 13, textAlign: 'right' }
   const periodoNote: Record<number, string> = {
     1: 'A meta cheia do mês (R$ 100.000) é usada para apurar a premiação.',
-    2: 'A meta do mês é dividida em 2 quinzenas — cada período apura sobre R$ 50.000.',
-    3: 'A meta do mês é dividida em 3 dezenas (10 dias) — cada período apura sobre ~R$ 33.333.',
+    2: 'A meta do mês é dividida em 2 quinzenas  cada período apura sobre R$ 50.000.',
+    3: 'A meta do mês é dividida em 3 dezenas (10 dias)  cada período apura sobre ~R$ 33.333.',
   }
 
   return (
     <div>
       <p style={{ color: 'var(--text-2)', fontSize: 13.5, marginBottom: 16 }}>
-        A premiação tem <b>duas partes</b>: <b>Parte 1</b> — adicional por faixa de meta (mín. &gt;80%, meta 100%, super 120%, hiper 130%) apurado <b>por dezena</b>; e <b>Parte 2</b> — adicional no <b>fechamento do mês</b> sobre o valor final, conforme a unidade bate meta/super/hiper. Use o simulador (com filtro por categoria, unidade ou colaborador) para ver o ganho em tempo real.
+        A premiação tem <b>duas partes</b>: <b>Parte 1</b>  adicional por faixa de meta (mín. &gt;80%, meta 100%, super 120%, hiper 130%) apurado <b>por dezena</b>; e <b>Parte 2</b>  adicional no <b>fechamento do mês</b> sobre o valor final, conforme a unidade bate meta/super/hiper. Use o simulador (com filtro por categoria, unidade ou colaborador) para ver o ganho em tempo real.
       </p>
 
       {/* Apuração da meta para premiação */}
@@ -281,7 +281,7 @@ export function ComissoesBoard({
                 <input list="simColabList" placeholder="Digite um nome…" value={colabFiltro} onChange={(e) => pickColab(e.target.value)} />
                 <datalist id="simColabList">
                   {colaboradores.map((c) => (
-                    <option key={c.id} value={c.nome}>{(c.cargo && CARGO_LABEL[c.cargo]) || c.cargo || '—'} · {c.unidadeNome}</option>
+                    <option key={c.id} value={c.nome}>{(c.cargo && CARGO_LABEL[c.cargo]) || c.cargo || ''} · {c.unidadeNome}</option>
                   ))}
                 </datalist>
               </div>
@@ -315,7 +315,7 @@ export function ComissoesBoard({
               <input type="number" min={0} value={sessoes} onChange={(e) => setSessoes(Number(e.target.value) || 0)} />
             </div>
             <div className="sim-slider">
-              <label>Faturamento final do mês — fechamento (unidade): <b style={{ color: 'var(--brand-500)' }}>{money(fatMes)}</b></label>
+              <label>Faturamento final do mês  fechamento (unidade): <b style={{ color: 'var(--brand-500)' }}>{money(fatMes)}</b></label>
               <input type="range" min={0} max={Math.round(1.4 * META_UNIDADE)} step={1000} value={fatMes} onChange={(e) => setFatMes(Number(e.target.value))} />
             </div>
           </div>
@@ -324,7 +324,7 @@ export function ComissoesBoard({
           <div className="sim-result">
             {sim && (
               <>
-                <div style={{ fontSize: 11.5, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 2 }}>Parte 1 · por {PERIODO_LBL[divisor]}{uniNome ? ' — ' + uniNome : ''}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 2 }}>Parte 1 · por {PERIODO_LBL[divisor]}{uniNome ? '  ' + uniNome : ''}</div>
                 <div className="sim-earn" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>Premiação da {PERIODO_LBL[divisor]}<b>{money(sim.cur)}</b></div>
                 <div className="sim-prog" style={{ position: 'relative' }}>
                   <div className="fill" style={{ width: `${w}%` }} />
@@ -361,7 +361,7 @@ export function ComissoesBoard({
                 {sim.fpct > 0 ? (
                   <div className="sim-msg ok"><i className="ti ti-cash" /> Fechamento do mês: unidade em <b>{Math.round(sim.attMes)}%</b> da meta → bônus de <b>+{sim.fpct}%</b> sobre {money(fatMes)} = <b>{money(sim.part2)}</b>.</div>
                 ) : (
-                  <div className="sim-msg next"><i className="ti ti-cash-off" /> Fechamento: unidade em <b>{Math.round(sim.attMes)}%</b> — abaixo de 100%, sem bônus de fechamento. Faltam <b>{money(Math.max(0, META_UNIDADE - fatMes))}</b> para a meta do mês (+{sim.c.fech.f100}%).</div>
+                  <div className="sim-msg next"><i className="ti ti-cash-off" /> Fechamento: unidade em <b>{Math.round(sim.attMes)}%</b>  abaixo de 100%, sem bônus de fechamento. Faltam <b>{money(Math.max(0, META_UNIDADE - fatMes))}</b> para a meta do mês (+{sim.c.fech.f100}%).</div>
                 )}
 
                 <div style={{ borderTop: '1px dashed var(--line)', margin: '14px 0 10px' }} />

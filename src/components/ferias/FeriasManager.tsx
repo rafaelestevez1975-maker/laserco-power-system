@@ -192,11 +192,11 @@ export function FeriasManager(props: Props) {
                         <b>{r.colaboradorNome}</b>
                         {r.motivo && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{r.motivo}</div>}
                       </td>
-                      <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.periodo_aquisitivo || '—'}</td>
-                      <td>{dataBR(r.data_inicio) || '—'}</td>
-                      <td>{dataBR(r.data_fim) || '—'}</td>
-                      <td className="num-r">{r.dias_solicitados ?? '—'}</td>
-                      <td className="num-r">{r.vender_dias ? r.vender_dias : '—'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.periodo_aquisitivo || ''}</td>
+                      <td>{dataBR(r.data_inicio) || ''}</td>
+                      <td>{dataBR(r.data_fim) || ''}</td>
+                      <td className="num-r">{r.dias_solicitados ?? ''}</td>
+                      <td className="num-r">{r.vender_dias ? r.vender_dias : ''}</td>
                       <td><span style={pill(st.bg, st.color)}>{st.label}</span></td>
                       <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
                         {podeAprovar && r.status === 'pendente' && (
@@ -251,9 +251,9 @@ export function FeriasManager(props: Props) {
                           <b>{r.colaboradorNome}</b>
                           {r.observacoes && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{r.observacoes}</div>}
                         </td>
-                        <td>{dataBR(r.data_inicio) || '—'}</td>
-                        <td className="num-r">{r.dias ?? '—'}</td>
-                        <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.cid || '—'}</td>
+                        <td>{dataBR(r.data_inicio) || ''}</td>
+                        <td className="num-r">{r.dias ?? ''}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.cid || ''}</td>
                         <td style={{ fontSize: 12 }}>{r.data_entrega ? dataBR(r.data_entrega) : <span style={{ color: '#A16207' }}>pendente</span>}</td>
                         <td><span style={pill(st.bg, st.color)}>{st.label}</span></td>
                         <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>

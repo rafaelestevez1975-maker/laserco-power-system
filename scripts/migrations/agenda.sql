@@ -1,5 +1,5 @@
 -- ============================================================================
--- Módulo: Agenda — Eventos da rede (banda de eventos no topo da agenda)
+-- Módulo: Agenda  Eventos da rede (banda de eventos no topo da agenda)
 -- Paridade com o legado: REDE_EVENTOS / EVT_TYPES / renderRede / saveEvt
 --   (legacy/index.html L9591-9627). No legado os eventos são MOCK em memória;
 --   aqui viram tabela real, multi-tenant por empresa, lidos por DATA na agenda.

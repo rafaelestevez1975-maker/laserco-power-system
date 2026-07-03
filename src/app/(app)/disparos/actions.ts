@@ -11,13 +11,13 @@ const PAPEIS_ESCRITA = ['gestor', 'operacoes']
 
 /**
  * Conta DE VERDADE os contatos do segmento na base de clientes (substitui o
- * segCount fabricado do legado — base fixa 1248 × fatores hardcoded — que gravava
+ * segCount fabricado do legado  base fixa 1248 × fatores hardcoded  que gravava
  * um número inventado em disparo_bases.contatos). Usa COUNT exato no Supabase
  * aplicando só os critérios que mapeiam para colunas reais de `clientes`
  * (verificado/cidade/estado), escopado pela unidade. Critérios que dependem de
  * histórico de compras (já contratou / contratou serviço X / gasto) ainda não são
  * avaliáveis aqui sem joins pesados: são ignorados na contagem em vez de gerar
- * estimativa falsa — devolve nº real de clientes que casam com os filtros suportados.
+ * estimativa falsa  devolve nº real de clientes que casam com os filtros suportados.
  */
 async function contarSegmentoReal(sb: SB, crit: SegCriterio[], unidadeId: string | null): Promise<number> {
   let q = sb.from('clientes').select('id', { count: 'exact', head: true }).eq('ativo', true)
@@ -143,7 +143,7 @@ export async function respondentesParaCRM(campanhaId: string): Promise<{ ok: boo
   if (!c) return { ok: false, error: 'Campanha não encontrada.' }
   const n = c.respostas || 0
   if (n <= 0) return { ok: false, error: 'Esta campanha ainda não tem respondentes.' }
-  if (!c.unidade_id) return { ok: false, error: 'Campanha sem unidade — defina a unidade da campanha.' }
+  if (!c.unidade_id) return { ok: false, error: 'Campanha sem unidade  defina a unidade da campanha.' }
 
   // 1ª etapa do funil (igual ao leads-site)
   const { data: etapa } = await op.sb.from('crm_etapas').select('id').eq('ativo', true).order('ordem', { ascending: true }).limit(1).single()

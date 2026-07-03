@@ -1,6 +1,6 @@
 /**
  * Backfill do HISTÓRICO do WhatsApp (pedido do Julio 02/07): puxa da UAZAPI as últimas
- * conversas (até 500) e importa as mensagens que o sistema não tem (dedup por wa_id) —
+ * conversas (até 500) e importa as mensagens que o sistema não tem (dedup por wa_id) 
  * cobre o período anterior ao webhook e qualquer janela de falha.
  * Uso: node scripts/backfill-whatsapp-historico.mjs [maxChats] [msgsPorChat]
  * Idempotente: rodar de novo só completa o que faltar.
@@ -60,7 +60,7 @@ for (const uc of uzChats) {
     const mRes = await (await fetch(`${BASE}/message/find`, { method: 'POST', headers: UZ, body: JSON.stringify({ chatid, limit: MSGS_POR_CHAT }) })).json()
     const msgs = (mRes.messages || []).filter((m) => m.messageid || m.id)
     if (!msgs.length) continue
-    // 2c) dedup por wa_id — GLOBAL (o índice único de wa_id vale para a tabela toda)
+    // 2c) dedup por wa_id  GLOBAL (o índice único de wa_id vale para a tabela toda)
     const waIds = msgs.map((m) => m.messageid || m.id)
     const existRes = await fetch(`${SB_URL}/rest/v1/sac_whatsapp_mensagens?select=wa_id&wa_id=in.(${waIds.map((w) => `"${w}"`).join(',')})`, { headers: H })
     const jaTem = new Set((await existRes.json()).map((r) => r.wa_id))
@@ -80,7 +80,7 @@ for (const uc of uzChats) {
       if (r.ok) msgsNovas += lote.length
       else { falhas++; console.error(tel, 'insert:', (await r.text()).slice(0, 120)) }
     }
-    // CRÍTICO (lição de 02/07): preencher ultima_msg_em do chat — a lista da Conversa ordena por
+    // CRÍTICO (lição de 02/07): preencher ultima_msg_em do chat  a lista da Conversa ordena por
     // essa data; chat sem ela (null) ia pro TOPO (nulls first) e escondia as conversas ativas.
     // Só atualiza se a mensagem importada for mais nova que a atual do chat (não rebaixa ativas).
     const maisNova = msgs.reduce((a, m) => (m.messageTimestamp > (a?.messageTimestamp ?? 0) ? m : a), null)

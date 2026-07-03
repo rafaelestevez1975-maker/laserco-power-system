@@ -17,7 +17,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   const { canal, fase, situacao, q, atendente, motivo, unidade, periodo, di, df, page: pageRaw } = spv
   const ctx = await getSessionContext()
   const sb = await createClient()
-  // Formulários de SAC do site viram chamado na franqueadora automaticamente — sem "rotear".
+  // Formulários de SAC do site viram chamado na franqueadora automaticamente  sem "rotear".
   // Best-effort + throttle (1x/min): garante o "automático" mesmo sem o cron do Vercel rodar.
   await ingestSacBestEffort()
   const uniNome: Record<string, string> = Object.fromEntries((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
@@ -63,7 +63,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   }
   if (ctx?.activeUnitId) query = query.eq('unidade_id', ctx.activeUnitId) // respeita a unidade ativa do topo
 
-  // Total geral (sem filtros, só escopo de unidade) — para o "X de Y" do legado.
+  // Total geral (sem filtros, só escopo de unidade)  para o "X de Y" do legado.
   let totalGeralQ = sb.from('sac_tickets').select('id', { count: 'exact', head: true })
   if (ctx?.activeUnitId) totalGeralQ = totalGeralQ.eq('unidade_id', ctx.activeUnitId)
   const [{ data, count, error }, { count: countGeral }] = await Promise.all([query, totalGeralQ])

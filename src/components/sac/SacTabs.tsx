@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-/** Barra de abas do SAC — paridade 1:1 com o legado (index.html: SAC_PAGES 8963 + sacTabsBar 8966).
+/** Barra de abas do SAC  paridade 1:1 com o legado (index.html: SAC_PAGES 8963 + sacTabsBar 8966).
  *  Mesma ordem, rótulos, ícones e classes (.sac-tabs / .sac-tab / .sac-tab.on). A aba ativa é
  *  derivada da rota atual. No legado a chave 'premiacao' aponta para a aba "Ranking" → /sac/ranking.
  *  prefetch={false} para não recriar a tempestade de prefetch do sidebar (ver lentidao-modo-dev). */

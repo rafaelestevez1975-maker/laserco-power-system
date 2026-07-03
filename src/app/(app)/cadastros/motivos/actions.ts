@@ -6,11 +6,11 @@ import { adminClient } from '@/lib/supabase/admin'
 import { ehAdmin } from '@/lib/rbac'
 
 /**
- * Motivos de Cancelamento — paridade com o legado (buildMotivos / MOTIVOS /
+ * Motivos de Cancelamento  paridade com o legado (buildMotivos / MOTIVOS /
  * motNovo / motEdit / motToggle / motDel). Catálogo por EMPRESA.
  * RBAC: admin_geral / gestor. Tabela `motivos_cancelamento`.
  * Regra: motivos com sistema=true (padrão do sistema) só podem ser inativados,
- * nunca excluídos (motDel bloqueia — legado 7320).
+ * nunca excluídos (motDel bloqueia  legado 7320).
  * Toda ação grava auditoria (legado _motSave -> persistState + auditLog).
  */
 export type ActionResult = { ok: boolean; error?: string; id?: string }

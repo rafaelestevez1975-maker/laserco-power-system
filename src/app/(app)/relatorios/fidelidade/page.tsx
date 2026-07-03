@@ -53,19 +53,19 @@ export default async function RelFidelidadePage({ searchParams }: { searchParams
   const ctx = await getSessionContext()
   const sb = await createClient()
   // OBS (igual ao relatório de Clientes): clientes.unidade_origem_id é null na base atual,
-  // então o escopo por unidade ainda não segmenta de fato — mantemos o aviso na tela.
+  // então o escopo por unidade ainda não segmenta de fato  mantemos o aviso na tela.
   const unidadeId = ctx?.activeUnitId ?? null
   const ordem = sp.ordem === 'creditos' ? 'creditos' : 'pontos'
   const ordemCol = ordem === 'creditos' ? 'saldo_creditos' : 'saldo_pontos'
 
-  // ── KPIs (head:true — nunca puxa as linhas) ──
+  // ── KPIs (head:true  nunca puxa as linhas) ──
   const [totalGeral, comPontos, comCreditos] = await Promise.all([
     contar(sb, unidadeId, (q) => q),
     contar(sb, unidadeId, (q) => q.gt('saldo_pontos', 0)),
     contar(sb, unidadeId, (q) => q.gt('saldo_creditos', 0)),
   ])
 
-  // ── Janela ordenada por saldo (top N) — para tabela + somatórios da janela ──
+  // ── Janela ordenada por saldo (top N)  para tabela + somatórios da janela ──
   let topQ = sb
     .from('clientes')
     .select('id, nome, telefone, saldo_pontos, saldo_creditos')
@@ -79,7 +79,7 @@ export default async function RelFidelidadePage({ searchParams }: { searchParams
   const indisponivel = topErr != null && totalGeral == null && comPontos == null && comCreditos == null
   const top = (topData ?? []) as ClienteFid[]
 
-  // Totais somados sobre a JANELA trazida (top N) — rotulado como tal.
+  // Totais somados sobre a JANELA trazida (top N)  rotulado como tal.
   const pontosTopN = top.reduce((a, c) => a + (c.saldo_pontos || 0), 0)
   const creditosTopN = top.reduce((a, c) => a + (c.saldo_creditos || 0), 0)
   const capped = top.length >= TOP_N
@@ -132,7 +132,7 @@ export default async function RelFidelidadePage({ searchParams }: { searchParams
         </div>
       </div>
 
-      {/* Troca de ordenação (pontos x créditos) sem JS de cliente — links de querystring. */}
+      {/* Troca de ordenação (pontos x créditos) sem JS de cliente  links de querystring. */}
       <div className="rel-card" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11.5, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.4px', fontWeight: 700 }}>
           Ordenar por
@@ -170,7 +170,7 @@ export default async function RelFidelidadePage({ searchParams }: { searchParams
 
           <div className="dash-grid" style={{ marginBottom: 16 }}>
             <BarChart
-              title={ordem === 'creditos' ? 'Top 10 — créditos (R$)' : 'Top 10 — pontos'}
+              title={ordem === 'creditos' ? 'Top 10  créditos (R$)' : 'Top 10  pontos'}
               icon="ti-award"
               rows={barTop}
               gold={ordem === 'creditos'}
@@ -216,7 +216,7 @@ export default async function RelFidelidadePage({ searchParams }: { searchParams
                   {top.map((c) => (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 600 }}>{c.nome || 'Sem nome'}</td>
-                      <td style={{ color: 'var(--text-3)' }}>{c.telefone || '—'}</td>
+                      <td style={{ color: 'var(--text-3)' }}>{c.telefone || ''}</td>
                       <td className="num-r" style={{ fontWeight: ordem === 'pontos' ? 700 : 400 }}>
                         {(c.saldo_pontos || 0).toLocaleString('pt-BR')}
                       </td>

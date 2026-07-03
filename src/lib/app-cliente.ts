@@ -1,9 +1,9 @@
 /**
- * App do Cliente — config de PROGRAMA (regras de pontos/cashback, abas, features,
+ * App do Cliente  config de PROGRAMA (regras de pontos/cashback, abas, features,
  * catálogo de resgates) + tipos. Os DADOS DE NEGÓCIO (cliente, serviços, unidades,
  * profissionais, próximo agendamento, histórico, pacotes) vêm REAIS do banco via
  * props (ver app-cliente/page.tsx). Antes este arquivo continha dados fictícios
- * ("Mariana Costa", serviços/unidades inventados) — removidos.
+ * ("Mariana Costa", serviços/unidades inventados)  removidos.
  */
 
 // ── Tipos do payload real (montado no server e passado ao mockup) ──

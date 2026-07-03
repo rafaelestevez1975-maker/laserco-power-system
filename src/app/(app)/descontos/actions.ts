@@ -98,5 +98,5 @@ export async function alternarAtivoDesconto(id: string, ativo: boolean): Promise
 
 // TODO(legado: buildDescontos): vincular parceria a unidade, contato/validade e
 //   regra de aplicação (Todos/Pacotes). O schema atual de `descontos` só tem
-//   nome/tipo/valor/ativo — campos de parceria (contato, validade, unidade, aplica)
+//   nome/tipo/valor/ativo  campos de parceria (contato, validade, unidade, aplica)
 //   ficam pendentes de evolução do schema.

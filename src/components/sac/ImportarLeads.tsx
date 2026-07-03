@@ -12,7 +12,7 @@ type Mapeamento = {
   canal: string; unidade: string; multa: string; pago: string
 }
 
-// Espelha CANAIS de NovoChamado/criarChamado (CHECK do banco) — "Manual" como base segura.
+// Espelha CANAIS de NovoChamado/criarChamado (CHECK do banco)  "Manual" como base segura.
 const CANAIS = ['Manual', 'WhatsApp', 'E-mail', 'Reclame Aqui', 'Procon', 'Telefone', 'Instagram', 'Sults', 'Blip', 'Formulário']
 const CAMPOS: { key: keyof Mapeamento; label: string; req?: boolean }[] = [
   { key: 'nome', label: 'Nome do cliente', req: true },
@@ -113,7 +113,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
         const uniNome = val(r, map.unidade)
         // Com unidade fixa, a coluna "Unidade" é ignorada (tudo vai p/ a unidade do topo).
         const uniId = unidadeFixa ? unidadeId : (matchUnidade(uniNome, unidades) ?? (unidadeId || null))
-        const uniNomeEf = unidades.find((u) => u.id === uniId)?.nome || (uniId ? 'Unidade' : '— central —')
+        const uniNomeEf = unidades.find((u) => u.id === uniId)?.nome || (uniId ? 'Unidade' : ' central ')
         return {
           nome: val(r, map.nome),
           telefone: val(r, map.telefone),
@@ -142,7 +142,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
     const n = Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t)
     return Number.isFinite(n) ? moedaBR(n) : (v || '')
   }
-  const traco = <span style={{ color: 'var(--text-3)' }}>—</span>
+  const traco = <span style={{ color: 'var(--text-3)' }}></span>
 
   function reset() { setHeaders([]); setRows([]); setMap(null); setFileName('') }
 
@@ -210,7 +210,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
               <div key={campo.key}>
                 <label style={{ fontSize: 12, fontWeight: 600 }}>{campo.label}{campo.req && ' *'}</label>
                 <select style={inp} value={map[campo.key]} onChange={(e) => setMap({ ...map, [campo.key]: e.target.value })}>
-                  <option value="">— ignorar —</option>
+                  <option value=""> ignorar </option>
                   {headers.map((h) => <option key={h} value={h}>{h}</option>)}
                 </select>
               </div>
@@ -240,7 +240,7 @@ export function ImportarLeads({ unidades, activeUnitId }: { unidades: Unidade[];
                     <td>{l.pago?.trim() || <span style={{ color: 'var(--text-3)' }}>não</span>}</td>
                   </tr>
                 ))}
-                {validas.length === 0 && <tr><td colSpan={11} style={{ padding: 14, color: 'var(--text-3)' }}>Nenhuma linha com nome — confira o mapeamento.</td></tr>}
+                {validas.length === 0 && <tr><td colSpan={11} style={{ padding: 14, color: 'var(--text-3)' }}>Nenhuma linha com nome  confira o mapeamento.</td></tr>}
               </tbody>
             </table>
           </div>

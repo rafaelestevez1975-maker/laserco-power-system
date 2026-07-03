@@ -12,7 +12,7 @@ export default async function ExportacoesPage() {
   const activeUnit = ctx?.activeUnitId ?? null
   const escopoUnidade = !!activeUnit
 
-  // Contagens reais por dataset (count head:true — só o total, sem puxar linhas).
+  // Contagens reais por dataset (count head:true  só o total, sem puxar linhas).
   // Cada tabela é escopada pela unidade ativa na sua coluna própria.
   const head = (tabela: string, col?: string, val?: string | null) => {
     let q = sb.from(tabela).select('id', { count: 'exact', head: true })

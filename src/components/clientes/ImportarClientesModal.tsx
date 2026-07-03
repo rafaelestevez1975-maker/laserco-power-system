@@ -9,7 +9,7 @@ import { importarClientes, type ImportRecord } from '@/app/(app)/clientes/action
 
 type Unidade = { id: string; nome: string }
 
-// "Onde nos conheceu?" — mesmas 9 opções do legado (cliModal).
+// "Onde nos conheceu?"  mesmas 9 opções do legado (cliModal).
 const ORIGENS = [
   'Indicação de amigo', 'Instagram', 'Facebook', 'Google / Busca', 'Site da rede',
   'Landing Page', 'WhatsApp', 'Passei em frente à loja', 'Outro', 'Migração BEMP',
@@ -142,7 +142,7 @@ export function ImportarClientesModal({ unidades, unidadeSugerida }: { unidades:
                         onChange={(e) => setMap((p) => ({ ...p, [f]: e.target.value === '' ? undefined : Number(e.target.value) }))}
                         style={{ ...sel, flex: 1, fontSize: 12 }}
                       >
-                        <option value="">— ignorar —</option>
+                        <option value=""> ignorar </option>
                         {headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
                       </select>
                     </div>
@@ -157,10 +157,10 @@ export function ImportarClientesModal({ unidades, unidadeSugerida }: { unidades:
                       <tbody>
                         {sample.map((r, i) => (
                           <tr key={i}>
-                            <td>{g(r, 'nome') || <span className="muted">—</span>}</td>
-                            <td>{g(r, 'telefone') || <span className="muted">—</span>}</td>
-                            <td>{g(r, 'email') || <span className="muted">—</span>}</td>
-                            <td>{g(r, 'documento') || <span className="muted">—</span>}</td>
+                            <td>{g(r, 'nome') || <span className="muted"></span>}</td>
+                            <td>{g(r, 'telefone') || <span className="muted"></span>}</td>
+                            <td>{g(r, 'email') || <span className="muted"></span>}</td>
+                            <td>{g(r, 'documento') || <span className="muted"></span>}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -173,7 +173,7 @@ export function ImportarClientesModal({ unidades, unidadeSugerida }: { unidades:
                   <div>
                     <label style={lbl}>Unidade de origem</label>
                     <select style={sel} value={uni} onChange={(e) => setUni(e.target.value)}>
-                      <option value="">— Sem unidade —</option>
+                      <option value=""> Sem unidade </option>
                       {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
                     </select>
                   </div>

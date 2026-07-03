@@ -29,7 +29,7 @@ export type PacoteInput = {
   preco: number | null
   validade_dias: number | null
   cobertura_creditos?: CoberturaCreditos // legado PACOTES[1]
-  desc_max?: number | null // legado PACOTES[4] — desconto máximo (%)
+  desc_max?: number | null // legado PACOTES[4]  desconto máximo (%)
   pagar_comissao?: PagarComissao // legado PACOTES[5]
   itens: ItemPacoteInput[]
 }

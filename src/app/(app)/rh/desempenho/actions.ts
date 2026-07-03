@@ -7,15 +7,15 @@ import { ehAdmin } from '@/lib/rbac'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /**
- * Módulo RH · Desempenho — substitui o clone estático do protótipo.
+ * Módulo RH · Desempenho  substitui o clone estático do protótipo.
  *
- * Tabelas REAIS (introspecção lkii — ver scratchpad/schemas.txt):
+ * Tabelas REAIS (introspecção lkii  ver scratchpad/schemas.txt):
  *  - avaliacoes_desempenho: id, colaborador_id, avaliador_id, periodo (text),
  *      nota_produtividade, nota_qualidade, nota_comportamento, nota_trabalho_equipe,
  *      nota_geral (numeric 0–5), observacoes, criado_em.
  *  - pdi (Plano de Desenvolvimento Individual): id, colaborador_id, responsavel_id,
  *      titulo, descricao, prazo (date), status (text), progresso (int), criado_em, atualizado_em.
- *  - metas_colaborador: já tem CRUD próprio em /cadastros/metas — aqui só lemos (resumo).
+ *  - metas_colaborador: já tem CRUD próprio em /cadastros/metas  aqui só lemos (resumo).
  *
  * Nenhuma das três tabelas tem coluna `unidade_id` → o escopo multitenant é aplicado
  * via o conjunto de colaboradores da unidade ativa (filtrados na page por unidade_id).

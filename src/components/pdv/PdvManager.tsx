@@ -193,7 +193,7 @@ export function PdvManager({
               </div>
             ) : (
               <>
-                <input style={inp} value={clienteBusca} onChange={(e) => setClienteBusca(e.target.value)} placeholder="🔎 Buscar cliente (opcional — balcão)" />
+                <input style={inp} value={clienteBusca} onChange={(e) => setClienteBusca(e.target.value)} placeholder="🔎 Buscar cliente (opcional  balcão)" />
                 {clienteBusca.trim() && (
                   <div style={{ marginTop: 6, border: '1px solid var(--line)', borderRadius: 8, maxHeight: 160, overflow: 'auto' }}>
                     {clientesFiltrados.length === 0 && <div style={{ padding: 10, fontSize: 12.5, color: 'var(--text-3)' }}>Nenhum cliente.</div>}
@@ -245,7 +245,7 @@ export function PdvManager({
               <span style={{ minWidth: 90, textAlign: 'right', fontSize: 13, color: 'var(--red)' }}>− {brl(descontoValor)}</span>
             </div>
             {excedeAlcada && (
-              <p style={{ fontSize: 11.5, color: 'var(--amber)' }}><i className="ti ti-alert-triangle" /> Acima da sua alçada (máx {descLimit}%) — requer aprovação do gestor.</p>
+              <p style={{ fontSize: 11.5, color: 'var(--amber)' }}><i className="ti ti-alert-triangle" /> Acima da sua alçada (máx {descLimit}%)  requer aprovação do gestor.</p>
             )}
             {ehCortesia && (
               <p style={{ fontSize: 11.5, color: cortesiaEstoura ? 'var(--red)' : 'var(--text-3)' }}>
