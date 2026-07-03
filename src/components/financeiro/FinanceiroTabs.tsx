@@ -23,8 +23,8 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
   { k: 'calc', label: 'Cálculos', icon: 'ti-calculator' },
   { k: 'receber', label: 'Contas a Receber', icon: 'ti-arrow-down-left' },
   { k: 'pagar', label: 'Contas a Pagar', icon: 'ti-arrow-up-right' },
-  { k: 'conciliacao', label: 'Conciliação', icon: 'ti-building-bank' },
-  { k: 'royalties', label: 'Royalties', icon: 'ti-robot' },
+  { k: 'conciliacao', label: 'Conciliação Bancária', icon: 'ti-building-bank' },
+  { k: 'royalties', label: 'Automação de Royalties', icon: 'ti-robot' },
   { k: 'cobranca', label: 'Cobrança & Jurídico', icon: 'ti-gavel' },
   { k: 'config', label: 'Configurações', icon: 'ti-settings' },
 ]

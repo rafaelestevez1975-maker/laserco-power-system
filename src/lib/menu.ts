@@ -175,14 +175,17 @@ export const MENU: Section[] = [
         ],
       },
       {
+        // Espelha as 9 ABAS do Financeiro Franqueadora do legacy (finTabs) — mesma ordem/rótulos.
+        // Receber/Pagar apontavam pro /contas (financeiro da UNIDADE) e sumiam do perfil Financeiro.
         label: 'Financeiro Franqueadora', icon: 'ti-businessplan', key: 'finfranq', perm: 'financeiro.', children: [
           { label: 'Fluxo de Caixa', href: '/financeiro', icon: 'ti-cash', title: 'Financeiro · Fluxo de Caixa' },
-          { label: 'Contas a Receber', href: '/contas?aba=receber', icon: 'ti-arrow-down-left', title: 'Financeiro · Contas a Receber' },
-          { label: 'Contas a Pagar', href: '/contas?aba=pagar', icon: 'ti-arrow-up-right', title: 'Financeiro · Contas a Pagar' },
           { label: 'DRE', href: '/financeiro/dre', icon: 'ti-report-money', title: 'Financeiro · DRE' },
+          { label: 'Cálculos', href: '/financeiro/calc', icon: 'ti-calculator', title: 'Financeiro · Cálculos' },
+          { label: 'Contas a Receber', href: '/financeiro/receber', icon: 'ti-arrow-down-left', title: 'Financeiro · Contas a Receber' },
+          { label: 'Contas a Pagar', href: '/financeiro/pagar', icon: 'ti-arrow-up-right', title: 'Financeiro · Contas a Pagar' },
           { label: 'Conciliação Bancária', href: '/financeiro/conciliacao', icon: 'ti-building-bank', title: 'Financeiro · Conciliação Bancária' },
           { label: 'Automação de Royalties', href: '/financeiro/royalties', icon: 'ti-percentage', title: 'Financeiro · Automação de Royalties' },
-          { label: 'Cobrança & Régua', href: '/financeiro/cobranca', icon: 'ti-gavel', title: 'Financeiro · Cobrança & Régua' },
+          { label: 'Cobrança & Jurídico', href: '/financeiro/cobranca', icon: 'ti-gavel', title: 'Financeiro · Cobrança & Jurídico' },
           { label: 'Configurações', href: '/financeiro/config', icon: 'ti-settings', title: 'Financeiro · Configurações' },
         ],
       },
