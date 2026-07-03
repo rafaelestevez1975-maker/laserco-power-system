@@ -38,7 +38,7 @@ export const MENU: Section[] = [
     title: 'Acompanhamento',
     items: [
       { label: 'Dashboard', href: '/', icon: 'ti-layout-dashboard' },
-      { label: 'Agenda', href: '/agenda', icon: 'ti-calendar-event' },
+      { label: 'Agenda', href: '/agenda', icon: 'ti-calendar-event', perm: 'operacoes.' },
       // { label: 'PDV / Nova Venda', href: '/pdv', icon: 'ti-shopping-cart', perm: 'operacoes.os' },
       { label: 'Ordens de serviço', href: '/os', icon: 'ti-clipboard-list', perm: 'operacoes.os' },
     ],
@@ -47,7 +47,7 @@ export const MENU: Section[] = [
     title: 'Cadastros',
     items: [
       {
-        label: 'Cadastros básicos', icon: 'ti-folders', key: 'cad', children: [
+        label: 'Cadastros básicos', icon: 'ti-folders', key: 'cad', perm: 'comercial.', children: [
           { label: 'Anamnese / Ficha Técnica', href: '/cadastros/anamnese', icon: 'ti-file-text' },
           { label: 'Categorias de Contas a pagar', href: '/cadastros/categorias-pagar', icon: 'ti-category' },
           { label: 'Categorias de Contas a receber', href: '/cadastros/categorias-receber', icon: 'ti-category-2' },
@@ -63,19 +63,19 @@ export const MENU: Section[] = [
           { label: 'Origens de Cliente', href: '/cadastros/origens', icon: 'ti-route' },
         ],
       },
-      { label: 'Clientes', href: '/clientes', icon: 'ti-users' },
+      { label: 'Clientes', href: '/clientes', icon: 'ti-users', perm: 'comercial.' },
       { label: 'Colaboradores', href: '/colaboradores', icon: 'ti-user-star', perm: 'rh.colaborador' },
-      { label: 'Contas a pagar / receber', href: '/contas', icon: 'ti-cash' },
-      { label: 'Pacotes', href: '/pacotes', icon: 'ti-box' },
-      { label: 'Produtos', href: '/produtos', icon: 'ti-package' },
-      { label: 'Serviços', href: '/servicos', icon: 'ti-sparkles' },
+      { label: 'Contas a pagar / receber', href: '/contas', icon: 'ti-cash', perm: 'financeiro.' },
+      { label: 'Pacotes', href: '/pacotes', icon: 'ti-box', perm: 'comercial.' },
+      { label: 'Produtos', href: '/produtos', icon: 'ti-package', perm: 'comercial.' },
+      { label: 'Serviços', href: '/servicos', icon: 'ti-sparkles', perm: 'comercial.' },
     ],
   },
   {
     title: 'Gestão',
     items: [
       {
-        label: 'Relatórios', icon: 'ti-chart-bar', key: 'rel', children: [
+        label: 'Relatórios', icon: 'ti-chart-bar', key: 'rel', perm: 'comercial.', children: [
           { label: 'Assinaturas', href: '/relatorios/assinaturas', icon: 'ti-id-badge-2' },
           { label: 'Ocorrências e Intercorrências', href: '/relatorios/ocorrencias', icon: 'ti-clipboard-heart' },
           { label: 'Agendamentos', href: '/relatorios/agendamentos', icon: 'ti-calendar' },
@@ -104,7 +104,7 @@ export const MENU: Section[] = [
         ],
       },
       {
-        label: 'Dashboards', icon: 'ti-gauge', key: 'dash', children: [
+        label: 'Dashboards', icon: 'ti-gauge', key: 'dash', perm: 'comercial.', children: [
           { label: 'Financeiro / Contábil', href: '/dashboards/financeiro', icon: 'ti-report-money' },
           { label: 'Gerencial', href: '/dashboards/gerencial', icon: 'ti-chart-pie' },
           { label: 'Funil de Vendas', href: '/dashboards/funil', icon: 'ti-filter-cog' },
@@ -118,7 +118,7 @@ export const MENU: Section[] = [
       { label: 'Disparos WhatsApp API', href: '/disparos', icon: 'ti-brand-whatsapp', perm: 'marketing.campanha' },
       { label: 'CRM', href: '/crm', icon: 'ti-affiliate', perm: 'crm.lead' },
       { label: 'Leads do Site', href: '/leads-site', icon: 'ti-inbox', perm: 'crm.lead' },
-      { label: 'Canais', href: '/canais', icon: 'ti-brand-whatsapp', title: 'Canais' },
+      { label: 'Canais', href: '/canais', icon: 'ti-brand-whatsapp', title: 'Canais', perm: 'marketing.' },
       { label: 'Gestão de Indiques', href: '/indiques', icon: 'ti-gift', perm: 'crm.lead' },
       {
         label: 'Recursos Humanos', icon: 'ti-briefcase', key: 'rh', perm: 'rh.', children: [
@@ -134,12 +134,12 @@ export const MENU: Section[] = [
         ],
       },
       { label: 'Marketing', href: '/marketing', icon: 'ti-ad-2', perm: 'marketing.' },
-      { label: 'Comunicados', href: '/comunicados', icon: 'ti-speakerphone' },
-      { label: 'Chamados', href: '/chamados', icon: 'ti-ticket' },
-      { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist' },
+      { label: 'Comunicados', href: '/comunicados', icon: 'ti-speakerphone', perm: 'operacoes.' },
+      { label: 'Chamados', href: '/chamados', icon: 'ti-ticket', perm: 'operacoes.' },
+      { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist', perm: 'operacoes.' },
       { label: 'Universidade Corporativa', href: '/universidade', icon: 'ti-school', perm: 'treinamento.curso' },
-      { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud' },
-      { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice' },
+      { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud', perm: 'operacoes.' },
+      { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice', perm: 'financeiro.' },
     ],
   },
   {
@@ -238,7 +238,7 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/sac', '/sac/chamados', '/sac/kanban', '/sac/triagem', '/sac/relatorios', '/sac/pagamentos',
   '/sac/atendentes', '/sac/ranking', '/sac/importar', '/sac/config', '/sac/canais',
   // Administração · Financeiro Franqueadora
-  '/financeiro', '/financeiro/dre', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
+  '/financeiro', '/financeiro/dre', '/financeiro/calc', '/financeiro/receber', '/financeiro/pagar', '/financeiro/conciliacao', '/financeiro/royalties', '/financeiro/cobranca', '/financeiro/config',
   '/juridico', '/auditoria',
   // Rede & Conta
   '/unidades', '/minha-conta', '/exportacoes', '/ajuda', '/minha-unidade', '/app-cliente',

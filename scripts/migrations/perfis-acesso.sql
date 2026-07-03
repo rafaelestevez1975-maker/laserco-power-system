@@ -16,7 +16,7 @@ from (values
   ('Administrador','perfil_administrador','Acesso total aos módulos de negócio (sem configurações de sistema).'),
   ('Diretor','perfil_diretor','Visão executiva: lê, exporta e aprova em todos os módulos.'),
   ('Operações','perfil_operacoes','Gestão completa de operações + leitura do comercial.'),
-  ('Financeiro','perfil_financeiro','Financeiro da franqueadora completo + gestão do operacional (BEMP) e governança (Sults); leitura de folha, SAC e CRM.'),
+  ('Financeiro','perfil_financeiro','Financeiro completo (franqueadora + loja) + operacional BEMP (agenda/OS/cadastros/relatórios) e governança da rede.'),
   ('Marketing','perfil_marketing','Gestão completa de marketing + leitura do CRM.'),
   ('RH','perfil_rh','Gestão completa de RH e treinamento.'),
   ('Expansão','perfil_expansao','Gestão do funil de expansão (CRM) + leitura de comercial e marketing.'),
@@ -45,11 +45,10 @@ with regras(slug, modulo, acoes) as (values
   -- Operações
   ('perfil_operacoes','operacoes','*'),('perfil_operacoes','comercial','ler'),
   -- Financeiro
-  -- Financeiro GERE tudo que veio do BEMP (operação/vendas/contas da loja) e do Sults
-  -- (chamados/checklists/universidade) + leitura de folha, SAC (reembolsos) e CRM.
+  -- Financeiro GERE o núcleo BEMP/Sults: financeiro (franqueadora+loja), operações (agenda/OS/
+  -- comunicados/chamados/checklist) e comercial (clientes/cadastros/relatórios/dashboards).
+  -- Sem RH/SAC/CRM/marketing — senão o menu vira 'super admin' (feedback 02/07).
   ('perfil_financeiro','financeiro','*'),('perfil_financeiro','operacoes','*'),('perfil_financeiro','comercial','*'),
-  ('perfil_financeiro','crm','ler,exportar'),('perfil_financeiro','rh','ler,exportar'),('perfil_financeiro','sac','ler,exportar'),
-  ('perfil_financeiro','marketing','ler'),('perfil_financeiro','treinamento','ler'),
   -- Marketing
   ('perfil_marketing','marketing','*'),('perfil_marketing','crm','ler'),
   -- RH
