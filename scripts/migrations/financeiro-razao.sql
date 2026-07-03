@@ -85,7 +85,9 @@ alter table fin_config
 -- pagando em dia (sem recebível atrasado) → desconto no royalty (ex.: 10% vira 5%).
 alter table unidades
   add column if not exists royalty_pct_override numeric,
-  add column if not exists venc_dia_override int;
+  add column if not exists venc_dia_override int,
+  -- própria × franquia (CEO: só FRANQUIA paga royalty; segmenta o DRE como no legacy)
+  add column if not exists tipo_loja text not null default 'franquia' check (tipo_loja in ('propria','franquia'));
 alter table fin_config
   add column if not exists royalty_desc_ativo boolean not null default true,
   add column if not exists royalty_desc_teto numeric not null default 80000,
@@ -181,61 +183,76 @@ returns table(grupo text, natureza text, conta text, ordem integer, total numeri
   from fin_lancamento l
   join plano_conta pc on pc.id = l.plano_conta_id
   left join centro_custo cc on cc.id = l.centro_custo_id
+  left join unidades u on u.id = cc.unidade_id
   where l.competencia >= p_ini and l.competencia < p_fim
     and l.status <> 'cancelado'
     and (p_unidade is null or cc.unidade_id = p_unidade)
     and (p_escopo='consolidado'
       or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede'))
+      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
+      or (p_escopo='proprias' and u.tipo_loja='propria')
+      or (p_escopo='franquias' and u.tipo_loja='franquia'))
   group by pc.grupo, pc.natureza, pc.nome
 $$;
 
 -- Fluxo de caixa mensal por data efetiva (caixa > prevista > competência), com escopo.
 -- Suspenso NÃO anda o caixa (pedido do cliente: visível mas fora do fluxo).
-create or replace function public.fin_fluxo(p_ini date, p_fim date, p_escopo text default 'consolidado')
+create or replace function public.fin_fluxo(p_ini date, p_fim date, p_escopo text default 'consolidado', p_unidade uuid default null)
 returns table(mes date, entradas numeric, saidas numeric) language sql stable as $$
   select date_trunc('month', coalesce(l.data_caixa, l.data_prevista, l.competencia))::date,
          coalesce(sum(l.valor) filter (where l.natureza='receita'),0)::numeric,
          coalesce(sum(l.valor) filter (where l.natureza='despesa'),0)::numeric
   from fin_lancamento l
   left join centro_custo cc on cc.id = l.centro_custo_id
+  left join unidades u on u.id = cc.unidade_id
   where coalesce(l.data_caixa, l.data_prevista, l.competencia) >= p_ini
     and coalesce(l.data_caixa, l.data_prevista, l.competencia) < p_fim
     and l.status not in ('cancelado','suspenso')
+    and (p_unidade is null or cc.unidade_id = p_unidade)
     and (p_escopo='consolidado'
       or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede'))
+      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
+      or (p_escopo='proprias' and u.tipo_loja='propria')
+      or (p_escopo='franquias' and u.tipo_loja='franquia'))
   group by 1
 $$;
 
 -- KPIs do fluxo por status (a receber/recebido/vencido/a pagar/pago), com escopo.
-create or replace function public.fin_fluxo_resumo(p_escopo text default 'consolidado')
+create or replace function public.fin_fluxo_resumo(p_escopo text default 'consolidado', p_unidade uuid default null)
 returns table(a_receber numeric, recebido numeric, vencido numeric, a_pagar numeric, pago numeric) language sql stable as $$
   select
-    coalesce(sum(valor) filter (where natureza='receita' and status='previsto'),0)::numeric,
-    coalesce(sum(valor) filter (where natureza='receita' and status in ('realizado','conciliado')),0)::numeric,
-    coalesce(sum(valor) filter (where natureza='receita' and status='previsto' and data_prevista < current_date),0)::numeric,
-    coalesce(sum(valor) filter (where natureza='despesa' and status='previsto'),0)::numeric,
-    coalesce(sum(valor) filter (where natureza='despesa' and status in ('realizado','conciliado')),0)::numeric
+    coalesce(sum(valor) filter (where natureza='receita' and l.status='previsto'),0)::numeric,
+    coalesce(sum(valor) filter (where natureza='receita' and l.status in ('realizado','conciliado')),0)::numeric,
+    coalesce(sum(valor) filter (where natureza='receita' and l.status='previsto' and data_prevista < current_date),0)::numeric,
+    coalesce(sum(valor) filter (where natureza='despesa' and l.status='previsto'),0)::numeric,
+    coalesce(sum(valor) filter (where natureza='despesa' and l.status in ('realizado','conciliado')),0)::numeric
   from fin_lancamento l
   left join centro_custo cc on cc.id = l.centro_custo_id
+  left join unidades u on u.id = cc.unidade_id
   where l.status <> 'cancelado'
+    and (p_unidade is null or cc.unidade_id = p_unidade)
     and (p_escopo='consolidado'
       or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede'))
+      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
+      or (p_escopo='proprias' and u.tipo_loja='propria')
+      or (p_escopo='franquias' and u.tipo_loja='franquia'))
 $$;
 
 -- Composição do "a receber" por conta do plano, com escopo.
-create or replace function public.fin_fluxo_composicao(p_escopo text default 'consolidado')
+create or replace function public.fin_fluxo_composicao(p_escopo text default 'consolidado', p_unidade uuid default null)
 returns table(conta text, total numeric) language sql stable as $$
   select pc.nome, sum(l.valor)::numeric
   from fin_lancamento l
   join plano_conta pc on pc.id = l.plano_conta_id
   left join centro_custo cc on cc.id = l.centro_custo_id
+  left join unidades u on u.id = cc.unidade_id
   where l.natureza='receita' and l.status='previsto'
+    and (p_unidade is null or cc.unidade_id = p_unidade)
     and (p_escopo='consolidado'
       or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede'))
+      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
+      or (p_escopo='proprias' and u.tipo_loja='propria')
+      or (p_escopo='franquias' and u.tipo_loja='franquia'))
   group by pc.nome
 $$;
 

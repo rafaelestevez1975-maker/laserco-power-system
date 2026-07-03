@@ -283,7 +283,7 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
 
   // 2) Unidades-franquia (têm bemp_salon_id) + config (pct/vencimento + regra de desconto)
   const [{ data: unisRaw }, { data: cfg }, mapa] = await Promise.all([
-    op.sb.from('unidades').select('id, nome, bemp_salon_id, royalty_pct_override, venc_dia_override').not('bemp_salon_id', 'is', null),
+    op.sb.from('unidades').select('id, nome, bemp_salon_id, royalty_pct_override, venc_dia_override, tipo_loja').not('bemp_salon_id', 'is', null).neq('tipo_loja', 'propria'), // CEO: loja própria NÃO paga royalty
     op.sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, royalty_desc_ativo, royalty_desc_teto, royalty_desc_pct').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     mapaFinanceiro(op.sb),
   ])
@@ -361,7 +361,7 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
 
 /** Override de royalty POR UNIDADE (CEO 02/07: "temos que poder preencher por unidade").
  *  null = usa a regra geral (% global + desconto automático). Vale a partir da próxima apuração. */
-export async function salvarRoyaltyUnidade(unidadeId: string, royaltyPct: number | null, vencDia: number | null): Promise<R> {
+export async function salvarRoyaltyUnidade(unidadeId: string, royaltyPct: number | null, vencDia: number | null, tipoLoja?: 'propria' | 'franquia'): Promise<R> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para alterar royalties.' }
@@ -369,7 +369,7 @@ export async function salvarRoyaltyUnidade(unidadeId: string, royaltyPct: number
   if (royaltyPct != null && (!Number.isFinite(royaltyPct) || royaltyPct < 0 || royaltyPct > 100)) return { ok: false, error: 'Percentual de royalty inválido (0 a 100).' }
   if (vencDia != null && (!Number.isInteger(vencDia) || vencDia < 1 || vencDia > 28)) return { ok: false, error: 'Dia de vencimento inválido (1 a 28).' }
   const { error: e } = await adminClient().from('unidades')
-    .update({ royalty_pct_override: royaltyPct, venc_dia_override: vencDia }).eq('id', unidadeId)
+    .update({ royalty_pct_override: royaltyPct, venc_dia_override: vencDia, ...(tipoLoja ? { tipo_loja: tipoLoja } : {}) }).eq('id', unidadeId)
   if (e) return { ok: false, error: msgErro(e.message, 'salvar o royalty da unidade') }
   revalidatePath('/financeiro')
   return { ok: true }
@@ -379,7 +379,7 @@ export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem:
 /** Carrega o DRE (do RAZÃO) de uma competência — com escopo: consolidado (rede+unidades),
  *  franqueadora (só o centro da rede: royalties/fundo) ou unidades (só os centros das unidades).
  *  Usado pelos seletores de mês e de escopo na aba DRE. */
-const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades'] as const
+const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades', 'proprias', 'franquias'] as const
 export async function dreDaCompetencia(ano: number, mes: number, escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
@@ -443,16 +443,16 @@ export async function setContaPlanoAtivo(id: string, ativo: boolean): Promise<R>
 /** Fluxo de caixa do razão para um escopo (consolidado/franqueadora/unidades) — série + KPIs + composição.
  *  Os helpers janelaFluxo/normalizaFluxo vivem em @/lib/financeiro (módulo puro) porque um arquivo
  *  'use server' só pode exportar funções async. */
-export async function fluxoDoRazao(escopo: string = 'consolidado'): Promise<R & { serie?: FluxoSerie[]; resumo?: FluxoResumo; composicao?: FluxoComp[] }> {
+export async function fluxoDoRazao(escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { serie?: FluxoSerie[]; resumo?: FluxoResumo; composicao?: FluxoComp[] }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o fluxo de caixa.' }
   const esc = (DRE_ESCOPOS as readonly string[]).includes(escopo) ? escopo : 'consolidado'
   const { ini, fim } = janelaFluxo(new Date())
   const [serieR, resumoR, compR] = await Promise.all([
-    op.sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc }),
-    op.sb.rpc('fin_fluxo_resumo', { p_escopo: esc }),
-    op.sb.rpc('fin_fluxo_composicao', { p_escopo: esc }),
+    op.sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeId || null }),
+    op.sb.rpc('fin_fluxo_resumo', { p_escopo: esc, p_unidade: unidadeId || null }),
+    op.sb.rpc('fin_fluxo_composicao', { p_escopo: esc, p_unidade: unidadeId || null }),
   ])
   if (serieR.error || resumoR.error || compR.error) return { ok: false, error: msgErro((serieR.error || resumoR.error || compR.error)!.message, 'carregar o fluxo de caixa') }
   return { ok: true, ...normalizaFluxo(serieR.data, resumoR.data, compR.data) }

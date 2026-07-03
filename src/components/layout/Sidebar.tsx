@@ -101,8 +101,24 @@ export function Sidebar({
         achatados.push(it as Leaf)
       }
     }
+    // Ordem LÓGICA do menu achatado (feedback 02/07: coleta na ordem do MENU ficava bagunçada):
+    // 1º o módulo principal (ex.: as 9 abas do Financeiro Franqueadora, na ordem do legacy),
+    // depois contas da loja/cadastros, relatórios, dashboards e utilitários. Sort estável
+    // preserva a ordem interna de cada bloco.
+    const blocoDe = (href: string) => {
+      if (soModulo === 'financeiro') {
+        if (href.startsWith('/financeiro')) return 0
+        if (href === '/contas') return 1
+        if (href.startsWith('/cadastros')) return 2
+        if (href.startsWith('/relatorios')) return 3
+        if (href.startsWith('/dashboards')) return 4
+        return 5
+      }
+      return href.startsWith('/sac') ? 0 : 5
+    }
+    const ordenados = achatados.map((l, i) => ({ l, i })).sort((a, b) => (blocoDe(a.l.href) - blocoDe(b.l.href)) || (a.i - b.i)).map((x) => x.l)
     const minhaConta = acharLeaf('/minha-conta')
-    const itens = minhaConta ? [...achatados, minhaConta] : achatados
+    const itens = minhaConta ? [...ordenados, minhaConta] : ordenados
     return (
       <nav className="nav">
         <SectionBlock title={soModulo === 'financeiro' ? 'Financeiro' : 'SAC'} items={itens} pathname={pathname}

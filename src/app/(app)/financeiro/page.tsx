@@ -34,7 +34,7 @@ export type FinConfig = {
   banco: Record<string, unknown>; adquirentes: unknown[]; categorias: string[]; regua: { dias: number; acao: string; canal: string }[]
 }
 // Franquia com override de royalty (CEO: % e vencimento por unidade; null = regra geral).
-export type RoyaltyUnidade = { id: string; nome: string; royalty_pct_override: number | null; venc_dia_override: number | null }
+export type RoyaltyUnidade = { id: string; nome: string; royalty_pct_override: number | null; venc_dia_override: number | null; tipo_loja: 'propria' | 'franquia' }
 // DRE derivado do RAZÃO (fin_lancamento) — cada linha é uma conta do plano de contas somada.
 export type DreLinha = { grupo: string; natureza: string; conta: string; ordem: number; total: number }
 
@@ -61,6 +61,11 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
   const hojeISO = new Date().toISOString().slice(0, 10)
 
+  // ── Escopo do TOPO (feedback 03/07: o filtro de unidade não refletia no Financeiro) ──
+  // Unidade ativa selecionada → TODAS as visões (listas, DRE, Fluxo) escopam por ela.
+  const unidadeAtivaId = ctx?.activeUnitId ?? null
+  const unidadeAtivaNome = ctx?.activeUnitName ?? null
+
   // ── Feature-detect: a migration cria fin_recebiveis. Se a tabela não existe,
   //    a query falha → banner de migration + tela em modo vazio. ──
   // Limites de leitura das listas. Como os KPIs/totais são somados em memória a
@@ -72,11 +77,13 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   let recebiveis: Recebivel[] = []
   let recTotal = 0
   {
-    const { data, error, count } = await sb
+    let qRec = sb
       .from('fin_recebiveis')
       .select('id, unidade_nome, categoria, competencia, bruto, valor, vencimento, status, dias_atraso, boleto, enviado, data_pagamento, jur_id', { count: 'exact' })
       .order('vencimento', { ascending: true, nullsFirst: false })
       .limit(LIM_REC)
+    if (unidadeAtivaId) qRec = qRec.eq('unidade_id', unidadeAtivaId)
+    const { data, error, count } = await qRec
     if (error) migracaoOk = false
     else {
       recTotal = count ?? 0
@@ -94,9 +101,13 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   let pagTotal = 0
   let concTotal = 0
   if (migracaoOk) {
+    let qPag = sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade', { count: 'exact' }).order('vencimento', { ascending: true, nullsFirst: false }).limit(LIM_PAG)
+    if (unidadeAtivaNome) qPag = qPag.eq('escopo', unidadeAtivaNome)
+    let qConc = sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao', { count: 'exact' }).order('data', { ascending: true, nullsFirst: false }).limit(LIM_CONC)
+    if (unidadeAtivaNome) qConc = qConc.eq('unidade_nome', unidadeAtivaNome)
     const [{ data: pagRaw, count: pagCount }, { data: concRaw, count: concCount }, { data: cfgRaw }] = await Promise.all([
-      sb.from('fin_contas_pagar').select('id, categoria, descricao, escopo, valor, vencimento, status, prioridade', { count: 'exact' }).order('vencimento', { ascending: true, nullsFirst: false }).limit(LIM_PAG),
-      sb.from('fin_conciliacao').select('id, data, unidade_nome, adquirente, venda, taxa_pct, taxa, esperado, recebido, status, observacao', { count: 'exact' }).order('data', { ascending: true, nullsFirst: false }).limit(LIM_CONC),
+      qPag,
+      qConc,
       sb.from('fin_config').select('royalty_pct, fundo_pct, venc_dia, imposto_pct, imposto_regime, comissao_pct, comissao_base, taxa_cartao_pct, royalty_desc_ativo, royalty_desc_teto, royalty_desc_pct, banco, adquirentes, categorias, regua').order('atualizado_em', { ascending: false }).limit(1).maybeSingle(),
     ])
     contasPagar = (pagRaw ?? []) as ContaPagar[]
@@ -132,7 +143,9 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       dreCompetencia = ult
       const d = new Date(ult + 'T12:00:00'); d.setMonth(d.getMonth() + 1)
       const fim = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-      const { data: dreRaw } = await sb.rpc('fin_dre', { p_ini: ult, p_fim: fim })
+      const { data: dreRaw } = await sb.rpc('fin_dre', unidadeAtivaId
+        ? { p_ini: ult, p_fim: fim, p_escopo: 'unidades', p_unidade: unidadeAtivaId }
+        : { p_ini: ult, p_fim: fim })
       dre = (dreRaw ?? []) as DreLinha[]
     }
   }
@@ -147,7 +160,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
   // Franquias com override de royalty (% e vencimento POR unidade — regra do CEO).
   const { data: ruRaw } = await sb.from('unidades')
-    .select('id, nome, royalty_pct_override, venc_dia_override')
+    .select('id, nome, royalty_pct_override, venc_dia_override, tipo_loja')
     .not('bemp_salon_id', 'is', null).eq('ativa', true).order('nome')
   const royaltiesUnidade = (ruRaw ?? []) as RoyaltyUnidade[]
 
@@ -158,10 +171,11 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   let fluxoComp: FluxoComp[] = []
   {
     const { ini, fim } = janelaFluxo(new Date())
+    const esc = unidadeAtivaId ? 'unidades' : 'consolidado'
     const [serieR, resumoR, compR] = await Promise.all([
-      sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: 'consolidado' }),
-      sb.rpc('fin_fluxo_resumo', { p_escopo: 'consolidado' }),
-      sb.rpc('fin_fluxo_composicao', { p_escopo: 'consolidado' }),
+      sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeAtivaId }),
+      sb.rpc('fin_fluxo_resumo', { p_escopo: esc, p_unidade: unidadeAtivaId }),
+      sb.rpc('fin_fluxo_composicao', { p_escopo: esc, p_unidade: unidadeAtivaId }),
     ])
     const norm = normalizaFluxo(serieR.data, resumoR.data, compR.data)
     fluxoSerie = norm.serie; fluxoResumo = norm.resumo; fluxoComp = norm.composicao
@@ -186,6 +200,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         unidades={unidadesOpt}
         royaltiesUnidade={royaltiesUnidade}
         indices={indices}
+        unidadeAtiva={unidadeAtivaId ? { id: unidadeAtivaId, nome: unidadeAtivaNome || 'Unidade' } : null}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>

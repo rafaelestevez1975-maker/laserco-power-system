@@ -127,7 +127,7 @@ function PrioPill({ pr }: { pr: string }) {
 
 export type UnidadeOpt = { id: string; nome: string }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], royaltiesUnidade = [], indices = {}, tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], royaltiesUnidade = [], indices = {}, unidadeAtiva = null, tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -144,6 +144,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   unidades?: UnidadeOpt[]
   royaltiesUnidade?: RoyaltyUnidade[]
   indices?: Record<string, { label: string; acum12m: number }>
+  unidadeAtiva?: { id: string; nome: string } | null
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -165,6 +166,13 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
         </div>
       )}
 
+      {unidadeAtiva && (
+        <div className="rel-legend" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="ti ti-building-store" style={{ color: 'var(--brand-500)', fontSize: 16 }} />
+          <span>Exibindo apenas <b>{unidadeAtiva.nome}</b> (filtro de unidade do topo). Selecione “Todas as unidades” no topo para ver a rede inteira.</span>
+        </div>
+      )}
+
       {truncado && (
         <div className="rel-legend" style={{ background: '#FFF8E1', color: 'var(--text)', border: '1px solid var(--amber)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <i className="ti ti-alert-triangle" style={{ color: 'var(--amber)', fontSize: 18 }} />
@@ -172,8 +180,8 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
         </div>
       )}
 
-      {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} />}
-      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} />}
+      {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} unidadeAtiva={unidadeAtiva} />}
+      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
@@ -188,7 +196,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
 // =============================================================================
 // FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
 // =============================================================================
-function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string; recebiveis: Recebivel[]; contasPagar: ContaPagar[] }) {
+function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, unidadeAtiva = null }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string; recebiveis: Recebivel[]; contasPagar: ContaPagar[]; unidadeAtiva?: { id: string; nome: string } | null }) {
   const [escopo, setEscopo] = useState('consolidado')
   const [serie, setSerie] = useState<FluxoSerie[]>(serie0)
   const [resumo, setResumo] = useState<FluxoResumo>(resumo0 ?? FLUXO_ZERO)
@@ -196,7 +204,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar }: 
   const [busy, setBusy] = useState(false)
   async function trocarEscopo(v: string) {
     setEscopo(v); setBusy(true)
-    const r = await fluxoDoRazao(v); setBusy(false)
+    const r = await fluxoDoRazao(v, unidadeAtiva?.id ?? null); setBusy(false)
     if (r.ok) { setSerie(r.serie ?? []); setResumo(r.resumo ?? FLUXO_ZERO); setComp(r.composicao ?? []) }
   }
   const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
@@ -231,10 +239,14 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar }: 
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Visão:</label>
-        <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
-          {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
-        </select>
+        {unidadeAtiva ? (
+          <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> Fluxo da unidade <b>{unidadeAtiva.nome}</b></span>
+        ) : (<>
+          <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Visão:</label>
+          <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
+            {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
+          </select>
+        </>)}
         {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
       </div>
       <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única) — visão <b>{escSel.label}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. {escSel.hint}</div>
@@ -880,12 +892,16 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 // DRE (finDreHTML L5642 — versão simplificada sobre os dados reais)
 // =============================================================================
 const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+// Segmentos do DRE — mesmos do legacy (finDreHTML): consolidado / próprias / franquias / franqueadora,
+// + 'todas as unidades' (agregado) e detalhamento por loja.
 const DRE_ESCOPOS: { valor: string; label: string; hint: string }[] = [
-  { valor: 'consolidado', label: 'Consolidado (rede)', hint: 'Toda a rede — franqueadora + unidades. Os royalties se anulam entre si.' },
-  { valor: 'franqueadora', label: 'Só franqueadora', hint: 'Resultado da franqueadora: royalties e fundo de marketing recebidos das unidades.' },
-  { valor: 'unidades', label: 'Só unidades', hint: 'Resultado agregado das unidades: faturamento menos royalties, fundo e despesas.' },
+  { valor: 'consolidado', label: 'Consolidado (tudo junto)', hint: 'Toda a rede — franqueadora + lojas. Os royalties se anulam entre si.' },
+  { valor: 'proprias', label: 'Lojas próprias', hint: 'Só as lojas PRÓPRIAS (marque quais são em Configurações → Royalties por unidade).' },
+  { valor: 'franquias', label: 'Franquias', hint: 'Só as unidades FRANQUEADAS: faturamento menos royalties e despesas.' },
+  { valor: 'franqueadora', label: 'Franqueadora', hint: 'Resultado da franqueadora: royalties recebidos das franquias.' },
+  { valor: 'unidades', label: 'Todas as unidades', hint: 'Agregado de todas as lojas (próprias + franquias), sem a franqueadora.' },
 ]
-function DreTab({ dre, competencia, unidades = [] }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[] }) {
+function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[]; unidadeAtiva?: { id: string; nome: string } | null }) {
   const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
   const [escopo, setEscopo] = useState('consolidado')
   const [unidade, setUnidade] = useState('') // '' = todas as lojas (agregado)
@@ -895,7 +911,7 @@ function DreTab({ dre, competencia, unidades = [] }: { dre: DreLinha[]; competen
     const [a, m] = vComp.split('-').map(Number)
     if (!a || !m) { setLinhas([]); return }
     setBusy(true)
-    const r = await dreDaCompetencia(a, m, vEscopo, vEscopo === 'unidades' && vUnidade ? vUnidade : null)
+    const r = await dreDaCompetencia(a, m, unidadeAtiva ? 'unidades' : vEscopo, unidadeAtiva ? unidadeAtiva.id : (['unidades', 'proprias', 'franquias'].includes(vEscopo) && vUnidade ? vUnidade : null))
     setBusy(false)
     if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
   }
@@ -918,11 +934,12 @@ function DreTab({ dre, competencia, unidades = [] }: { dre: DreLinha[]; competen
     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
       <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
       <input type="month" value={comp} onChange={(e) => trocarMes(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
-      <label style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 6 }}>Visão:</label>
+      {unidadeAtiva && <span style={{ fontSize: 12.5, color: 'var(--text-2)', marginLeft: 6 }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> DRE da unidade <b>{unidadeAtiva.nome}</b></span>}
+      {!unidadeAtiva && <><label style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 6 }}>Visão:</label>
       <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
         {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
-      </select>
-      {escopo === 'unidades' && unidades.length > 0 && (
+      </select></>}
+      {!unidadeAtiva && ['unidades', 'proprias', 'franquias'].includes(escopo) && unidades.length > 0 && (
         <select value={unidade} onChange={(e) => trocarUnidade(e.target.value)} title="DRE de uma loja específica"
           style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit', maxWidth: 240 }}>
           <option value="">Todas as lojas (agregado)</option>
@@ -1061,14 +1078,14 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   const [descTeto, setDescTeto] = useState(config.royalty_desc_teto ?? 80000)
   const [descPct, setDescPct] = useState(config.royalty_desc_pct ?? 50)
   const [ruBusca, setRuBusca] = useState('')
-  const [ruEdit, setRuEdit] = useState<Record<string, { pct: string; dia: string }>>({})
+  const [ruEdit, setRuEdit] = useState<Record<string, { pct: string; dia: string; tipo: 'propria' | 'franquia' }>>({})
   const [ruBusy, setRuBusy] = useState<string | null>(null)
   const [ruMsg, setRuMsg] = useState('')
-  const ruVal = (u: RoyaltyUnidade) => ruEdit[u.id] ?? { pct: u.royalty_pct_override != null ? String(u.royalty_pct_override) : '', dia: u.venc_dia_override != null ? String(u.venc_dia_override) : '' }
+  const ruVal = (u: RoyaltyUnidade) => ruEdit[u.id] ?? { pct: u.royalty_pct_override != null ? String(u.royalty_pct_override) : '', dia: u.venc_dia_override != null ? String(u.venc_dia_override) : '', tipo: u.tipo_loja }
   const salvarRU = async (u: RoyaltyUnidade) => {
     const v = ruVal(u)
     setRuBusy(u.id); setRuMsg('')
-    const r = await salvarRoyaltyUnidade(u.id, v.pct.trim() === '' ? null : parseFloat(v.pct), v.dia.trim() === '' ? null : parseInt(v.dia))
+    const r = await salvarRoyaltyUnidade(u.id, v.pct.trim() === '' ? null : parseFloat(v.pct), v.dia.trim() === '' ? null : parseInt(v.dia), v.tipo)
     setRuBusy(null)
     if (!r.ok) { setRuMsg(r.error || 'Erro ao salvar.'); return }
     setRuMsg(`${u.nome}: regra salva (vale na próxima apuração).`)
@@ -1187,7 +1204,7 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
         <input value={ruBusca} onChange={(e) => setRuBusca(e.target.value)} placeholder="🔎 Buscar franquia…" style={{ ...inputStyle, padding: '8px 11px', width: '100%', marginBottom: 8 }} />
         <div className="cli-scroll" style={{ maxHeight: 280 }}>
           <table className="cli-table">
-            <thead><tr><th>Franquia</th><th className="num-r">Royalty % (exceção)</th><th className="num-r">Venc. dia (exceção)</th><th /></tr></thead>
+            <thead><tr><th>Unidade</th><th>Tipo</th><th className="num-r">Royalty % (exceção)</th><th className="num-r">Venc. dia (exceção)</th><th /></tr></thead>
             <tbody>
               {royaltiesUnidade.filter((u) => !ruBusca.trim() || u.nome.toLowerCase().includes(ruBusca.toLowerCase())).slice(0, 80).map((u) => {
                 const v = ruVal(u)
@@ -1195,6 +1212,14 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
                 return (
                   <tr key={u.id} style={custom ? { background: 'var(--surface-2)' } : undefined}>
                     <td>{u.nome}{custom && <span style={{ fontSize: 10.5, color: 'var(--brand-600)', marginLeft: 6 }}>(exceção)</span>}</td>
+                    <td>
+                      <select value={v.tipo} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, tipo: e.target.value as 'propria' | 'franquia' } })}
+                        title="Loja própria NÃO paga royalty e entra no segmento 'Lojas próprias' do DRE"
+                        style={{ ...inputStyle, padding: '4px 6px', background: '#fff' }}>
+                        <option value="franquia">Franquia</option>
+                        <option value="propria">Própria</option>
+                      </select>
+                    </td>
                     <td className="num-r"><input type="number" step="0.5" min={0} max={100} placeholder="—" value={v.pct} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, pct: e.target.value } })} style={{ ...inputStyle, width: 74, textAlign: 'right' }} /></td>
                     <td className="num-r"><input type="number" min={1} max={28} placeholder="—" value={v.dia} onChange={(e) => setRuEdit({ ...ruEdit, [u.id]: { ...v, dia: e.target.value } })} style={{ ...inputStyle, width: 64, textAlign: 'right' }} /></td>
                     <td style={{ textAlign: 'right' }}><button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} disabled={ruBusy === u.id} onClick={() => salvarRU(u)}>{ruBusy === u.id ? '…' : 'Salvar'}</button></td>
@@ -1204,7 +1229,7 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
             </tbody>
           </table>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>A exceção vale a partir da <b>próxima apuração</b> (Royalties → Apurar mês). Deixe em branco para voltar à regra geral.</div>
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>A exceção vale a partir da <b>próxima apuração</b> (Royalties → Apurar mês). Deixe em branco para voltar à regra geral. <b>Loja própria não paga royalty</b> e habilita os segmentos Próprias × Franquias do DRE.</div>
       </div>
 
       <div className="rel-card" style={{ marginTop: 14 }}>
