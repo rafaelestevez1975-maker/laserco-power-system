@@ -424,18 +424,36 @@ export async function criarContaPlano(nome: string, natureza: string, grupo?: st
   return { ok: true, id: (ins as { id: string }).id }
 }
 
-/** Ativa/desativa uma categoria. Contas seed (com código) não podem ser desativadas 
- *  os produtores automáticos (BEMP/royalties/despesas config) lançam nelas. */
+/** Ativa/desativa uma categoria (pedido 03/07: admin gere TODAS, inclusive as do sistema).
+ *  Desativar só esconde a conta dos seletores  os produtores automáticos continuam
+ *  lançando nela por ID, então DRE/razão não quebram. */
 export async function setContaPlanoAtivo(id: string, ativo: boolean): Promise<R> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para editar o plano de contas.' }
   const admin = adminClient()
-  const { data: c } = await admin.from('plano_conta').select('codigo').eq('id', id).maybeSingle()
+  const { data: c } = await admin.from('plano_conta').select('id').eq('id', id).maybeSingle()
   if (!c) return { ok: false, error: 'Categoria não encontrada.' }
-  if ((c as { codigo?: string | null }).codigo && !ativo) return { ok: false, error: 'Categorias do sistema (com código) não podem ser desativadas  os lançamentos automáticos usam elas.' }
   const { error: e } = await admin.from('plano_conta').update({ ativo }).eq('id', id)
   if (e) return { ok: false, error: msgErro(e.message, 'atualizar a categoria') }
+  revalidatePath('/financeiro')
+  return { ok: true }
+}
+
+/** Exclui uma categoria criada pelo usuário. Categorias do sistema (com código) e
+ *  categorias com lançamentos no razão não podem ser excluídas  desative-as. */
+export async function removerContaPlano(id: string): Promise<R> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para editar o plano de contas.' }
+  const admin = adminClient()
+  const { data: c } = await admin.from('plano_conta').select('codigo, nome').eq('id', id).maybeSingle()
+  if (!c) return { ok: false, error: 'Categoria não encontrada.' }
+  if ((c as { codigo?: string | null }).codigo) return { ok: false, error: 'Categoria do sistema (com código) não pode ser excluída  os lançamentos automáticos usam ela. Desative-a para tirá-la dos seletores.' }
+  const { data: usoRaw } = await admin.from('fin_lancamento').select('id').eq('plano_conta_id', id).limit(1)
+  if ((usoRaw ?? []).length > 0) return { ok: false, error: 'Esta categoria já tem lançamentos no razão  desative-a em vez de excluir (o histórico é preservado).' }
+  const { error: e } = await admin.from('plano_conta').delete().eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'excluir a categoria') }
   revalidatePath('/financeiro')
   return { ok: true }
 }

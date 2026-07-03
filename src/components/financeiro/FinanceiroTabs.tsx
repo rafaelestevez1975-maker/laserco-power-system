@@ -12,7 +12,7 @@ import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, salvarRoyaltyUnidade, type ContaPlano,
+  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, removerContaPlano, salvarRoyaltyUnidade, type ContaPlano,
   importarRecebiveis, importarDespesas, type ImportRecebivelItem, type ImportDespesaItem,
   importarExtrato, type ImportExtratoItem,
 } from '@/app/(app)/financeiro/actions'
@@ -189,7 +189,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} unidadeAtiva={unidadeAtiva} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
-      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} config={config} />}
+      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} config={config} unidades={unidades} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} planoContas={planoContas} unidades={unidades} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
@@ -337,7 +337,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
 // =============================================================================
 // CONTAS A RECEBER (finReceberHTML L5202 + finRecAcoes L5222)
 // =============================================================================
-function ReceberTab({ recebiveis, goRoyalties, config }: { recebiveis: Recebivel[]; goRoyalties: () => void; config: FinConfig }) {
+function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebiveis: Recebivel[]; goRoyalties: () => void; config: FinConfig; unidades?: UnidadeOpt[] }) {
   const router = useRouter()
   const [cat, setCat] = useState('Todas')
   const [status, setStatus] = useState('Todos')
@@ -345,6 +345,7 @@ function ReceberTab({ recebiveis, goRoyalties, config }: { recebiveis: Recebivel
   const [msg, setMsg] = useState('')
   const [filtros, setFiltros] = useState<FiltrosFin>({ ...FILTROS_ZERO })
   const [filtroOpen, setFiltroOpen] = useState(false)
+  const [showNova, setShowNova] = useState(false)
   const [importando, setImportando] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc].filter(Boolean).length
@@ -417,10 +418,12 @@ function ReceberTab({ recebiveis, goRoyalties, config }: { recebiveis: Recebivel
           <button className="btn btn-ghost" onClick={() => baixarModeloExcel('receber')} title="Baixar um modelo .xlsx com as colunas certas"><i className="ti ti-download" /> Modelo</button>
           <button className="btn btn-primary" disabled={importando} onClick={() => fileRef.current?.click()} title="Colunas reconhecidas: Unidade/Cliente, Categoria, Descrição, Valor, Vencimento, Status"><i className="ti ti-file-spreadsheet" /> {importando ? 'Importando…' : 'Importar lançamentos (Excel)'}</button>
           <button className="btn" onClick={() => setFiltroOpen(true)}><i className="ti ti-filter" /> Editar filtros{fcount > 0 && <span style={{ background: 'var(--brand-500)', color: '#fff', borderRadius: 20, padding: '0 6px', fontSize: 10, marginLeft: 4 }}>{fcount}</span>}</button>
+          <button className="btn btn-ghost" onClick={() => setShowNova(true)}><i className="ti ti-plus" /> Nova conta a receber</button>
           <button className="btn btn-primary" onClick={goRoyalties}><i className="ti ti-robot" /> Gerar cobrança automática</button>
         </div>
       </div>
       {filtroOpen && <FiltroFinModal titulo="Editar filtros" pessoaLabel="Cliente" pessoas={[...new Set(recebiveis.map((r) => r.unidade_nome).filter(Boolean) as string[])].sort()} filtros={filtros} onApply={(f) => { setFiltros(f); setFiltroOpen(false) }} onClose={() => setFiltroOpen(false)} />}
+      {showNova && <NovaReceitaModal config={config} unidades={unidades} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); setMsg('Conta a receber lançada (sub-livro + razão).'); router.refresh() }} />}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead><tr><th>Unidade</th><th>Categoria</th><th>Competência</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Ações</th></tr></thead>
@@ -676,6 +679,67 @@ function NovaDespesaModal({ config, planoContas = [], unidades = [], onClose, on
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? '…' : <><i className="ti ti-device-floppy" /> Salvar</>}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Lançamento MANUAL de conta a receber (pedido 03/07: "subir contas a receber" além do Excel).
+// Reusa importarRecebiveis([item])  mesma semântica do import: sub-livro + razão + link.
+function NovaReceitaModal({ config, unidades = [], onClose, onSaved }: { config: FinConfig; unidades?: UnidadeOpt[]; onClose: () => void; onSaved: () => void }) {
+  const cats = config.categorias || []
+  const [unidade, setUnidade] = useState('')
+  const [categoria, setCategoria] = useState(cats[0] ?? 'Outros')
+  const [descricao, setDescricao] = useState('')
+  const [valor, setValor] = useState('')
+  const [vencimento, setVencimento] = useState('')
+  const [statusPg, setStatusPg] = useState<'aberto' | 'pago'>('aberto')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+
+  const salvar = async () => {
+    const v = Number(valor)
+    if (!Number.isFinite(v) || v <= 0) { setErr('Informe um valor maior que zero.'); return }
+    if (!vencimento) { setErr('Informe o vencimento.'); return }
+    setBusy(true); setErr('')
+    const r = await importarRecebiveis([{ unidade, categoria, descricao, valor: v, vencimento, status: statusPg }])
+    setBusy(false)
+    if (!r.ok) { setErr(r.error || 'Erro ao lançar.'); return }
+    onSaved()
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'grid', placeItems: 'center', zIndex: 50 }}>
+      <div onClick={(e) => e.stopPropagation()} className="rel-card" style={{ width: 'min(480px,92vw)', padding: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <b style={{ fontSize: 15 }}>Nova conta a receber</b>
+          <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={onClose} />
+        </div>
+        {err && <div style={{ fontSize: 12.5, color: 'var(--red)', marginBottom: 8 }}>{err}</div>}
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Unidade / cliente</label>
+          <select value={unidade} onChange={(e) => setUnidade(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
+            <option value=""> sem unidade (avulso) </option>
+            {unidades.map((u) => <option key={u.id} value={u.nome}>{u.nome}</option>)}
+          </select>
+        </div>
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Categoria <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 11 }}>(cadastre em Configurações → Categorias de recebíveis)</span></label>
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
+            {cats.length === 0 && <option value="Outros">Outros</option>}
+            {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição / competência</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Taxa de franquia · Julho/2026" /></div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <div className="mf" style={{ flex: 1 }}><label>Valor (R$)</label><input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+          <div className="mf" style={{ flex: 1 }}><label>Vencimento</label><input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} /></div>
+          <div className="mf" style={{ flex: 1 }}><label>Status</label>
+            <select value={statusPg} onChange={(e) => setStatusPg(e.target.value as 'aberto' | 'pago')}><option value="aberto">Em aberto</option><option value="pago">Já recebido</option></select>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? '…' : <><i className="ti ti-device-floppy" /> Lançar</>}</button>
         </div>
       </div>
     </div>
@@ -1125,11 +1189,14 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   }
   const [pcNome, setPcNome] = useState('')
   const [pcNatureza, setPcNatureza] = useState('despesa')
+  const [pcGrupo, setPcGrupo] = useState('')
   const [pcBusy, setPcBusy] = useState(false)
   const [pcMsg, setPcMsg] = useState('')
+  // Grupos existentes no plano (p/ personalizar onde a nova categoria entra no DRE).
+  const pcGrupos = [...new Set(planoContas.map((c) => c.grupo).filter(Boolean))] as string[]
   const addConta = async () => {
     setPcBusy(true); setPcMsg('')
-    const r = await criarContaPlano(pcNome, pcNatureza)
+    const r = await criarContaPlano(pcNome, pcNatureza, pcGrupo || undefined)
     setPcBusy(false)
     if (!r.ok) { setPcMsg(r.error || 'Erro ao criar categoria.'); return }
     setPcNome(''); setPcMsg('Categoria criada.'); router.refresh()
@@ -1140,6 +1207,14 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
     setPcBusy(false)
     if (!r.ok) { setPcMsg(r.error || 'Erro.'); return }
     router.refresh()
+  }
+  const excluirConta = async (c: ContaPlano) => {
+    if (!window.confirm(`Excluir a categoria "${c.nome}"? Essa ação não pode ser desfeita.`)) return
+    setPcBusy(true); setPcMsg('')
+    const r = await removerContaPlano(c.id)
+    setPcBusy(false)
+    if (!r.ok) { setPcMsg(r.error || 'Erro ao excluir.'); return }
+    setPcMsg(`Categoria "${c.nome}" excluída.`); router.refresh()
   }
   const [royalty, setRoyalty] = useState(config.royalty_pct)
   const [fundo, setFundo] = useState(config.fundo_pct)
@@ -1156,6 +1231,7 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   const [regua, setRegua] = useState<ReguaPasso[]>(config.regua)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [msgOk, setMsgOk] = useState(true)
 
   const addCat = () => { const v = novaCat.trim(); if (v && !cats.includes(v)) { setCats([...cats, v]); setNovaCat('') } }
   const rmCat = (c: string) => { if (c !== 'Royalties') setCats(cats.filter((x) => x !== c)) }
@@ -1164,7 +1240,10 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
     setBusy(true); setMsg('')
     const r = await salvarConfig({ royalty_pct: royalty, fundo_pct: fundo, venc_dia: vencDia, imposto_pct: imposto, imposto_regime: impostoRegime, comissao_pct: comissao, comissao_base: comissaoBase, taxa_cartao_pct: taxaCartao, royalty_desc_ativo: descAtivo, royalty_desc_teto: descTeto, royalty_desc_pct: descPct, banco, adquirentes: adq, categorias: cats, regua })
     setBusy(false)
-    setMsg(r.ok ? 'Configurações salvas.' : (r.error || 'Erro ao salvar.'))
+    // Toast FIXO (feedback 03/07: a msg no topo da aba ficava fora da tela ao salvar lá embaixo).
+    setMsgOk(r.ok)
+    setMsg(r.ok ? 'Configurações salvas com sucesso!' : (r.error || 'Erro ao salvar.'))
+    window.setTimeout(() => setMsg(''), 6000)
     if (r.ok) router.refresh()
   }
 
@@ -1178,7 +1257,14 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   return (
     <div>
       <div className="rel-legend">Parâmetros do financeiro da franqueadora. As credenciais do banco são usadas <b>apenas no servidor seguro</b> em produção  aqui ficam mascaradas.</div>
-      {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 10 }}>{msg}</div>}
+      {/* Toast fixo: visível de qualquer ponto da página (o Salvar fica no rodapé). */}
+      {msg && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 200, display: 'flex', alignItems: 'center', gap: 10, background: msgOk ? '#0f6b3a' : 'var(--red)', color: '#fff', padding: '12px 18px', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.25)', fontSize: 13.5, fontWeight: 600, maxWidth: 'min(420px, 90vw)' }}>
+          <i className={`ti ${msgOk ? 'ti-circle-check' : 'ti-alert-circle'}`} style={{ fontSize: 18 }} />
+          <span>{msg}</span>
+          <i className="ti ti-x" style={{ cursor: 'pointer', opacity: 0.8 }} onClick={() => setMsg('')} />
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="rel-card">
           <div className="set-sec" style={{ marginTop: 0 }}>Royalties &amp; cobrança</div>
@@ -1277,11 +1363,15 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
             <option value="custo">Custo</option>
             <option value="receita">Receita</option>
           </select>
+          <select value={pcGrupo} onChange={(e) => setPcGrupo(e.target.value)} title="Grupo do DRE onde a categoria entra" style={{ ...inputStyle, padding: '8px 11px', background: '#fff' }}>
+            <option value="">Grupo automático (pela natureza)</option>
+            {pcGrupos.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
           <button className="btn btn-ghost" disabled={pcBusy || !pcNome.trim()} onClick={addConta}><i className="ti ti-plus" /> Adicionar</button>
         </div>
         <div className="cli-scroll" style={{ maxHeight: 260 }}>
           <table className="cli-table">
-            <thead><tr><th>Código</th><th>Categoria</th><th>Natureza</th><th>Grupo</th><th style={{ textAlign: 'center' }}>Ativa</th></tr></thead>
+            <thead><tr><th>Código</th><th>Categoria</th><th>Natureza</th><th>Grupo</th><th style={{ textAlign: 'center' }}>Ativa</th><th /></tr></thead>
             <tbody>
               {planoContas.map((c) => (
                 <tr key={c.id} style={c.ativo ? undefined : { opacity: 0.55 }}>
@@ -1290,8 +1380,13 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
                   <td style={{ fontSize: 12 }}>{c.natureza}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{c.grupo || ''}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <input type="checkbox" checked={c.ativo} disabled={pcBusy || (!!c.codigo && c.ativo)} onChange={() => toggleConta(c)}
-                      title={c.codigo ? 'Categoria do sistema  sempre ativa' : (c.ativo ? 'Desativar' : 'Reativar')} style={{ cursor: c.codigo ? 'not-allowed' : 'pointer' }} />
+                    <input type="checkbox" checked={c.ativo} disabled={pcBusy} onChange={() => toggleConta(c)}
+                      title={c.ativo ? 'Desativar (some dos seletores; lançamentos ficam)' : 'Reativar'} style={{ cursor: 'pointer' }} />
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {c.codigo
+                      ? <i className="ti ti-lock" title="Categoria do sistema  não pode ser excluída (desative se não usar)" style={{ color: 'var(--text-3)', fontSize: 14 }} />
+                      : <button className="btn" disabled={pcBusy} style={{ padding: '3px 8px', color: 'var(--red)' }} onClick={() => excluirConta(c)} title="Excluir categoria"><i className="ti ti-trash" /></button>}
                   </td>
                 </tr>
               ))}
@@ -1331,6 +1426,10 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
               ))}
             </tbody>
           </table>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <button className="btn btn-ghost" onClick={addAdq}><i className="ti ti-plus" /> Adicionar adquirente</button>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Preencha nome e taxas e clique em <b>Salvar configurações</b> (no fim da página) para gravar.</span>
         </div>
       </div>
 

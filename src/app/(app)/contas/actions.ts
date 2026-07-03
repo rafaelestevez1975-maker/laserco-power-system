@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+import { FRANQUEADORA_EMPRESA_ID } from '@/lib/sac-ingest'
 
 export type ActionResult = { ok: boolean; error?: string }
 
@@ -46,7 +47,8 @@ export async function novoLancamento(input: NovoLancamentoInput): Promise<Action
   if (!input.categoria_id) return { ok: false, error: 'Selecione a categoria.' }
   if (!input.data_vencimento) return { ok: false, error: 'Informe a data de vencimento.' }
   if (isNaN(new Date(input.data_vencimento).getTime())) return { ok: false, error: 'Data de vencimento inválida.' }
-  if (!input.unidade_id) return { ok: false, error: 'Selecione a unidade ativa no topo antes de lançar.' }
+  // unidade_id null = lançamento da FRANQUEADORA (rede)  o seletor do topo foi removido
+  // (03/07) e a unidade agora é escolhida no próprio formulário.
 
   // A categoria precisa existir, aceitar lançamentos e bater com o tipo da aba.
   const { data: catRaw } = await op.sb
@@ -60,9 +62,13 @@ export async function novoLancamento(input: NovoLancamentoInput): Promise<Action
   if (cat.aceita_lancamentos === false) return { ok: false, error: 'Esta categoria é um grupo e não aceita lançamentos. Escolha uma subcategoria.' }
   if (cat.tipo !== input.tipo) return { ok: false, error: 'A categoria não corresponde ao tipo (pagar/receber).' }
 
-  // empresa_id vem da unidade ativa (consistente com o padrão do CRM).
-  const { data: uni } = await op.sb.from('unidades').select('empresa_id').eq('id', input.unidade_id).single()
-  const empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id ?? null
+  // empresa_id vem da unidade escolhida; sem unidade = lançamento da franqueadora (rede).
+  let empresa_id: string | null = FRANQUEADORA_EMPRESA_ID
+  if (input.unidade_id) {
+    const { data: uni } = await op.sb.from('unidades').select('empresa_id').eq('id', input.unidade_id).single()
+    empresa_id = (uni as { empresa_id?: string } | null)?.empresa_id ?? null
+    if (!empresa_id) return { ok: false, error: 'Unidade não encontrada.' }
+  }
 
   const status = input.status === 'pago' ? 'pago' : 'pendente'
   const hoje = new Date().toISOString().slice(0, 10)

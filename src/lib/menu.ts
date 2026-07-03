@@ -5,7 +5,7 @@
  * Convenção do badge NOVO (definida com o cliente p/ homologação): NOVO = tela
  * FUNCIONAL, pronta para testar. Itens sem NOVO ainda são clone visual (sem dados/ações).
  */
-export type Badge = 'NOVO' | 'ADMIN' | 'GPS' | 'BASE'
+export type Badge = 'NOVO' | 'ADMIN' | 'GPS' | 'BASE' | 'EM BREVE'
 
 export type Leaf = {
   label: string
@@ -96,7 +96,7 @@ export const MENU: Section[] = [
           { label: 'Financeiro / Contábil', href: '/relatorios/financeiro', icon: 'ti-report-money', perm: 'financeiro.' },
           { label: 'Mensagens WhatsApp API', href: '/relatorios/whatsapp', icon: 'ti-brand-whatsapp', perm: 'comercial.' },
           { label: 'Metas', href: '/relatorios/metas', icon: 'ti-target', perm: 'comercial.' },
-          { label: 'Notas Fiscais', href: '/relatorios/notas-fiscais', icon: 'ti-file-invoice', perm: 'financeiro.' },
+          // 'Notas Fiscais' (relatório) removido do menu a pedido (03/07)  fica só a emissão em /notas.
           { label: 'Ordens de serviço', href: '/relatorios/ordens-servico', icon: 'ti-clipboard-list', perm: 'comercial.' },
           { label: 'Pacotes', href: '/relatorios/pacotes', icon: 'ti-package', perm: 'comercial.' },
           { label: 'Pagamentos', href: '/relatorios/pagamentos', icon: 'ti-percentage', perm: 'financeiro.' },
@@ -139,7 +139,7 @@ export const MENU: Section[] = [
       { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist', perm: 'operacoes.' },
       { label: 'Universidade Corporativa', href: '/universidade', icon: 'ti-school', perm: 'treinamento.curso' },
       { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud', perm: 'operacoes.' },
-      { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice', perm: 'financeiro.' },
+      { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice', badge: 'EM BREVE', perm: 'financeiro.' },
     ],
   },
   {

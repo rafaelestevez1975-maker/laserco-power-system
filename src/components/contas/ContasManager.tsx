@@ -153,7 +153,7 @@ export function ContasManager(props: Props) {
       <div className="crm-note" style={{ marginBottom: 14 }}>
         <i className="ti ti-building-store" /> Contas a pagar e a receber da unidade{' '}
         <b>{activeUnitName}</b>
-        {!activeUnitId && ' (todas as unidades  selecione uma no topo para lançar)'}.
+        {!activeUnitId && ' (todas as unidades  a unidade é escolhida no próprio lançamento)'}.
       </div>
 
       {/* Abas Pagar | Receber */}
@@ -194,7 +194,7 @@ export function ContasManager(props: Props) {
       {/* Ações + Filtros (form GET → server re-renderiza) */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
         {podeEscrever ? (
-          <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }} disabled={!activeUnitId} title={!activeUnitId ? 'Selecione uma unidade no topo' : undefined}>
+          <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo lançamento
           </button>
         ) : null}
@@ -364,6 +364,7 @@ export function ContasManager(props: Props) {
           tipo={tipo}
           catsFolha={catsFolha}
           activeUnitId={activeUnitId}
+          unidades={unidades}
           onClose={() => setNovoOpen(false)}
           onSaved={(m) => { setNovoOpen(false); setMsg(m); router.refresh() }}
         />
@@ -394,11 +395,12 @@ function LancamentoForm(props: {
   tipo: 'receita' | 'despesa'
   catsFolha: Categoria[]
   activeUnitId: string | null
+  unidades?: { id: string; nome: string }[]
   row?: LancRow
   onClose: () => void
   onSaved: (msg: string) => void
 }) {
-  const { modo, aba, tipo, catsFolha, activeUnitId, row, onClose, onSaved } = props
+  const { modo, aba, tipo, catsFolha, activeUnitId, unidades = [], row, onClose, onSaved } = props
   const hoje = new Date().toISOString().slice(0, 10)
 
   const [f, setF] = useState({
@@ -410,6 +412,9 @@ function LancamentoForm(props: {
     fornecedor: row?.fornecedor ?? '',
     observacao: row?.observacao ?? '',
     jaPago: false,
+    // Sem unidade fixa no perfil (o seletor do topo foi removido): escolhe no form.
+    // '' = Franqueadora (rede, unidade_id null).
+    unidade_id: activeUnitId ?? '',
   })
   const set = (k: keyof typeof f, v: string | boolean) => setF((p) => ({ ...p, [k]: v }))
   const [saving, setSaving] = useState(false)
@@ -443,7 +448,7 @@ function LancamentoForm(props: {
         forma_pagamento: f.forma_pagamento || null,
         fornecedor: f.fornecedor || null,
         observacao: f.observacao || null,
-        unidade_id: activeUnitId,
+        unidade_id: f.unidade_id || null,
       }
       r = await novoLancamento(input)
     } else {
@@ -472,6 +477,15 @@ function LancamentoForm(props: {
           <button type="button" className="btn" onClick={onClose}><i className="ti ti-x" /></button>
         </div>
         <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {modo === 'novo' && !activeUnitId && (
+            <div className="mf full" style={{ gridColumn: '1 / -1' }}>
+              <label>Unidade <span className="req">*</span></label>
+              <select value={f.unidade_id} onChange={(e) => set('unidade_id', e.target.value)}>
+                <option value="">Franqueadora (rede)</option>
+                {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
+              </select>
+            </div>
+          )}
           <div className="mf full" style={{ gridColumn: '1 / -1' }}>
             <label>Descrição <span className="req">*</span></label>
             <input value={f.descricao} onChange={(e) => set('descricao', e.target.value)} placeholder={aba === 'receber' ? 'Ex.: Mensalidade cliente X' : 'Ex.: Aluguel maio'} autoFocus />

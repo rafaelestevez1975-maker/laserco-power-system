@@ -61,10 +61,12 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
 
   const hojeISO = new Date().toISOString().slice(0, 10)
 
-  // ── Escopo do TOPO (feedback 03/07: o filtro de unidade não refletia no Financeiro) ──
-  // Unidade ativa selecionada → TODAS as visões (listas, DRE, Fluxo) escopam por ela.
+  // ── Escopo por unidade (só quando o PERFIL tem unidade fixa  franqueado) ──
+  // BUG 03/07: activeUnitName NUNCA é null (sem unidade = 'Todas as unidades'), e o
+  // filtro `.eq('escopo', unidadeAtivaNome)` zerava Contas a Pagar/Conciliação para
+  // TODO usuário sem unidade fixa. O nome só vale como filtro se houver ID ativo.
   const unidadeAtivaId = ctx?.activeUnitId ?? null
-  const unidadeAtivaNome = ctx?.activeUnitName ?? null
+  const unidadeAtivaNome = unidadeAtivaId ? (ctx?.activeUnitName ?? null) : null
 
   // ── Feature-detect: a migration cria fin_recebiveis. Se a tabela não existe,
   //    a query falha → banner de migration + tela em modo vazio. ──
