@@ -171,9 +171,17 @@ returns table(salon integer, entidade text, total numeric) language sql stable a
   group by bemp_salon_id, entity
 $$;
 
--- Última competência apurada no razão (default do seletor do DRE)
+-- Última competência apurada no razão (default do seletor do DRE).
+-- Ignora competências FUTURAS: um lançamento manual com vencimento distante (ex.: despesa
+-- teste venc. 01/01/2027) criava competencia futura e "sequestrava" o DRE default para um
+-- mês vazio (bug 03/07: "DRE está vazio" logo após apurar junho). Fallback = max geral.
 create or replace function public.fin_ultima_competencia()
-returns date language sql stable as $$ select max(competencia) from fin_lancamento $$;
+returns date language sql stable as $$
+  select coalesce(
+    max(competencia) filter (where competencia <= date_trunc('month', now())::date),
+    max(competencia)
+  ) from fin_lancamento
+$$;
 
 -- DRE por competência, escopo (consolidado | franqueadora | unidades) e opcionalmente UMA loja.
 -- Suspenso PERMANECE (competência/regime de exercício); cancelado sai.
