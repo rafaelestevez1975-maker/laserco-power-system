@@ -189,8 +189,8 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} unidadeAtiva={unidadeAtiva} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
-      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} />}
-      {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
+      {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} config={config} />}
+      {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} planoContas={planoContas} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
       {tab === 'royalties' && <RoyaltiesTab recebiveis={recebiveis} config={config} hojeISO={hojeISO} />}
       {tab === 'cobranca' && <CobrancaTab recebiveis={recebiveis} config={config} />}
@@ -337,7 +337,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
 // =============================================================================
 // CONTAS A RECEBER (finReceberHTML L5202 + finRecAcoes L5222)
 // =============================================================================
-function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRoyalties: () => void }) {
+function ReceberTab({ recebiveis, goRoyalties, config }: { recebiveis: Recebivel[]; goRoyalties: () => void; config: FinConfig }) {
   const router = useRouter()
   const [cat, setCat] = useState('Todas')
   const [status, setStatus] = useState('Todos')
@@ -387,7 +387,8 @@ function ReceberTab({ recebiveis, goRoyalties }: { recebiveis: Recebivel[]; goRo
     setMsg(okMsg); router.refresh()
   }
 
-  const cats = ['Todas', ...FIN_CATS_REC]
+  // Categorias = as cadastradas em Configurações (fin_config.categorias) ∪ as já usadas nos dados.
+  const cats = ['Todas', ...new Set([...(config.categorias || []), ...recebiveis.map((r) => r.categoria).filter(Boolean)])]
   const sts: [string, string][] = [['Todos', 'Todos'], ['aberto', 'Em aberto'], ['atrasado', 'Atrasado'], ['pago', 'Pago'], ['suspenso', 'Suspenso']]
   const list = recebiveis.filter((r) =>
     (cat === 'Todas' || r.categoria === cat) && (status === 'Todos' || r.status === status) &&
@@ -470,7 +471,7 @@ function VerBoletoLink({ r }: { r: Recebivel }) {
 // =============================================================================
 // CONTAS A PAGAR (finPagarHTML L5233 + finSetPrio + finSuspender)
 // =============================================================================
-function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: FinConfig }) {
+function PagarTab({ contasPagar, config, planoContas = [] }: { contasPagar: ContaPagar[]; config: FinConfig; planoContas?: ContaPlano[] }) {
   const router = useRouter()
   const [escopo, setEscopo] = useState('Todos')
   const [prio, setPrio] = useState('Todas')
@@ -524,10 +525,17 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
 
   const escs = ['Todos', 'Escritório', 'Rede', 'Lojas']
   const prChips: [string, string][] = [['Todas', 'Todas'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']]
+  const [catPag, setCatPag] = useState('Todas')
+  // Categorias = plano de contas (despesa/custo) ∪ categorias já usadas nas contas (dados importados)
+  const catsPagar = ['Todas', ...new Set([
+    ...planoContas.filter((c) => c.ativo && (c.natureza === 'despesa' || c.natureza === 'custo')).map((c) => c.nome),
+    ...contasPagar.map((p) => p.categoria).filter(Boolean),
+  ])]
   const prRank: Record<string, number> = { alta: 0, media: 1, baixa: 2 }
   let list = contasPagar.filter((p) =>
     (escopo === 'Todos' || (escopo === 'Lojas' ? (p.escopo !== 'Escritório' && p.escopo !== 'Rede') : p.escopo === escopo)) &&
     (prio === 'Todas' || p.prioridade === prio) &&
+    (catPag === 'Todas' || p.categoria === catPag) &&
     (!filtros.pessoa || p.escopo === filtros.pessoa) &&
     (!filtros.desc || `${p.descricao || ''} ${p.categoria}`.toLowerCase().includes(filtros.desc.toLowerCase())) &&
     (!filtros.d1 || (p.vencimento || '') >= filtros.d1) && (!filtros.d2 || (p.vencimento || '') <= filtros.d2))
@@ -545,7 +553,7 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
       <div className="rel-legend">Despesas da rede  vinculadas a cada unidade ou em conjunto (escritório/rede). Cada pagamento tem um <b>nível de prioridade</b> (Alta, Média, Baixa): se o caixa apertar, pague primeiro os de <b>prioridade alta</b>.</div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        {[['Em aberto · Prioridade ALTA', pAlta, 'var(--red)'], ['Prioridade Média', pMedia, '#B26A00'], ['Prioridade Baixa', pBaixa, '#1565C0']].map(([lbl, v, cor]) => (
+        {[['Prioridade ALTA', pAlta, 'var(--red)'], ['Prioridade Média', pMedia, '#B26A00'], ['Prioridade Baixa', pBaixa, '#1565C0']].map(([lbl, v, cor]) => (
           <div key={lbl as string} className="rel-card" style={{ padding: '10px 14px', flex: 1, minWidth: 140, borderLeft: `3px solid ${cor as string}` }}>
             <div style={{ fontSize: 11.5, color: 'var(--text-2)' }}>{lbl as string}</div>
             <div style={{ fontSize: 16, fontWeight: 800, color: cor as string }}>{moedaBR(v as number)}</div>
@@ -556,9 +564,13 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
         <span className="flabel">Escopo</span>
         {escs.map((e) => <div key={e} className={`chip ${e === escopo ? 'active' : ''}`} onClick={() => setEscopo(e)} style={{ cursor: 'pointer' }}>{e}</div>)}
       </div>
-      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
         <span className="flabel">Prioridade</span>
         {prChips.map((pr) => <div key={pr[0]} className={`chip ${pr[0] === prio ? 'active' : ''}`} onClick={() => setPrio(pr[0])} style={{ cursor: 'pointer' }}>{pr[1]}</div>)}
+      </div>
+      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span className="flabel">Categoria</span>
+        {catsPagar.slice(0, 14).map((c) => <div key={c} className={`chip ${c === catPag ? 'active' : ''}`} onClick={() => setCatPag(c)} style={{ cursor: 'pointer' }}>{c}</div>)}
       </div>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total: <b>{moedaBR(tot)}</b> · Em aberto: <b style={{ color: 'var(--red)' }}>{moedaBR(aberto)}</b>{susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
@@ -571,7 +583,7 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
         </div>
       </div>
       {filtroOpen && <FiltroFinModal titulo="Editar filtros" pessoaLabel="Fornecedor / Escopo" pessoas={[...new Set(contasPagar.map((p) => p.escopo).filter(Boolean))].sort()} filtros={filtros} onApply={(f) => { setFiltros(f); setFiltroOpen(false) }} onClose={() => setFiltroOpen(false)} />}
-      {showNova && <NovaDespesaModal config={config} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
+      {showNova && <NovaDespesaModal config={config} planoContas={planoContas} onClose={() => setShowNova(false)} onSaved={() => { setShowNova(false); router.refresh() }} />}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead><tr><th>Prioridade</th><th>Categoria</th><th>Descrição</th><th>Escopo</th><th className="num-r">Valor</th><th>Venc.</th><th>Status</th><th>Definir prio.</th><th>Ações</th></tr></thead>
@@ -610,8 +622,10 @@ function PagarTab({ contasPagar, config }: { contasPagar: ContaPagar[]; config: 
   )
 }
 
-function NovaDespesaModal({ config, onClose, onSaved }: { config: FinConfig; onClose: () => void; onSaved: () => void }) {
-  const [categoria, setCategoria] = useState('Fornecedores')
+function NovaDespesaModal({ config, planoContas = [], onClose, onSaved }: { config: FinConfig; planoContas?: ContaPlano[]; onClose: () => void; onSaved: () => void }) {
+  // Categorias de DESPESA vêm do PLANO DE CONTAS (Config → Plano de contas), não de lista solta.
+  const catsDespesa = planoContas.filter((c) => c.ativo && (c.natureza === 'despesa' || c.natureza === 'custo')).map((c) => c.nome)
+  const [categoria, setCategoria] = useState(catsDespesa[0] ?? '')
   const [descricao, setDescricao] = useState('')
   const [escopo, setEscopo] = useState('Escritório')
   const [valor, setValor] = useState('')
@@ -636,8 +650,11 @@ function NovaDespesaModal({ config, onClose, onSaved }: { config: FinConfig; onC
           <i className="ti ti-x" style={{ cursor: 'pointer' }} onClick={onClose} />
         </div>
         {err && <div style={{ fontSize: 12.5, color: 'var(--red)', marginBottom: 8 }}>{err}</div>}
-        <div className="mf full" style={{ marginBottom: 10 }}><label>Categoria</label><input list="fin-cat-pagar" value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-          <datalist id="fin-cat-pagar">{config.categorias.map((c) => <option key={c} value={c} />)}</datalist>
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Categoria <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 11 }}>(cadastre em Configurações → Plano de contas)</span></label>
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
+            {catsDespesa.length === 0 && <option value="">— cadastre uma categoria de despesa —</option>}
+            {catsDespesa.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
