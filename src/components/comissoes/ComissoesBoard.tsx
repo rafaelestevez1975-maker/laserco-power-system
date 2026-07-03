@@ -58,19 +58,16 @@ export function ComissoesBoard({
   const [colabFiltro, setColabFiltro] = useState<string>('')
 
   const meta = META_UNIDADE / divisor
-  const [vendido, setVendido] = useState<number>(Math.round(0.685 * (META_UNIDADE / 3)))
-  const [indiv, setIndiv] = useState<number>(Math.round(22000 / 3))
-  const [sessoes, setSessoes] = useState<number>(Math.round(180 / 3))
-  const [fatMes, setFatMes] = useState<number>(META_UNIDADE)
+  // Simulador nasce ZERADO (auditoria de mocks 02/07): valores fabricados nos sliders
+  // podiam ser lidos como ganho real. O usuário arrasta e vê o what-if.
+  const [vendido, setVendido] = useState<number>(0)
+  const [indiv, setIndiv] = useState<number>(0)
+  const [sessoes, setSessoes] = useState<number>(0)
+  const [fatMes, setFatMes] = useState<number>(0)
 
   // Ao trocar período, reescala os defaults dos sliders (espelha setPeriodo do legado).
   function aplicarPeriodo(div: number) {
-    setDivisor(div)
-    const m = META_UNIDADE / div
-    setVendido(Math.round(0.685 * m))
-    setIndiv(Math.round(22000 / div))
-    setSessoes(Math.round(180 / div))
-    if (fatMes === 0) setFatMes(META_UNIDADE)
+    setDivisor(div) // só reescala a META; os sliders do what-if permanecem onde o usuário deixou
   }
 
   function atualizarCat(i: number, mut: (c: ComCat) => void) {

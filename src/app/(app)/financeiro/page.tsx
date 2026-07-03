@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { temPapel } from '@/lib/rbac'
+import { indicesEconomicos } from '@/lib/indices-bcb'
 import { FinanceiroTabs } from '@/components/financeiro/FinanceiroTabs'
 import {
   FIN_CATS_REC, FIN_REGUA, FIN_ADQUIRENTES,
@@ -141,6 +142,9 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   const planoContas = (pcRaw ?? []) as { id: string; codigo: string | null; nome: string; natureza: string; grupo: string | null; ordem: number; ativo: boolean }[]
   const unidadesOpt = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
 
+  // Índices REAIS do Banco Central (API SGS, cache 6h) — aba Cálculos (fim do mock acum12m).
+  const indices = await indicesEconomicos()
+
   // Franquias com override de royalty (% e vencimento POR unidade — regra do CEO).
   const { data: ruRaw } = await sb.from('unidades')
     .select('id, nome, royalty_pct_override, venc_dia_override')
@@ -181,6 +185,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
         planoContas={planoContas}
         unidades={unidadesOpt}
         royaltiesUnidade={royaltiesUnidade}
+        indices={indices}
         tabInicial={tabInicial as 'fluxo'}
       />
     </div>

@@ -127,15 +127,8 @@ export function NotasView(props: Props) {
       </div>
 
       {/* ── Exemplo · preço por sessão ── */}
-      <div className="rel-card">
-        <div className="rel-card-h"><span><i className="ti ti-calculator flt" /> Exemplo · preço por sessão (NF e comissão)</span></div>
-        <div className="metas-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-          <div className="metric-box"><span>Pacote vendido</span><b>R$ 5.000</b></div>
-          <div className="metric-box"><span>Sessões adquiridas</span><b>10</b></div>
-          <div className="metric-box purple"><span>Preço/sessão (5.000 ÷ 10)</span><b>R$ 500</b></div>
-          <div className="metric-box gold"><span>A cada execução</span><b>NF R$ 500 + comissão</b></div>
-        </div>
-      </div>
+      {/* Regra ilustrada em TEXTO (não em cards de KPI — auditoria 02/07: parecia dado real). */}
+      <div className="rel-legend"><i className="ti ti-calculator" /> <b>Como funciona o preço por sessão:</b> num pacote hipotético de <b>R$ 5.000</b> com <b>10 sessões</b>, o preço por sessão é <b>R$ 500</b> (5.000 ÷ 10) — a cada execução emite-se <b>NF de R$ 500</b> e apura-se a comissão correspondente.</div>
 
       {/* ── Integração com prefeituras ── */}
       <div className="rel-card" style={{ padding: 0, overflow: 'hidden' }}>

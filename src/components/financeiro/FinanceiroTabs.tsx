@@ -127,7 +127,7 @@ function PrioPill({ pr }: { pr: string }) {
 
 export type UnidadeOpt = { id: string; nome: string }
 
-export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], royaltiesUnidade = [], tabInicial = 'fluxo' }: {
+export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, contasPagar, conciliacao, config, hojeISO, dre = [], dreCompetencia = null, fluxoSerie = [], fluxoResumo = null, fluxoComp = [], planoContas = [], unidades = [], royaltiesUnidade = [], indices = {}, tabInicial = 'fluxo' }: {
   migracaoOk: boolean
   truncado?: boolean
   recebiveis: Recebivel[]
@@ -143,6 +143,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
   planoContas?: ContaPlano[]
   unidades?: UnidadeOpt[]
   royaltiesUnidade?: RoyaltyUnidade[]
+  indices?: Record<string, { label: string; acum12m: number }>
   tabInicial?: TabKey
 }) {
   const [tab, setTab] = useState<TabKey>(tabInicial)
@@ -173,7 +174,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
 
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} />}
       {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} />}
-      {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} />}
+      {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => setTab('royalties')} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} />}
       {tab === 'conciliacao' && <ConciliacaoTab conciliacao={conciliacao} />}
@@ -443,7 +444,7 @@ function RecAcoes({ r, busy, run }: { r: Recebivel; busy: string | null; run: (i
 function VerBoletoLink({ r }: { r: Recebivel }) {
   return (
     <span className="os-link" onClick={() => alert(
-      `BOLETO BANCÁRIO (simulado)\n\nBeneficiário: Laser&Co Franqueadora Ltda\nPagador: ${r.unidade_nome || ''}\nReferência: ${r.categoria} · ${r.competencia || ''}\nValor: ${moedaBR(r.valor)}\nVencimento: ${dataBR(r.vencimento)}\n\nLinha digitável:\n${r.boleto}\n\nEnviado para: ${finFranqEmail(r.unidade_nome)}`,
+      `PRÉVIA DO BOLETO — emissão bancária em integração\n(dados reais do lançamento)\n\nBeneficiário: Laser&Co Franqueadora Ltda\nPagador: ${r.unidade_nome || ''}\nReferência: ${r.categoria} · ${r.competencia || ''}\nValor: ${moedaBR(r.valor)}\nVencimento: ${dataBR(r.vencimento)}\n\nLinha digitável:\n${r.boleto}\n\nEnviado para: ${finFranqEmail(r.unidade_nome)}`,
     )}><i className="ti ti-eye" /> Ver boleto</span>
   )
 }
@@ -981,15 +982,12 @@ function DreTab({ dre, competencia, unidades = [] }: { dre: DreLinha[]; competen
 // =============================================================================
 // CÁLCULOS (finCalcHTML L5534 — atualização de débito: correção+multa+juros)
 // =============================================================================
-const CALC_IDX: Record<string, { label: string; acum12m: number }> = {
-  'IGP-M': { label: 'IGP-M', acum12m: 3.89 },
-  'IPCA': { label: 'IPCA', acum12m: 4.27 },
-  'INPC': { label: 'INPC', acum12m: 4.11 },
-  'SELIC': { label: 'SELIC (a.a.)', acum12m: 10.5 },
-  'CDI': { label: 'CDI (a.a.)', acum12m: 10.4 },
-}
-function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: string }) {
-  const [indice, setIndice] = useState('IGP-M')
+// Índices REAIS (API SGS do Banco Central, buscados no servidor — src/lib/indices-bcb).
+// Sem valor embarcado: se a API não respondeu, a correção monetária fica DESATIVADA (honesto).
+type Indices = Record<string, { label: string; acum12m: number }>
+function CalcTab({ recebiveis, hojeISO, indices = {} }: { recebiveis: Recebivel[]; hojeISO: string; indices?: Indices }) {
+  const chaves = Object.keys(indices)
+  const [indice, setIndice] = useState(chaves[0] ?? '')
   const [multaPct, setMultaPct] = useState(10)
   const [jurosMesPct, setJurosMesPct] = useState(1)
   const [dataCalc, setDataCalc] = useState(hojeISO)
@@ -997,10 +995,10 @@ function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: st
 
   // Importa automaticamente recebíveis atrasados (calcOne L5517).
   const atr = recebiveis.filter((r) => r.status === 'atrasado')
-  const idx = CALC_IDX[indice]
+  const idx = indices[indice] ?? null
   const calcOne = (valor: number, dias: number) => {
     if (modo === 'nominal') return { correcao: 0, multa: 0, juros: 0, total: valor }
-    const correcao = valor * (idx.acum12m / 100) * (dias / 365)
+    const correcao = idx ? valor * (idx.acum12m / 100) * (dias / 365) : 0
     const multa = valor * (multaPct / 100)
     const juros = valor * (jurosMesPct / 100) * (dias / 30)
     return { correcao, multa, juros, total: valor + correcao + multa + juros }
@@ -1011,12 +1009,13 @@ function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: st
 
   return (
     <div>
-      <div className="rel-legend">Atualização de débitos em atraso: <b>correção monetária</b> por índice oficial + <b>multa {multaPct}%</b> + <b>juros de mora {jurosMesPct}% a.m.</b>. Índices embarcados (IGP-M/IPCA/INPC/SELIC/CDI); em produção atualizáveis pela API SGS do Banco Central.</div>
+      <div className="rel-legend">Atualização de débitos em atraso: <b>correção monetária</b> por índice oficial + <b>multa {multaPct}%</b> + <b>juros de mora {jurosMesPct}% a.m.</b>. Índices <b>reais do Banco Central</b> (API SGS · acumulado 12 meses), atualizados automaticamente.</div>
+      {chaves.length === 0 && <div className="rel-legend" style={{ background: '#FFF8E1', border: '1px solid var(--amber)' }}><i className="ti ti-alert-triangle" style={{ color: 'var(--amber)' }} /> Os índices do Banco Central estão indisponíveis no momento — a <b>correção monetária</b> foi desativada (multa e juros seguem valendo). Recarregue mais tarde.</div>}
       <div className="rel-card" style={{ marginBottom: 14 }}>
         <div className="set-sec" style={{ marginTop: 0 }}>Parâmetros</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <div className="mf" style={{ flex: 1, minWidth: 130 }}><label>Índice de correção</label>
-            <select value={indice} onChange={(e) => setIndice(e.target.value)}>{Object.keys(CALC_IDX).map((k) => <option key={k} value={k}>{CALC_IDX[k].label} · {finPct(CALC_IDX[k].acum12m)}</option>)}</select>
+            <select value={indice} onChange={(e) => setIndice(e.target.value)} disabled={chaves.length === 0}>{chaves.length === 0 && <option value="">indisponível</option>}{chaves.map((k) => <option key={k} value={k}>{indices[k].label} · {finPct(indices[k].acum12m)}</option>)}</select>
           </div>
           <div className="mf" style={{ width: 110 }}><label>Multa (%)</label><input type="number" step="0.5" value={multaPct} onChange={(e) => setMultaPct(parseFloat(e.target.value) || 0)} /></div>
           <div className="mf" style={{ width: 130 }}><label>Juros (% a.m.)</label><input type="number" step="0.1" value={jurosMesPct} onChange={(e) => setJurosMesPct(parseFloat(e.target.value) || 0)} /></div>
@@ -1025,7 +1024,7 @@ function CalcTab({ recebiveis, hojeISO }: { recebiveis: Recebivel[]; hojeISO: st
             <select value={modo} onChange={(e) => setModo(e.target.value as 'nominal' | 'acrescimos')}><option value="acrescimos">Com acréscimos</option><option value="nominal">Nominal</option></select>
           </div>
         </div>
-        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}><i className="ti ti-info-circle" /> A atualização de índices via API SGS do Banco Central (séries 189/433/188/432/4389) será conectada no servidor — por ora usa-se os valores embarcados acima.</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}><i className="ti ti-building-bank" /> Fonte dos índices: <b>Banco Central do Brasil</b> (API SGS — séries 189 IGP-M, 433 IPCA, 188 INPC, 432 SELIC, 4389 CDI), com cache de 6h no servidor.</div>
       </div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
