@@ -89,28 +89,33 @@ export function Sidebar({
   const pathname = usePathname()
   const soModulo = ehSoModulo(isAdmin, recursos)
 
+  // MÓDULO ÚNICO (SAC/Financeiro): menu achatado numa seção só — reúne TODOS os itens que o
+  // módulo pode ver (grupos abertos, sem guarda-chuva "ADMINISTRAÇÃO") + Minha conta no fim.
+  if (soModulo) {
+    const achatados: Leaf[] = []
+    for (const section of MENU) for (const it of section.items) {
+      if (isGroup(it)) {
+        if (!canSee(it, isAdmin, recursos, soModulo, sacNivel) && it.perm) continue
+        for (const c of it.children) if (canSee(c, isAdmin, recursos, soModulo, sacNivel) && c.href !== '/minha-conta') achatados.push(c)
+      } else if (canSee(it, isAdmin, recursos, soModulo, sacNivel) && (it as Leaf).href !== '/minha-conta') {
+        achatados.push(it as Leaf)
+      }
+    }
+    const minhaConta = acharLeaf('/minha-conta')
+    const itens = minhaConta ? [...achatados, minhaConta] : achatados
+    return (
+      <nav className="nav">
+        <SectionBlock title={soModulo === 'financeiro' ? 'Financeiro' : 'SAC'} items={itens} pathname={pathname}
+          isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
+      </nav>
+    )
+  }
+
   return (
     <nav className="nav">
       {MENU.map((section, si) => {
         const items = section.items.filter((i) => canSee(i, isAdmin, recursos, soModulo, sacNivel))
         if (items.length === 0) return null
-        // Usuário de MÓDULO ÚNICO (SAC ou Financeiro): achata o grupo numa SEÇÃO própria — sem o
-        // guarda-chuva "ADMINISTRAÇÃO" e sem submenu aninhado. "Minha conta" entra no fim; as
-        // outras seções não aparecem. Pedido do cliente (padrão criado pro SAC).
-        if (soModulo) {
-          const prefixo = soModulo === 'financeiro' ? '/financeiro' : '/sac'
-          const g = items.find((i) => isGroup(i) && i.children.some((c) => (c.href ?? '').startsWith(prefixo)))
-          if (g && isGroup(g)) {
-            const filhos = g.children.filter((c) => canSee(c, isAdmin, recursos, soModulo, sacNivel))
-            const minhaConta = acharLeaf('/minha-conta')
-            const itens = minhaConta ? [...filhos, minhaConta] : filhos
-            return (
-              <SectionBlock key={si} title={soModulo === 'financeiro' ? 'Financeiro' : 'SAC'} items={itens} pathname={pathname}
-                isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
-            )
-          }
-          return null // demais seções não aparecem no modo módulo único
-        }
         return (
           <SectionBlock key={si} title={section.title} items={items} pathname={pathname}
             isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />

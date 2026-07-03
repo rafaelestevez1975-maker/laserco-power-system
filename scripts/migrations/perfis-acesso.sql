@@ -45,10 +45,10 @@ with regras(slug, modulo, acoes) as (values
   -- Operações
   ('perfil_operacoes','operacoes','*'),('perfil_operacoes','comercial','ler'),
   -- Financeiro
-  -- Financeiro GERE o núcleo BEMP/Sults: financeiro (franqueadora+loja), operações (agenda/OS/
-  -- comunicados/chamados/checklist) e comercial (clientes/cadastros/relatórios/dashboards).
-  -- Sem RH/SAC/CRM/marketing — senão o menu vira 'super admin' (feedback 02/07).
-  ('perfil_financeiro','financeiro','*'),('perfil_financeiro','operacoes','*'),('perfil_financeiro','comercial','*'),
+  -- Financeiro = MÓDULO ÚNICO (menu achatado só-dinheiro, padrão SAC): Financeiro Franqueadora
+  -- completo + contas da loja + categorias/formas/comissões + relatórios e dashboard financeiros.
+  -- (Feedback 02/07: multi-módulo fazia o menu parecer super admin.)
+  ('perfil_financeiro','financeiro','*'),
   -- Marketing
   ('perfil_marketing','marketing','*'),('perfil_marketing','crm','ler'),
   -- RH
