@@ -224,9 +224,13 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
   const [resumo, setResumo] = useState<FluxoResumo>(resumo0 ?? FLUXO_ZERO)
   const [comp, setComp] = useState<FluxoComp[]>(comp0)
   const [busy, setBusy] = useState(false)
+  const reqRef = useRef(0) // guarda de corrida: só a ÚLTIMA troca de escopo aplica o resultado
   async function trocarEscopo(novas: string[]) {
+    const req = ++reqRef.current
     setPartes(novas); setBusy(true)
-    const r = await fluxoDoRazao(novas.join(','), unidadeAtiva?.id ?? null); setBusy(false)
+    const r = await fluxoDoRazao(novas.join(','), unidadeAtiva?.id ?? null)
+    if (req !== reqRef.current) return // chegou fora de ordem  descarta
+    setBusy(false)
     if (r.ok) { setSerie(r.serie ?? []); setResumo(r.resumo ?? FLUXO_ZERO); setComp(r.composicao ?? []) }
   }
   const escopoLabel = rotuloEscopo(partes)
@@ -1111,25 +1115,30 @@ function montarDre(linhas: (DreLinha & { mes?: number })[], nMeses: number): { s
   secoes.push({ tipo: 'sub', label: '(+) Receita bruta', chave: 'rb', totais: receitaMes, sinal: 1 })
   for (const [conta, e] of porConta(receitas)) secoes.push({ tipo: 'linha', label: conta, chave: `r:${conta}`, totais: e.tot, sinal: 1 })
 
-  // grupos de custo/despesa na ordem do plano; 'Custos' vem primeiro e fecha o Lucro Bruto
+  // grupos de custo/despesa na ordem do plano; o BLOCO DE CUSTOS fecha o Lucro Bruto.
+  // Custo = grupo 'Custos' OU grupo cujas linhas são todas natureza 'custo' (review 04/07:
+  // categoria criada em Config com natureza custo e grupo livre também deduz no Lucro Bruto).
   const grupos = new Map<string, { ordem: number; linhas: (DreLinha & { mes?: number })[] }>()
   for (const l of naoRec) {
     const g = grupos.get(l.grupo || 'Outros') ?? { ordem: l.ordem, linhas: [] }
     g.linhas.push(l); g.ordem = Math.min(g.ordem, l.ordem); grupos.set(l.grupo || 'Outros', g)
   }
   const ordenados = [...grupos.entries()].sort((a, b) => a[1].ordem - b[1].ordem)
-  const custosGrupo = ordenados.find(([g]) => g === 'Custos')
-  const custosMes = zeros(); custosGrupo?.[1].linhas.forEach((l) => somaEm(custosMes, l))
-  if (custosGrupo) {
-    secoes.push({ tipo: 'sub', label: '(-) Custos e deduções', chave: 'g:Custos', totais: custosMes, sinal: -1 })
-    for (const [conta, e] of porConta(custosGrupo[1].linhas)) secoes.push({ tipo: 'linha', label: conta, chave: `c:${conta}`, totais: e.tot, sinal: -1 })
+  const ehCusto = ([g, info]: (typeof ordenados)[number]) =>
+    g.trim().toLowerCase() === 'custos' || info.linhas.every((l) => l.natureza === 'custo')
+  const custosMes = zeros()
+  for (const ent of ordenados.filter(ehCusto)) {
+    const [g, info] = ent
+    const tot = zeros(); info.linhas.forEach((l) => { somaEm(tot, l); somaEm(custosMes, l) })
+    secoes.push({ tipo: 'sub', label: `(-) ${g.trim().toLowerCase() === 'custos' ? 'Custos e deduções' : g}`, chave: `g:${g}`, totais: tot, sinal: -1 })
+    for (const [conta, e] of porConta(info.linhas)) secoes.push({ tipo: 'linha', label: conta, chave: `c:${g}:${conta}`, totais: e.tot, sinal: -1 })
   }
   const lucroBruto = receitaMes.map((v, i) => v - custosMes[i])
   secoes.push({ tipo: 'marco', label: '(=) Lucro bruto', chave: 'lb', totais: lucroBruto, sinal: 1 })
 
   const resultado = [...lucroBruto]
-  for (const [g, info] of ordenados) {
-    if (g === 'Custos') continue
+  for (const ent of ordenados.filter((e) => !ehCusto(e))) {
+    const [g, info] = ent
     const tot = zeros(); info.linhas.forEach((l) => somaEm(tot, l))
     tot.forEach((v, i) => { resultado[i] -= v })
     secoes.push({ tipo: 'sub', label: `(-) ${g}`, chave: `g:${g}`, totais: tot, sinal: -1 })
@@ -1149,17 +1158,21 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
   const [linhasAno, setLinhasAno] = useState<(DreLinha & { mes: number })[]>([])
   const [busy, setBusy] = useState(false)
 
+  const reqRef = useRef(0) // guarda de corrida: só o ÚLTIMO recarregar aplica o resultado
   const escopoDe = (vPartes: string[], vUnidade: string) => (unidadeAtiva || vUnidade ? 'unidades' : vPartes.join(','))
   async function recarregar(vComp: string, vPartes: string[], vUnidade: string, vVisao: 'mensal' | 'anual', vAno: number) {
+    const req = ++reqRef.current
     setBusy(true)
     const uni = unidadeAtiva ? unidadeAtiva.id : (vUnidade || null)
     if (vVisao === 'anual') {
       const r = await dreAnual(vAno, escopoDe(vPartes, vUnidade), uni)
+      if (req !== reqRef.current) return
       if (r.ok) setLinhasAno((r.linhas as (DreLinha & { mes: number })[]) ?? [])
     } else {
       const [a, m] = vComp.split('-').map(Number)
       if (!a || !m) { setLinhas([]); setBusy(false); return }
       const r = await dreDaCompetencia(a, m, escopoDe(vPartes, vUnidade), uni)
+      if (req !== reqRef.current) return
       if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
     }
     setBusy(false)

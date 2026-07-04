@@ -340,14 +340,14 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
   let lanc: { inseridos: number }
   try { lanc = await repostLancamento('royalty', compISO, eventos) }
   catch (e) { return { ok: false, error: msgErro((e as Error).message, 'lançar os royalties no razão') } }
-  // Sub-livro "A Receber": grava os recebíveis JÁ LIGADOS ao lançamento do razão (lancamento_id),
-  // para a baixa conciliar o caixa. Casa por (unidade, conta de receita) na competência.
+  // Sub-livro "A Receber": recebíveis LIGADOS ao lançamento do razão (lancamento_id), para a
+  // baixa conciliar o caixa. Casa por (unidade, conta de receita) na competência.
+  const { data: lancs } = await op.sb.from('fin_lancamento').select('id, origem_ref, plano_conta_id')
+    .eq('origem', 'royalty').eq('natureza', 'receita').eq('competencia', compISO)
+  const idPorChave = new Map<string, string>()
+  for (const l of (lancs ?? []) as { id: string; origem_ref: string | null; plano_conta_id: string | null }[]) idPorChave.set(`${l.origem_ref}:${l.plano_conta_id}`, l.id)
+  const contaRoy = mapa.planoPorCodigo.get('3.1.05') ?? null, contaFun = mapa.planoPorCodigo.get('3.1.06') ?? null
   if (rows.length > 0) {
-    const { data: lancs } = await op.sb.from('fin_lancamento').select('id, origem_ref, plano_conta_id')
-      .eq('origem', 'royalty').eq('natureza', 'receita').eq('competencia', compISO)
-    const idPorChave = new Map<string, string>()
-    for (const l of (lancs ?? []) as { id: string; origem_ref: string | null; plano_conta_id: string | null }[]) idPorChave.set(`${l.origem_ref}:${l.plano_conta_id}`, l.id)
-    const contaRoy = mapa.planoPorCodigo.get('3.1.05') ?? null, contaFun = mapa.planoPorCodigo.get('3.1.06') ?? null
     for (const row of rows) {
       const conta = row.categoria === 'Royalties' ? contaRoy : contaFun
       row.lancamento_id = idPorChave.get(`${row.unidade_id}:${conta}`) ?? null
@@ -355,6 +355,20 @@ export async function gerarRoyaltiesDoFaturamento(ano: number, mes: number): Pro
     const { error: eIns } = await op.sb.from('fin_recebiveis').insert(rows)
     if (eIns) return { ok: false, error: msgErro(eIns.message, 'gerar os royalties') }
   }
+  // REAPURAÇÃO (review 04/07): o repost APAGA e regrava o razão com IDs novos  os recebíveis
+  // que já existiam (jaTem pulou o insert) ficariam apontando para lançamentos apagados e a
+  // baixa deixaria de conciliar o caixa. Re-vincula TODOS os recebíveis da competência.
+  const { data: existRelink } = await op.sb.from('fin_recebiveis')
+    .select('id, unidade_id, categoria, lancamento_id')
+    .eq('competencia', competencia).in('categoria', ['Royalties', 'Fundo de marketing'])
+  const admin = adminClient()
+  await Promise.all(((existRelink ?? []) as { id: string; unidade_id: string; categoria: string; lancamento_id: string | null }[]).map((r) => {
+    const conta = r.categoria === 'Royalties' ? contaRoy : contaFun
+    const lid = idPorChave.get(`${r.unidade_id}:${conta}`) ?? null
+    return lid && lid !== r.lancamento_id
+      ? admin.from('fin_recebiveis').update({ lancamento_id: lid }).eq('id', r.id)
+      : Promise.resolve(null)
+  }))
   revalidatePath('/financeiro')
   return { ok: true, geradas: rows.length, faturamento, unidades: comFat, lancamentos: lanc.inseridos }
 }

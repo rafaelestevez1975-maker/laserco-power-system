@@ -187,6 +187,9 @@ $$;
 -- (ex.: 'franqueadora,proprias' = financeiro da franqueadora SEM franquias, porque a
 -- receita da franquia não é dinheiro da franqueadora  só o royalty é).
 -- Retrocompatível: valores únicos ('consolidado', 'unidades', …) continuam valendo.
+-- Lançamento com centro NULL cai no balde 'franquias' (tipo_loja default)  senão ele some de
+-- TODA combinação de checkbox (review 04/07: R$105 da unidade INATIVA sem centro ficou invisível).
+-- Invariante: franqueadora+proprias+franquias == consolidado, sem dupla contagem.
 create or replace function public.fin_escopo_ok(p_escopo text, p_cc_tipo text, p_tipo_loja text)
 returns boolean language sql immutable as $$
   select exists (
@@ -195,7 +198,7 @@ returns boolean language sql immutable as $$
        or (trim(esc)='franqueadora' and p_cc_tipo='rede')
        or (trim(esc)='unidades' and coalesce(p_cc_tipo,'unidade') <> 'rede')
        or (trim(esc)='proprias' and p_tipo_loja='propria')
-       or (trim(esc)='franquias' and p_tipo_loja='franquia')
+       or (trim(esc)='franquias' and coalesce(p_cc_tipo,'unidade') <> 'rede' and coalesce(p_tipo_loja,'franquia')='franquia')
   )
 $$;
 
