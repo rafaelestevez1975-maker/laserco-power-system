@@ -41,6 +41,25 @@
 
 ~~CRUD de categorias~~ ✅ · ~~Cadeia do reembolso SAC~~ ✅ · ~~Perfis seed~~ ✅ · ~~DRE por loja~~ ✅ (entregues em 02/07)
 
+## 3b. Pacote QA (Matheus, 03/07) — entregue e validado 04/07
+
+| Pedido | Entrega |
+|--------|---------|
+| Escopo sem franquia ("não sei a despesa deles") | ✅ Checkboxes combináveis Franqueadora/Próprias/Franquias no DRE e Fluxo; default = franqueadora+próprias; RPCs aceitam escopo composto (fin_escopo_ok); trio == consolidado ao centavo |
+| DRE "de criança" | ✅ DRE estruturado: Receita bruta → Custos e deduções → **Lucro bruto** → grupos de despesa → Resultado, AV% em tudo |
+| Visão anual | ✅ Toggle Mensal/Anual (12 meses em colunas + total, fin_dre_anual) |
+| Menu com balão → lista suspensa | ✅ Chips→selects em Receber/Pagar (padrão p/ demais telas conforme forem tocadas) |
+| Recebimento recorrente (48× 15k) | ✅ Nova conta a receber: recorrente c/ 1ª parcela, periodicidade, qtd (2-360) — gera parcelas i/n no sub-livro+razão |
+| Filtro por valor | ✅ Faixa mín/máx no Editar filtros (Receber e Pagar) |
+| Régua: editar/adicionar etapas | ✅ Adicionar/remover etapas livres (rescisão não travada em 30d) |
+| Boleto entra no banco c/ multa/protesto? | ⏳ NÃO ainda — boleto é PRÉVIA; registro real depende do convênio/credenciais do banco (Config → Banco de cobrança) |
+| Taxas adquirentes × cadastros básicos | ⏳ decidir fonte única (hoje Config→Taxas alimenta a conciliação) |
+| Base BEMP (352k clientes + docs) | ✅ acesso DIRETO ao Postgres do BEMP (customers 352.589 + orders/executions p/ "pacote em andamento") — importa por SQL, sem export manual; fotos/anamneses NÃO estão no banco (storage do BEMP) → bulk export com BEMP ou automação autorizada, priorizando clientes ativos |
+
+Extras do review adversarial (04/07): centro NULL agora cai no balde franquias (nada some);
+reapurar não quebra mais os links recebível↔razão (testado: 63/63 válidos pós-repost);
+Lucro Bruto considera qualquer grupo de natureza custo; guarda de corrida nos fetches.
+
 ## 4. Garantia central (seção 6 do informe)
 
 "O valor bate igual em todas as telas" = **razão único** (`fin_lancamento`): produtores lançam
