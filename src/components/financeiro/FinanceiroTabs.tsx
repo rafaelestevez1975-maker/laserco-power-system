@@ -200,7 +200,7 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
       )}
 
       {tab === 'fluxo' && <FluxoTab serie0={fluxoSerie} resumo0={fluxoResumo} comp0={fluxoComp} hojeISO={hojeISO} recebiveis={recebiveis} contasPagar={contasPagar} unidadeAtiva={unidadeAtiva} />}
-      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} />}
+      {tab === 'dre' && <DreTab dre={dre} competencia={dreCompetencia} unidades={unidades} unidadeAtiva={unidadeAtiva} config={config} />}
       {tab === 'calc' && <CalcTab recebiveis={recebiveis} hojeISO={hojeISO} indices={indices} />}
       {tab === 'receber' && <ReceberTab recebiveis={recebiveis} goRoyalties={() => trocarAba('royalties')} config={config} unidades={unidades} />}
       {tab === 'pagar' && <PagarTab contasPagar={contasPagar} config={config} planoContas={planoContas} unidades={unidades} />}
@@ -458,7 +458,7 @@ function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebi
                 <td className="num-r" style={{ fontWeight: 700 }}>{moedaBR(r.valor)}</td>
                 <td>{dataBR(r.vencimento)}{r.status === 'atrasado' && <span style={{ color: 'var(--red)', fontSize: 11 }}> ({r.dias_atraso}d)</span>}</td>
                 <td><Pill s={r.jur_id ? 'jur' : r.status} /></td>
-                <td style={{ whiteSpace: 'nowrap' }}><RecAcoes r={r} busy={busy} run={run} /></td>
+                <td style={{ whiteSpace: 'nowrap' }}><RecAcoes r={r} busy={busy} run={run} bancoOk={Boolean((config.banco as { nome?: string })?.nome)} /></td>
               </tr>
             ))}
           </tbody>
@@ -468,12 +468,13 @@ function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebi
   )
 }
 
-function RecAcoes({ r, busy, run }: { r: Recebivel; busy: string | null; run: (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => void }) {
+function RecAcoes({ r, busy, run, bancoOk = false }: { r: Recebivel; busy: string | null; run: (id: string, fn: () => Promise<{ ok: boolean; error?: string }>, okMsg: string) => void; bancoOk?: boolean }) {
   const b = busy === r.id
   if (r.status === 'pago') return <span className="os-link" title={r.boleto ? 'boleto ' + r.boleto.slice(0, 9) : ''}><i className="ti ti-receipt" /> Comprovante</span>
   if (r.status === 'suspenso') return <span className="os-link" onClick={() => !b && run(r.id, () => suspenderLancamento('receber', r.id), 'Lançamento reativado.')}><i className="ti ti-player-play" /> Reativar</span>
   const acts: React.ReactNode[] = []
-  if (!r.boleto) acts.push(<span key="ger" className="os-link" onClick={() => !b && run(r.id, () => gerarBoleto(r.id), 'Boleto gerado e enviado por e-mail/WhatsApp ao franqueado.')}><i className="ti ti-file-invoice" /> Gerar boleto</span>)
+  // Sem banco configurado o boleto é PRÉVIA  o tooltip aponta onde configurar (auto-serviço 04/07).
+  if (!r.boleto) acts.push(<span key="ger" className="os-link" title={bancoOk ? undefined : 'PRÉVIA  o registro real no banco (multa/protesto) liga quando o convênio for preenchido em Configurações → Banco de cobrança'} onClick={() => !b && run(r.id, () => gerarBoleto(r.id), 'Boleto gerado e enviado por e-mail/WhatsApp ao franqueado.')}><i className="ti ti-file-invoice" /> Gerar boleto{bancoOk ? '' : ' (prévia)'}</span>)
   else {
     acts.push(<VerBoletoLink key="ver" r={r} />)
     acts.push(<span key="baixa" className="os-link" onClick={() => !b && run(r.id, () => darBaixaRecebivel(r.id), 'Baixa registrada (retorno bancário).')}><i className="ti ti-circle-check" /> Dar baixa</span>)
@@ -1148,7 +1149,10 @@ function montarDre(linhas: (DreLinha & { mes?: number })[], nMeses: number): { s
   return { secoes, receitaMes }
 }
 
-function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[]; unidadeAtiva?: { id: string; nome: string } | null }) {
+function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null, config = null }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[]; unidadeAtiva?: { id: string; nome: string } | null; config?: FinConfig | null }) {
+  // Auto-serviço (04/07): sem %% configurados o DRE fica sem imposto/comissão/taxa  avisar
+  // ONDE configurar em vez de esperar alguém perguntar "cadê as despesas".
+  const semRegras = !!config && !config.imposto_pct && !config.comissao_pct && !config.taxa_cartao_pct
   const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
   const [partes, setPartes] = useState<string[]>(ESCOPO_DEFAULT)
   const [unidade, setUnidade] = useState('') // '' = agregado do escopo
@@ -1233,6 +1237,12 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
     <div>
       {seletor}
       <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  <b>{visao === 'anual' ? `ano ${ano}` : compLabel}</b> · visão <b>{tituloEscopo}</b>. A receita da franquia só entra se você marcar <b>Franquias</b> (você não conhece a despesa delas  aqui é o resultado da franqueadora). <b>AV%</b> = análise vertical sobre a receita bruta.</div>
+      {semRegras && (
+        <div className="rel-legend" style={{ background: '#FFF3E0', color: '#7A4E00', border: '1px solid #F0C987' }}>
+          <i className="ti ti-settings" /> <b>Imposto, comissão e taxa de cartão ainda estão em 0%</b>  por isso essas despesas não aparecem no DRE.
+          Configure em <b>Configurações → Regras de despesa</b> e depois clique em <b>Royalties → Apurar mês</b>: o DRE recalcula sozinho.
+        </div>
+      )}
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
           <thead>

@@ -60,6 +60,22 @@ Extras do review adversarial (04/07): centro NULL agora cai no balde franquias (
 reapurar não quebra mais os links recebível↔razão (testado: 63/63 válidos pós-repost);
 Lucro Bruto considera qualquer grupo de natureza custo; guarda de corrida nos fetches.
 
+## 3c. Decisões do cliente (04/07) — Rafael respondeu os 5 bloqueios
+
+1. **%% imposto/comissão/taxa** → cliente configura sozinho (Config → Regras de despesa);
+   DRE agora AVISA quando estão em 0% e ensina onde configurar + reapurar.
+2. **Lojas próprias** → cliente marca sozinho (Config → Royalties por unidade → Tipo).
+3. **Banco/boleto** → ainda SEM banco; cliente preenche Config → Banco de cobrança quando
+   tiver convênio. Botão "Gerar boleto (prévia)" sinaliza até lá.
+4. **Fotos/anamneses do BEMP** → AUTORIZADO o robô. Pronto: bucket `clientes-docs` +
+   tabela `clientes_documentos` + fila de prioridade (8.363 c/ pacote em andamento) +
+   scripts/baixar-docs-bemp.mjs. FALTA SÓ: login do app web do BEMP (BEMP_WEB_BASE/EMAIL/SENHA).
+5. **Unidade INATIVA que fatura PAGA royalty** → regra confirmada; TODAS as unidades agora
+   têm centro de custo (INATIVAs incluídas — nada fica invisível no DRE).
+
+**Base de clientes**: 352.589 importados do BEMP (04/07) com CPF (181.674) e RG — o sync
+antigo não trazia. Upsert idempotente: scripts/import-bemp-clientes.mjs.
+
 ## 4. Garantia central (seção 6 do informe)
 
 "O valor bate igual em todas as telas" = **razão único** (`fin_lancamento`): produtores lançam
