@@ -145,9 +145,11 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
       dreCompetencia = ult
       const d = new Date(ult + 'T12:00:00'); d.setMonth(d.getMonth() + 1)
       const fim = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+      // Escopo default = franqueadora + lojas próprias (QA 03/07: franquia não entra na
+      // conta da franqueadora)  o mesmo default dos checkboxes da aba DRE.
       const { data: dreRaw } = await sb.rpc('fin_dre', unidadeAtivaId
         ? { p_ini: ult, p_fim: fim, p_escopo: 'unidades', p_unidade: unidadeAtivaId }
-        : { p_ini: ult, p_fim: fim })
+        : { p_ini: ult, p_fim: fim, p_escopo: 'franqueadora,proprias' })
       dre = (dreRaw ?? []) as DreLinha[]
     }
   }
@@ -173,7 +175,8 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
   let fluxoComp: FluxoComp[] = []
   {
     const { ini, fim } = janelaFluxo(new Date())
-    const esc = unidadeAtivaId ? 'unidades' : 'consolidado'
+    // Mesmo default dos checkboxes da aba (QA 03/07): franqueadora + próprias, sem franquias.
+    const esc = unidadeAtivaId ? 'unidades' : 'franqueadora,proprias'
     const [serieR, resumoR, compR] = await Promise.all([
       sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeAtivaId }),
       sb.rpc('fin_fluxo_resumo', { p_escopo: esc, p_unidade: unidadeAtivaId }),

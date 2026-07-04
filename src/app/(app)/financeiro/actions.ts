@@ -380,12 +380,19 @@ export type DreLinhaR = { grupo: string; natureza: string; conta: string; ordem:
  *  franqueadora (só o centro da rede: royalties/fundo) ou unidades (só os centros das unidades).
  *  Usado pelos seletores de mês e de escopo na aba DRE. */
 const DRE_ESCOPOS = ['consolidado', 'franqueadora', 'unidades', 'proprias', 'franquias'] as const
+/** Escopo simples OU composto por vírgula ('franqueadora,proprias'  QA 03/07: financeiro
+ *  da franqueadora = franqueadora + lojas próprias, SEM franquias). Inválido → consolidado. */
+function escopoValido(e: string): string {
+  const partes = (e || '').split(',').map((s) => s.trim()).filter(Boolean)
+  const ok = partes.length > 0 && partes.every((p) => (DRE_ESCOPOS as readonly string[]).includes(p))
+  return ok ? [...new Set(partes)].join(',') : 'consolidado'
+}
 export async function dreDaCompetencia(ano: number, mes: number, escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { linhas?: DreLinhaR[]; competencia?: string }> {
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o DRE.' }
   if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Competência inválida.' }
-  const esc = (DRE_ESCOPOS as readonly string[]).includes(escopo) ? escopo : 'consolidado'
+  const esc = escopoValido(escopo)
   const p2 = (n: number) => String(n).padStart(2, '0')
   const ini = `${ano}-${p2(mes)}-01`
   const proxMes = mes === 12 ? 1 : mes + 1, proxAno = mes === 12 ? ano + 1 : ano
@@ -394,6 +401,19 @@ export async function dreDaCompetencia(ano: number, mes: number, escopo: string 
   const { data, error: e } = await op.sb.rpc('fin_dre', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeId || null })
   if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE') }
   return { ok: true, linhas: (data ?? []) as DreLinhaR[], competencia: ini }
+}
+
+export type DreLinhaMes = DreLinhaR & { mes: number }
+/** DRE ANUAL (QA 03/07: "precisa ter visão anual")  12 meses em colunas, mesmas regras. */
+export async function dreAnual(ano: number, escopo: string = 'consolidado', unidadeId: string | null = null): Promise<R & { linhas?: DreLinhaMes[] }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o DRE.' }
+  if (!Number.isInteger(ano) || ano < 2000 || ano > 2100) return { ok: false, error: 'Ano inválido.' }
+  const esc = escopoValido(escopo)
+  const { data, error: e } = await op.sb.rpc('fin_dre_anual', { p_ano: ano, p_escopo: esc, p_unidade: unidadeId || null })
+  if (e) return { ok: false, error: msgErro(e.message, 'carregar o DRE anual') }
+  return { ok: true, linhas: (data ?? []) as DreLinhaMes[] }
 }
 
 // ── Plano de contas: o cliente cria as próprias categorias (validação de 01/07). ──
@@ -465,7 +485,7 @@ export async function fluxoDoRazao(escopo: string = 'consolidado', unidadeId: st
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
   if (!temPapel(op.papel, ...PAPEIS_FIN)) return { ok: false, error: 'Você não tem permissão para ver o fluxo de caixa.' }
-  const esc = (DRE_ESCOPOS as readonly string[]).includes(escopo) ? escopo : 'consolidado'
+  const esc = escopoValido(escopo)
   const { ini, fim } = janelaFluxo(new Date())
   const [serieR, resumoR, compR] = await Promise.all([
     op.sb.rpc('fin_fluxo', { p_ini: ini, p_fim: fim, p_escopo: esc, p_unidade: unidadeId || null }),

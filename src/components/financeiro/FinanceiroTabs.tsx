@@ -12,7 +12,7 @@ import {
   gerarBoleto, darBaixaRecebivel, escalarJuridico, notificarCobranca, suspenderLancamento,
   pagarDespesa, definirPrioridade, novaDespesa,
   gerarCobrancaRoyalties, gerarRoyaltiesDoFaturamento, apurarFaturamentoBemp, apurarDespesasDaCompetencia, processarRetornoBancario, rodarReguaAtraso,
-  rodarConciliacao, salvarConfig, dreDaCompetencia, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, removerContaPlano, salvarRoyaltyUnidade, type ContaPlano,
+  rodarConciliacao, salvarConfig, dreDaCompetencia, dreAnual, fluxoDoRazao, criarContaPlano, setContaPlanoAtivo, removerContaPlano, salvarRoyaltyUnidade, type ContaPlano,
   importarRecebiveis, importarDespesas, type ImportRecebivelItem, type ImportDespesaItem,
   importarExtrato, type ImportExtratoItem,
 } from '@/app/(app)/financeiro/actions'
@@ -33,6 +33,9 @@ const TABS: { k: TabKey; label: string; icon: string }[] = [
 
 // helpers de soma
 const sum = <T,>(arr: T[], f: (x: T) => number | null | undefined) => arr.reduce((s, x) => s + (Number(f(x)) || 0), 0)
+
+// Estilo padrão dos seletores de filtro (QA 03/07: chips → listas suspensas em todo o módulo).
+const SEL_FILTRO: React.CSSProperties = { padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit', maxWidth: 260 }
 
 // ── Excel (SheetJS)  paridade finImportExcel/finModeloExcel do legacy ──
 async function lerPlanilha(file: File): Promise<string[][]> {
@@ -72,9 +75,12 @@ async function baixarModeloExcel(ctx: 'receber' | 'pagar') {
   XLSX.writeFile(wb, `modelo-lancamentos-contas-a-${ctx}.xlsx`)
 }
 
-// ── Modal "Editar filtros" (finFiltroOpen L5431)  período/status/categoria/pessoa/descrição ──
-type FiltrosFin = { d1: string; d2: string; pessoa: string; desc: string }
-const FILTROS_ZERO: FiltrosFin = { d1: '', d2: '', pessoa: '', desc: '' }
+// ── Modal "Editar filtros" (finFiltroOpen L5431)  período/pessoa/descrição/VALOR (QA 03/07) ──
+type FiltrosFin = { d1: string; d2: string; pessoa: string; desc: string; v1: string; v2: string }
+const FILTROS_ZERO: FiltrosFin = { d1: '', d2: '', pessoa: '', desc: '', v1: '', v2: '' }
+/** Predicado de valor (min/max) — vazio = sem corte. */
+const passaValor = (f: FiltrosFin, v: number | null | undefined) =>
+  (!f.v1 || Number(v ?? 0) >= Number(f.v1)) && (!f.v2 || Number(v ?? 0) <= Number(f.v2))
 function FiltroFinModal({ titulo, pessoaLabel, pessoas, filtros, onApply, onClose }: {
   titulo: string; pessoaLabel: string; pessoas: string[]; filtros: FiltrosFin
   onApply: (f: FiltrosFin) => void; onClose: () => void
@@ -103,7 +109,14 @@ function FiltroFinModal({ titulo, pessoaLabel, pessoas, filtros, onApply, onClos
               {pessoas.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </div>
-          <div style={{ gridColumn: '1 / -1' }}><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>Descrição contém</label>
+          <div><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>Valor (R$)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input type="number" step="0.01" value={f.v1} onChange={(e) => setF({ ...f, v1: e.target.value })} placeholder="mín." style={inp} />
+              <span style={{ color: 'var(--text-3)' }}>→</span>
+              <input type="number" step="0.01" value={f.v2} onChange={(e) => setF({ ...f, v2: e.target.value })} placeholder="máx." style={inp} />
+            </div>
+          </div>
+          <div><label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 5 }}>Descrição contém</label>
             <input value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} placeholder="Buscar por texto…" style={inp} />
           </div>
         </div>
@@ -203,17 +216,20 @@ export function FinanceiroTabs({ migracaoOk, truncado = false, recebiveis, conta
 // FLUXO DE CAIXA (finFluxoHTML L5156 + finProxSemanaHTML L5124)
 // =============================================================================
 function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, unidadeAtiva = null }: { serie0: FluxoSerie[]; resumo0: FluxoResumo | null; comp0: FluxoComp[]; hojeISO: string; recebiveis: Recebivel[]; contasPagar: ContaPagar[]; unidadeAtiva?: { id: string; nome: string } | null }) {
-  const [escopo, setEscopo] = useState('consolidado')
+  // QA 03/07: escopo COMBINÁVEL por checkbox. Default = Franqueadora + Lojas próprias
+  // (a receita da FRANQUIA não é dinheiro da franqueadora  só o royalty, que já está na
+  // visão Franqueadora). Marcar Franquias soma a operação das franqueadas quando quiser.
+  const [partes, setPartes] = useState<string[]>(ESCOPO_DEFAULT)
   const [serie, setSerie] = useState<FluxoSerie[]>(serie0)
   const [resumo, setResumo] = useState<FluxoResumo>(resumo0 ?? FLUXO_ZERO)
   const [comp, setComp] = useState<FluxoComp[]>(comp0)
   const [busy, setBusy] = useState(false)
-  async function trocarEscopo(v: string) {
-    setEscopo(v); setBusy(true)
-    const r = await fluxoDoRazao(v, unidadeAtiva?.id ?? null); setBusy(false)
+  async function trocarEscopo(novas: string[]) {
+    setPartes(novas); setBusy(true)
+    const r = await fluxoDoRazao(novas.join(','), unidadeAtiva?.id ?? null); setBusy(false)
     if (r.ok) { setSerie(r.serie ?? []); setResumo(r.resumo ?? FLUXO_ZERO); setComp(r.composicao ?? []) }
   }
-  const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
+  const escopoLabel = rotuloEscopo(partes)
 
   // KPIs derivados do razão por status (previsto = a receber/pagar; realizado/conciliado = recebido/pago).
   const resultado = (resumo.a_receber + resumo.recebido) - (resumo.a_pagar + resumo.pago)
@@ -247,15 +263,12 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
         {unidadeAtiva ? (
           <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> Fluxo da unidade <b>{unidadeAtiva.nome}</b></span>
-        ) : (<>
-          <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Visão:</label>
-          <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
-            {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
-          </select>
-        </>)}
+        ) : (
+          <EscopoPicker partes={partes} onChange={trocarEscopo} />
+        )}
         {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
       </div>
-      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única)  visão <b>{escSel.label}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. {escSel.hint}</div>
+      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única)  visão <b>{escopoLabel}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. A receita da franquia só entra se você marcar <b>Franquias</b>.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
         {kpis.map((k) => (
@@ -348,7 +361,7 @@ function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebi
   const [showNova, setShowNova] = useState(false)
   const [importando, setImportando] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
-  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc].filter(Boolean).length
+  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc, filtros.v1 || filtros.v2].filter(Boolean).length
 
   // Importação de planilha (paridade finImportExcel 'receber')
   async function importar(f: File | null | undefined) {
@@ -395,7 +408,8 @@ function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebi
     (cat === 'Todas' || r.categoria === cat) && (status === 'Todos' || r.status === status) &&
     (!filtros.pessoa || r.unidade_nome === filtros.pessoa) &&
     (!filtros.desc || `${r.categoria} ${r.unidade_nome || ''} ${r.competencia || ''}`.toLowerCase().includes(filtros.desc.toLowerCase())) &&
-    (!filtros.d1 || (r.vencimento || '') >= filtros.d1) && (!filtros.d2 || (r.vencimento || '') <= filtros.d2))
+    (!filtros.d1 || (r.vencimento || '') >= filtros.d1) && (!filtros.d2 || (r.vencimento || '') <= filtros.d2) &&
+    passaValor(filtros, r.valor))
   const tot = sum(list, (r) => r.valor)
   const susp = sum(list.filter((r) => r.status === 'suspenso'), (r) => r.valor)
 
@@ -403,13 +417,16 @@ function ReceberTab({ recebiveis, goRoyalties, config, unidades = [] }: { recebi
     <div>
       <div className="rel-legend">Todo recebível das unidades entra aqui, com <b>categorias separadas</b>: Royalties (10% do bruto), Taxa de franquia, Fundo de marketing, Aluguel de máquinas e outros  cadastráveis em Configurações.</div>
       {msg && <div style={{ fontSize: 12.5, color: 'var(--brand-600)', marginBottom: 8 }}>{msg}</div>}
-      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* QA 03/07: chips viravam poluição conforme as categorias crescem → listas suspensas. */}
+      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         <span className="flabel">Categoria</span>
-        {cats.map((c) => <div key={c} className={`chip ${c === cat ? 'active' : ''}`} onClick={() => setCat(c)} style={{ cursor: 'pointer' }}>{c}</div>)}
-      </div>
-      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} style={SEL_FILTRO}>
+          {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
         <span className="flabel">Status</span>
-        {sts.map((s) => <div key={s[0]} className={`chip ${s[0] === status ? 'active' : ''}`} onClick={() => setStatus(s[0])} style={{ cursor: 'pointer' }}>{s[1]}</div>)}
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={SEL_FILTRO}>
+          {sts.map((s) => <option key={s[0]} value={s[0]}>{s[1]}</option>)}
+        </select>
       </div>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total filtrado: <b style={{ color: '#0f6b3a' }}>{moedaBR(tot)}</b> · {list.length} lançamento(s){susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
@@ -485,7 +502,7 @@ function PagarTab({ contasPagar, config, planoContas = [], unidades = [] }: { co
   const [filtroOpen, setFiltroOpen] = useState(false)
   const [importando, setImportando] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
-  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc].filter(Boolean).length
+  const fcount = [filtros.d1 || filtros.d2, filtros.pessoa, filtros.desc, filtros.v1 || filtros.v2].filter(Boolean).length
 
   // Importação de planilha (paridade finImportExcel 'pagar')
   async function importar(f: File | null | undefined) {
@@ -541,7 +558,8 @@ function PagarTab({ contasPagar, config, planoContas = [], unidades = [] }: { co
     (catPag === 'Todas' || p.categoria === catPag) &&
     (!filtros.pessoa || p.escopo === filtros.pessoa) &&
     (!filtros.desc || `${p.descricao || ''} ${p.categoria}`.toLowerCase().includes(filtros.desc.toLowerCase())) &&
-    (!filtros.d1 || (p.vencimento || '') >= filtros.d1) && (!filtros.d2 || (p.vencimento || '') <= filtros.d2))
+    (!filtros.d1 || (p.vencimento || '') >= filtros.d1) && (!filtros.d2 || (p.vencimento || '') <= filtros.d2) &&
+    passaValor(filtros, p.valor))
   list = [...list].sort((a, b) => (prRank[a.prioridade] ?? 1) - (prRank[b.prioridade] ?? 1))
   const tot = sum(list, (p) => p.valor)
   const aberto = sum(list.filter((p) => p.status === 'aberto'), (p) => p.valor)
@@ -563,17 +581,20 @@ function PagarTab({ contasPagar, config, planoContas = [], unidades = [] }: { co
           </div>
         ))}
       </div>
-      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* QA 03/07: chips → listas suspensas (as categorias crescem e poluíam a tela). */}
+      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         <span className="flabel">Escopo</span>
-        {escs.map((e) => <div key={e} className={`chip ${e === escopo ? 'active' : ''}`} onClick={() => setEscopo(e)} style={{ cursor: 'pointer' }}>{e}</div>)}
-      </div>
-      <div className="dash-filter" style={{ marginBottom: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={escopo} onChange={(e) => setEscopo(e.target.value)} style={SEL_FILTRO}>
+          {escs.map((e) => <option key={e} value={e}>{e}</option>)}
+        </select>
         <span className="flabel">Prioridade</span>
-        {prChips.map((pr) => <div key={pr[0]} className={`chip ${pr[0] === prio ? 'active' : ''}`} onClick={() => setPrio(pr[0])} style={{ cursor: 'pointer' }}>{pr[1]}</div>)}
-      </div>
-      <div className="dash-filter" style={{ marginBottom: 14, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={prio} onChange={(e) => setPrio(e.target.value)} style={SEL_FILTRO}>
+          {prChips.map((pr) => <option key={pr[0]} value={pr[0]}>{pr[1]}</option>)}
+        </select>
         <span className="flabel">Categoria</span>
-        {catsPagar.slice(0, 14).map((c) => <div key={c} className={`chip ${c === catPag ? 'active' : ''}`} onClick={() => setCatPag(c)} style={{ cursor: 'pointer' }}>{c}</div>)}
+        <select value={catPag} onChange={(e) => setCatPag(e.target.value)} style={SEL_FILTRO}>
+          {catsPagar.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
       <div className="rel-acts" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Total: <b>{moedaBR(tot)}</b> · Em aberto: <b style={{ color: 'var(--red)' }}>{moedaBR(aberto)}</b>{susp > 0 && <> · Suspensos: <b style={{ color: '#6B5B95' }}>{moedaBR(susp)}</b></>}</div>
@@ -686,7 +707,16 @@ function NovaDespesaModal({ config, planoContas = [], unidades = [], onClose, on
 }
 
 // Lançamento MANUAL de conta a receber (pedido 03/07: "subir contas a receber" além do Excel).
-// Reusa importarRecebiveis([item])  mesma semântica do import: sub-livro + razão + link.
+// Reusa importarRecebiveis([itens])  mesma semântica do import: sub-livro + razão + link.
+// RECORRENTE (QA 03/07: "locação de uma máquina 48x 15k"): data de início, periodicidade,
+// quantidade de parcelas e valor  gera todas as parcelas de uma vez, numeradas i/n.
+const PERIODICIDADES: { valor: string; label: string; meses: number }[] = [
+  { valor: 'mensal', label: 'Mensal', meses: 1 },
+  { valor: 'bimestral', label: 'Bimestral', meses: 2 },
+  { valor: 'trimestral', label: 'Trimestral', meses: 3 },
+  { valor: 'semestral', label: 'Semestral', meses: 6 },
+  { valor: 'anual', label: 'Anual', meses: 12 },
+]
 function NovaReceitaModal({ config, unidades = [], onClose, onSaved }: { config: FinConfig; unidades?: UnidadeOpt[]; onClose: () => void; onSaved: () => void }) {
   const cats = config.categorias || []
   const [unidade, setUnidade] = useState('')
@@ -695,15 +725,36 @@ function NovaReceitaModal({ config, unidades = [], onClose, onSaved }: { config:
   const [valor, setValor] = useState('')
   const [vencimento, setVencimento] = useState('')
   const [statusPg, setStatusPg] = useState<'aberto' | 'pago'>('aberto')
+  const [recorrente, setRecorrente] = useState(false)
+  const [parcelas, setParcelas] = useState('12')
+  const [period, setPeriod] = useState('mensal')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
   const salvar = async () => {
     const v = Number(valor)
     if (!Number.isFinite(v) || v <= 0) { setErr('Informe um valor maior que zero.'); return }
-    if (!vencimento) { setErr('Informe o vencimento.'); return }
+    if (!vencimento) { setErr(recorrente ? 'Informe a data da primeira parcela.' : 'Informe o vencimento.'); return }
+    const n = recorrente ? Math.floor(Number(parcelas)) : 1
+    if (recorrente && (!Number.isFinite(n) || n < 2 || n > 360)) { setErr('Quantidade de parcelas inválida (2 a 360).'); return }
     setBusy(true); setErr('')
-    const r = await importarRecebiveis([{ unidade, categoria, descricao, valor: v, vencimento, status: statusPg }])
+    // vencimentos: soma meses preservando o DIA da 1ª parcela (dia 31 → cai pro último dia do mês curto)
+    const passo = PERIODICIDADES.find((p) => p.valor === period)?.meses ?? 1
+    const [a0, m0, d0] = vencimento.split('-').map(Number)
+    const vencDe = (i: number) => {
+      const mTot = (m0 - 1) + i * passo
+      const ano = a0 + Math.floor(mTot / 12), mes = (mTot % 12) + 1
+      const ultimo = new Date(ano, mes, 0).getDate()
+      return `${ano}-${String(mes).padStart(2, '0')}-${String(Math.min(d0, ultimo)).padStart(2, '0')}`
+    }
+    const base = (descricao || categoria).trim()
+    const itens = Array.from({ length: n }, (_x, i) => ({
+      unidade, categoria,
+      descricao: n > 1 ? `${base} · ${i + 1}/${n}` : base,
+      valor: v, vencimento: vencDe(i),
+      status: n > 1 ? 'aberto' : statusPg, // recorrente nasce tudo em aberto
+    }))
+    const r = await importarRecebiveis(itens)
     setBusy(false)
     if (!r.ok) { setErr(r.error || 'Erro ao lançar.'); return }
     onSaved()
@@ -729,17 +780,32 @@ function NovaReceitaModal({ config, unidades = [], onClose, onSaved }: { config:
             {cats.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição / competência</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Taxa de franquia · Julho/2026" /></div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <div className="mf" style={{ flex: 1 }}><label>Valor (R$)</label><input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
-          <div className="mf" style={{ flex: 1 }}><label>Vencimento</label><input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} /></div>
-          <div className="mf" style={{ flex: 1 }}><label>Status</label>
+        <div className="mf full" style={{ marginBottom: 10 }}><label>Descrição / competência</label><input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Locação UltraCel · contrato 2026" /></div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div className="mf" style={{ flex: 1 }}><label>{recorrente ? 'Valor da parcela (R$)' : 'Valor (R$)'}</label><input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+          <div className="mf" style={{ flex: 1 }}><label>{recorrente ? '1ª parcela (início)' : 'Vencimento'}</label><input type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)} /></div>
+          {!recorrente && <div className="mf" style={{ flex: 1 }}><label>Status</label>
             <select value={statusPg} onChange={(e) => setStatusPg(e.target.value as 'aberto' | 'pago')}><option value="aberto">Em aberto</option><option value="pago">Já recebido</option></select>
-          </div>
+          </div>}
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer', marginBottom: recorrente ? 10 : 14 }}>
+          <input type="checkbox" checked={recorrente} onChange={(e) => setRecorrente(e.target.checked)} style={{ accentColor: 'var(--brand-500)' }} />
+          <b>Recebimento recorrente</b> <span style={{ color: 'var(--text-3)' }}>(ex.: locação de máquina 48× de 15.000)</span>
+        </label>
+        {recorrente && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <div className="mf" style={{ flex: 1 }}><label>Periodicidade</label>
+              <select value={period} onChange={(e) => setPeriod(e.target.value)}>{PERIODICIDADES.map((p) => <option key={p.valor} value={p.valor}>{p.label}</option>)}</select>
+            </div>
+            <div className="mf" style={{ flex: 1 }}><label>Qtd. de parcelas</label><input type="number" min={2} max={360} value={parcelas} onChange={(e) => setParcelas(e.target.value)} /></div>
+            <div className="mf" style={{ flex: 1.4, alignSelf: 'flex-end', fontSize: 11.5, color: 'var(--text-3)' }}>
+              {Number(parcelas) >= 2 && Number(valor) > 0 && <>Total do contrato: <b>{moedaBR(Number(parcelas) * Number(valor))}</b> em {parcelas} parcelas</>}
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? '…' : <><i className="ti ti-device-floppy" /> Lançar</>}</button>
+          <button className="btn btn-primary" disabled={busy} onClick={salvar}>{busy ? '…' : <><i className="ti ti-device-floppy" /> {recorrente ? `Lançar ${parcelas || '…'} parcelas` : 'Lançar'}</>}</button>
         </div>
       </div>
     </div>
@@ -990,55 +1056,141 @@ function CobrancaTab({ recebiveis, config }: { recebiveis: Recebivel[]; config: 
 const MESES_DRE = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 // Segmentos do DRE  mesmos do legacy (finDreHTML): consolidado / próprias / franquias / franqueadora,
 // + 'todas as unidades' (agregado) e detalhamento por loja.
-const DRE_ESCOPOS: { valor: string; label: string; hint: string }[] = [
-  { valor: 'consolidado', label: 'Consolidado (tudo junto)', hint: 'Toda a rede  franqueadora + lojas. Os royalties se anulam entre si.' },
-  { valor: 'proprias', label: 'Lojas próprias', hint: 'Só as lojas PRÓPRIAS (marque quais são em Configurações → Royalties por unidade).' },
-  { valor: 'franquias', label: 'Franquias', hint: 'Só as unidades FRANQUEADAS: faturamento menos royalties e despesas.' },
-  { valor: 'franqueadora', label: 'Franqueadora', hint: 'Resultado da franqueadora: royalties recebidos das franquias.' },
-  { valor: 'unidades', label: 'Todas as unidades', hint: 'Agregado de todas as lojas (próprias + franquias), sem a franqueadora.' },
+// QA 03/07: escopo por CHECKBOX combinável (antes era um select de visão única  "não consigo
+// ver próprias + franqueadora sem a franquia entrar junto"). As três peças cobrem tudo:
+// Franqueadora (centro rede: royalties/fundo) · Lojas próprias · Franquias.
+const ESCOPO_PARTES: { valor: string; label: string }[] = [
+  { valor: 'franqueadora', label: 'Franqueadora' },
+  { valor: 'proprias', label: 'Lojas próprias' },
+  { valor: 'franquias', label: 'Franquias' },
 ]
+const ESCOPO_DEFAULT = ['franqueadora', 'proprias'] // financeiro da franqueadora SEM franquias
+const rotuloEscopo = (partes: string[]) =>
+  ESCOPO_PARTES.filter((p) => partes.includes(p.valor)).map((p) => p.label).join(' + ') || 'Franqueadora'
+function EscopoPicker({ partes, onChange }: { partes: string[]; onChange: (p: string[]) => void }) {
+  const toggle = (v: string) => {
+    const novas = partes.includes(v) ? partes.filter((x) => x !== v) : [...partes, v]
+    if (novas.length === 0) return // sempre ao menos uma peça marcada
+    onChange(novas)
+  }
+  return (
+    <span style={{ display: 'inline-flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Incluir na conta:</span>
+      {ESCOPO_PARTES.map((p) => (
+        <label key={p.valor} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer', fontWeight: partes.includes(p.valor) ? 700 : 400 }}>
+          <input type="checkbox" checked={partes.includes(p.valor)} onChange={() => toggle(p.valor)} style={{ accentColor: 'var(--brand-500)' }} />
+          {p.label}
+        </label>
+      ))}
+    </span>
+  )
+}
+// ── Esqueleto do DRE "adulto" (QA 03/07: subtotais por grupo, Lucro Bruto e Resultado) ──
+// Estrutura: Receita bruta → (−) Custos e deduções → (=) Lucro bruto → (−) demais grupos
+// de despesa (financeiras, administrativas e os criados pelo usuário) → (=) Resultado.
+type DreSecao = { tipo: 'sub' | 'linha' | 'marco'; label: string; chave: string; totais: number[]; sinal: 1 | -1 }
+function montarDre(linhas: (DreLinha & { mes?: number })[], nMeses: number): { secoes: DreSecao[]; receitaMes: number[] } {
+  const idx = (l: { mes?: number }) => (nMeses === 1 ? 0 : ((l.mes ?? 1) - 1))
+  const somaEm = (arr: number[], l: DreLinha & { mes?: number }) => { arr[idx(l)] += Number(l.total) || 0 }
+  const zeros = () => Array.from({ length: nMeses }, () => 0)
+
+  const receitas = linhas.filter((l) => l.natureza === 'receita')
+  const naoRec = linhas.filter((l) => l.natureza !== 'receita')
+  const receitaMes = zeros(); receitas.forEach((l) => somaEm(receitaMes, l))
+
+  const secoes: DreSecao[] = []
+  const porConta = (lote: (DreLinha & { mes?: number })[]) => {
+    const m = new Map<string, { ordem: number; tot: number[] }>()
+    for (const l of lote) {
+      const e = m.get(l.conta) ?? { ordem: l.ordem, tot: zeros() }
+      somaEm(e.tot, l); e.ordem = Math.min(e.ordem, l.ordem); m.set(l.conta, e)
+    }
+    return [...m.entries()].sort((a, b) => a[1].ordem - b[1].ordem)
+  }
+
+  secoes.push({ tipo: 'sub', label: '(+) Receita bruta', chave: 'rb', totais: receitaMes, sinal: 1 })
+  for (const [conta, e] of porConta(receitas)) secoes.push({ tipo: 'linha', label: conta, chave: `r:${conta}`, totais: e.tot, sinal: 1 })
+
+  // grupos de custo/despesa na ordem do plano; 'Custos' vem primeiro e fecha o Lucro Bruto
+  const grupos = new Map<string, { ordem: number; linhas: (DreLinha & { mes?: number })[] }>()
+  for (const l of naoRec) {
+    const g = grupos.get(l.grupo || 'Outros') ?? { ordem: l.ordem, linhas: [] }
+    g.linhas.push(l); g.ordem = Math.min(g.ordem, l.ordem); grupos.set(l.grupo || 'Outros', g)
+  }
+  const ordenados = [...grupos.entries()].sort((a, b) => a[1].ordem - b[1].ordem)
+  const custosGrupo = ordenados.find(([g]) => g === 'Custos')
+  const custosMes = zeros(); custosGrupo?.[1].linhas.forEach((l) => somaEm(custosMes, l))
+  if (custosGrupo) {
+    secoes.push({ tipo: 'sub', label: '(-) Custos e deduções', chave: 'g:Custos', totais: custosMes, sinal: -1 })
+    for (const [conta, e] of porConta(custosGrupo[1].linhas)) secoes.push({ tipo: 'linha', label: conta, chave: `c:${conta}`, totais: e.tot, sinal: -1 })
+  }
+  const lucroBruto = receitaMes.map((v, i) => v - custosMes[i])
+  secoes.push({ tipo: 'marco', label: '(=) Lucro bruto', chave: 'lb', totais: lucroBruto, sinal: 1 })
+
+  const resultado = [...lucroBruto]
+  for (const [g, info] of ordenados) {
+    if (g === 'Custos') continue
+    const tot = zeros(); info.linhas.forEach((l) => somaEm(tot, l))
+    tot.forEach((v, i) => { resultado[i] -= v })
+    secoes.push({ tipo: 'sub', label: `(-) ${g}`, chave: `g:${g}`, totais: tot, sinal: -1 })
+    for (const [conta, e] of porConta(info.linhas)) secoes.push({ tipo: 'linha', label: conta, chave: `d:${g}:${conta}`, totais: e.tot, sinal: -1 })
+  }
+  secoes.push({ tipo: 'marco', label: '(=) Resultado do período', chave: 'res', totais: resultado, sinal: 1 })
+  return { secoes, receitaMes }
+}
+
 function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre: DreLinha[]; competencia: string | null; unidades?: UnidadeOpt[]; unidadeAtiva?: { id: string; nome: string } | null }) {
   const [comp, setComp] = useState(competencia ? competencia.slice(0, 7) : '')
-  const [escopo, setEscopo] = useState('consolidado')
-  const [unidade, setUnidade] = useState('') // '' = todas as lojas (agregado)
+  const [partes, setPartes] = useState<string[]>(ESCOPO_DEFAULT)
+  const [unidade, setUnidade] = useState('') // '' = agregado do escopo
+  const [visao, setVisao] = useState<'mensal' | 'anual'>('mensal')
+  const [ano, setAno] = useState<number>(competencia ? Number(competencia.slice(0, 4)) : new Date().getFullYear())
   const [linhas, setLinhas] = useState<DreLinha[]>(dre)
+  const [linhasAno, setLinhasAno] = useState<(DreLinha & { mes: number })[]>([])
   const [busy, setBusy] = useState(false)
-  async function recarregar(vComp: string, vEscopo: string, vUnidade: string) {
-    const [a, m] = vComp.split('-').map(Number)
-    if (!a || !m) { setLinhas([]); return }
-    setBusy(true)
-    const r = await dreDaCompetencia(a, m, unidadeAtiva ? 'unidades' : vEscopo, unidadeAtiva ? unidadeAtiva.id : (['unidades', 'proprias', 'franquias'].includes(vEscopo) && vUnidade ? vUnidade : null))
-    setBusy(false)
-    if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
-  }
-  const trocarMes = (v: string) => { setComp(v); recarregar(v, escopo, unidade) }
-  const trocarEscopo = (v: string) => { setEscopo(v); setUnidade(''); recarregar(comp, v, '') }
-  const trocarUnidade = (v: string) => { setUnidade(v); recarregar(comp, escopo, v) }
-  // Fonte única: o RAZÃO. Agrupa por natureza (receita/custo/despesa) e soma por conta.
-  const receitas = linhas.filter((l) => l.natureza === 'receita').sort((a, b) => a.ordem - b.ordem)
-  const custos = linhas.filter((l) => l.natureza === 'custo').sort((a, b) => a.ordem - b.ordem)
-  const despesas = linhas.filter((l) => l.natureza === 'despesa').sort((a, b) => a.ordem - b.ordem)
-  const totReceita = sum(receitas, (l) => l.total)
-  const totCusto = sum(custos, (l) => l.total)
-  const totDespesa = sum(despesas, (l) => l.total)
-  const resultado = totReceita - totCusto - totDespesa
-  const av = (v: number) => totReceita > 0 ? finPct((v / totReceita) * 100) : ''
-  const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : ''
 
-  const escSel = DRE_ESCOPOS.find((e) => e.valor === escopo) ?? DRE_ESCOPOS[0]
+  const escopoDe = (vPartes: string[], vUnidade: string) => (unidadeAtiva || vUnidade ? 'unidades' : vPartes.join(','))
+  async function recarregar(vComp: string, vPartes: string[], vUnidade: string, vVisao: 'mensal' | 'anual', vAno: number) {
+    setBusy(true)
+    const uni = unidadeAtiva ? unidadeAtiva.id : (vUnidade || null)
+    if (vVisao === 'anual') {
+      const r = await dreAnual(vAno, escopoDe(vPartes, vUnidade), uni)
+      if (r.ok) setLinhasAno((r.linhas as (DreLinha & { mes: number })[]) ?? [])
+    } else {
+      const [a, m] = vComp.split('-').map(Number)
+      if (!a || !m) { setLinhas([]); setBusy(false); return }
+      const r = await dreDaCompetencia(a, m, escopoDe(vPartes, vUnidade), uni)
+      if (r.ok) setLinhas((r.linhas as DreLinha[]) ?? [])
+    }
+    setBusy(false)
+  }
+  const trocarMes = (v: string) => { setComp(v); recarregar(v, partes, unidade, visao, ano) }
+  const trocarEscopo = (p: string[]) => { setPartes(p); recarregar(comp, p, unidade, visao, ano) }
+  const trocarUnidade = (v: string) => { setUnidade(v); recarregar(comp, partes, v, visao, ano) }
+  const trocarVisao = (v: 'mensal' | 'anual') => { setVisao(v); recarregar(comp, partes, unidade, v, ano) }
+  const trocarAno = (v: number) => { setAno(v); recarregar(comp, partes, unidade, visao, v) }
+
+  const compLabel = comp ? `${MESES_DRE[Number(comp.slice(5, 7)) - 1]}/${comp.slice(0, 4)}` : ''
+  const tituloEscopo = unidadeAtiva ? unidadeAtiva.nome : (unidade ? (unidades.find((u) => u.id === unidade)?.nome ?? 'Loja') : rotuloEscopo(partes))
+
   const seletor = (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
-      <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
-      <input type="month" value={comp} onChange={(e) => trocarMes(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
-      {unidadeAtiva && <span style={{ fontSize: 12.5, color: 'var(--text-2)', marginLeft: 6 }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> DRE da unidade <b>{unidadeAtiva.nome}</b></span>}
-      {!unidadeAtiva && <><label style={{ fontSize: 12, color: 'var(--text-2)', marginLeft: 6 }}>Visão:</label>
-      <select value={escopo} onChange={(e) => trocarEscopo(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit' }}>
-        {DRE_ESCOPOS.map((e) => <option key={e.valor} value={e.valor}>{e.label}</option>)}
-      </select></>}
-      {!unidadeAtiva && ['unidades', 'proprias', 'franquias'].includes(escopo) && unidades.length > 0 && (
-        <select value={unidade} onChange={(e) => trocarUnidade(e.target.value)} title="DRE de uma loja específica"
-          style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', fontFamily: 'inherit', maxWidth: 240 }}>
-          <option value="">Todas as lojas (agregado)</option>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
+      <span className="seg" style={{ margin: 0 }}>
+        <button className={`seg-btn${visao === 'mensal' ? ' active' : ''}`} onClick={() => trocarVisao('mensal')}>Mensal</button>
+        <button className={`seg-btn${visao === 'anual' ? ' active' : ''}`} onClick={() => trocarVisao('anual')}>Anual</button>
+      </span>
+      {visao === 'mensal' ? (<>
+        <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Competência:</label>
+        <input type="month" value={comp} onChange={(e) => trocarMes(e.target.value)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13 }} />
+      </>) : (<>
+        <label style={{ fontSize: 12, color: 'var(--text-2)' }}>Ano:</label>
+        <input type="number" min={2020} max={2100} value={ano} onChange={(e) => trocarAno(Number(e.target.value) || ano)} style={{ padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, width: 90 }} />
+      </>)}
+      {unidadeAtiva && <span style={{ fontSize: 12.5, color: 'var(--text-2)' }}><i className="ti ti-building-store" style={{ color: 'var(--brand-500)' }} /> DRE da unidade <b>{unidadeAtiva.nome}</b></span>}
+      {!unidadeAtiva && <EscopoPicker partes={partes} onChange={trocarEscopo} />}
+      {!unidadeAtiva && unidades.length > 0 && (
+        <select value={unidade} onChange={(e) => trocarUnidade(e.target.value)} title="DRE de uma loja específica" style={SEL_FILTRO}>
+          <option value="">Uma loja específica…</option>
           {unidades.map((u) => <option key={u.id} value={u.id}>{u.nome}</option>)}
         </select>
       )}
@@ -1046,45 +1198,57 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null }: { dre:
     </div>
   )
 
-  if (linhas.length === 0) {
+  const base = visao === 'anual' ? linhasAno : linhas
+  if (base.length === 0) {
     return (
       <div>
         {seletor}
-        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Sem lançamentos em <b>{compLabel}</b>  vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties dessa competência; o DRE aparece aqui automaticamente.</div>
+        <div className="rel-legend">O DRE lê do <b>razão</b> (fonte única). Sem lançamentos em <b>{visao === 'anual' ? ano : compLabel}</b> nesta visão  vá em <b>Royalties → Apurar mês (faturamento + royalties)</b> para lançar a receita e os royalties; o DRE aparece aqui automaticamente.</div>
       </div>
     )
   }
 
-  const linhaConta = (l: DreLinha, sinal: number) => (
-    <tr key={l.natureza + l.conta}>
-      <td style={{ paddingLeft: 22, color: 'var(--text-2)' }}>{l.conta}</td>
-      <td className="num-r" style={{ color: sinal < 0 ? 'var(--red)' : undefined }}>{moedaBR(sinal * l.total)}</td>
-      <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(l.total)}</td>
-    </tr>
-  )
-  const linhaTotal = (lbl: string, v: number) => (
-    <tr style={{ background: 'var(--surface-2)' }}>
-      <td style={{ fontWeight: 700 }}>{lbl}</td>
-      <td className="num-r" style={{ fontWeight: 700, color: v < 0 ? 'var(--red)' : undefined }}>{moedaBR(v)}</td>
-      <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(Math.abs(v))}</td>
-    </tr>
-  )
+  const nMeses = visao === 'anual' ? 12 : 1
+  const { secoes, receitaMes } = montarDre(base, nMeses)
+  const receitaTotal = receitaMes.reduce((s, v) => s + v, 0)
+  const av = (v: number) => (receitaTotal > 0 ? finPct((Math.abs(v) / receitaTotal) * 100) : '')
+  const estiloDe = (s: DreSecao): React.CSSProperties =>
+    s.tipo === 'marco' ? { fontWeight: 800, background: 'var(--surface-2)' }
+      : s.tipo === 'sub' ? { fontWeight: 700, background: 'var(--surface-2)' } : {}
 
   return (
     <div>
       {seletor}
-      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  competência <b>{compLabel}</b> · visão <b>{escSel.label}</b>. {escSel.hint} <b>AV%</b> = análise vertical sobre a receita. As linhas se completam conforme os demais produtores (folha, impostos, reembolsos) entram no razão.</div>
+      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  <b>{visao === 'anual' ? `ano ${ano}` : compLabel}</b> · visão <b>{tituloEscopo}</b>. A receita da franquia só entra se você marcar <b>Franquias</b> (você não conhece a despesa delas  aqui é o resultado da franqueadora). <b>AV%</b> = análise vertical sobre a receita bruta.</div>
       <div className="cli-card"><div className="cli-scroll">
         <table className="cli-table">
-          <thead><tr><th>Demonstração do resultado  {compLabel}</th><th className="num-r">Valor</th><th className="num-r">AV%</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={{ minWidth: 220 }}>Demonstração do resultado  {visao === 'anual' ? ano : compLabel}</th>
+              {visao === 'anual' && MESES_DRE.map((m) => <th key={m} className="num-r" style={{ minWidth: 92 }}>{m.slice(0, 3)}</th>)}
+              <th className="num-r" style={{ minWidth: 110 }}>{visao === 'anual' ? 'Total' : 'Valor'}</th>
+              <th className="num-r">AV%</th>
+            </tr>
+          </thead>
           <tbody>
-            {linhaTotal('Receita bruta', totReceita)}
-            {receitas.map((l) => linhaConta(l, 1))}
-            {custos.length > 0 && linhaTotal('(-) Custos', -totCusto)}
-            {custos.map((l) => linhaConta(l, -1))}
-            {despesas.length > 0 && linhaTotal('(-) Despesas', -totDespesa)}
-            {despesas.map((l) => linhaConta(l, -1))}
-            {linhaTotal('= Resultado do período', resultado)}
+            {secoes.map((s) => {
+              const total = s.totais.reduce((a, v) => a + v, 0)
+              const negativo = s.sinal < 0 || total < 0
+              return (
+                <tr key={s.chave} style={estiloDe(s)}>
+                  <td style={s.tipo === 'linha' ? { paddingLeft: 22, color: 'var(--text-2)' } : undefined}>{s.label}</td>
+                  {visao === 'anual' && s.totais.map((v, i) => (
+                    <td key={i} className="num-r" style={{ fontSize: 12, color: negativo && v !== 0 ? 'var(--red)' : undefined }}>
+                      {v === 0 ? '' : moedaBR(s.tipo === 'marco' ? v : s.sinal * v)}
+                    </td>
+                  ))}
+                  <td className="num-r" style={{ fontWeight: s.tipo === 'linha' ? 400 : 700, color: (s.tipo === 'marco' ? total < 0 : s.sinal < 0) ? 'var(--red)' : undefined }}>
+                    {moedaBR(s.tipo === 'marco' ? total : s.sinal * total)}
+                  </td>
+                  <td className="num-r" style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{av(total)}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div></div>
@@ -1251,6 +1415,9 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
   const addAdq = () => setAdq([...adq, { nome: '', deb: 0, cred: 0, parc: 0, pix: 0, prazo: 30 }])
   const rmAdq = (i: number) => setAdq(adq.filter((_, j) => j !== i))
   const setReguaField = (i: number, k: keyof ReguaPasso, v: string) => setRegua(regua.map((p, j) => j === i ? { ...p, [k]: k === 'dias' ? (parseInt(v) || 0) : v } : p))
+  // QA 03/07: etapas da régua são livres  adicionar/remover (ex.: não rescindir com só 30 dias).
+  const addRegua = () => setRegua([...regua, { dias: (regua[regua.length - 1]?.dias ?? 0) + 15, acao: '', canal: '' }])
+  const rmRegua = (i: number) => setRegua(regua.filter((_p, j) => j !== i))
 
   const inputStyle: React.CSSProperties = { border: '1px solid var(--line)', borderRadius: 7, padding: '5px 8px', fontSize: 12.5, fontFamily: 'inherit' }
 
@@ -1441,17 +1608,22 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
         <div style={{ fontSize: 12, color: '#B26A00', margin: '2px 0 10px' }}><i className="ti ti-alert-triangle" /> Os <b>disparos automáticos</b> (e-mail/WhatsApp) da régua ainda <b>não estão ligados</b> — a configuração abaixo fica salva e passa a valer quando a automação de cobrança entrar no ar.</div>
         <div className="cli-scroll">
           <table className="cli-table">
-            <thead><tr><th>Dias após venc.</th><th>Ação</th><th>Canal</th></tr></thead>
+            <thead><tr><th>Dias após venc.</th><th>Ação</th><th>Canal</th><th /></tr></thead>
             <tbody>
               {regua.map((p, i) => (
                 <tr key={i}>
                   <td><input type="number" value={p.dias} onChange={(e) => setReguaField(i, 'dias', e.target.value)} style={{ ...inputStyle, width: 54, textAlign: 'right' }} /></td>
                   <td><input value={p.acao} onChange={(e) => setReguaField(i, 'acao', e.target.value)} style={{ ...inputStyle, width: '100%' }} /></td>
                   <td><input value={p.canal} onChange={(e) => setReguaField(i, 'canal', e.target.value)} style={{ ...inputStyle, width: '100%' }} /></td>
+                  <td style={{ textAlign: 'right' }}><button className="btn" style={{ padding: '3px 8px', color: 'var(--red)' }} onClick={() => rmRegua(i)} title="Remover etapa (salve as configurações ao final)"><i className="ti ti-trash" /></button></td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <button className="btn btn-ghost" onClick={addRegua}><i className="ti ti-plus" /> Adicionar etapa</button>
+          <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Monte quantas etapas precisar (ex.: 45/60/90 dias antes de rescisão) e clique em <b>Salvar configurações</b>.</span>
         </div>
       </div>
 

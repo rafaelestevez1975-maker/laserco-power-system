@@ -183,7 +183,23 @@ returns date language sql stable as $$
   ) from fin_lancamento
 $$;
 
--- DRE por competência, escopo (consolidado | franqueadora | unidades) e opcionalmente UMA loja.
+-- Escopo COMPOSTO (Matheus/QA 03/07): p_escopo aceita lista separada por vírgula
+-- (ex.: 'franqueadora,proprias' = financeiro da franqueadora SEM franquias, porque a
+-- receita da franquia não é dinheiro da franqueadora  só o royalty é).
+-- Retrocompatível: valores únicos ('consolidado', 'unidades', …) continuam valendo.
+create or replace function public.fin_escopo_ok(p_escopo text, p_cc_tipo text, p_tipo_loja text)
+returns boolean language sql immutable as $$
+  select exists (
+    select 1 from unnest(string_to_array(coalesce(nullif(p_escopo,''),'consolidado'), ',')) e(esc)
+    where trim(esc)='consolidado'
+       or (trim(esc)='franqueadora' and p_cc_tipo='rede')
+       or (trim(esc)='unidades' and coalesce(p_cc_tipo,'unidade') <> 'rede')
+       or (trim(esc)='proprias' and p_tipo_loja='propria')
+       or (trim(esc)='franquias' and p_tipo_loja='franquia')
+  )
+$$;
+
+-- DRE por competência, escopo (simples ou composto) e opcionalmente UMA loja.
 -- Suspenso PERMANECE (competência/regime de exercício); cancelado sai.
 create or replace function public.fin_dre(p_ini date, p_fim date, p_escopo text default 'consolidado', p_unidade uuid default null)
 returns table(grupo text, natureza text, conta text, ordem integer, total numeric) language sql stable as $$
@@ -195,12 +211,24 @@ returns table(grupo text, natureza text, conta text, ordem integer, total numeri
   where l.competencia >= p_ini and l.competencia < p_fim
     and l.status <> 'cancelado'
     and (p_unidade is null or cc.unidade_id = p_unidade)
-    and (p_escopo='consolidado'
-      or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
-      or (p_escopo='proprias' and u.tipo_loja='propria')
-      or (p_escopo='franquias' and u.tipo_loja='franquia'))
+    and fin_escopo_ok(p_escopo, cc.tipo, u.tipo_loja)
   group by pc.grupo, pc.natureza, pc.nome
+$$;
+
+-- DRE ANUAL (12 meses em colunas  pedido do QA): mesmas regras, agregado por mês.
+create or replace function public.fin_dre_anual(p_ano integer, p_escopo text default 'consolidado', p_unidade uuid default null)
+returns table(grupo text, natureza text, conta text, ordem integer, mes integer, total numeric) language sql stable as $$
+  select coalesce(pc.grupo,'Outros'), pc.natureza, pc.nome, min(pc.ordem)::int,
+         extract(month from l.competencia)::int, sum(l.valor)::numeric
+  from fin_lancamento l
+  join plano_conta pc on pc.id = l.plano_conta_id
+  left join centro_custo cc on cc.id = l.centro_custo_id
+  left join unidades u on u.id = cc.unidade_id
+  where l.competencia >= make_date(p_ano,1,1) and l.competencia < make_date(p_ano+1,1,1)
+    and l.status <> 'cancelado'
+    and (p_unidade is null or cc.unidade_id = p_unidade)
+    and fin_escopo_ok(p_escopo, cc.tipo, u.tipo_loja)
+  group by pc.grupo, pc.natureza, pc.nome, extract(month from l.competencia)
 $$;
 
 -- Fluxo de caixa mensal por data efetiva (caixa > prevista > competência), com escopo.
@@ -217,11 +245,7 @@ returns table(mes date, entradas numeric, saidas numeric) language sql stable as
     and coalesce(l.data_caixa, l.data_prevista, l.competencia) < p_fim
     and l.status not in ('cancelado','suspenso')
     and (p_unidade is null or cc.unidade_id = p_unidade)
-    and (p_escopo='consolidado'
-      or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
-      or (p_escopo='proprias' and u.tipo_loja='propria')
-      or (p_escopo='franquias' and u.tipo_loja='franquia'))
+    and fin_escopo_ok(p_escopo, cc.tipo, u.tipo_loja)
   group by 1
 $$;
 
@@ -239,11 +263,7 @@ returns table(a_receber numeric, recebido numeric, vencido numeric, a_pagar nume
   left join unidades u on u.id = cc.unidade_id
   where l.status <> 'cancelado'
     and (p_unidade is null or cc.unidade_id = p_unidade)
-    and (p_escopo='consolidado'
-      or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
-      or (p_escopo='proprias' and u.tipo_loja='propria')
-      or (p_escopo='franquias' and u.tipo_loja='franquia'))
+    and fin_escopo_ok(p_escopo, cc.tipo, u.tipo_loja)
 $$;
 
 -- Composição do "a receber" por conta do plano, com escopo.
@@ -256,11 +276,7 @@ returns table(conta text, total numeric) language sql stable as $$
   left join unidades u on u.id = cc.unidade_id
   where l.natureza='receita' and l.status='previsto'
     and (p_unidade is null or cc.unidade_id = p_unidade)
-    and (p_escopo='consolidado'
-      or (p_escopo='franqueadora' and cc.tipo='rede')
-      or (p_escopo='unidades' and coalesce(cc.tipo,'unidade') <> 'rede')
-      or (p_escopo='proprias' and u.tipo_loja='propria')
-      or (p_escopo='franquias' and u.tipo_loja='franquia'))
+    and fin_escopo_ok(p_escopo, cc.tipo, u.tipo_loja)
   group by pc.nome
 $$;
 
