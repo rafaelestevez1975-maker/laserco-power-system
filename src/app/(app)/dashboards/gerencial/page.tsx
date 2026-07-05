@@ -37,8 +37,8 @@ export default async function DashGerencialPage({ searchParams }: { searchParams
   const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
   const unidadeNome = unidadeId ? (ctx?.activeUnitName ?? unidades.find((u) => u.id === unidadeId)?.nome ?? 'Unidade') : 'Todas as unidades'
 
-  // Default gerencial = 'Últimos 30 dias' (legado defPer).
-  const periodo = sp.periodo || '30d'
+  // Default = 90 dias (QA 05/07: '30d' caía depois do fim dos dados → faturamento R$0).
+  const periodo = sp.periodo || '90d'
   const range = resolveDashRange(periodo, sp.di, sp.df)
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)

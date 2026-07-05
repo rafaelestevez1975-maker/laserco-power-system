@@ -89,11 +89,17 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: P
     if (error) migracaoOk = false
     else {
       recTotal = count ?? 0
-      recebiveis = ((data ?? []) as Recebivel[]).map((r) => ({
-        ...r,
-        // Recalcula dias de atraso em runtime (calcDias) p/ status 'atrasado'.
-        dias_atraso: r.status === 'atrasado' ? (r.dias_atraso || calcDiasAtraso(r.vencimento, hojeISO)) : r.dias_atraso,
-      }))
+      recebiveis = ((data ?? []) as Recebivel[]).map((r) => {
+        // ATRASO derivado em read-time (QA 05/07): a automação de royalties insere sempre
+        // status 'aberto' e nada transiciona depois → 134 recebíveis vencidos (R$639k)
+        // apareciam "em aberto", Cobrança/Jurídico e Cálculos vinham vazios e contradiziam
+        // o KPI "Vencido" do Fluxo. Aqui: aberto + vencimento passado = atrasado (auto-corrige,
+        // sem cron). Pago/suspenso/já-atrasado não muda.
+        const venceu = r.status === 'aberto' && !!r.vencimento && r.vencimento < hojeISO
+        const status = venceu ? 'atrasado' : r.status
+        const dias_atraso = status === 'atrasado' ? (r.dias_atraso || calcDiasAtraso(r.vencimento, hojeISO)) : r.dias_atraso
+        return { ...r, status, dias_atraso }
+      })
     }
   }
 

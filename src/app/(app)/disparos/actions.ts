@@ -145,8 +145,9 @@ export async function respondentesParaCRM(campanhaId: string): Promise<{ ok: boo
   if (n <= 0) return { ok: false, error: 'Esta campanha ainda não tem respondentes.' }
   if (!c.unidade_id) return { ok: false, error: 'Campanha sem unidade  defina a unidade da campanha.' }
 
-  // 1ª etapa do funil (igual ao leads-site)
-  const { data: etapa } = await op.sb.from('crm_etapas').select('id').eq('ativo', true).order('ordem', { ascending: true }).limit(1).single()
+  // 1ª etapa do funil de CLIENTE (QA 05/07: sem o filtro pipeline='cliente', a etapa de
+  // FRANQUIA (mesma ordem 1..6) podia ser escolhida e o lead ficava invisível no board /crm).
+  const { data: etapa } = await op.sb.from('crm_etapas').select('id').eq('ativo', true).eq('pipeline', 'cliente').order('ordem', { ascending: true }).limit(1).maybeSingle()
   const etapaId = (etapa as { id?: string } | null)?.id
   if (!etapaId) return { ok: false, error: 'Funil do CRM sem etapas.' }
 

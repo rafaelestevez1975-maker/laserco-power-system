@@ -28,8 +28,9 @@ export default async function DashFinanceiroPage({ searchParams }: { searchParam
   const unidades = (ctx?.unidades ?? []).map((u) => ({ id: u.id, nome: u.nome }))
   const unidadeNome = unidadeId ? (ctx?.activeUnitName ?? unidades.find((u) => u.id === unidadeId)?.nome ?? 'Unidade') : 'Todas as unidades'
 
-  // Default financeiro = 'mes' (legado defPer='Mês atual').
-  const periodo = sp.periodo || 'mes'
+  // Default = 90 dias (QA 05/07: 'mes' abria em julho, depois do fim dos dados → tudo R$0;
+  // mesma correção já aplicada aos relatórios).
+  const periodo = sp.periodo || '90d'
   const range = resolveDashRange(periodo, sp.di, sp.df)
 
   // ── Lançamentos do período: receita + despesa (status: pago=realizado, demais=previsto) ──
