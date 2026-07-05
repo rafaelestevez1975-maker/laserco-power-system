@@ -411,7 +411,7 @@ export function TriagemWhatsapp({
                 {notasSel.map((n) => (
                   <div key={n.id} style={{ fontSize: 12.5, marginBottom: 6, borderLeft: '2px solid var(--gold-500)', paddingLeft: 8 }}>
                     <div>{n.texto}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{n.autor_nome || ''} · {n.criada_em ? new Date(n.criada_em).toLocaleString('pt-BR') : ''}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{n.autor_nome || ''} · {n.criada_em ? new Date(n.criada_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : ''}</div>
                   </div>
                 ))}
                 <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
