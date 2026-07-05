@@ -23,3 +23,63 @@ body {
 @media (max-width: 760px) {
   .sidebar { display: flex !important; }
 }
+
+/* ============================================================================
+   MOBILE — otimização geral do sistema (QA 05/07: "tudo quebrado no celular").
+   O shell já tem drawer (hambúrguer .mob-menu → .mob-open); aqui tratamos o que
+   fazia a PÁGINA quebrar: rolagem horizontal, grids de colunas fixas que não
+   colapsam, topbar/conteúdo apertados, modais maiores que a tela.
+   ============================================================================ */
+
+/* 1) A página NUNCA rola na horizontal (principal sensação de "quebrado"). */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
+.sidebar { width: min(86vw, 300px); }  /* drawer não cobre a tela toda */
+
+@media (max-width: 900px) {
+  .topbar { padding: 0 12px; gap: 10px; }
+  .page-title { font-size: 15px; }
+  .page-title i { font-size: 18px; }
+}
+
+@media (max-width: 760px) {
+  .content { padding: 14px 12px; }
+  .page-title { font-size: 14px; }
+  /* topbar: mantém hambúrguer + título + sino + avatar (esconde nome/cargo longos) */
+  .user > div:not(.avatar) { display: none; }
+  .role-wrap { display: none; }
+  /* tabelas rolam DENTRO do cartão (nunca empurram a página) */
+  .cli-card, .rel-card { max-width: 100%; }
+  .cli-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* abas/segmentos/kanban roláveis em vez de estourar */
+  .rel-tabs, .seg, .kanban { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .rel-tabs::-webkit-scrollbar, .seg::-webkit-scrollbar { height: 0; }
+  /* modais cabem na tela */
+  .modal { width: 94vw !important; max-width: 94vw !important; }
+  /* linhas de filtros/ações quebram em vez de estourar */
+  .dash-filter, .rel-acts, .fld-row, .rel-card-h { flex-wrap: wrap; }
+  .rel-acts .btn { flex: 1 1 auto; }
+}
+
+/* 2) Grids de colunas FIXAS (classes conhecidas + inline) colapsam para 1 no celular.
+   Os grids auto-fit/auto-fill já são responsivos e NÃO são tocados. React serializa
+   o inline sem espaço após o ':' (grid-template-columns:1fr 1fr). */
+@media (max-width: 760px) {
+  .dash-grid, .rel-kpis, .kpi-grid, .kpi-3, .tiles, .set-grid, .set-grid2,
+  .split, .funnel-grid, .rank-grid, .fil-body, .perm-grid, .units-grid,
+  .venda-row, .quick-reg, .sim-grid, .com-body, .doc-meta {
+    grid-template-columns: 1fr !important;
+  }
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns:2fr 1fr"],
+  [style*="grid-template-columns:1.25fr 1fr"],
+  [style*="grid-template-columns:1.1fr 1fr"],
+  [style*="grid-template-columns:1.4fr 1fr"],
+  [style*="grid-template-columns:repeat(2"],
+  [style*="grid-template-columns:repeat(3"],
+  [style*="grid-template-columns:repeat(4"],
+  [style*="grid-template-columns:repeat(5"],
+  [style*="grid-template-columns:repeat(6"] {
+    grid-template-columns: 1fr !important;
+  }
+}
