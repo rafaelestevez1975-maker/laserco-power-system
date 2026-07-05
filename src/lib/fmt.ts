@@ -8,7 +8,12 @@ type Dataish = string | number | Date | null | undefined
 
 function asDate(d: Dataish): Date | null {
   if (d == null || d === '') return null
-  const dt = d instanceof Date ? d : new Date(d)
+  // Data SÓ-DIA (YYYY-MM-DD): parseia como meia-noite LOCAL (T00:00:00 sem 'Z'), senão o JS
+  // interpreta como UTC e o fuso desloca o dia → o SSR (UTC) e o cliente (ex.: BRT, UTC-3)
+  // renderizam dias diferentes e o React acusa hydration mismatch (#418) nas listas de
+  // vencimento (Contas a Receber etc.). Com T00:00:00 ambos tratam como o mesmo dia local.
+  const soDia = typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)
+  const dt = d instanceof Date ? d : new Date(soDia ? d + 'T00:00:00' : d)
   return isNaN(dt.getTime()) ? null : dt
 }
 
