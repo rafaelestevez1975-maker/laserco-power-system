@@ -6,10 +6,9 @@ import {
   criarDesconto,
   editarDesconto,
   alternarAtivoDesconto,
-  TIPOS_DESCONTO,
   type DescontoInput,
-  type TipoDesconto,
 } from '@/app/(app)/descontos/actions'
+import { TIPOS_DESCONTO, type TipoDesconto } from '@/app/(app)/descontos/constants'
 
 export type DescontoRow = {
   id: string

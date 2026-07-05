@@ -8,7 +8,8 @@ import { listInstances, sendText } from '@/lib/uazapi'
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
 /** Estágios canônicos do processo seletivo (CHECK em candidatos.estagio_kanban). */
-export const ESTAGIOS = ['triagem', 'entrevista_rh', 'teste_tecnico', 'entrevista_gestor', 'proposta', 'contratado', 'reprovado'] as const
+// interno ('use server' só exporta funções async; o RecrutamentoManager tem a sua própria lista)
+const ESTAGIOS = ['triagem', 'entrevista_rh', 'teste_tecnico', 'entrevista_gestor', 'proposta', 'contratado', 'reprovado'] as const
 export type Estagio = (typeof ESTAGIOS)[number]
 const FONTES = ['portal', 'whatsapp', 'indicacao', 'linkedin', 'outro']
 

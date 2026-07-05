@@ -10,9 +10,9 @@ import {
   criarAjustePonto,
   editarPonto,
   salvarPontoConfig,
-  PONTO_TIPOS,
   type AjustePontoInput,
 } from '@/app/(app)/ponto/actions'
+import { PONTO_TIPOS } from '@/lib/rh'
 
 export type ColabOpt = { id: string; nome: string | null; cargo: string | null; unidade_id: string | null }
 export type ConfigPonto = ConfigPontoT

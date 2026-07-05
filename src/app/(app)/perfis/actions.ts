@@ -4,12 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
 import { adminClient } from '@/lib/supabase/admin'
+// ESCOPOS vem de ./constants (um 'use server' só pode exportar funções async).
+import { ESCOPOS, type Escopo } from './constants'
 
 export type ActionResult = { ok: boolean; error?: string }
-
-/** Escopos válidos, do mais restrito ao mais amplo (ordem usada no editor). */
-export const ESCOPOS = ['proprio', 'unidade', 'empresa', 'global'] as const
-export type Escopo = (typeof ESCOPOS)[number]
 
 /**
  * Mudança de uma célula do grid: recurso × ação → escopo selecionado (ou null = sem permissão).

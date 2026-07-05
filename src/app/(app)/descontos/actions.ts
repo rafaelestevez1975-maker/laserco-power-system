@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+// Tipos de desconto vêm de ./constants (um 'use server' só pode exportar funções async).
+import { TIPOS_DESCONTO, type TipoDesconto } from './constants'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
 
@@ -10,10 +12,6 @@ const PAPEIS_GESTAO = ['financeiro', 'gestor']
 function podeGerir(papel: string | null | undefined): boolean {
   return ehAdmin(papel) || PAPEIS_GESTAO.includes(papel || '')
 }
-
-// Tipos suportados de desconto (schema real: coluna `tipo` é texto livre; padronizamos aqui).
-export const TIPOS_DESCONTO = ['percentual', 'valor'] as const
-export type TipoDesconto = (typeof TIPOS_DESCONTO)[number]
 
 export type DescontoInput = {
   nome: string

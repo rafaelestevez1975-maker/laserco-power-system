@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { salvarPermissoesCargo, aplicarPreset, ESCOPOS, type Escopo, type CellChange } from '@/app/(app)/perfis/actions'
+import { salvarPermissoesCargo, aplicarPreset, type CellChange } from '@/app/(app)/perfis/actions'
+import { ESCOPOS, type Escopo } from '@/app/(app)/perfis/constants'
 
 export type Recurso = { id: string; modulo: string; nome: string; descricao: string | null }
 export type Acao = { id: string; descricao: string }

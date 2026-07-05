@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { temPapel, ehAdmin } from '@/lib/rbac'
-import { PONTO_TIPOS as PONTO_TIPOS_LIB, haversine, dentroDaCerca, PONTO_DEFAULTS } from '@/lib/rh'
+import { PONTO_TIPOS, haversine, dentroDaCerca, PONTO_DEFAULTS } from '@/lib/rh'
 
-/** Tipos de marcação do legado (PONTO_TIPOS). Os valores são o enum `registros_ponto.tipo`. */
-export const PONTO_TIPOS = PONTO_TIPOS_LIB
+// PONTO_TIPOS vem de @/lib/rh (um 'use server' não pode re-exportar valor não-async;
+// o PontoManager passou a importar direto do lib).
 const TIPOS_VALIDOS = PONTO_TIPOS.map((t) => t.k)
 
 /** Origem da marcação (`registros_ponto.fonte`). */

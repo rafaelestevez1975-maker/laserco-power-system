@@ -28,12 +28,13 @@ function podeEscrever(papel: string | null | undefined): boolean {
   return ehAdmin(papel) || PAPEIS_ESCRITA.includes(papel || '')
 }
 
-/** Indicadores aceitos  espelham as metas do legado. */
-export const INDICADORES = ['venda', 'agendamentos', 'clientes_novos', 'indicacoes', 'sessoes'] as const
+/** Indicadores aceitos  espelham as metas do legado. Consts INTERNAS: um 'use server' só
+ *  pode exportar funções async (os componentes têm as suas próprias listas / usam @/lib/periodo). */
+const INDICADORES = ['venda', 'agendamentos', 'clientes_novos', 'indicacoes', 'sessoes'] as const
 export type Indicador = (typeof INDICADORES)[number]
 
 /** Período de apuração (legado: mensal / quinzenal / decendial). */
-export const PERIODOS = ['mensal', 'quinzenal', 'decendial'] as const
+const PERIODOS = ['mensal', 'quinzenal', 'decendial'] as const
 
 export type MetaInput = {
   colaborador_id: string
