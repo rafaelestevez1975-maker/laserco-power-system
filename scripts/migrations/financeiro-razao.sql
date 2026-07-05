@@ -175,12 +175,16 @@ $$;
 -- Ignora competências FUTURAS: um lançamento manual com vencimento distante (ex.: despesa
 -- teste venc. 01/01/2027) criava competencia futura e "sequestrava" o DRE default para um
 -- mês vazio (bug 03/07: "DRE está vazio" logo após apurar junho). Fallback = max geral.
+-- Default = último mês COM RECEITA apurada (não só qualquer lançamento): um reembolso do SAC
+-- (despesa) no mês corrente sem faturamento ainda não pode abrir o DRE num mês vazio
+-- (bug 05/07: DRE abrindo julho com Receita bruta R$ 0). Fallback: max <= mês atual, depois max geral.
 create or replace function public.fin_ultima_competencia()
 returns date language sql stable as $$
   select coalesce(
-    max(competencia) filter (where competencia <= date_trunc('month', now())::date),
-    max(competencia)
-  ) from fin_lancamento
+    (select max(competencia) from fin_lancamento where natureza='receita' and competencia <= date_trunc('month', now())::date),
+    (select max(competencia) from fin_lancamento where competencia <= date_trunc('month', now())::date),
+    (select max(competencia) from fin_lancamento)
+  )
 $$;
 
 -- Escopo COMPOSTO (Matheus/QA 03/07): p_escopo aceita lista separada por vírgula
