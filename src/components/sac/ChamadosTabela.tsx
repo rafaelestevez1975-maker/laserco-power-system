@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { atualizarChamado, solicitarReembolso, criarAcordo } from '@/app/(app)/sac/actions'
 import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
-import { moedaBR, dataBR } from '@/lib/fmt'
+import { moedaBR, dataBR, dataHoraBR } from '@/lib/fmt'
 import { calcReembolso, primeiroPagamentoValido, MSG_DIA15, lerObsMeta, situacaoChamado, type Situacao } from '@/lib/sac'
 
 export type ChamadoRow = {
@@ -55,7 +55,7 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
                 return (
                   <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => setEdit(t)} title="Clique para editar">
                     <td><b>{t.protocolo || `SAC-${t.numero ?? ''}`}</b></td>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{t.criado_em ? new Date(t.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : <span style={{ color: 'var(--muted)' }}></span>}</td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{t.criado_em ? dataHoraBR(t.criado_em) : <span style={{ color: 'var(--muted)' }}></span>}</td>
                     <td>{t.nome_cliente || ''}{t.telefone_cliente && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.telefone_cliente}</div>}</td>
                     <td>{t.canal || ''}</td>
                     <td>{t.unidade_id ? (uniNome[t.unidade_id] ?? '') : <span style={{ color: 'var(--muted)' }}>Central</span>}{tipo && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{tipo}</div>}</td>

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { rotearSiteLead } from '@/app/(app)/leads-site/actions'
+import { dataBR } from '@/lib/fmt'
 
 export type SiteLead = {
   id: string
@@ -163,7 +164,7 @@ export function SiteLeadsInbox({ leads, unidades, activeUnitId }: { leads: SiteL
                 {l.contato && <span><i className="ti ti-brand-whatsapp" /> {l.contato}</span>}
                 {l.email && <span><i className="ti ti-mail" /> {l.email}</span>}
                 {l.area && <span>· {l.area}</span>}
-                {l.quando && <span>· {new Date(l.quando).toLocaleDateString('pt-BR')}</span>}
+                {l.quando && <span>· {dataBR(l.quando)}</span>}
               </div>
               {l.mensagem && <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>“{l.mensagem}”</div>}
             </div>

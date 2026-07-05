@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { darBaixaLancamento } from '@/app/(app)/financeiro/actions'
-import { moedaBR } from '@/lib/fmt'
+import { moedaBR, dataBR } from '@/lib/fmt'
 
 export type Lancamento = {
   id: string; descricao: string | null; valor: number | null; status: string | null
@@ -41,7 +41,7 @@ export function FinContasPagar({ lancamentos }: { lancamentos: Lancamento[] }) {
               <tr key={l.id}>
                 <td>{l.descricao || ''}{l.origem_ref_id && <span className="orig-tag" style={{ fontSize: 10, marginLeft: 6 }}>SAC</span>}</td>
                 <td>{l.categoria || ''}</td>
-                <td>{l.data_vencimento ? new Date(l.data_vencimento).toLocaleDateString('pt-BR') : ''}</td>
+                <td>{dataBR(l.data_vencimento)}</td>
                 <td><b>{money(l.valor)}</b></td>
                 <td><span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, ...stPill(l.status) }}>{(l.status || '').replace(/^\w/, (c) => c.toUpperCase())}</span></td>
                 <td style={{ textAlign: 'right' }}>

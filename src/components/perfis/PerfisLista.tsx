@@ -36,7 +36,8 @@ function fmtData(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  // timeZone fixo (BR): senão SSR (UTC) × cliente (BRT) divergem → hydration mismatch (#418).
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
 }
 
 export function PerfisLista({
