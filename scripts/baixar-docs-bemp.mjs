@@ -22,14 +22,27 @@ import { readFileSync } from 'fs'
 const lerEnv = (p) => Object.fromEntries(readFileSync(p, 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]))
 const env = lerEnv(new URL('../.env.local', import.meta.url).pathname)
 
-const { BEMP_WEB_BASE, BEMP_WEB_EMAIL, BEMP_WEB_SENHA } = env
-if (!BEMP_WEB_BASE || !BEMP_WEB_EMAIL || !BEMP_WEB_SENHA) {
-  console.error(`Faltam credenciais do app web do BEMP no .env.local:
-  BEMP_WEB_BASE=   (ex.: https://app.bemp.com.br)
-  BEMP_WEB_EMAIL=  (login usado pela equipe)
-  BEMP_WEB_SENHA=
-Peça ao Julio/Rafa o login e rode de novo. A infraestrutura de destino já está pronta
-(bucket clientes-docs + tabela clientes_documentos + lista de prioridade).`)
+// APP WEB DO BEMP  MAPEADO em 05/07 (login lucas@lasercompany.com confirmado):
+//   Base (tenant Laser):  https://laserco.bemp.app
+//   Login (Rails/Devise): POST /users/sign_in  com os campos:
+//     user[organization][subdomain] = laserco
+//     user[username] = <email>      user[password] = <senha>
+//     authenticity_token = <csrf da página /users/sign_in>
+//   Rotas úteis logado: /customers, /schedules, /custom_entities/customer_event,
+//     /customer_contract_templates, /report/*  (fotos/anamneses ficam no detalhe do cliente).
+//
+// BLOQUEIO ATUAL: a conta lucas@lasercompany.com cai numa TAREFA OBRIGATÓRIA de 1º acesso
+// (/mandatory_task/profile/edit) que exige DEFINIR UMA SENHA PERMANENTE e trava todo o resto
+// (clientes/documentos) até ser concluída. Concluir mudaria a senha e invalidaria a credencial
+// 123456  então NÃO fazemos isso. Peça ao Lucas para: 1) entrar no BEMP, 2) completar o "Perfil"
+// (definir a senha definitiva), 3) repassar a nova senha. Aí este robô destrava e mapeia os docs.
+const BEMP_WEB_BASE = env.BEMP_WEB_BASE || 'https://laserco.bemp.app'
+const { BEMP_WEB_EMAIL, BEMP_WEB_SENHA } = env
+if (!BEMP_WEB_EMAIL || !BEMP_WEB_SENHA) {
+  console.error(`Defina no .env.local a credencial JÁ com a tarefa obrigatória concluída:
+  BEMP_WEB_EMAIL=lucas@lasercompany.com
+  BEMP_WEB_SENHA=<senha DEFINITIVA, depois que o Lucas completar o Perfil no BEMP>
+Destino já pronto: bucket clientes-docs + tabela clientes_documentos + fila (8.363 c/ pacote).`)
   process.exit(2)
 }
 
