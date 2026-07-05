@@ -43,7 +43,7 @@ function DocPill({ d }: { d: { arquivo: string; data: string | null } | null }) 
 function dataBR(d: string | null): string {
   if (!d) return ''
   const dt = new Date(d)
-  return isNaN(dt.getTime()) ? '' : dt.toLocaleDateString('pt-BR')
+  return isNaN(dt.getTime()) ? '' : dt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
 
 // ─────────────────────── Modal "Notificar · Unidade" ───────────────────────

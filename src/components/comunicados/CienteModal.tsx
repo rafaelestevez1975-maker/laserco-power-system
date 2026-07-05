@@ -46,7 +46,7 @@ export function CienteModal({ comunicados }: { comunicados: PendenteCom[] }) {
         <div className="modal-body" style={{ display: 'block' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
             <span className="evt-type" style={{ background: `${cor}22`, color: cor }}><i className={`ti ${icone}`} /> {label}</span>
-            {atual.quando && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(atual.quando).toLocaleDateString('pt-BR')}</span>}
+            {atual.quando && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(atual.quando).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>}
             {atual.autor && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>· por {atual.autor}</span>}
           </div>
           <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>{atual.titulo}</h3>

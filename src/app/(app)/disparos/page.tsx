@@ -64,10 +64,10 @@ export default async function DisparosPage({ searchParams }: { searchParams: Pro
     campanhas = ((rCamp.data as CampDb[] | null) ?? []).map((c) => ({
       id: c.id, nome: c.nome, base: c.base_nome ?? '', canal: c.canal_nome ?? '', status: c.status,
       enviadas: c.enviadas, entregues: c.entregues, lidas: c.lidas, respostas: c.respostas,
-      quando: c.agendada_para ? `Agendada ${new Date(c.agendada_para).toLocaleString('pt-BR')}` : new Date(c.criado_em).toLocaleDateString('pt-BR'),
+      quando: c.agendada_para ? `Agendada ${new Date(c.agendada_para).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : new Date(c.criado_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
       unidade: c.unidade_id ? uniNome.get(c.unidade_id) ?? '' : 'Todas',
     }))
-    bases = ((rBase.data as BaseDb[] | null) ?? []).map((b) => ({ id: b.id, nome: b.nome, tipo: b.tipo, contatos: b.contatos, criada: new Date(b.criado_em).toLocaleDateString('pt-BR') }))
+    bases = ((rBase.data as BaseDb[] | null) ?? []).map((b) => ({ id: b.id, nome: b.nome, tipo: b.tipo, contatos: b.contatos, criada: new Date(b.criado_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) }))
     vip = ((rVip.data as VipDb[] | null) ?? []).map((g) => ({
       id: g.id, nome: g.nome, convite: g.data_convite, aquecimento: g.data_aquecimento,
       ofertaIni: g.data_oferta_ini, ofertaFim: g.data_oferta_fim, membros: g.membros, status: g.status, link: g.link_publico,

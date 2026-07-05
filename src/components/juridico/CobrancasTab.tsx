@@ -129,7 +129,7 @@ function NotifCard({ n }: { n: NotifRow }) {
           </div>
         ) : (
           <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 8 }}>
-            <i className="ti ti-mail-check" /> Enviada por e-mail ao franqueado{n.enviada_em ? ` em ${new Date(n.enviada_em).toLocaleDateString('pt-BR')}` : ''}.
+            <i className="ti ti-mail-check" /> Enviada por e-mail ao franqueado{n.enviada_em ? ` em ${new Date(n.enviada_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : ''}.
           </div>
         )}
       </div>

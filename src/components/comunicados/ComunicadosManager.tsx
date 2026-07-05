@@ -31,7 +31,7 @@ const ST_LABEL: Record<string, string> = { rascunho: 'Rascunho', agendado: 'Agen
 const ST_PILL: Record<string, string> = { publicado: 'ok', agendado: 'pend', encerrado: 'done', rascunho: 'draft' }
 
 function pct(l: number, d: number) { return Math.round((l / Math.max(d, 1)) * 100) }
-function dataBR(s: string) { try { return new Date(s).toLocaleDateString('pt-BR') } catch { return '' } }
+function dataBR(s: string) { try { return new Date(s).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) } catch { return '' } }
 function dentroPeriodo(iso: string, per: string): boolean {
   if (!per || per.startsWith('Período')) return true
   const d = new Date(iso); if (isNaN(+d)) return true

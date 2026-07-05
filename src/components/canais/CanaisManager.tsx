@@ -121,7 +121,7 @@ export function CanaisManager({ canais, unidades, atendentes = [], isAdmin, acti
             {c.owner && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 10 }}>{c.owner}</div>}
             {c.restrito && (
               <div style={{ fontSize: 11.5, background: '#FBF3DF', color: '#8a5a00', borderRadius: 8, padding: '7px 9px', marginBottom: 10, lineHeight: 1.4 }}>
-                <b><i className="ti ti-alert-triangle" /> Restrição do WhatsApp{c.restritoAte ? ` até ${new Date(c.restritoAte).toLocaleDateString('pt-BR')}` : ''}.</b> Este número não pode <b>iniciar</b> conversas novas pelo sistema (anti-spam de número recém-ativado). <b>Responder</b> quem te escreve funciona. Pra iniciar, use um número já estabelecido ou aguarde liberar.
+                <b><i className="ti ti-alert-triangle" /> Restrição do WhatsApp{c.restritoAte ? ` até ${new Date(c.restritoAte).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}` : ''}.</b> Este número não pode <b>iniciar</b> conversas novas pelo sistema (anti-spam de número recém-ativado). <b>Responder</b> quem te escreve funciona. Pra iniciar, use um número já estabelecido ou aguarde liberar.
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

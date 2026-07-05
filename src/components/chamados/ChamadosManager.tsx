@@ -164,7 +164,7 @@ export function ChamadosManager({ chamados, isAdmin, origemFranqueado, unidades 
             {list.map((c) => (
               <tr key={c.id}>
                 <td style={{ color: 'var(--text-3)' }}>#{c.numero}</td>
-                <td><span className="cli-name">{c.assunto}</span><div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.etiqueta} · aberto {new Date(c.abertoEm).toLocaleDateString('pt-BR')}</div></td>
+                <td><span className="cli-name">{c.assunto}</span><div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.etiqueta} · aberto {new Date(c.abertoEm).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div></td>
                 <td style={{ fontSize: 12 }}>{c.de} <i className="ti ti-arrow-right" style={{ color: 'var(--brand-400)' }} /> {c.para}</td>
                 <td>{c.responsavel === '' ? <span className="muted">a atribuir</span> : c.responsavel}</td>
                 <td><SitPill fin={c.finalizado} /></td>
@@ -245,7 +245,7 @@ function ChamadoDetalhe({ chamado, isAdmin, onBack }: { chamado: Chamado; isAdmi
             <div key={m.id} className={`msg ${m.papel_remetente === 'solicitante' ? 'in' : 'out'}`}>
               <div style={{ fontSize: 10.5, fontWeight: 700, marginBottom: 2, opacity: 0.8 }}>{m.autor_nome || (m.papel_remetente === 'solicitante' ? 'Solicitante' : 'Responsável')}</div>
               {m.mensagem}
-              <span className="mt">{new Date(m.criada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="mt">{new Date(m.criada_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}</span>
             </div>
           ))}
         </div>

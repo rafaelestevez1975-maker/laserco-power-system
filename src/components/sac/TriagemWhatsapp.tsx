@@ -43,7 +43,8 @@ const STATUS_LABEL: Record<string, string> = { aberto: 'Aberto', pendente: 'Pend
 const STATUS_ARQUIVADO = new Set(['resolvido', 'fechado'])
 
 const isIn = (d: string | null) => !/out|saida|saída|enviad|atendente|bot/i.test(d || '')
-const hora = (s: string | null) => (s ? new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '')
+// timeZone fixo (BR): senão a hora do SSR (UTC) × cliente (BRT) diverge → hydration mismatch (#418).
+const hora = (s: string | null) => (s ? new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }) : '')
 const iniciais = (n: string | null, tel: string | null) => (n?.trim()?.[0]?.toUpperCase()) || (tel ? tel.slice(-2) : '?')
 
 type Aba = 'minhas' | 'fila' | 'todas'
