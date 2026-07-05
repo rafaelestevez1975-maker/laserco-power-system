@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { temPapel, ehAdmin } from '@/lib/rbac'
-import { listAtendentesSac } from '@/lib/pessoas'
 import { adminClient } from '@/lib/supabase/admin'
 import { getSessionContext } from '@/lib/session'
 import { candidatosOnline } from '@/lib/sac-distribuicao'
@@ -217,13 +216,15 @@ export async function distribuirFila(): Promise<DistribResult> {
   const ctx = await getSessionContext()
   const unidadeId = ctx?.activeUnitId ?? null
 
-  const atendentes = await listAtendentesSac(sb, false, true) // só operacionais (exclui Consulta SAC)
-  if (atendentes.length === 0) return { ok: false, error: 'Nenhum atendente SAC ativo para distribuir.' }
+  // Só atendentes ONLINE + operacionais (mesma regra da auto-distribuição  QA 05/07: o botão
+  // manual usava listAtendentesSac e podia despejar a fila em quem estava OFFLINE).
+  const online = await candidatosOnline(sb, unidadeId)
+  if (online.length === 0) return { ok: false, error: 'Nenhuma atendente ONLINE para distribuir. Peça para ficarem online (ou distribua quando estiverem).' }
 
-  const carga = await cargaPorAtendente(sb, atendentes.map((a) => a.id), unidadeId)
+  const carga = await cargaPorAtendente(sb, online, unidadeId)
   const menosCarregado = () => {
-    let best = atendentes[0].id, min = Infinity
-    for (const a of atendentes) { const c = carga.get(a.id) ?? 0; if (c < min) { min = c; best = a.id } }
+    let best = online[0], min = Infinity
+    for (const id of online) { const c = carga.get(id) ?? 0; if (c < min) { min = c; best = id } }
     return best
   }
 
@@ -256,7 +257,7 @@ export async function distribuirFila(): Promise<DistribResult> {
   }
 
   revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem'); revalidatePath('/sac/chamados')
-  return { ok: true, conversas: nConv, tickets: nTick, atendentes: atendentes.length }
+  return { ok: true, conversas: nConv, tickets: nTick, atendentes: online.length }
 }
 
 /** Reequilibra o BACKLOG: redistribui as conversas ABERTAS já atribuídas entre as atendentes
