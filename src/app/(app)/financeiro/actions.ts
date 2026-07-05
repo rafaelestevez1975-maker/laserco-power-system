@@ -575,9 +575,25 @@ export async function apurarDespesasDaCompetencia(ano: number, mes: number): Pro
   // Regras configuráveis (% ≥ 0; 0 = não lança essa despesa).
   const { data: cfg } = await op.sb.from('fin_config').select('imposto_pct, comissao_pct, comissao_base, taxa_cartao_pct').order('atualizado_em', { ascending: false }).limit(1).maybeSingle()
   const impPct = Number((cfg as { imposto_pct?: number } | null)?.imposto_pct) || 0
-  const comPct = Number((cfg as { comissao_pct?: number } | null)?.comissao_pct) || 0
   const txPct = Number((cfg as { taxa_cartao_pct?: number } | null)?.taxa_cartao_pct) || 0
   const comBase = ((cfg as { comissao_base?: string } | null)?.comissao_base || 'faturamento') as ComissaoBase
+
+  // COMISSÃO da MATRIZ (CEO 05/07: "comissões já estão cadastradas na Matriz, não me peça um %").
+  // A Matriz é por cargo e por meta (t80..t130); para o DRE usamos a taxa-BASE efetiva de cada
+  // cargo (individual+loja OU por sessão, o que se aplica) e tiramos a MÉDIA da equipe — estimativa
+  // honesta sobre o faturamento. O motor de comissão por profissional/meta refina isto depois.
+  // Fallback: se a Matriz estiver vazia, usa o % manual de fin_config (retrocompatível).
+  const { data: mtz } = await op.sb.from('matriz_comissoes').select('base_individual_pct, base_loja_pct, base_sessao_pct, base_individual_on, base_loja_on, base_sessao_on')
+  const linhasMtz = (mtz ?? []) as { base_individual_pct: number; base_loja_pct: number; base_sessao_pct: number; base_individual_on: boolean; base_loja_on: boolean; base_sessao_on: boolean }[]
+  let comPct = Number((cfg as { comissao_pct?: number } | null)?.comissao_pct) || 0
+  if (linhasMtz.length > 0) {
+    const taxas = linhasMtz.map((m) => {
+      const revenue = (m.base_individual_on ? Number(m.base_individual_pct) || 0 : 0) + (m.base_loja_on ? Number(m.base_loja_pct) || 0 : 0)
+      const sessao = m.base_sessao_on ? Number(m.base_sessao_pct) || 0 : 0
+      return Math.max(revenue, sessao) // cada cargo ganha por venda OU por sessão
+    })
+    comPct = Math.round((taxas.reduce((s, x) => s + x, 0) / taxas.length) * 100) / 100
+  }
 
   const emp = await empresaId(op.sb)
   const mapa = await mapaFinanceiro(op.sb)

@@ -1498,11 +1498,11 @@ function ConfigTab({ config, planoContas = [], royaltiesUnidade = [] }: { config
 
       <div className="rel-card" style={{ marginTop: 14 }}>
         <div className="set-sec" style={{ marginTop: 0 }}>Regras de despesa <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}> alimentam o DRE e o Fluxo pelo razão</span></div>
-        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 12px' }}>Percentuais aplicados sobre o <b>faturamento real do BEMP</b> ao apurar o mês (Royalties → Apurar mês). <b>0 = não lança</b> a despesa. Ajuste conforme seu contador  o DRE recalcula na próxima apuração.</div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '2px 0 12px' }}>Percentuais aplicados sobre o <b>faturamento real do BEMP</b> ao apurar o mês (Royalties → Apurar mês). <b>0 = não lança</b> a despesa. <b>Comissão</b> vem automaticamente da <b>Matriz de comissões</b> (Cadastros); <b>imposto</b> varia pelo faturamento (Simples) — preencha a alíquota efetiva do seu contador quando tiver.</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 12 }}>
           <div className="mf full"><label>Imposto  regime</label><input value={impostoRegime} onChange={(e) => setImpostoRegime(e.target.value)} placeholder="Simples Nacional" /></div>
           <div className="mf full"><label>Imposto  alíquota efetiva (%)</label><input type="number" step="0.1" min={0} max={100} value={imposto} onChange={(e) => setImposto(parseFloat(e.target.value) || 0)} /></div>
-          <div className="mf full"><label>Comissão (%)</label><input type="number" step="0.1" min={0} max={100} value={comissao} onChange={(e) => setComissao(parseFloat(e.target.value) || 0)} /></div>
+          <div className="mf full"><label>Comissão (%) <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 11 }}>— automática pela Matriz</span></label><input type="number" step="0.1" value={comissao} disabled title="A comissão é calculada pela Matriz de comissões (Cadastros). Este campo é só reserva." style={{ background: 'var(--surface-2)', cursor: 'not-allowed' }} /></div>
           <div className="mf full"><label>Comissão  base de cálculo</label>
             <select value={comissaoBase} onChange={(e) => setComissaoBase(e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
               {COMISSAO_BASE_OPCOES.map((o) => <option key={o.valor} value={o.valor}>{o.label}</option>)}
