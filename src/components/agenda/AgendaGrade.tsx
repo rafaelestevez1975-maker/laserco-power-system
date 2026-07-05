@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   criarAgendamento, confirmarAgendamento, cancelarAgendamento, buscarClientes,
-  cadastrarClienteRapido, criarBloqueio, publicarEventoRede, excluirEventoRede,
+  cadastrarClienteRapido, criarBloqueio, publicarEventoRede, excluirEventoRede, sincronizarAgendaBemp,
   type ClienteOpcao, type ActionResult,
 } from '@/app/(app)/agenda/actions'
 import { dataBR } from '@/lib/fmt'
@@ -106,6 +106,8 @@ function hhmm(m: number): string {
 
 export function AgendaGrade(props: AgGridProps) {
   const router = useRouter()
+  const [syncBusy, setSyncBusy] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
   const {
     dia, diaPrev, diaNext, labelDia, gap, profissionais, agendamentos, bloqueios,
     servicos, eventosRede, ocupacao, unidadeId, podeAgendar, podeGerenciarEventos,
@@ -210,7 +212,18 @@ export function AgendaGrade(props: AgGridProps) {
           {podeGerenciarEventos && (
             <button className="btn" onClick={() => setNovoEvento(true)}><i className="ti ti-calendar-star" /> Novo evento</button>
           )}
-          <button className="btn btn-ghost" title="Atualizar" onClick={() => router.refresh()}><i className="ti ti-refresh" /></button>
+          {/* Julio 04/07: o "atualizar" solto vira Sincronizar BEMP  materializa o staging na agenda. */}
+          <button className="btn btn-ghost" disabled={syncBusy} title="Puxa do BEMP os agendamentos que ainda não estão na agenda"
+            onClick={async () => {
+              setSyncBusy(true); setSyncMsg('')
+              const r = await sincronizarAgendaBemp()
+              setSyncBusy(false)
+              setSyncMsg(r.ok ? `${r.novos ?? 0} novo(s) · BEMP até ${r.dadosAte ? dataBR(r.dadosAte.slice(0, 10)) : ''}` : (r.error || 'Erro ao sincronizar.'))
+              if (r.ok) router.refresh()
+            }}>
+            <i className={`ti ${syncBusy ? 'ti-loader-2' : 'ti-refresh'}`} /> {syncBusy ? 'Sincronizando…' : 'Sincronizar BEMP'}
+          </button>
+          {syncMsg && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{syncMsg}</span>}
         </div>
       </div>
 

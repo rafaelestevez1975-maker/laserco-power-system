@@ -33,6 +33,9 @@ const MOTIVOS_OFICIAIS = [
   'Ausência de resultados', 'Cancelamento', 'Encerramento da unidade', 'Falha operacional',
   'Intercorrência', 'Laser Club', 'Máquina Quebrada', 'Motivo Pessoal', 'Sessões Expiradas',
   'Transferência de Pacotes', 'Outros',
+  // Leads do site que caem no WhatsApp do SAC (Julio 04/07: "registrar que é agendamento,
+  // que é cortesia, que é promoção")  a IA classifica e o chamado nasce com o motivo certo.
+  'Promoção do site', 'Agendamento (site)', 'Cortesia/Brinde', 'Avaliação gratuita',
 ]
 /** Resolve o MOTIVO do chamado a partir do lead do site (pedido do Julio: "o assunto deveria
  *  entrar em motivo, só que não se encaixa nas opções"). Ordem: dados.motivo exato (form novo)
@@ -45,6 +48,10 @@ export function resolverMotivoSac(d: Record<string, unknown> | null | undefined)
     if (oficial) return oficial
   }
   const texto = `${campo(d, 'assunto', 'area', 'servico') ?? ''} ${campo(d, 'mensagem') ?? ''}`.toLowerCase()
+  // Leads do site primeiro (promoção/cortesia/avaliação NÃO são reclamação  não podem cair em 'Outros')
+  if (/promo[çc][ãa]o|oferta|desconto do site|cupom/.test(texto)) return 'Promoção do site'
+  if (/cortesia|brinde|gr[áa]tis ganho|sess[ãa]o gratuita ganha/.test(texto)) return 'Cortesia/Brinde'
+  if (/avalia[çc][ãa]o (gratuita|gr[áa]tis)/.test(texto)) return 'Avaliação gratuita'
   if (/reembols|cancel|devolu|estorno/.test(texto)) return 'Cancelamento'
   if (/(unidade|loja|filial).{0,30}(fech|encerr)|fech.{0,20}(unidade|loja)/.test(texto)) return 'Encerramento da unidade'
   if (/sem resultado|não (vejo|tive|teve) resultado|ausência de resultado|nao funciona/.test(texto)) return 'Ausência de resultados'

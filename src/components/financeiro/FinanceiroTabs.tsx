@@ -272,7 +272,7 @@ function FluxoTab({ serie0, resumo0, comp0, hojeISO, recebiveis, contasPagar, un
         )}
         {busy && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>carregando…</span>}
       </div>
-      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única)  visão <b>{escopoLabel}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. A receita da franquia só entra se você marcar <b>Franquias</b>.</div>
+      <div className="rel-legend">Fluxo de caixa derivado do <b>razão</b> (fonte única)  visão <b>{escopoLabel}</b>. Entradas/saídas pela <b>data prevista de caixa</b>; <b>Recebido/Pago</b> refletem baixas registradas. A operação das franquias fica fora desta conta  da franquia entram só os <b>royalties</b>.</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
         {kpis.map((k) => (
@@ -1069,6 +1069,10 @@ const ESCOPO_PARTES: { valor: string; label: string }[] = [
   { valor: 'proprias', label: 'Lojas próprias' },
   { valor: 'franquias', label: 'Franquias' },
 ]
+// Rafael 04/07 (via Julio): franquia é irrelevante no financeiro da franqueadora  OCULTAR o
+// checkbox (não remover a lógica: "vai que ele muda de ideia"  é só virar esta flag).
+const MOSTRAR_FRANQUIAS = false
+const ESCOPO_VISIVEIS = ESCOPO_PARTES.filter((p) => MOSTRAR_FRANQUIAS || p.valor !== 'franquias')
 const ESCOPO_DEFAULT = ['franqueadora', 'proprias'] // financeiro da franqueadora SEM franquias
 const rotuloEscopo = (partes: string[]) =>
   ESCOPO_PARTES.filter((p) => partes.includes(p.valor)).map((p) => p.label).join(' + ') || 'Franqueadora'
@@ -1081,7 +1085,7 @@ function EscopoPicker({ partes, onChange }: { partes: string[]; onChange: (p: st
   return (
     <span style={{ display: 'inline-flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
       <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Incluir na conta:</span>
-      {ESCOPO_PARTES.map((p) => (
+      {ESCOPO_VISIVEIS.map((p) => (
         <label key={p.valor} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, cursor: 'pointer', fontWeight: partes.includes(p.valor) ? 700 : 400 }}>
           <input type="checkbox" checked={partes.includes(p.valor)} onChange={() => toggle(p.valor)} style={{ accentColor: 'var(--brand-500)' }} />
           {p.label}
@@ -1236,7 +1240,7 @@ function DreTab({ dre, competencia, unidades = [], unidadeAtiva = null, config =
   return (
     <div>
       {seletor}
-      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  <b>{visao === 'anual' ? `ano ${ano}` : compLabel}</b> · visão <b>{tituloEscopo}</b>. A receita da franquia só entra se você marcar <b>Franquias</b> (você não conhece a despesa delas  aqui é o resultado da franqueadora). <b>AV%</b> = análise vertical sobre a receita bruta.</div>
+      <div className="rel-legend">DRE derivado do <b>razão</b> (fonte única)  <b>{visao === 'anual' ? `ano ${ano}` : compLabel}</b> · visão <b>{tituloEscopo}</b>. A operação das franquias fica fora do DRE da franqueadora (a despesa delas não é conhecida)  da franquia entra só o <b>royalty</b>. <b>AV%</b> = análise vertical sobre a receita bruta.</div>
       {semRegras && (
         <div className="rel-legend" style={{ background: '#FFF3E0', color: '#7A4E00', border: '1px solid #F0C987' }}>
           <i className="ti ti-settings" /> <b>Imposto, comissão e taxa de cartão ainda estão em 0%</b>  por isso essas despesas não aparecem no DRE.

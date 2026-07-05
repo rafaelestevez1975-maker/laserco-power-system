@@ -284,3 +284,21 @@ returns table(conta text, total numeric) language sql stable as $$
 $$;
 
 notify pgrst, 'reload schema';
+
+-- Sincronização da AGENDA com o BEMP (botão "Sincronizar BEMP"  Julio 04/07).
+-- Materializa o staging bemp_agendamentos → agendamentos; o staging é atualizado
+-- pelo sync do servidor (scripts/sync-bemp-operacional.mjs).
+create or replace function public.sincronizar_agendamentos_do_bemp()
+returns integer language sql security definer set search_path = public as $$
+  with ins as (
+    insert into agendamentos (empresa_id, unidade_id, inicio, fim, status, origem, observacao, bemp_id, criado_em)
+    select '00000000-0000-0000-0000-000000000001', u.id, b.inicio, b.fim,
+      case b.status when 'Fechada' then 'concluido' when 'Cancelada' then 'cancelado' when 'Aberta' then 'aberto'
+                    when 'Confirmada' then 'confirmado' when 'Em atendimento' then 'em_atendimento' else 'aberto' end::status_agendamento,
+      'sistema', b.observacao, b.bemp_id, coalesce(b.criado_no_bemp_em, b.inicio)
+    from bemp_agendamentos b join unidades u on u.bemp_salon_id = b.bemp_salon_id
+    where not exists (select 1 from agendamentos a where a.bemp_id = b.bemp_id)
+    returning 1)
+  select count(*)::int from ins
+$$;
+revoke all on function public.sincronizar_agendamentos_do_bemp() from anon;

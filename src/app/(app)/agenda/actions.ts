@@ -371,3 +371,17 @@ export async function excluirEventoRede(id: string): Promise<ActionResult> {
 
 // TODO(legado): "Nova venda" a partir do horário (abrir OS/venda)  buildAgenda() abre OS
 //   ao clicar; integração de vendas/OS fora do escopo deste módulo.
+
+/** Sincroniza a agenda com o BEMP (pedido do Julio 04/07: o botão de atualizar vira
+ *  "Sincronizar BEMP"). Materializa o staging bemp_agendamentos → agendamentos via RPC;
+ *  o staging em si é atualizado pelo sync do servidor (scripts/sync-bemp-operacional.mjs). */
+export async function sincronizarAgendaBemp(): Promise<ActionResult & { novos?: number; dadosAte?: string | null }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!temPapel(op.papel, 'gestor', 'financeiro', 'atendente')) return { ok: false, error: 'Você não tem permissão para sincronizar a agenda.' }
+  const { data, error: e } = await op.sb.rpc('sincronizar_agendamentos_do_bemp')
+  if (e) return { ok: false, error: msgErro(e.message, 'sincronizar com o BEMP') }
+  const { data: ate } = await op.sb.from('bemp_agendamentos').select('sincronizado_em').order('sincronizado_em', { ascending: false }).limit(1).maybeSingle()
+  revalidatePath('/agenda')
+  return { ok: true, novos: Number(data) || 0, dadosAte: (ate as { sincronizado_em?: string } | null)?.sincronizado_em ?? null }
+}
