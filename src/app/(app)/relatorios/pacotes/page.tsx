@@ -5,31 +5,65 @@ import { RelFiltros } from '@/components/relatorios/RelFiltros'
 import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { resolveRelRange, asTsStart } from '@/components/relatorios/relPeriodo'
+import { rotuloMes } from '@/components/dashboards/agg'
 
 export const dynamic = 'force-dynamic'
 
 type SP = { periodo?: string; di?: string; df?: string }
 
-// Teto de segurança ao puxar linhas (SEMPRE escopamos por período/unidade no servidor,
-// então a janela é pequena; ainda assim limitamos o pull para não estourar memória).
-const PULL_CAP = 5000
+// Teto de segurança ao paginar (SEMPRE escopamos por período/unidade no servidor).
+// IMPORTANTE: paginamos com range() em lotes de PAGE — um único .limit(N) grande é cortado
+// silenciosamente pelo teto max-rows (=1000) do PostgREST, o que fazia o relatório enxergar
+// só as ~1000 OS mais recentes (subcontagem grave numa janela com ~12k vendas de pacote).
+const PULL_CAP = 20000
+const PAGE = 1000
 
-// Linha de pacote vendido (item de OS) já com os embeds resolvidos.
-// Fonte: os_pacotes (item de venda) → os (data/unidade/status) → pacotes (nome).
-// Colunas confirmadas em src/app/(app)/os/actions.ts e src/app/(app)/pacotes/page.tsx.
-type OsPacoteRow = {
-  quantidade: number | null
-  preco: number | null
-  desconto: number | null
+// Venda de pacote = ORDEM DE SERVIÇO com origem='pacote'.
+// A tabela de itens os_pacotes veio VAZIA do import BEMP (só cabeçalhos de OS entraram);
+// portanto a fonte real das vendas de pacote é a própria OS (origem='pacote'). Colunas
+// confirmadas no banco: preco_total (bruto), desconto_total, total (líquido), status, criado_em.
+// Obs.: o import não trouxe QUAL pacote (não há pacote_id na OS), então não há ranking por
+// nome de pacote nos dados históricos — o detalhamento por pacote passa a existir conforme o
+// PDV gerar novas vendas (que populam os_pacotes). Aqui reportamos os agregados reais + por mês.
+type OsRow = {
+  status: string | null
+  preco_total: number | null
+  desconto_total: number | null
   total: number | null
-  os: { criado_em: string | null; unidade_id: string | null; status: string | null } | { criado_em: string | null; unidade_id: string | null; status: string | null }[] | null
-  pacote: { nome: string | null } | { nome: string | null }[] | null
+  criado_em: string | null
 }
 
-/** Normaliza embed do Supabase (vem como objeto ou array de 1). */
-function one<T>(v: T | T[] | null | undefined): T | null {
-  if (v == null) return null
-  return Array.isArray(v) ? (v[0] ?? null) : v
+/** Pagina (range) as OS de pacote do período/unidade. Nunca usa um .limit() grande (max-rows). */
+async function pullPacotes(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  unidadeId: string | null,
+  iniTs: string | null,
+  fimTs: string | null,
+): Promise<{ rows: OsRow[]; capped: boolean; erro: boolean }> {
+  const out: OsRow[] = []
+  let from = 0
+  let capped = false
+  for (;;) {
+    let query = sb
+      .from('os')
+      .select('status, preco_total, desconto_total, total, criado_em')
+      .eq('origem', 'pacote')
+      .order('criado_em', { ascending: false })
+    if (unidadeId) query = query.eq('unidade_id', unidadeId)
+    if (iniTs) query = query.gte('criado_em', iniTs)
+    if (fimTs) query = query.lt('criado_em', fimTs)
+    const { data, error } = await query.range(from, from + PAGE - 1)
+    if (error) return { rows: out, capped, erro: true }
+    const batch = (data ?? []) as OsRow[]
+    out.push(...batch)
+    if (batch.length < PAGE) break
+    from += PAGE
+    if (out.length >= PULL_CAP) {
+      capped = true
+      break
+    }
+  }
+  return { rows: out, capped, erro: false }
 }
 
 export default async function RelPacotesPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -38,87 +72,66 @@ export default async function RelPacotesPage({ searchParams }: { searchParams: P
   const sb = await createClient()
   const unidadeId = ctx?.activeUnitId ?? null
 
-  // Vendas de pacote são históricas (importadas do legado) → 90d cobre melhor que 'mes'.
+  // Vendas de pacote concentram-se no mês corrente → 90d cobre bem sem nascer vazio.
   const periodo = sp.periodo || '90d'
   const range = resolveRelRange(periodo, sp.di, sp.df)
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
-  // ── Pull dos pacotes vendidos (os_pacotes) escopados por período + unidade via OS ──
-  // os!inner garante que só vêm itens com OS existente; filtramos nas colunas da OS.
-  let query = sb
-    .from('os_pacotes')
-    .select('quantidade, preco, desconto, total, os:os!inner(criado_em, unidade_id, status), pacote:pacotes(nome)')
-    .order('criado_em', { ascending: false, referencedTable: 'os' })
-    .limit(PULL_CAP)
-  if (unidadeId) query = query.eq('os.unidade_id', unidadeId)
-  if (iniTs) query = query.gte('os.criado_em', iniTs)
-  if (fimTs) query = query.lt('os.criado_em', fimTs)
-
-  const { data, error } = await query
-  const rows = (error ? [] : ((data ?? []) as OsPacoteRow[]))
+  // ── Pull das OS de pacote escopadas por período (criado_em) + unidade ──
+  const { rows, capped: pullCapped, erro: error } = await pullPacotes(sb, unidadeId, iniTs, fimTs)
 
   // ── Agrega em memória (janela escopada, no máx. PULL_CAP linhas) ──
+  // Muitas OS de pacote são CORTESIA/indicação (total=0, 100% de desconto). Contamos essas
+  // à parte para não distorcer o ticket médio (calculado só sobre os pacotes pagos).
   let receita = 0
   let descontos = 0
-  let unidades = 0 // qtd de pacotes vendidos (soma das quantidades)
-  const itens = rows.length // nº de linhas (itens de venda)
   let canceladas = 0
+  let cortesias = 0
+  let pagos = 0
+  const itens = rows.length
 
-  // por pacote (nome) → { receita, qtd }
-  const porPacote = new Map<string, { receita: number; qtd: number }>()
-  // por mês (YYYY-MM) → receita
-  const porMes = new Map<string, number>()
+  // por mês (YYYY-MM) → { receita, qtd, pagos }
+  const porMes = new Map<string, { receita: number; qtd: number; pagos: number }>()
 
   for (const r of rows) {
-    const os = one(r.os)
-    const pac = one(r.pacote)
-    const valor = Number(r.total) || 0
-    const desc = Number(r.desconto) || 0
-    const qtd = Number(r.quantidade) || 0
-    const isCancelada = (os?.status || '').toLowerCase() === 'cancelada'
-
+    const isCancelada = (r.status || '').toLowerCase() === 'cancelada'
     if (isCancelada) {
       canceladas += 1
-      continue // não conta nas métricas de receita
+      continue // vendas canceladas não entram nas métricas de receita
     }
-
+    const valor = Number(r.total) || 0
+    const desc = Number(r.desconto_total) || 0
     receita += valor
     descontos += desc
-    unidades += qtd
+    const ehPago = valor > 0
+    if (ehPago) pagos += 1
+    else cortesias += 1
 
-    const nome = pac?.nome || '(pacote removido)'
-    const acc = porPacote.get(nome) || { receita: 0, qtd: 0 }
-    acc.receita += valor
-    acc.qtd += qtd
-    porPacote.set(nome, acc)
-
-    const ym = (os?.criado_em || '').slice(0, 7) // YYYY-MM
-    if (ym) porMes.set(ym, (porMes.get(ym) || 0) + valor)
+    const ym = (r.criado_em || '').slice(0, 7) // YYYY-MM
+    if (ym) {
+      const acc = porMes.get(ym) || { receita: 0, qtd: 0, pagos: 0 }
+      acc.receita += valor
+      acc.qtd += 1
+      if (ehPago) acc.pagos += 1
+      porMes.set(ym, acc)
+    }
   }
 
   const vendidos = itens - canceladas
-  const ticketMedio = vendidos > 0 ? receita / vendidos : 0
-  const capped = rows.length >= PULL_CAP
+  const ticketMedio = pagos > 0 ? receita / pagos : 0
+  const capped = pullCapped
 
-  // Ranking de pacotes por receita.
-  const linhasPacote = [...porPacote.entries()]
-    .map(([nome, v]) => ({ nome, receita: v.receita, qtd: v.qtd }))
-    .sort((a, b) => b.receita - a.receita)
-
-  const barTopPacotes: BarRow[] = linhasPacote
-    .slice(0, 10)
-    .map((p) => ({ label: p.nome, value: p.receita, display: moedaBR(p.receita) }))
-
-  const barMeses: BarRow[] = [...porMes.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([ym, v]) => ({ label: ym, value: v, display: moedaBR(v) }))
+  // Séries por mês (cronológicas) para gráficos + tabela de detalhamento.
+  const meses = [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  const barReceita: BarRow[] = meses.map(([ym, v]) => ({ label: rotuloMes(ym), value: v.receita, display: moedaBR(v.receita) }))
+  const barQtd: BarRow[] = meses.map(([ym, v]) => ({ label: rotuloMes(ym), value: v.qtd, display: v.qtd.toLocaleString('pt-BR') }))
 
   const kpis: RelKpi[] = [
     { label: 'Receita de pacotes', value: moedaBR(receita), icon: 'ti-cash' },
-    { label: 'Pacotes vendidos', value: unidades.toLocaleString('pt-BR') + (capped ? '+' : ''), icon: 'ti-package' },
-    { label: 'Ticket médio', value: moedaBR(ticketMedio), icon: 'ti-receipt-2' },
-    { label: 'Descontos concedidos', value: moedaBR(descontos), icon: 'ti-discount-2' },
+    { label: 'Pacotes vendidos', value: vendidos.toLocaleString('pt-BR') + (capped ? '+' : ''), icon: 'ti-package' },
+    { label: 'Ticket médio (pagos)', value: moedaBR(ticketMedio), icon: 'ti-receipt-2' },
+    { label: 'Cortesias (100% desc.)', value: cortesias.toLocaleString('pt-BR'), icon: 'ti-gift' },
   ]
 
   return (
@@ -140,57 +153,60 @@ export default async function RelPacotesPage({ searchParams }: { searchParams: P
 
       {capped && !error && (
         <div className="rel-card" style={{ background: 'var(--gold-soft)', borderColor: 'var(--gold-400)', fontSize: 12.5, color: 'var(--text-2)', padding: '10px 14px' }}>
-          <i className="ti ti-alert-triangle" /> Período muito amplo: somando os primeiros {PULL_CAP.toLocaleString('pt-BR')} itens. Refine o período ou filtre por unidade para totais exatos.
+          <i className="ti ti-alert-triangle" /> Período muito amplo: somando as primeiras {PULL_CAP.toLocaleString('pt-BR')} vendas. Refine o período ou filtre por unidade para totais exatos.
         </div>
       )}
 
       <RelKpis kpis={kpis} />
 
       <div className="dash-grid" style={{ marginBottom: 16 }}>
-        <BarChart title="Top pacotes por receita" icon="ti-package" rows={barTopPacotes} gold asMoeda emptyMsg="Nenhum pacote vendido no período." />
-        <BarChart title="Receita por mês" icon="ti-calendar-dollar" rows={barMeses} gold asMoeda emptyMsg="Sem receita de pacotes no período." />
+        <BarChart title="Receita de pacotes por mês" icon="ti-calendar-dollar" rows={barReceita} gold asMoeda emptyMsg="Sem receita de pacotes no período." />
+        <BarChart title="Pacotes vendidos por mês" icon="ti-package" rows={barQtd} emptyMsg="Nenhum pacote vendido no período." />
       </div>
 
       <div className="rel-card">
         <div className="rel-card-h" style={{ marginBottom: 12, cursor: 'default' }}>
           <span>
-            <i className="ti ti-table" /> Pacotes vendidos no período
+            <i className="ti ti-table" /> Detalhamento por mês
           </span>
-          <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600 }}>{linhasPacote.length} pacote(s)</span>
+          <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600 }}>{vendidos.toLocaleString('pt-BR')} venda(s) no período</span>
         </div>
         <div className="cli-scroll">
           <table className="cli-table">
             <thead>
               <tr>
-                <th>Pacote</th>
-                <th className="num-r">Qtd. vendida</th>
+                <th>Mês</th>
+                <th className="num-r">Pacotes vendidos</th>
                 <th className="num-r">Receita</th>
+                <th className="num-r">Ticket médio</th>
                 <th className="num-r">% da receita</th>
               </tr>
             </thead>
             <tbody>
-              {linhasPacote.length === 0 && (
+              {meses.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
                     Nenhum pacote vendido no período selecionado.
                   </td>
                 </tr>
               )}
-              {linhasPacote.map((p) => (
-                <tr key={p.nome}>
-                  <td>{p.nome}</td>
-                  <td className="num-r">{p.qtd.toLocaleString('pt-BR')}</td>
-                  <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(p.receita)}</td>
-                  <td className="num-r">{receita > 0 ? ((p.receita / receita) * 100).toFixed(1) : '0,0'}%</td>
+              {meses.map(([ym, v]) => (
+                <tr key={ym}>
+                  <td>{rotuloMes(ym)}</td>
+                  <td className="num-r">{v.qtd.toLocaleString('pt-BR')}</td>
+                  <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(v.receita)}</td>
+                  <td className="num-r">{moedaBR(v.pagos > 0 ? v.receita / v.pagos : 0)}</td>
+                  <td className="num-r">{receita > 0 ? ((v.receita / receita) * 100).toFixed(1) : '0,0'}%</td>
                 </tr>
               ))}
             </tbody>
-            {linhasPacote.length > 0 && (
+            {meses.length > 0 && (
               <tfoot>
                 <tr style={{ borderTop: '2px solid var(--line)' }}>
                   <td style={{ fontWeight: 800 }}>Total</td>
-                  <td className="num-r" style={{ fontWeight: 800 }}>{unidades.toLocaleString('pt-BR')}</td>
+                  <td className="num-r" style={{ fontWeight: 800 }}>{vendidos.toLocaleString('pt-BR')}</td>
                   <td className="num-r" style={{ fontWeight: 800 }}>{moedaBR(receita)}</td>
+                  <td className="num-r" style={{ fontWeight: 800 }}>{moedaBR(ticketMedio)}</td>
                   <td className="num-r" style={{ fontWeight: 800 }}>100%</td>
                 </tr>
               </tfoot>
@@ -200,9 +216,13 @@ export default async function RelPacotesPage({ searchParams }: { searchParams: P
       </div>
 
       <div className="crm-note" style={{ marginTop: 14, fontSize: 12.5, color: 'var(--text-3)' }}>
-        <i className="ti ti-info-circle" /> Vendas de pacotes contam itens de ordens de serviço (<code>os_pacotes</code>),
-        escopadas pela data de abertura da OS e pela unidade ativa.
-        {canceladas > 0 && <> {canceladas.toLocaleString('pt-BR')} item(ns) de OS cancelada foram desconsiderados.</>}
+        <i className="ti ti-info-circle" /> Vendas de pacotes = ordens de serviço com origem <code>pacote</code>, escopadas pela data de
+        abertura da OS e pela unidade ativa. O ticket médio considera só os pacotes pagos; as {cortesias.toLocaleString('pt-BR')} cortesia(s)
+        (100% de desconto, ex.: indicação) entram na contagem de vendidos mas não no ticket. Total de descontos concedidos no período:
+        {' '}{moedaBR(descontos)}.
+        {canceladas > 0 && <> {canceladas.toLocaleString('pt-BR')} venda(s) cancelada(s) foram desconsideradas.</>} O detalhamento
+        por nome de pacote passa a aparecer conforme novas vendas forem registradas pelo PDV (a base importada do BEMP não trouxe
+        qual pacote de cada OS).
       </div>
     </div>
   )

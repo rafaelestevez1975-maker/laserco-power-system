@@ -5,40 +5,38 @@ import { RelFiltros } from '@/components/relatorios/RelFiltros'
 import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { resolveRelRange, asTsStart } from '@/components/relatorios/relPeriodo'
+import { rotuloMes } from '@/components/dashboards/agg'
 
 export const dynamic = 'force-dynamic'
 
 type SP = { periodo?: string; di?: string; df?: string }
 
 // Teto de segurança ao paginar (a base de agendamentos tem ~136k linhas, mas SEMPRE
-// escopamos por concluido_em (período) e/ou unidade  a janela é bem menor). Ainda assim
+// escopamos por inicio (período) e/ou unidade  a janela é bem menor). Ainda assim
 // limitamos o pull para não explodir em períodos amplos.
 const SUM_CAP = 20000
 const PAGE = 1000
 
-// Réplica mínima das colunas confirmadas em src/app/(app)/agenda/page.tsx:
-//   agendamentos: id, inicio, fim, status, servico_id, profissional_id, unidade_id, concluido_em
-//   FK profissional_id → perfis_usuario (embed desambiguado pelo nome do FK).
-//   FK servico_id → servicos(nome, duracao_min).
-type ServicoEmbed = { nome: string | null; duracao_min: number | null } | null
-type ProfEmbed = { nome_completo: string | null } | null
+// Atendimento concluído = agendamento com status='concluido'. A coluna concluido_em veio
+// 100% vazia do import BEMP (por isso o filtro antigo deixava a tela sempre em branco), mas o
+// STATUS marca corretamente. Dimensões REAIS disponíveis nesses registros: inicio, fim (→ duração
+// real), unidade_id (+ nome). O import NÃO trouxe servico_id/profissional_id/cliente_id (todos
+// nulos), então o relatório analisa o que existe de verdade: volume por mês e por unidade.
+type UnidadeEmbed = { nome: string | null } | null
 type AgRow = {
   id: string
   inicio: string | null
-  concluido_em: string | null
-  servico_id: string | null
-  profissional_id: string | null
-  servico: ServicoEmbed | ServicoEmbed[]
-  profissional: ProfEmbed | ProfEmbed[]
+  fim: string | null
+  unidade_id: string | null
+  unidade: UnidadeEmbed | UnidadeEmbed[]
 }
 
-// Interface estrutural mínima do builder encadeável (eq/gte/lt/not + range thenable).
+// Interface estrutural mínima do builder encadeável (eq/gte/lt + range thenable).
 type SbQuery = {
   select: (cols: string) => SbQuery
   eq: (c: string, v: unknown) => SbQuery
   gte: (c: string, v: unknown) => SbQuery
   lt: (c: string, v: unknown) => SbQuery
-  not: (c: string, op: string, v: unknown) => SbQuery
   range: (a: number, b: number) => Promise<{ data: unknown[] | null; error: unknown }>
 }
 
@@ -48,10 +46,20 @@ function um<T>(v: T | T[] | null): T | null {
   return v ?? null
 }
 
+/** Duração em minutos entre inicio e fim; ignora valores inválidos/absurdos (> 8h). */
+function duracaoMin(inicio: string | null, fim: string | null): number {
+  if (!inicio || !fim) return 0
+  const a = Date.parse(inicio)
+  const b = Date.parse(fim)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0
+  const min = (b - a) / 60000
+  return min > 0 && min <= 480 ? min : 0
+}
+
 /**
- * Pagina (range) os atendimentos CONCLUÍDOS (concluido_em not null) do período,
- * escopados por unidade quando houver. Devolve linhas mínimas + flag de truncamento.
- * Sempre trata erro de query → estado vazio (nunca quebra em runtime).
+ * Pagina (range) os atendimentos CONCLUÍDOS (status='concluido') do período, escopados por
+ * unidade quando houver; período filtrado por `inicio` (sempre preenchido). Devolve linhas
+ * mínimas + flag de truncamento. Sempre trata erro de query → estado vazio (nunca quebra).
  */
 async function pullAtendimentos(
   sb: Awaited<ReturnType<typeof createClient>>,
@@ -65,13 +73,11 @@ async function pullAtendimentos(
   for (;;) {
     let q = sb
       .from('agendamentos')
-      .select(
-        'id, inicio, concluido_em, servico_id, profissional_id, servico:servicos(nome, duracao_min), profissional:perfis_usuario!agendamentos_profissional_id_fkey(nome_completo)',
-      )
-      .not('concluido_em', 'is', null) as unknown as SbQuery
+      .select('id, inicio, fim, unidade_id, unidade:unidades(nome)')
+      .eq('status', 'concluido') as unknown as SbQuery
     if (unidadeId) q = q.eq('unidade_id', unidadeId)
-    if (iniTs) q = q.gte('concluido_em', iniTs)
-    if (fimTs) q = q.lt('concluido_em', fimTs)
+    if (iniTs) q = q.gte('inicio', iniTs)
+    if (fimTs) q = q.lt('inicio', fimTs)
     const { data, error } = await q.range(from, from + PAGE - 1)
     if (error) return { rows: out, capped, erro: true }
     const batch = (data ?? []) as AgRow[]
@@ -86,35 +92,16 @@ async function pullAtendimentos(
   return { rows: out, capped, erro: false }
 }
 
-type Agrupado = { chave: string; nome: string; count: number; duracaoTotal: number }
-
-/** Agrupa atendimentos por uma chave (serviço/profissional), somando duração estimada. */
-function agrupar(rows: AgRow[], modo: 'servico' | 'profissional'): Agrupado[] {
-  const map = new Map<string, Agrupado>()
-  for (const r of rows) {
-    const serv = um(r.servico)
-    const prof = um(r.profissional)
-    const dur = serv?.duracao_min ?? 0
-    let chave: string
-    let nome: string
-    if (modo === 'servico') {
-      chave = r.servico_id ?? '__sem__'
-      nome = serv?.nome?.trim() || 'Sem serviço'
-    } else {
-      chave = r.profissional_id ?? '__sem__'
-      nome = prof?.nome_completo?.trim() || 'Sem profissional'
-    }
-    const cur = map.get(chave) ?? { chave, nome, count: 0, duracaoTotal: 0 }
-    cur.count += 1
-    cur.duracaoTotal += dur
-    map.set(chave, cur)
-  }
-  return [...map.values()].sort((a, b) => b.count - a.count)
-}
+type PorUnidade = { chave: string; nome: string; count: number; duracaoTotal: number }
 
 function minutosLabel(min: number): string {
-  if (min <= 0) return ''
+  if (min <= 0) return '—'
   return `${Math.round(min)} min`
+}
+
+function horasLabel(min: number): string {
+  if (min <= 0) return '—'
+  return `${Math.round(min / 60).toLocaleString('pt-BR')} h`
 }
 
 export default async function RelAtendimentosPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -123,8 +110,8 @@ export default async function RelAtendimentosPage({ searchParams }: { searchPara
   const sb = await createClient()
   const unidadeId = ctx?.activeUnitId ?? null
 
-  // Atendimentos concluídos são históricos (data importada do BEMP vai até ~2025) →
-  // default '90d' como no relatório de faturamento, para o relatório não nascer vazio.
+  // Default '90d' (a base de atendimentos concluídos concentra-se em torno do mês corrente),
+  // para o relatório não nascer vazio.
   const periodo = sp.periodo || '90d'
   const range = resolveRelRange(periodo, sp.di, sp.df)
   const iniTs = asTsStart(range.ini)
@@ -134,33 +121,43 @@ export default async function RelAtendimentosPage({ searchParams }: { searchPara
 
   // ── Agregações em memória ──
   const total = rows.length
-  const porServico = agrupar(rows, 'servico')
-  const porProfissional = agrupar(rows, 'profissional')
+  const porUnidade = new Map<string, PorUnidade>()
+  const porMes = new Map<string, number>()
+  let duracaoTotal = 0
+  let comDuracao = 0
 
-  // Profissionais ativos = distintos com profissional_id preenchido (ignora "Sem profissional").
-  const profsAtivos = porProfissional.filter((p) => p.chave !== '__sem__').length
-  const servicosDistintos = porServico.filter((s) => s.chave !== '__sem__').length
+  for (const r of rows) {
+    const dur = duracaoMin(r.inicio, r.fim)
+    if (dur > 0) {
+      duracaoTotal += dur
+      comDuracao += 1
+    }
+    const chave = r.unidade_id ?? '__sem__'
+    const nome = um(r.unidade)?.nome?.trim() || 'Sem unidade'
+    const cur = porUnidade.get(chave) ?? { chave, nome, count: 0, duracaoTotal: 0 }
+    cur.count += 1
+    cur.duracaoTotal += dur
+    porUnidade.set(chave, cur)
 
-  // Duração média estimada a partir de servicos.duracao_min (só conta linhas com duração > 0).
-  const totalDuracao = porServico.reduce((a, s) => a + s.duracaoTotal, 0)
-  const comDuracao = rows.reduce((a, r) => {
-    const serv = um(r.servico)
-    return a + ((serv?.duracao_min ?? 0) > 0 ? 1 : 0)
-  }, 0)
-  const duracaoMedia = comDuracao > 0 ? totalDuracao / comDuracao : 0
+    const ym = (r.inicio || '').slice(0, 7) // YYYY-MM
+    if (ym) porMes.set(ym, (porMes.get(ym) || 0) + 1)
+  }
 
-  const barServicos: BarRow[] = porServico
+  const unidades = [...porUnidade.values()].sort((a, b) => b.count - a.count)
+  const unidadesAtivas = unidades.filter((u) => u.chave !== '__sem__').length
+  const duracaoMedia = comDuracao > 0 ? duracaoTotal / comDuracao : 0
+
+  const meses = [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  const barMeses: BarRow[] = meses.map(([ym, c]) => ({ label: rotuloMes(ym), value: c, display: c.toLocaleString('pt-BR') }))
+  const barUnidades: BarRow[] = unidades
     .slice(0, 10)
-    .map((s) => ({ label: s.nome, value: s.count, display: s.count.toLocaleString('pt-BR') }))
-  const barProfs: BarRow[] = porProfissional
-    .slice(0, 10)
-    .map((p) => ({ label: p.nome, value: p.count, display: p.count.toLocaleString('pt-BR') }))
+    .map((u) => ({ label: u.nome, value: u.count, display: u.count.toLocaleString('pt-BR') }))
 
   const kpis: RelKpi[] = [
     { label: 'Atendimentos concluídos', value: total.toLocaleString('pt-BR') + (capped ? '+' : ''), icon: 'ti-user-check' },
-    { label: 'Serviços distintos', value: servicosDistintos.toLocaleString('pt-BR'), icon: 'ti-list-details' },
-    { label: 'Profissionais ativos', value: profsAtivos.toLocaleString('pt-BR'), icon: 'ti-users' },
+    { label: 'Unidades atendendo', value: unidadesAtivas.toLocaleString('pt-BR'), icon: 'ti-building-store' },
     { label: 'Duração média', value: minutosLabel(duracaoMedia), icon: 'ti-clock' },
+    { label: 'Tempo total em atendimento', value: horasLabel(duracaoTotal), icon: 'ti-hourglass' },
   ]
 
   return (
@@ -196,14 +193,14 @@ export default async function RelAtendimentosPage({ searchParams }: { searchPara
           <RelKpis kpis={kpis} />
 
           <div className="dash-grid" style={{ marginBottom: 16 }}>
-            <BarChart title="Top serviços (atendimentos)" icon="ti-list-details" rows={barServicos} emptyMsg="Sem atendimentos no período." />
-            <BarChart title="Por profissional" icon="ti-users" rows={barProfs} emptyMsg="Sem atendimentos no período." />
+            <BarChart title="Atendimentos por mês" icon="ti-calendar-stats" rows={barMeses} emptyMsg="Sem atendimentos no período." />
+            <BarChart title="Atendimentos por unidade (top 10)" icon="ti-building-store" rows={barUnidades} emptyMsg="Sem atendimentos no período." />
           </div>
 
           <div className="rel-card">
             <div className="rel-card-h" style={{ marginBottom: 12, cursor: 'default' }}>
               <span>
-                <i className="ti ti-table" /> Atendimentos por serviço
+                <i className="ti ti-table" /> Atendimentos por unidade
               </span>
               <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600 }}>{total.toLocaleString('pt-BR')} no período</span>
             </div>
@@ -211,36 +208,36 @@ export default async function RelAtendimentosPage({ searchParams }: { searchPara
               <table className="cli-table">
                 <thead>
                   <tr>
-                    <th>Serviço</th>
+                    <th>Unidade</th>
                     <th className="num-r">Atendimentos</th>
                     <th className="num-r">% do total</th>
-                    <th className="num-r">Duração total (est.)</th>
+                    <th className="num-r">Duração média</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {porServico.length === 0 && (
+                  {unidades.length === 0 && (
                     <tr>
                       <td colSpan={4} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
                         Nenhum atendimento concluído no período selecionado.
                       </td>
                     </tr>
                   )}
-                  {porServico.map((s) => (
-                    <tr key={s.chave}>
-                      <td>{s.chave === '__sem__' ? <em>Sem serviço vinculado</em> : s.nome}</td>
-                      <td className="num-r" style={{ fontWeight: 600 }}>{s.count.toLocaleString('pt-BR')}</td>
-                      <td className="num-r">{total > 0 ? ((s.count / total) * 100).toFixed(1) : '0,0'}%</td>
-                      <td className="num-r">{minutosLabel(s.duracaoTotal)}</td>
+                  {unidades.map((u) => (
+                    <tr key={u.chave}>
+                      <td>{u.chave === '__sem__' ? <em>Sem unidade vinculada</em> : u.nome}</td>
+                      <td className="num-r" style={{ fontWeight: 600 }}>{u.count.toLocaleString('pt-BR')}</td>
+                      <td className="num-r">{total > 0 ? ((u.count / total) * 100).toFixed(1) : '0,0'}%</td>
+                      <td className="num-r">{minutosLabel(u.count > 0 ? u.duracaoTotal / u.count : 0)}</td>
                     </tr>
                   ))}
                 </tbody>
-                {porServico.length > 0 && (
+                {unidades.length > 0 && (
                   <tfoot>
                     <tr style={{ borderTop: '2px solid var(--line)' }}>
                       <td style={{ fontWeight: 800 }}>Total</td>
                       <td className="num-r" style={{ fontWeight: 800 }}>{total.toLocaleString('pt-BR')}</td>
                       <td className="num-r" style={{ fontWeight: 800 }}>100%</td>
-                      <td className="num-r" style={{ fontWeight: 800 }}>{minutosLabel(totalDuracao)}</td>
+                      <td className="num-r" style={{ fontWeight: 800 }}>{minutosLabel(duracaoMedia)}</td>
                     </tr>
                   </tfoot>
                 )}
@@ -248,50 +245,11 @@ export default async function RelAtendimentosPage({ searchParams }: { searchPara
             </div>
           </div>
 
-          <div className="rel-card">
-            <div className="rel-card-h" style={{ marginBottom: 12, cursor: 'default' }}>
-              <span>
-                <i className="ti ti-user-cog" /> Atendimentos por profissional
-              </span>
-              <span style={{ fontSize: 12.5, color: 'var(--text-3)', fontWeight: 600 }}>{porProfissional.length} registro(s)</span>
-            </div>
-            <div className="cli-scroll">
-              <table className="cli-table">
-                <thead>
-                  <tr>
-                    <th>Profissional</th>
-                    <th className="num-r">Atendimentos</th>
-                    <th className="num-r">% do total</th>
-                    <th className="num-r">Duração total (est.)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {porProfissional.length === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: 26, color: 'var(--text-3)' }}>
-                        Nenhum atendimento concluído no período selecionado.
-                      </td>
-                    </tr>
-                  )}
-                  {porProfissional.map((p) => (
-                    <tr key={p.chave}>
-                      <td>{p.chave === '__sem__' ? <em>Sem profissional vinculado</em> : p.nome}</td>
-                      <td className="num-r" style={{ fontWeight: 600 }}>{p.count.toLocaleString('pt-BR')}</td>
-                      <td className="num-r">{total > 0 ? ((p.count / total) * 100).toFixed(1) : '0,0'}%</td>
-                      <td className="num-r">{minutosLabel(p.duracaoTotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <div className="crm-note" style={{ marginTop: 4 }}>
-            <i className="ti ti-info-circle" /> Atendimentos = agendamentos com <code>concluido_em</code> preenchido. A duração é estimada
-            a partir de <code>servicos.duracao_min</code>. Na base importada (BEMP) muitos registros têm <code>profissional_id</code> vazio
-            e aparecem como &quot;Sem profissional vinculado&quot;.
-            {/* TODO(legado: atendimentos): ticket médio por atendimento depende de valor/forma de pagamento
-                ligados ao agendamento; quando a fonte (pagamentos × agendamento) existir, somar receita. */}
+            <i className="ti ti-info-circle" /> Atendimentos = agendamentos com <code>status</code> concluído, filtrados pela data de
+            atendimento (<code>inicio</code>). A duração é real (<code>fim − inicio</code>). A base importada do BEMP não trouxe o serviço
+            nem o profissional de cada atendimento, por isso a análise é por unidade e período; o detalhamento por serviço/profissional
+            passa a existir conforme novos atendimentos forem registrados pelo sistema.
           </div>
         </>
       )}
