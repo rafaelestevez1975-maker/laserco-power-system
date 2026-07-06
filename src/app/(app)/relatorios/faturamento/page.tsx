@@ -6,6 +6,7 @@ import { RelFiltros } from '@/components/relatorios/RelFiltros'
 import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { resolveRelRange } from '@/components/relatorios/relPeriodo'
+import { rotuloMes } from '@/components/dashboards/agg'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,7 +110,7 @@ export default async function RelFaturamentoPage({ searchParams }: { searchParam
   }
   const barMeses: BarRow[] = [...porMes.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([ym, v]) => ({ label: ym, value: v, display: moedaBR(v) }))
+    .map(([ym, v]) => ({ label: rotuloMes(ym), value: v, display: moedaBR(v) }))
 
   const barUnidades: BarRow[] = linhasUnidade.slice(0, 10).map((u) => ({ label: u.nome, value: u.valor, display: moedaBR(u.valor) }))
 

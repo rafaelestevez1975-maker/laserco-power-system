@@ -41,14 +41,28 @@ export default async function RelPerfisAcessoPage({
   const unidadeId = ctx?.activeUnitId ?? null
   const nomeUnidade: Record<string, string> = Object.fromEntries((ctx?.unidades ?? []).map((u) => [u.id, u.nome]))
 
+  // Pagina uma leitura com range() — sem isto, o teto de 1000 do PostgREST subcontava
+  // vínculos/permissões (ex.: cargo_permissoes tem +1000 linhas → permissões por perfil erradas).
+  async function paginar<T>(build: () => { range: (a: number, b: number) => PromiseLike<{ data: unknown[] | null; error: unknown }> }): Promise<{ data: T[]; error: unknown }> {
+    const out: T[] = []
+    for (let from = 0; from < 100000; from += 1000) {
+      const { data, error } = await build().range(from, from + 999)
+      if (error) return { data: out, error }
+      const lote = (data ?? []) as T[]
+      out.push(...lote)
+      if (lote.length < 1000) break
+    }
+    return { data: out, error: null }
+  }
+
   // ── Leituras RBAC (paralelo). Toda query trata erro → estado vazio (não quebra runtime). ──
   const [cargosRes, ucRes, cpRes, puRes] = await Promise.all([
     admin.from('cargos').select('id, nome, slug, descricao, is_sistema, ativo')
       .order('is_sistema', { ascending: false })
       .order('nome', { ascending: true }),
-    admin.from('usuario_cargos').select('perfil_id, cargo_id, unidade_id, ativo'),
-    admin.from('cargo_permissoes').select('cargo_id'),
-    admin.from('perfis_usuario').select('id, nome_completo, email').limit(2000),
+    paginar<UsuarioCargoRow>(() => admin.from('usuario_cargos').select('perfil_id, cargo_id, unidade_id, ativo')),
+    paginar<CargoPermRow>(() => admin.from('cargo_permissoes').select('cargo_id')),
+    paginar<PerfilUsuarioRow>(() => admin.from('perfis_usuario').select('id, nome_completo, email')),
   ])
 
   const cargos = (cargosRes.error ? [] : (cargosRes.data ?? [])) as CargoRow[]

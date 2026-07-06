@@ -18,6 +18,16 @@ type SB = Awaited<ReturnType<typeof createClient>>
 
 const PAGE = 1000
 export const PULL_CAP = 20000
+// Lote do filtro IN: UUIDs grandes estouram a URL do PostgREST (~800 ids → 400 Bad Request)
+// e, pior, .slice(0,1000) truncava SILENCIOSAMENTE a lista de OS → subcontagem de pagamentos.
+const IN_CHUNK = 150
+const PAR = 8 // lotes de chunks rodando em paralelo
+
+function emLotes<T>(arr: T[], n: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
+  return out
+}
 
 /** Builder estrutural mínimo (encadeável + thenable via range)  evita TS2589 do PostgREST. */
 type Q = {
@@ -84,31 +94,53 @@ export type PagLin = {
   status: string | null
 }
 
-/** Pagina os pagamentos de OS por janela de data_pagamento (DATE). */
+/**
+ * Pagina os pagamentos de OS por janela de data_pagamento (DATE).
+ * Quando há lista de OS da unidade (a tabela de pagamentos não tem unidade_id), escopamos por
+ * ela em LOTES pequenos (IN_CHUNK) — antes o `.slice(0,1000)` truncava a lista e subcontava o
+ * dinheiro de unidades grandes. Os lotes rodam em paralelo (PAR) e paginam internamente.
+ */
 export async function pullPagamentos(
   sb: SB,
   opts: { ini: string | null; fim: string | null; osIds?: string[] | null },
 ): Promise<{ rows: PagLin[]; capped: boolean }> {
-  const out: PagLin[] = []
-  let from = 0
-  let capped = false
-  // Se houver lista de OS da unidade, restringe por ela (a tabela de pagamentos não tem unidade_id).
   if (opts.osIds && opts.osIds.length === 0) return { rows: [], capped: false }
-  for (;;) {
-    let q = sb
-      .from('os_pagamentos')
-      .select('os_id, data_pagamento, metodo, tipo, valor, status') as unknown as Q
-    if (opts.osIds && opts.osIds.length > 0) q = q.in('os_id', opts.osIds.slice(0, 1000))
-    if (opts.ini) q = q.gte('data_pagamento', opts.ini)
-    if (opts.fim) q = q.lt('data_pagamento', opts.fim)
-    const { data } = await q.range(from, from + PAGE - 1)
-    const batch = (data ?? []) as PagLin[]
-    out.push(...batch)
-    if (batch.length < PAGE) break
-    from += PAGE
-    if (out.length >= PULL_CAP) {
-      capped = true
-      break
+
+  // Puxa um "chunk" (lista de os_id, ou null = sem filtro de OS) paginando por range.
+  async function puxarChunk(ids: string[] | null): Promise<PagLin[]> {
+    const acc: PagLin[] = []
+    let from = 0
+    for (;;) {
+      let q = sb
+        .from('os_pagamentos')
+        .select('os_id, data_pagamento, metodo, tipo, valor, status') as unknown as Q
+      if (ids) q = q.in('os_id', ids)
+      if (opts.ini) q = q.gte('data_pagamento', opts.ini)
+      if (opts.fim) q = q.lt('data_pagamento', opts.fim)
+      const { data } = await q.range(from, from + PAGE - 1)
+      const batch = (data ?? []) as PagLin[]
+      acc.push(...batch)
+      if (batch.length < PAGE) break
+      from += PAGE
+    }
+    return acc
+  }
+
+  const out: PagLin[] = []
+  let capped = false
+
+  if (!opts.osIds) {
+    out.push(...(await puxarChunk(null)))
+    if (out.length >= PULL_CAP) capped = true
+  } else {
+    const grupos = emLotes(opts.osIds, IN_CHUNK)
+    for (let i = 0; i < grupos.length; i += PAR) {
+      const res = await Promise.all(grupos.slice(i, i + PAR).map((g) => puxarChunk(g)))
+      for (const r of res) out.push(...r)
+      if (out.length >= PULL_CAP) {
+        capped = true
+        break
+      }
     }
   }
   return { rows: out, capped }
@@ -136,26 +168,48 @@ export const PAG_STATUS_LABEL: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
-/** Carrega nomes de perfis_usuario (vendedores) por id. */
+/** Carrega nomes de perfis_usuario (vendedores) por id — em lotes (antes só resolvia 1000). */
 export async function nomesPerfis(sb: SB, ids: string[]): Promise<Record<string, string>> {
   const out: Record<string, string> = {}
   const uniq = [...new Set(ids.filter(Boolean))]
   if (uniq.length === 0) return out
-  const { data } = await sb.from('perfis_usuario').select('id, nome_completo').in('id', uniq.slice(0, 1000))
-  for (const r of (data ?? []) as { id: string; nome_completo: string | null }[]) {
-    out[r.id] = r.nome_completo || '(sem nome)'
+  const res = await Promise.all(
+    emLotes(uniq, IN_CHUNK).map((g) => sb.from('perfis_usuario').select('id, nome_completo').in('id', g)),
+  )
+  for (const { data } of res) {
+    for (const r of (data ?? []) as { id: string; nome_completo: string | null }[]) {
+      out[r.id] = r.nome_completo || '(sem nome)'
+    }
   }
   return out
 }
 
-/** Carrega nomes de clientes por id. */
+/** Mapa os_id → cliente_id resolvido em lotes (os_pagamentos não tem cliente_id direto). */
+export async function mapaOsCliente(sb: SB, osIds: string[]): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {}
+  const uniq = [...new Set(osIds.filter(Boolean))]
+  if (uniq.length === 0) return out
+  const res = await Promise.all(
+    emLotes(uniq, IN_CHUNK).map((g) => sb.from('os').select('id, cliente_id').in('id', g)),
+  )
+  for (const { data } of res) {
+    for (const o of (data ?? []) as { id: string; cliente_id: string | null }[]) out[o.id] = o.cliente_id
+  }
+  return out
+}
+
+/** Carrega nomes de clientes por id — em lotes (antes só resolvia 1000). */
 export async function nomesClientes(sb: SB, ids: string[]): Promise<Record<string, string>> {
   const out: Record<string, string> = {}
   const uniq = [...new Set(ids.filter(Boolean))]
   if (uniq.length === 0) return out
-  const { data } = await sb.from('clientes').select('id, nome').in('id', uniq.slice(0, 1000))
-  for (const r of (data ?? []) as { id: string; nome: string | null }[]) {
-    out[r.id] = r.nome || '(sem nome)'
+  const res = await Promise.all(
+    emLotes(uniq, IN_CHUNK).map((g) => sb.from('clientes').select('id, nome').in('id', g)),
+  )
+  for (const { data } of res) {
+    for (const r of (data ?? []) as { id: string; nome: string | null }[]) {
+      out[r.id] = r.nome || '(sem nome)'
+    }
   }
   return out
 }

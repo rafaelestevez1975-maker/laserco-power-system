@@ -7,7 +7,7 @@ import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { ExportCsvButton } from '@/components/relatorios/ExportCsvButton'
 import { resolveRelRange } from '@/components/relatorios/relPeriodo'
-import { pullOS, pullPagamentos, nomesClientes, METODO_LABEL, PAG_STATUS_LABEL, PULL_CAP } from '@/lib/relatorios'
+import { pullOS, pullPagamentos, nomesClientes, mapaOsCliente, METODO_LABEL, PAG_STATUS_LABEL, PULL_CAP } from '@/lib/relatorios'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,14 +78,9 @@ export default async function RelPagamentosPage({ searchParams }: { searchParams
   const detalhe = [...rows].sort((a, b) => (b.data_pagamento || '').localeCompare(a.data_pagamento || '')).slice(0, LISTA_MAX)
   // Resolve cliente via OS (os_pagamentos não tem cliente_id direto).
   const osDetalheIds = [...new Set(detalhe.map((r) => r.os_id || '').filter(Boolean))]
-  const clienteDaOs: Record<string, string | null> = {}
-  if (osDetalheIds.length > 0) {
-    const { data: osr } = await sb.from('os').select('id, cliente_id').in('id', osDetalheIds.slice(0, 1000))
-    const cliIds: string[] = []
-    for (const o of (osr ?? []) as { id: string; cliente_id: string | null }[]) {
-      clienteDaOs[o.id] = o.cliente_id
-      if (o.cliente_id) cliIds.push(o.cliente_id)
-    }
+  const clienteDaOs = await mapaOsCliente(sb, osDetalheIds)
+  if (Object.keys(clienteDaOs).length > 0) {
+    const cliIds = Object.values(clienteDaOs).filter((v): v is string => !!v)
     const nomesC = await nomesClientes(sb, cliIds)
     for (const id of Object.keys(clienteDaOs)) {
       const cid = clienteDaOs[id]

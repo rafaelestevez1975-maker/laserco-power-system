@@ -121,15 +121,21 @@ export default async function DashFunilPage({ searchParams }: { searchParams: Pr
   ]
 
   // ── Leads por origem (real, crm_leads.origem)  pipeline 'cliente', escopado por unidade ──
-  let origemQ = sb.from('crm_leads').select('origem').eq('pipeline', 'cliente')
-  if (unidadeId) origemQ = origemQ.eq('unidade_id', unidadeId)
-  else if (unidadeIdsScope) origemQ = origemQ.in('unidade_id', unidadeIdsScope)
-  const { data: leadsOrigemRaw, error: leadsErr } = await origemQ
-  if (leadsErr) throw new DashAggError('crm_leads', leadsErr.message)
+  // Pagina com range(): um select simples é cortado no teto de 1000 do PostgREST → subcontava
+  // as origens em qualquer rede com +1000 leads. Teto de segurança em 50k linhas (só a coluna origem).
   const origemMap = new Map<string, number>()
-  for (const r of (leadsOrigemRaw ?? []) as { origem: string | null }[]) {
-    const k = (r.origem || 'Não informado').trim() || 'Não informado'
-    origemMap.set(k, (origemMap.get(k) || 0) + 1)
+  for (let from = 0; from < 50000; from += 1000) {
+    let origemQ = sb.from('crm_leads').select('origem').eq('pipeline', 'cliente')
+    if (unidadeId) origemQ = origemQ.eq('unidade_id', unidadeId)
+    else if (unidadeIdsScope) origemQ = origemQ.in('unidade_id', unidadeIdsScope)
+    const { data, error: leadsErr } = await origemQ.range(from, from + 999)
+    if (leadsErr) throw new DashAggError('crm_leads', leadsErr.message)
+    const lote = (data ?? []) as { origem: string | null }[]
+    for (const r of lote) {
+      const k = (r.origem || 'Não informado').trim() || 'Não informado'
+      origemMap.set(k, (origemMap.get(k) || 0) + 1)
+    }
+    if (lote.length < 1000) break
   }
   const origemRows: BarRow[] = [...origemMap.entries()]
     .map(([label, value]) => ({ label, value, display: value.toLocaleString('pt-BR') }))

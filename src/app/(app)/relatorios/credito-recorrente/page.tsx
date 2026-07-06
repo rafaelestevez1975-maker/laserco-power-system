@@ -7,7 +7,7 @@ import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { ExportCsvButton } from '@/components/relatorios/ExportCsvButton'
 import { resolveRelRange } from '@/components/relatorios/relPeriodo'
-import { pullOS, pullPagamentos, nomesClientes, PAG_STATUS_LABEL, PULL_CAP } from '@/lib/relatorios'
+import { pullOS, pullPagamentos, nomesClientes, mapaOsCliente, PAG_STATUS_LABEL, PULL_CAP } from '@/lib/relatorios'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,15 +74,10 @@ export default async function RelCreditoRecorrentePage({ searchParams }: { searc
 
   // ── Resolve cliente via OS (os_pagamentos não tem cliente_id direto) ──
   const osComPag = [...new Set(rows.map((r) => r.os_id || '').filter(Boolean))]
-  const clienteIdDaOs: Record<string, string | null> = {}
   const nomeCliente: Record<string, string> = {}
-  if (osComPag.length > 0) {
-    const { data: osr } = await sb.from('os').select('id, cliente_id').in('id', osComPag.slice(0, 1000))
-    const cliIds: string[] = []
-    for (const o of (osr ?? []) as { id: string; cliente_id: string | null }[]) {
-      clienteIdDaOs[o.id] = o.cliente_id
-      if (o.cliente_id) cliIds.push(o.cliente_id)
-    }
+  const clienteIdDaOs = await mapaOsCliente(sb, osComPag)
+  if (Object.keys(clienteIdDaOs).length > 0) {
+    const cliIds = Object.values(clienteIdDaOs).filter((v): v is string => !!v)
     Object.assign(nomeCliente, await nomesClientes(sb, cliIds))
   }
   const chaveCliente = (osId: string | null): string => {
