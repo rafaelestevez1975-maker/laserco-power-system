@@ -49,6 +49,25 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(home)
   }
 
+  // PRIMEIRO ACESSO: contas provisionadas em massa nascem com user_metadata.must_change=true
+  // (login temporário @laserco.app + senha padrão). Enquanto a flag existir, prendemos o usuário
+  // na tela /primeiro-acesso (troca e-mail + senha) — nenhuma outra rota abre. Lido do próprio
+  // token do auth (getUser), sem round-trip ao banco no middleware.
+  const mustChange = user.user_metadata?.must_change === true
+  if (mustChange && pathname !== '/primeiro-acesso') {
+    const pa = request.nextUrl.clone()
+    pa.pathname = '/primeiro-acesso'
+    pa.search = ''
+    return NextResponse.redirect(pa)
+  }
+  // Já concluiu (ou nunca precisou) mas caiu em /primeiro-acesso → manda pra home.
+  if (!mustChange && pathname === '/primeiro-acesso') {
+    const home = request.nextUrl.clone()
+    home.pathname = '/'
+    home.search = ''
+    return NextResponse.redirect(home)
+  }
+
   return supabaseResponse
 }
 
