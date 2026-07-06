@@ -66,6 +66,8 @@ export function TriagemWhatsapp({
   const [aba, setAba] = useState<Aba>('todas')
   const [verArquivadas, setVerArquivadas] = useState(false)
   const [sel, setSel] = useState<string | null>(null)
+  const [montado, setMontado] = useState(false)
+  useEffect(() => setMontado(true), [])
   const [texto, setTexto] = useState('')
   const [busy, setBusy] = useState(false)
   const [aviso, setAviso] = useState('')
@@ -264,6 +266,11 @@ export function TriagemWhatsapp({
     color: aba === id ? 'var(--brand-600)' : 'var(--text-3)', borderBottom: aba === id ? '2px solid var(--brand-500)' : '2px solid transparent',
   })
   const inpForm: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12.5, width: '100%' }
+
+  // Render só no cliente (fix 05/07): a triagem é uma tela de tempo real com dados voláteis
+  // (SLA, seleção automática, contadores) que causavam hydration mismatch (#418) intermitente.
+  // Renderizar após montar elimina a divergência SSR×cliente de vez; o skeleton some em ~1 frame.
+  if (!montado) return <div className="view active" style={{ padding: 24, color: 'var(--text-3)', fontSize: 13 }}><i className="ti ti-loader-2" /> Carregando triagem…</div>
 
   return (
     <>

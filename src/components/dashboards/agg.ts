@@ -152,9 +152,15 @@ export type ServAgg = { nome: string; faturamento: number; sessoes: number }
 export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAgg[]> {
   if (osIds.length === 0) return []
   const acc = new Map<string, { faturamento: number; sessoes: number }>()
-  // Processa em lotes de até 800 os_ids (limite seguro p/ filtro IN).
-  for (let i = 0; i < osIds.length; i += 800) {
-    const chunk = osIds.slice(i, i + 800)
+  // Ranking dos serviços mais faturados a partir de os_servicos. Dois cuidados (fix 05/07):
+  // 1) o filtro IN precisa de LOTE PEQUENO  ~120 UUIDs (800 gerava URL de ~30KB → 400 Bad
+  //    Request → a página inteira dava 500). 2) com 90 dias há dezenas de milhares de OS;
+  //    limitamos a uma AMOSTRA das mais recentes p/ o ranking (bounded, não estoura o tempo)
+  //    e degradamos com segurança se uma consulta falhar (nunca derruba o dashboard).
+  const RANK_MAX_OS = 3000
+  const ids = osIds.length > RANK_MAX_OS ? osIds.slice(0, RANK_MAX_OS) : osIds
+  for (let i = 0; i < ids.length; i += 120) {
+    const chunk = ids.slice(i, i + 120)
     let from = 0
     for (;;) {
       const { data, error } = await sb
@@ -162,7 +168,7 @@ export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAg
         .select('servico_id, quantidade, preco_total, total, servicos(nome)')
         .in('os_id', chunk)
         .range(from, from + PAGE - 1)
-      if (error) throw new DashAggError('os_servicos', error.message)
+      if (error) return [...acc.entries()].map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.faturamento - a.faturamento) // degrada: retorna o parcial
       const batch = (data ?? []) as Array<{
         servico_id: string | null
         quantidade: number | null
