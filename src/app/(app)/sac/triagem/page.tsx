@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { getSessionContext } from '@/lib/session'
 import { listAtendentesSac } from '@/lib/pessoas'
 import { TriagemWhatsapp, type Chat, type Msg, type Atendente, type Nota } from '@/components/sac/TriagemWhatsapp'
@@ -86,8 +87,11 @@ export default async function SacTriagemPage({ searchParams }: { searchParams?: 
     notas = ((notasRaw ?? []) as Nota[]).reverse()
   }
 
-  // Atendentes do SAC  fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario)
-  const atendentes = (await listAtendentesSac(sb)).map((a) => ({ id: a.id, nome: a.nome })) as Atendente[]
+  // Atendentes do SAC  fonte única (lib/pessoas, liga colaboradores⟷perfis_usuario).
+  // Usa admin client (service-role): a lista de transferência é operacional e NÃO pode depender
+  // da RLS de perfis_usuario — com o client do usuário logado, uma ATENDENTE via a lista vazia e
+  // não conseguia transferir (bug reportado 07/07). O admin devolve todos os atendentes do SAC.
+  const atendentes = (await listAtendentesSac(adminClient())).map((a) => ({ id: a.id, nome: a.nome })) as Atendente[]
 
   // Motivos do SAC (para o fluxo de abrir chamado, igual ao /sac/chamados)
   const { data: motivosRaw } = await sb.from('sac_motivos').select('label').eq('ativo', true).order('ordem', { ascending: true })

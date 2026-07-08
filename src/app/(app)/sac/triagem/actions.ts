@@ -9,7 +9,10 @@ import { reHostMidia } from '@/lib/sac-midia'
 
 // Papéis que operam a triagem (admin_geral sempre passa via temPapel).
 const PAPEIS_TRIAGEM = ['sac', 'gestor'] as const
-const STATUS_VALIDOS = ['aberto', 'pendente', 'em_atendimento', 'resolvido', 'fechado'] as const
+// A constraint sac_whatsapp_chats_status_check aceita SOMENTE estes 3 valores (default 'aberto').
+// 'fechado'/'em_atendimento' eram rejeitados pelo banco → toda ação que os gravava dava
+// "violates check constraint" e a conversa não mudava de estado (bug reportado 07/07).
+const STATUS_VALIDOS = ['aberto', 'pendente', 'resolvido'] as const
 type StatusConversa = (typeof STATUS_VALIDOS)[number]
 
 /** Gate-padrão da triagem: exige login + papel de atendimento/gestão.
@@ -262,7 +265,7 @@ export async function alterarStatusConversa(chatId: string, status: StatusConver
   if (!g.ok) return { ok: false, error: g.error }
   if (!STATUS_VALIDOS.includes(status)) return { ok: false, error: 'Status inválido.' }
   const patch: Record<string, unknown> = { status }
-  if (status === 'resolvido' || status === 'fechado') patch.nao_lidas = 0
+  if (status === 'resolvido') patch.nao_lidas = 0
   const { error } = await g.sb.from('sac_whatsapp_chats').update(patch).eq('id', chatId)
   if (error) return { ok: false, error: msgErro(error, 'alterar o status') }
   revalidatePath('/sac/triagem')
@@ -270,12 +273,12 @@ export async function alterarStatusConversa(chatId: string, status: StatusConver
 }
 
 /** Descarta/arquiva a conversa: tira da fila de triagem (paridade do legado sacTriDescartar).
- *  Sem schema próprio de "descartado" → marca status 'fechado' (mesmo conjunto de status já usado
- *  no projeto) e zera não-lidas. As conversas fechadas saem da lista ativa de triagem. */
+ *  Marca status 'resolvido' (valor aceito pela constraint do banco) e zera não-lidas.
+ *  As conversas resolvidas saem da lista ativa de triagem. */
 export async function descartarConversa(chatId: string): Promise<{ ok: boolean; error?: string }> {
   const g = await guardTriagem()
   if (!g.ok) return { ok: false, error: g.error }
-  const { error } = await g.sb.from('sac_whatsapp_chats').update({ status: 'fechado', nao_lidas: 0, atendente_id: null, bot_ativo: false }).eq('id', chatId)
+  const { error } = await g.sb.from('sac_whatsapp_chats').update({ status: 'resolvido', nao_lidas: 0, atendente_id: null, bot_ativo: false }).eq('id', chatId)
   if (error) return { ok: false, error: msgErro(error, 'descartar a conversa') }
   revalidatePath('/sac/triagem')
   return { ok: true }
