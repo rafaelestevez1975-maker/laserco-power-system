@@ -29,16 +29,25 @@ export async function concluirPrimeiroAcesso(input: { email: string; senha: stri
 
   const admin = adminClient()
 
+  // GATE: só quem está DE FATO em primeiro acesso (app_metadata.must_change) pode trocar por aqui.
+  // Sem isto, qualquer sessão logada (ex.: sequestrada) trocaria e-mail+senha pulando a confirmação
+  // por e-mail do Supabase (email_confirm:true) — takeover. Lido do auth server, não do input.
+  const { data: alvo } = await admin.auth.admin.getUserById(op.userId)
+  if (alvo?.user?.app_metadata?.must_change !== true) {
+    return { ok: false, error: 'Este passo é só do primeiro acesso e já foi concluído.' }
+  }
+
   // e-mail já em uso por outra conta? (evita erro cru do auth)
   const { data: existentes } = await admin.from('perfis_usuario').select('id').eq('email', email).neq('id', op.userId).limit(1)
   if (existentes && existentes.length > 0) return { ok: false, error: 'Esse e-mail já está em uso por outra conta.' }
 
   // Troca e-mail + senha e derruba a flag de primeiro acesso (Admin API = sem confirmação por e-mail).
+  // must_change vai em app_metadata (protegido; o usuário não reescreve) — o gate do middleware lê dali.
   const { error: e } = await admin.auth.admin.updateUserById(op.userId, {
     email,
     password: senha,
     email_confirm: true,
-    user_metadata: { must_change: false, primeiro_acesso_em: new Date().toISOString() },
+    app_metadata: { must_change: false, primeiro_acesso_em: new Date().toISOString() },
   })
   if (e) return { ok: false, error: msgErro(e.message, 'concluir o primeiro acesso') }
 

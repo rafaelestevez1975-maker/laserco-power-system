@@ -60,9 +60,11 @@ export default async function RelPerfisAcessoPage({
     admin.from('cargos').select('id, nome, slug, descricao, is_sistema, ativo')
       .order('is_sistema', { ascending: false })
       .order('nome', { ascending: true }),
-    paginar<UsuarioCargoRow>(() => admin.from('usuario_cargos').select('perfil_id, cargo_id, unidade_id, ativo')),
-    paginar<CargoPermRow>(() => admin.from('cargo_permissoes').select('cargo_id')),
-    paginar<PerfilUsuarioRow>(() => admin.from('perfis_usuario').select('id, nome_completo, email')),
+    // order estável em cada paginação: sem ORDER BY, range() entre páginas pode pular/duplicar
+    // linhas (contagem de permissões/vínculos errada — o bug que a paginação deveria eliminar).
+    paginar<UsuarioCargoRow>(() => admin.from('usuario_cargos').select('perfil_id, cargo_id, unidade_id, ativo').order('perfil_id').order('cargo_id')),
+    paginar<CargoPermRow>(() => admin.from('cargo_permissoes').select('cargo_id').order('cargo_id').order('permissao_id')),
+    paginar<PerfilUsuarioRow>(() => admin.from('perfis_usuario').select('id, nome_completo, email').order('id')),
   ])
 
   const cargos = (cargosRes.error ? [] : (cargosRes.data ?? [])) as CargoRow[]

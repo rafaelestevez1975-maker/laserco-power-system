@@ -35,6 +35,7 @@ type Q = {
   gte: (c: string, v: unknown) => Q
   lt: (c: string, v: unknown) => Q
   in: (c: string, v: unknown[]) => Q
+  order: (c: string, o?: { ascending?: boolean }) => Q
   range: (a: number, b: number) => Promise<{ data: unknown[] | null }>
 }
 
@@ -72,6 +73,10 @@ export async function pullOS(
     else if (opts.status) q = q.eq('status', opts.status)
     if (opts.ini) q = q.gte('criado_em', `${opts.ini}T00:00:00`)
     if (opts.fim) q = q.lt('criado_em', `${opts.fim}T00:00:00`)
+    // ORDER estável (mais recentes primeiro): paginar com range() SEM order deixa a ordem instável
+    // entre páginas → linhas puladas/duplicadas. Também torna real a "amostra das mais recentes"
+    // do RANK_MAX_OS em pullServicosPorOS (que fatia os primeiros N destes).
+    q = q.order('criado_em', { ascending: false })
     const { data } = await q.range(from, from + PAGE - 1)
     const batch = (data ?? []) as OsLin[]
     out.push(...batch)
@@ -106,7 +111,12 @@ export async function pullPagamentos(
 ): Promise<{ rows: PagLin[]; capped: boolean }> {
   if (opts.osIds && opts.osIds.length === 0) return { rows: [], capped: false }
 
-  // Puxa um "chunk" (lista de os_id, ou null = sem filtro de OS) paginando por range.
+  let capped = false
+
+  // Puxa um "chunk" (lista de os_id, ou null = sem filtro de OS) paginando por range().
+  // Respeita PULL_CAP INTERNAMENTE (crucial no caminho sem osIds = admin/rede: sem o corte, uma
+  // janela ampla puxaria a tabela os_pagamentos inteira p/ a memória do server component → 500/OOM).
+  // Order estável por data_pagamento evita pular/duplicar linha entre páginas.
   async function puxarChunk(ids: string[] | null): Promise<PagLin[]> {
     const acc: PagLin[] = []
     let from = 0
@@ -117,21 +127,21 @@ export async function pullPagamentos(
       if (ids) q = q.in('os_id', ids)
       if (opts.ini) q = q.gte('data_pagamento', opts.ini)
       if (opts.fim) q = q.lt('data_pagamento', opts.fim)
+      q = q.order('data_pagamento', { ascending: false })
       const { data } = await q.range(from, from + PAGE - 1)
       const batch = (data ?? []) as PagLin[]
       acc.push(...batch)
       if (batch.length < PAGE) break
       from += PAGE
+      if (acc.length >= PULL_CAP) { capped = true; break }
     }
     return acc
   }
 
   const out: PagLin[] = []
-  let capped = false
 
   if (!opts.osIds) {
     out.push(...(await puxarChunk(null)))
-    if (out.length >= PULL_CAP) capped = true
   } else {
     const grupos = emLotes(opts.osIds, IN_CHUNK)
     for (let i = 0; i < grupos.length; i += PAR) {

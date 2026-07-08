@@ -108,8 +108,10 @@ export default async function RelPacotesPage({ searchParams }: { searchParams: P
     if (ehPago) pagos += 1
     else cortesias += 1
 
-    const ym = (r.criado_em || '').slice(0, 7) // YYYY-MM
-    if (ym) {
+    // Bucket sempre (fallback '(sem data)' p/ OS de criado_em nulo) — senão essas linhas contariam
+    // em vendidos/receita/cortesias mas sumiriam da tabela por mês, deixando o Total > soma das linhas.
+    const ym = (r.criado_em || '').slice(0, 7) || '(sem data)'
+    {
       const acc = porMes.get(ym) || { receita: 0, qtd: 0, pagos: 0 }
       acc.receita += valor
       acc.qtd += 1

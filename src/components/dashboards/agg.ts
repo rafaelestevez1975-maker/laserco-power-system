@@ -47,8 +47,9 @@ export async function contar(sb: SB, tabela: string, opts: CountOpts = {}): Prom
 
 const MESES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
-/** Rótulo curto "mai/26" a partir de 'YYYY-MM'. */
+/** Rótulo curto "mai/26" a partir de 'YYYY-MM'. Valores fora do formato voltam como estão. */
 export function rotuloMes(ym: string): string {
+  if (!/^\d{4}-\d{2}/.test(ym)) return ym
   const [y, m] = ym.split('-')
   return `${MESES_CURTO[Number(m) - 1] ?? m}/${y.slice(2)}`
 }
@@ -167,8 +168,12 @@ export async function pullServicosPorOS(sb: SB, osIds: string[]): Promise<ServAg
         .from('os_servicos')
         .select('servico_id, quantidade, preco_total, total, servicos(nome)')
         .in('os_id', chunk)
+        .order('os_id')
         .range(from, from + PAGE - 1)
-      if (error) return [...acc.entries()].map(([nome, v]) => ({ nome, ...v })).sort((a, b) => b.faturamento - a.faturamento) // degrada: retorna o parcial
+      // Contrato dos dashboards (ver error.tsx/DashAggError): NUNCA devolver parcial silencioso —
+      // isso vira "números que não batem". A causa do 500 antigo (URL do IN grande) já foi resolvida
+      // pelo lote de 120; um erro aqui agora é real → falha honesta no error boundary, não subcontagem.
+      if (error) throw new DashAggError('os_servicos', error.message)
       const batch = (data ?? []) as Array<{
         servico_id: string | null
         quantidade: number | null

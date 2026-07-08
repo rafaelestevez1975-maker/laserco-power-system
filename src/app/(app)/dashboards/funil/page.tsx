@@ -125,9 +125,12 @@ export default async function DashFunilPage({ searchParams }: { searchParams: Pr
   // as origens em qualquer rede com +1000 leads. Teto de segurança em 50k linhas (só a coluna origem).
   const origemMap = new Map<string, number>()
   for (let from = 0; from < 50000; from += 1000) {
-    let origemQ = sb.from('crm_leads').select('origem').eq('pipeline', 'cliente')
+    let origemQ = sb.from('crm_leads').select('origem, id').eq('pipeline', 'cliente')
     if (unidadeId) origemQ = origemQ.eq('unidade_id', unidadeId)
     else if (unidadeIdsScope) origemQ = origemQ.in('unidade_id', unidadeIdsScope)
+    // order estável por id: paginar com range() sem order deixa a ordem instável entre páginas
+    // (seq scan vs index, insert concorrente) → linhas puladas/duplicadas → origem subcontada.
+    origemQ = origemQ.order('id', { ascending: true })
     const { data, error: leadsErr } = await origemQ.range(from, from + 999)
     if (leadsErr) throw new DashAggError('crm_leads', leadsErr.message)
     const lote = (data ?? []) as { origem: string | null }[]
