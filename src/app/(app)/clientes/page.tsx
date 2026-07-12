@@ -33,8 +33,11 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const isAdmin = ctx?.isAdmin ?? false
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
 
-  // Unidade efetiva do filtro: admin pode escolher uma unidade no filtro; do contrário usa a ativa.
-  const unidadeFiltro = (isAdmin && unidade) ? unidade : activeUnit
+  // Paridade BEMP: a lista de clientes é da ORGANIZAÇÃO (RLS limita o franqueado à sua base);
+  // unidade só filtra quando escolhida explicitamente no filtro. O escopo implícito pela unidade
+  // ativa zerava a tela: o import do BEMP não traz cliente→unidade (unidade_origem_id é NULL
+  // em toda a base até o re-sync via Postgres).
+  const unidadeFiltro = unidade || null
 
   const page = Math.max(1, Number(pageRaw) || 1)
   const from = (page - 1) * PAGE_SIZE
