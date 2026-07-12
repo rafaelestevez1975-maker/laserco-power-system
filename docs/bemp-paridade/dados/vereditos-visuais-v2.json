@@ -1,0 +1,137 @@
+[
+ {
+  "slug": "agenda",
+  "status": "parcial",
+  "nota": "Mesma unidade e mesmo dia do BEMP (11/07): grade por profissional com os MESMOS nomes (Camila, Emilly, Joana, Josiane, Sarah, Ultrassom), 14 agendamentos no dia, intervalo de 10 min e navegação de data. Falta: eventos do BEMP pós-04/07 não estão todos (sync congelado) e bloqueios/almoço não aparecem."
+ },
+ {
+  "slug": "os",
+  "status": "parcial",
+  "nota": "Lista com dados reais (1.217 OS, status Fechada/Cancelada, origens, totais) e Visualizar batem. Faltam colunas Comanda/Data fechamento/Data cancelamento e a maioria dos filtros do BEMP (pagamento, serviço, produto, vendedor) + Exportar."
+ },
+ {
+  "slug": "clientes",
+  "status": "parcial",
+  "nota": "Tabela com dados reais (116.811 clientes, telefone com botão WhatsApp, documento, gênero) e Exportar presentes. Faltam colunas Ativo/Verificado/App e filtros de tipo de documento, App, Bloqueado, Pendência e Leads."
+ },
+ {
+  "slug": "servicos",
+  "status": "parcial",
+  "nota": "Grupos reais, colunas de duração/preço/desc.máx/comissão visíveis e agora com PREÇOS REAIS do BEMP (112/113 com valor; durações reais). Faltam colunas Tipo de preço, Encaixe, Disponível online e Ordem no App + Exportar."
+ },
+ {
+  "slug": "pacotes",
+  "status": "parcial",
+  "nota": "Colunas equivalentes com dados reais do BEMP (cobertura, validade, preço, desc. máx, pagar comissão) + composição serviços×sessões visível. Faltam filtro 'Pagar comissão na' e Exportar; ordenação difere."
+ },
+ {
+  "slug": "produtos",
+  "status": "parcial",
+  "nota": "Mesmos produtos reais, preço/insumo/ativo conferem; 8 vs 7 registros (linha extra 'PDRN'). Faltam badge/filtro 'Padrão', filtro Insumo e Exportar."
+ },
+ {
+  "slug": "anamnese",
+  "status": "parcial",
+  "nota": "Os mesmos 8 documentos do BEMP aparecem ativos (Anamnese Digital + termos), com estrutura de seções/campos importada. Faltam apenas filtros Ativo/Nome e Exportar."
+ },
+ {
+  "slug": "crm",
+  "status": "diferente",
+  "nota": "BEMP mostra galeria de quadros (Geolocalizado, Indicações, Orçamentos); o nosso é um kanban de funil fixo vazio. Paradigma distinto — pendente de rebuild."
+ },
+ {
+  "slug": "notas",
+  "status": "diferente",
+  "nota": "BEMP é a listagem de NFS-e emitidas com status; o nosso é uma tela de configuração de política de emissão. Falta construir a listagem de notas."
+ },
+ {
+  "slug": "contas",
+  "status": "parcial",
+  "nota": "Abas pagar/receber, filtros Status/Categoria/Fornecedor e Exportar existem; falta filtro Período/Descrição e coluna Data realizada; dados ainda são os lançamentos 'Cobrança BEMP' antigos (o BEMP mostra comissões por OS — depende do sync contínuo)."
+ },
+ {
+  "slug": "formas-pagto",
+  "status": "igual",
+  "nota": "Colunas, filtros e dados reais idênticos (mesmas formas e taxas). Só falta o botão Exportar; extras nossos: KPIs e linha 'Crédito Recorrente – PagoLivre'."
+ },
+ {
+  "slug": "descontos",
+  "status": "parcial",
+  "nota": "Mesmos 36 registros reais do BEMP (05%, 10%, 100% Benefício/Treinamento…) com ativar/editar; o BEMP separa % por Serviço/Produto/Pacote + expiração, o nosso colapsa em um único Valor e não tem filtros/Exportar."
+ },
+ {
+  "slug": "motivos",
+  "status": "parcial",
+  "nota": "Os 4 motivos ativos do BEMP aparecem com o mesmo status; faltam filtros Ativo/Nome e Exportar, e a tela agrega extras (motivos de sistema inativos, automação WhatsApp)."
+ },
+ {
+  "slug": "origens",
+  "status": "igual",
+  "nota": "Colunas Nome/Ativo, filtros e as 8 origens do BEMP conferindo (2 inativas extras aparecem pelo filtro padrão 'Todos'). Falta apenas Exportar."
+ },
+ {
+  "slug": "contratos",
+  "status": "igual",
+  "nota": "Os mesmos 7 modelos, colunas e filtros; dados conferem. Falta coluna Ativo e Exportar."
+ },
+ {
+  "slug": "metas",
+  "status": "diferente",
+  "nota": "BEMP é listagem de metas cadastradas (Indicador/Ciclo/Ativo); nossa tela é configurador de meta por unidade — paradigma distinto; os 3 registros do BEMP não aparecem (meta por unidade não tem tabela no nosso schema — decisão de modelagem pendente)."
+ },
+ {
+  "slug": "comissoes",
+  "status": "diferente",
+  "nota": "BEMP é matriz serviços × colaboradores com % por célula; nossa tela é premiação por cargo — outro modelo, sem a matriz nem os dados."
+ },
+ {
+  "slug": "planos",
+  "status": "parcial",
+  "nota": "Os 6 planos Laser&Club com nomes e valores reais (199,90/149,90/99,90 ± adesão). Faltam colunas Modo de Utilização, Tipo de comissão e Identificador + Exportar."
+ },
+ {
+  "slug": "perfis",
+  "status": "parcial",
+  "nota": "Estrutura de lista com filtros e dados reais existe, mas os cargos são os técnicos do sistema, não os 22 perfis de negócio do BEMP; banner de migration exposto. Decisão da reunião: refazer espelhando a matriz do BEMP com seed só Proprietário (matriz já extraída, 159 permissões × 22 perfis)."
+ },
+ {
+  "slug": "colaboradores",
+  "status": "parcial",
+  "nota": "Tabela real com filtros e Novo colaborador, mas escopo da unidade (6 registros) vs rede toda no BEMP; faltam colunas E-mail, % Comissão, Disponível online e Ordem no App + Exportar. Import dos 601 ativos do BEMP aguarda decisão (CPF/unidade)."
+ },
+ {
+  "slug": "unidades",
+  "status": "parcial",
+  "nota": "Lista real da rede (CNPJs agora preenchidos, 42 ativas = BEMP) com Ativar/Inativar; faltam colunas Telefone/Configurações, filtros de estoque/caixa/NFS/tipo de loja e Exportar; Cidade/UF vazia."
+ },
+ {
+  "slug": "minha-unidade",
+  "status": "parcial",
+  "nota": "Tabs Dados básicos/Horários/Bloqueios/Fotos/NFS-e existem e nome+CNPJ batem; faltam tabs Redes Sociais/Comodidades/Cadastros básicos e campos Telefone/Razão Social/endereço preenchidos."
+ },
+ {
+  "slug": "minha-conta",
+  "status": "diferente",
+  "nota": "BEMP é configuração da organização (tema, subdomínio, validade de pontos, regras de OS); o nosso é perfil pessoal. Pendente de rebuild."
+ },
+ {
+  "slug": "dashboard",
+  "status": "diferente",
+  "nota": "BEMP tem o Gerencial com 13 gráficos; o nosso exibe 'Módulo em construção'. Pendente de rebuild (depende também de dados vivos do sync)."
+ },
+ {
+  "slug": "rel-faturamento",
+  "status": "parcial",
+  "nota": "Dados reais (lançamentos, gráficos por mês/unidade); falta o paradigma relatório-sob-demanda do BEMP (Modo de visualização, Tipo de receita) e Exportar."
+ },
+ {
+  "slug": "rel-agendamentos",
+  "status": "parcial",
+  "nota": "Dados reais por status/dia; faltam os 9 filtros do BEMP (criação/cancelamento, origem, serviço, profissional…) e Exportar."
+ },
+ {
+  "slug": "exportacoes",
+  "status": "diferente",
+  "nota": "BEMP é histórico de exportações com download; o nosso gera CSV na hora sem histórico. Paradigma distinto."
+ }
+]
