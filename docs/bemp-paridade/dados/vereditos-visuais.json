@@ -1,0 +1,137 @@
+[
+ {
+  "slug": "agenda",
+  "status": "parcial",
+  "nota": "BEMP mostra a agenda do dia com colunas por profissional da unidade e atendimentos reais (bloqueios, almoço, clientes); a nossa tem estrutura equivalente (grade por profissional, navegação de data, KPI 661 agendamentos) mas abre em 'todas as unidades' com 349 colunas e a grade visível vazia — nenhum atendimento renderizado."
+ },
+ {
+  "slug": "os",
+  "status": "parcial",
+  "nota": "BEMP lista as OS de hoje com clientes reais e ~15 filtros (fechamento/cancelamento, pagamento, serviço, vendedor, Exportar); a nossa tem KPIs reais (1.602 abertas / 62.661 fechadas), colunas equivalentes e botão Nova OS, mas exibe '0 OS' na tabela e só 6 filtros, sem Exportar."
+ },
+ {
+  "slug": "clientes",
+  "status": "parcial",
+  "nota": "BEMP lista clientes com telefone/WhatsApp/documento e filtros ricos (documento, app, bloqueado, pendência); a nossa tem KPIs coerentes (117.572 total) e Exportar/Importar, mas a tabela mostra '0 cliente(s)' — a listagem não renderiza os registros."
+ },
+ {
+  "slug": "servicos",
+  "status": "parcial",
+  "nota": "Ambas listam os serviços reais (150/113 ativos, grupos Depilação/Estético/Ultrassom); porém o BEMP mostra colunas funcionais (tipo de preço, preço, desc. máx, duração, comissionável, encaixe, online) que na nossa não aparecem — só nome+descrição — e faltam Exportar e filtros."
+ },
+ {
+  "slug": "pacotes",
+  "status": "parcial",
+  "nota": "Estrutura muito próxima (mesmas colunas conceituais, 561/203 ativos); mas Composição, Validade e Desc. Máx aparecem vazias na nossa enquanto o BEMP mostra 730/365 dias e 50-70%; falta Exportar e o filtro 'Pagar comissão na'."
+ },
+ {
+  "slug": "produtos",
+  "status": "parcial",
+  "nota": "Quase espelho: mesmos produtos (brindes, Gloss, PDRN-Ampola, Peptídeo) com insumo=Sim e KPIs extras; diverge em 8 vs 7 registros (linha extra 'PDRN'), falta badge/filtro 'Padrão' e Exportar."
+ },
+ {
+  "slug": "anamnese",
+  "status": "diferente",
+  "nota": "BEMP lista 8 documentos reais (Anamnese Digital, termos de imagem/menor…); a nossa tem a tela e o botão 'Novo documento' mas exibe 'Nenhum documento cadastrado' — nenhum formulário migrado."
+ },
+ {
+  "slug": "crm",
+  "status": "diferente",
+  "nota": "BEMP mostra a lista de Quadros com 3 boards reais (Geolocalizado, Indicações, Orçamentos); a nossa é um kanban de funil único com 0 leads — paradigma diferente e sem dados."
+ },
+ {
+  "slug": "notas",
+  "status": "diferente",
+  "nota": "BEMP é a listagem operacional de NFS-e (competência, tipo, status, ambiente; 4 notas de hoje com status Emitida/Erro); a nossa é uma tela de configuração de política de emissão — não existe a lista de notas emitidas."
+ },
+ {
+  "slug": "contas",
+  "status": "parcial",
+  "nota": "Estrutura equivalente (abas pagar/receber, filtros Status/Categoria/Fornecedor, Exportar, Novo), mas os dados não conferem: BEMP mostra contas a pagar de comissões por OS (11/07/2026) e o nosso mostra lançamentos 'Cobrança BEMP' de 11/05/2026; falta filtro Período/Descrição e seleção em massa (checkboxes)."
+ },
+ {
+  "slug": "formas-pagto",
+  "status": "igual",
+  "nota": "Mesmas colunas (Nome, Tipo, Taxa %, Taxa a descontar na comissão %, Ativo) e dados conferem linha a linha (01x Amex 3,65; Elo 3,65; Mastercard 2,70; STONE 3,15; Visa 2,70). Diferenças menores: linha extra 'Crédito Recorrente – PagoLivre' e Exportar não visível."
+ },
+ {
+  "slug": "descontos",
+  "status": "diferente",
+  "nota": "BEMP lista 13+ descontos (05%, 10%, 100% Benefício…) com colunas Serviço/Produto/Pacote/Expiração; o nosso está vazio ('Nenhum desconto ou parceria cadastrado'), com colunas diferentes e o título ainda diz 'Dashboard'."
+ },
+ {
+  "slug": "motivos",
+  "status": "parcial",
+  "nota": "Tela existe com CRUD e botão Novo, mas os dados não batem: BEMP tem 4 motivos (Cancelado via App, via WhatsApp, Cliente cancelou, Cliente reagendou) e o nosso tem 6 outros (Problema de saúde, Gravidez, Insatisfação…); faltam filtros Ativo/Nome e Exportar."
+ },
+ {
+  "slug": "origens",
+  "status": "parcial",
+  "nota": "Estrutura e filtros equivalentes, mas dados divergem: BEMP tem 8 origens e o nosso só 5 — faltam Facebook, Google, Instagram e Loja física; sem Exportar."
+ },
+ {
+  "slug": "contratos",
+  "status": "igual",
+  "nota": "Os 7 modelos conferem por nome (6 Laser&Club + contrato geral), mesmas colunas 'Quando emitido' e 'Enviar por e-mail'=Sim; filtros e contador idênticos. Falta apenas o botão Exportar."
+ },
+ {
+  "slug": "metas",
+  "status": "diferente",
+  "nota": "BEMP é listagem de metas cadastradas (3 registros, Indicador/Ciclo/Ativo); o nosso é um formulário de meta por unidade (slider, supermeta +20%) com '0 metas cadastradas' — funcionalidade sem correspondência."
+ },
+ {
+  "slug": "comissoes",
+  "status": "diferente",
+  "nota": "BEMP é matriz serviço × colaborador com % editável por célula; o nosso é premiação por cargo (faixas Mín/Meta/Super/Hiper) — modelo e layout completamente distintos."
+ },
+ {
+  "slug": "planos",
+  "status": "diferente",
+  "nota": "BEMP lista 6 planos com valores reais (Bronze/Prata/Ouro, modo de utilização, comissão); o nosso está vazio ('Nenhum plano cadastrado') e o título diz 'Dashboard'."
+ },
+ {
+  "slug": "perfis",
+  "status": "parcial",
+  "nota": "Estrutura existe (filtros Ativo/Nome, Novo, colunas Usuários/Última atualização/Ativo), mas o CONTEÚDO não bate: o BEMP lista os 22 perfis de negócio do Rafael (Consultora de Vendas, Franqueado, cancelar…) e o nosso mostra 53 cargos técnicos do sistema (Admin Comercial, admin_financeiro…) + banner de migration pendente. Decisão da reunião: refazer espelhando o BEMP, seed só Proprietário."
+ },
+ {
+  "slug": "colaboradores",
+  "status": "parcial",
+  "nota": "Dados reais batem em grande parte (349 ativos, mesmos nomes visíveis) com filtros nome/ativo/perfil + Novo colaborador. Faltam colunas E-mail, % Comissão, Disponível online e Ordem no App, filtro por unidade e Exportar; BEMP tem 601 ativos — faltam ~252 importar."
+ },
+ {
+  "slug": "unidades",
+  "status": "parcial",
+  "nota": "Lista real com CNPJ, status e Ativar/Inativar; mas o BEMP mostra Telefone, ícones de configurações e filtros (estoque/caixa/NF/tipo de loja) que não existem no nosso; ordenação difere e a coluna Cidade/UF está vazia."
+ },
+ {
+  "slug": "minha-unidade",
+  "status": "diferente",
+  "nota": "BEMP exibe formulário completo com 8 abas (Dados básicos, Horários, Bloqueios, Redes sociais, Fotos, Comodidades, Cadastros básicos, NF) preenchido; o nosso está vazio ('Selecione uma unidade no topo'). Reunião: pode ficar assim POR ORA — cliente avisado."
+ },
+ {
+  "slug": "minha-conta",
+  "status": "diferente",
+  "nota": "Propósitos distintos: no BEMP é a configuração da organização (tema, subdomínio, validade de pontos, regras de OS, logos); o nosso é um perfil pessoal (nome, e-mail, papel). Nada das configurações organizacionais existe."
+ },
+ {
+  "slug": "dashboard",
+  "status": "diferente",
+  "nota": "BEMP (Gerencial) tem filtros Período/Unidade e gráficos reais de faturamento por produto/grupo; o nosso mostra 'Módulo em construção' — vazio."
+ },
+ {
+  "slug": "rel-faturamento",
+  "status": "parcial",
+  "nota": "O nosso mostra dados reais (R$ 7,1M, 4.494 lançamentos, por mês e por unidade), mas o paradigma difere: faltam filtros do BEMP (Visão de Vendas, Tipo de receita) e Exportar; BEMP é relatório sob demanda, o nosso é dashboard fixo."
+ },
+ {
+  "slug": "rel-agendamentos",
+  "status": "parcial",
+  "nota": "Números reais (16.327 agendamentos por status/dia), porém só filtro de período; o BEMP tem 9 filtros (criação/cancelamento, status, origem, serviço, profissional, unidade…) e Exportar — ausentes; sem tabela detalhada."
+ },
+ {
+  "slug": "exportacoes",
+  "status": "parcial",
+  "nota": "Funções não coincidem: BEMP é histórico de exportações geradas (arquivo .xlsx p/ download); o nosso gera CSV na hora por entidade, sem histórico — e o card Clientes exibe 'Contagem indisponível'."
+ }
+]
