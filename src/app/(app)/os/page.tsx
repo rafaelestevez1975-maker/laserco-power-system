@@ -91,10 +91,13 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
     responsavel?: { nome_completo: string | null } | { nome_completo: string | null }[] | null
   }
 
+  // O embed cliente:clientes(nome) aplica a RLS de clientes por linha DENTRO do join e estoura
+  // o statement timeout (57014) — a lista renderizava "0 OS". Buscamos a lista sem esse embed e
+  // resolvemos os nomes num 2º lookup por PK (25 ids), que é barato.
   const listQ = sb
     .from('os')
     .select(
-      'id, numero, status, origem, total, valor_pago, valor_pendente, desconto_total, observacao, criado_em, fechada_em, cancelada_em, cliente_id, criado_por, cliente:clientes(nome), responsavel:perfis_usuario!os_criado_por_fkey(nome_completo)',
+      'id, numero, status, origem, total, valor_pago, valor_pendente, desconto_total, observacao, criado_em, fechada_em, cancelada_em, cliente_id, criado_por, responsavel:perfis_usuario!os_criado_por_fkey(nome_completo)',
       { count: 'exact' },
     )
     .order('criado_em', { ascending: false, nullsFirst: false })
@@ -102,6 +105,13 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
   // Filtramos pelo tipo leve (FiltroQuery) e tratamos o await como o shape esperado  evita TS2589.
   const listFiltrada = aplicarFiltros(listQ as unknown as FiltroQuery, unidadeId, sp) as unknown as PromiseLike<{ data: Raw[] | null; count: number | null }>
   const { data: rowsRaw, count } = await listFiltrada
+
+  const clienteIds = [...new Set(((rowsRaw ?? []) as Raw[]).map((r) => r.cliente_id).filter(Boolean))] as string[]
+  const nomesCli = new Map<string, string | null>()
+  if (clienteIds.length) {
+    const { data: cliRaw } = await sb.from('clientes').select('id, nome').in('id', clienteIds)
+    for (const c of (cliRaw ?? []) as { id: string; nome: string | null }[]) nomesCli.set(c.id, c.nome)
+  }
 
   const rows: OsRow[] = ((rowsRaw ?? []) as Raw[]).map((r) => ({
     id: r.id,
@@ -117,7 +127,7 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
     fechada_em: r.fechada_em,
     cancelada_em: r.cancelada_em,
     cliente_id: r.cliente_id,
-    clienteNome: one(r.cliente)?.nome ?? null,
+    clienteNome: (r.cliente_id ? nomesCli.get(r.cliente_id) : null) ?? null,
     responsavelNome: one(r.responsavel)?.nome_completo ?? null,
   }))
   const total = count ?? 0
@@ -125,13 +135,16 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
 
   // ── Listas auxiliares p/ filtros e modal (clientes/colaboradores/serviços) ──
   // Clientes ativos (cap leve)  só p/ os <select> de filtro e o picker de nova OS.
+  // Sem .order('nome'): ordenar 350k clientes sem índice estoura o statement timeout.
+  // Puxa o cap e ordena os 1000 em JS.
   const { data: clientesRaw } = await sb
     .from('clientes')
     .select('id, nome')
     .eq('ativo', true)
-    .order('nome', { ascending: true })
     .range(0, 999)
-  const clientes = ((clientesRaw ?? []) as { id: string; nome: string | null }[]).map((c) => ({ id: c.id, nome: c.nome || '(sem nome)' }))
+  const clientes = ((clientesRaw ?? []) as { id: string; nome: string | null }[])
+    .map((c) => ({ id: c.id, nome: c.nome || '(sem nome)' }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
 
   const { data: colabRaw } = await sb
     .from('perfis_usuario')

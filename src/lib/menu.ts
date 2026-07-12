@@ -260,6 +260,17 @@ export function ehFuncional(href: string): boolean {
   return ROTAS_FUNCIONAIS.has(href.split('?')[0])
 }
 
+/** Rotas funcionais que não constam no MENU (CRUDs acessados por link direto) — sem isso o
+ *  fallback exibia "Dashboard" no topo dessas telas. */
+const TITULOS_EXTRA: Record<string, { icon: string; title: string }> = {
+  '/descontos': { icon: 'ti-discount', title: 'Descontos' },
+  '/planos': { icon: 'ti-id-badge-2', title: 'Planos de Assinatura' },
+  '/pacotes': { icon: 'ti-packages', title: 'Pacotes' },
+  '/produtos': { icon: 'ti-box', title: 'Produtos' },
+  '/servicos': { icon: 'ti-wand', title: 'Serviços' },
+  '/unidades': { icon: 'ti-building-store', title: 'Unidades' },
+}
+
 /** Título + ícone para a topbar a partir do pathname. */
 export function titleFor(pathname: string): { icon: string; title: string } {
   for (const section of MENU) {
@@ -272,5 +283,6 @@ export function titleFor(pathname: string): { icon: string; title: string } {
       }
     }
   }
+  if (TITULOS_EXTRA[pathname]) return TITULOS_EXTRA[pathname]
   return { icon: 'ti-layout-dashboard', title: 'Dashboard' }
 }

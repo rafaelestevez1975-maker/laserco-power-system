@@ -193,9 +193,9 @@ export function PacotesManager(props: Props) {
                 const totalSessoes = p.itens.reduce((a, c) => a + (c.quantidade || 0), 0)
                 return (
                   <tr key={p.id} style={p.ativo ? undefined : { opacity: 0.55 }}>
-                    <td>
+                    <td style={{ maxWidth: 380 }}>
                       <span className="cli-name">{p.nome}</span>
-                      {p.descricao && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.descricao}</div>}
+                      {p.descricao && <div title={p.descricao} style={{ fontSize: 11, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</div>}
                     </td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 320 }}>
                       {p.itens.length === 0 ? (

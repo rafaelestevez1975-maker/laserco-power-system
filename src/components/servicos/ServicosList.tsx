@@ -105,10 +105,10 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
                 const inativo = s.ativo === false
                 return (
                   <tr key={s.id} style={{ opacity: inativo ? 0.55 : 1 }}>
-                    <td>
+                    <td style={{ maxWidth: 420 }}>
                       <span className="cli-name">{s.nome || '(sem nome)'}</span>
                       {s.descricao && (
-                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.descricao}</div>
+                        <div title={s.descricao} style={{ fontSize: 11, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.descricao}</div>
                       )}
                     </td>
                     <td>{s.grupo ? <span className="orig-tag">{s.grupo}</span> : <span className="muted"></span>}</td>

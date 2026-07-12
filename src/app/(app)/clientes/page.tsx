@@ -64,10 +64,14 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const kpiNovos = novosRes.count ?? 0
 
   // ── Lista paginada server-side ──
+  // ORDER BY nome sem índice = sort de ~350k linhas sob RLS → statement timeout (57014) e a
+  // tela mostrava "0 clientes". Sem busca, ordena pela PK (index scan, <1s); com busca o
+  // result set é pequeno e aí sim dá para ordenar por nome.
+  const temBusca = !!(q || cidade || estado)
   let query = sb
     .from('clientes')
     .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'estimated' })
-    .order('nome', { ascending: true })
+    .order(temBusca ? 'nome' : 'id', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
   if (unidadeFiltro) query = query.eq('unidade_origem_id', unidadeFiltro)
@@ -88,7 +92,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     }
   }
 
-  const { data, count } = await query
+  const { data, count, error: listErr } = await query
   const clientes = (data ?? []) as ClienteRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -136,6 +140,11 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
           : ' · todas as unidades'}
       </div>
 
+      {listErr && (
+        <div className="alert" style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: '10px 14px', margin: '0 0 10px', fontSize: 13 }}>
+          <i className="ti ti-alert-triangle" /> A consulta demorou demais e foi interrompida — refine a busca (nome mais completo, CPF ou telefone) e tente de novo.
+        </div>
+      )}
       <ClientesList clientes={clientes} page={page} totalPages={totalPages} basePath="/clientes" searchParams={sp} />
     </div>
   )
