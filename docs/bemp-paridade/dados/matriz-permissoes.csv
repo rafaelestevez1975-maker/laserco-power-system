@@ -1,0 +1,160 @@
+modulo,permissao,descricao,Colaborador Interno/Fisio,Colaborador SAC,Colaborador Treinamento,Colaboradores Internos,Consultor de Vendas Online,Consultora Online Rio de Janeiro,Consultora de Vendas,Expansão,Franqueado,Franqueado/Fisio,Gerente,Gerente de Campo,Gerente de Campo (descontos),Gerente de Campo - Franquias,Gerente/Fisio,Marketing,Profissional,Proprietário,SAC,Subgerente,Terminal,cancelar
+Agenda,schedule.manager,Incluir/Alterar/Cancelar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Agenda,schedule.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,
+Ajuda,support.viewer,Consultar base de conhecimento,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Anamnese,custom_entity.manager,Incluir/Alterar/Inativar,,,,,,,,,X,X,,,,,,,,X,,,,
+Anamnese,custom_entity.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Assinatura,subscription.approve_payment,Aprovar pagamento manual,,,,,,,,,,,,,,,,,,X,,,,
+Assinatura,subscription.force_charge_quota,Forçar cobrança via Asaas,,,,,,,,,,,,,,,,,,X,X,,,
+Assinatura,subscription.manager,Incluir/Alterar/Inativar,,X,,,,,,,X,X,X,X,X,X,,X,,X,X,,,
+Bloqueio,block.block_assiduity,Configurar Assiduidade,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Bloqueio,block.salon_block,Incluir/Alterar/Excluir Bloqueios da Unidade,X,X,X,X,X,X,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Bloqueio,block.user_block,Incluir/Alterar/Excluir Bloqueios do Profissional,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+CRM - Quadros,crm.board_manager,Incluir,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,X,,
+CRM - Quadros,crm.board_viewer,Manipular,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,,
+Caixa,cashstation.manager,Abrir / Fechar,X,,X,,,,,,,,,,,,X,,,X,,X,,
+Caixa,cashstation.reviewer,Pode fechar OS em qualquer caixa aberto,,,,,,,,,,,,X,X,X,X,X,,X,X,X,,
+Caixa,cashstation.reopen,Reabrir caixas,,,,,,,,,,,,,,,,,,X,,,,
+Clientes,customer.block,Bloquear agendamentos,,,,,,,,,,,X,,,,X,,,X,,,,
+Clientes,customer.export,Exportar,X,,,,,,X,,X,X,X,X,X,X,X,X,,X,X,,,
+Clientes,customer.manager,Incluir/Alterar/Inativar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Clientes,customer.manage_all,Modificar clientes com OS finalizada,,X,,,X,X,X,,X,X,X,X,X,X,X,X,,X,X,X,,
+Clientes,customer.merge,Unificar Clientes,X,X,X,X,,,,X,X,X,X,X,X,,X,X,,X,X,X,,
+Clientes,customer.read,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Clientes,customer.read_complete,Visualizar dados completos,X,X,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Clientes - Acompanhamentos,customer_event.delete_event,Excluir Acompanhamentos,,,,,,,,,,X,,,,,,,,X,,,,
+Clientes - Acompanhamentos,customer_event.manager_event,Incluir Acompanhamentos,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Clientes - Acompanhamentos,customer_event.customer_custom_entity,Incluir Anamnese / Ficha Técnica,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Clientes - Acompanhamentos,customer_event.image_viewer,Visualizar Imagens,X,X,X,,,,,,,X,,X,X,X,X,X,X,X,X,,,
+Clientes - Assinaturas,customer_subscription.cancel_subscription,Cancelar assinatura,,X,,,,,,,X,X,,X,X,X,,,,X,,,,
+Clientes - Assinaturas,customer_subscription.read,Visualizar,,,,,X,X,X,X,X,X,X,X,X,X,X,X,,X,,X,,
+Clientes - Origem do Cliente,customer_channel.manager,Incluir/Alterar/Inativar,,,,,,,,,X,,,,,,,,,X,,,,
+Clientes - Origem do Cliente,customer_channel.viewer,Visualizar,,,,,,,X,,X,X,X,X,X,X,X,X,,X,,,,
+Comissões por meta & Prêmios/bônus,bonification.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Comissões por meta & Prêmios/bônus,bonification.viewer,Visualizar,,,,,,,,,X,,,,,,,,,X,,,,
+Configuração de Campos,field_setting.manager,Configurar Campos,,,,,,,,,,,X,,,,X,,,X,,X,,
+Dashboards,dashboard.account_management,Financeiro / Contábil,X,X,X,X,,,,X,X,X,,,,,,,,X,,,,
+Dashboards,dashboard.salon,Gerencial,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Dashboards,dashboard.performance,Performance,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Dashboards,dashboard.sales_funnel,Vendas,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Descontos,discount.manager,Incluir/Alterar/Inativar,X,X,X,,,,,X,,,,,,,,,,X,,,,
+Descontos,discount.viewer,Visualizar,X,X,X,X,X,X,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Faturas,organization_invoice.viewer,Visualizar,X,X,X,X,,,,X,X,X,,,,,,X,,X,X,,,
+Fidelidade,wallet.walletmanager,Adicionar / Remover pontos manualmente,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Fidelidade,wallet.pricemanager,Modificar preço em pontos,,,,,,,,,,,,,,,,,,X,,,,
+Fidelidade,wallet.customer_money_transfer,Transferir dinheiro entre clientes,,X,,,,,,X,,,,,X,,,,,X,,,,
+Fidelidade,wallet.salon_money_transfer,Transferir dinheiro entre unidades,,,,,,,,,X,,,,X,,,,,X,,,,
+Fidelidade,wallet.customer_point_transfer,Transferir pontos entre clientes,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,,,
+Financeiro / Contábil,account_management.manager,Incluir/Alterar/Cancelar Contas,X,X,X,X,,,,X,X,X,,,,,,,,X,,,,
+Financeiro / Contábil,account_management.category_manager,Incluir/Alterar/Inativar Categorias,,,,,,,,,X,X,,,,,,,,X,,,,
+Financeiro / Contábil,account_management.supplier_manager,Incluir/Alterar/Inativar Fornecedores,,,,,,,,,X,X,,,,,,,,X,,,,
+Financeiro / Contábil,account_management.category_viewer,Visualizar Categorias,X,X,X,X,,,,X,X,X,,,,,,X,,X,X,,,
+Financeiro / Contábil,account_management.viewer,Visualizar Contas,X,X,X,X,,,,X,X,X,,,,,,X,,X,X,,,
+Financeiro / Contábil,account_management.supplier_viewer,Visualizar Fornecedores,,,,,,,,,X,X,,,,,,X,,X,X,,,
+Formas de pagamento,paymentmethod.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Formas de pagamento,paymentmethod.viewer,Visualizar,X,X,X,X,X,X,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Funcionalidades,features.manager,Ativar / Desativar Funcionalidades,,,,,,,,,,,X,,,,,,,X,,,,
+Grupos de Planos de Assinatura,subscription_plan_group.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Grupos de Planos de Assinatura,subscription_plan_group.viewer,Visualizar,,,,,,,,X,X,X,,X,X,,,,,X,,,,
+Grupos de produto,productgroup.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Grupos de produto,productgroup.viewer,Visualizar,X,X,X,X,,,X,X,X,X,X,X,X,X,,X,,X,X,,,
+Grupos de serviço,servicegroup.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Grupos de serviço,servicegroup.viewer,Visualizar,X,X,X,X,,,,X,X,X,X,X,X,X,,X,,X,X,,,
+Histórico de alterações,audit.viewer,Visualizar,,,X,,,,,,X,X,X,X,X,X,X,X,,X,X,X,,
+Mensagens / Notificações,message.message_sender,Enviar mensagens,X,X,X,X,,,,,,,,,,,,X,,X,X,,,
+Mensagens / Notificações,message.customer_notification_config,Gerenciar Configurações,,,,,,,,,,,,,,,,X,,X,,,,
+Mensagens / Notificações,message.audience_manager,Gerenciar audiências,X,X,X,X,,,,,,,,,X,,,X,,X,,,,
+Mensagens / Notificações,message.automations_manager,Gerenciar automações,X,X,X,X,,,,,,X,,,,,,X,,X,,,,
+Mensagens / Notificações,message.audience_viewer,Visualizar audiências,X,X,X,X,,,,,,X,,,X,,,X,,X,X,,,
+Mensagens / Notificações,message.message_viewer,Visualizar mensagens,X,X,X,X,,,,,X,,,,,,X,X,,X,X,,,
+Mensagens WhatsApp Web,whatsapp_message.editor,Criar/Editar,,,,,,,,,,,,,,,,,,X,,,,
+Mensagens WhatsApp Web,whatsapp_message.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,X,,X,,,,
+Mensagens WhatsApp Web,whatsapp_message.viewer,Visualizar,,,,,,,,X,X,X,,X,X,X,X,X,,X,,,,
+Metas,goal.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,X,X,X,,X,,X,X,,,
+Minha Conta (Organização),organization.manager,Gerenciar,,,,,,,,,,,,,,,,,,X,,,,
+Minha unidade,salon.configuration,Alterar configurações de funcionamento,,,,,,,,,X,X,,,,,,X,,X,X,,,
+Minha unidade,salon.manager,Gerenciar,,,,,,,,,X,X,X,X,X,X,,X,,X,X,,,
+Minha unidade,salon.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Minha unidade,salon.global_viewer,Visualizar todas as unidades,X,X,X,X,,,,X,,,,,X,,,,,X,,,,
+Modelos de Contrato,customer_contract_template.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Modelos de comissão,commission_template.viewer,Visualizar,,,,,,,,,X,X,,X,X,X,,X,,X,X,,,
+Motivos de cancelamento,cancelationreason.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Motivos de cancelamento,cancelationreason.viewer,Visualizar,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Notas Fiscais,invoice.manually_status,Alterar status manualmente quando NF com erro,,,,,,,,,,,,,,,,,,X,,X,,
+Notas Fiscais,invoice.advance,Antecipar NF,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Notas Fiscais,invoice.update,Atualizar/Reprocessar NF,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Notas Fiscais,invoice.destroy,Cancelar NF,,,,,X,,,,,,,,,,X,,,X,,X,,
+Notas Fiscais,invoice.create,Criar NF,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,,X,,X,,
+Notas Fiscais,invoice.read,Visualizar NF,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Notificações internas,internal_message.manager,Enviar notificações,X,X,X,X,,X,,X,,,,X,X,X,,X,,X,X,,,
+Ordens de serviço,order.manager_feedstock,Alterar e remover insumos dos serviços na OS,,,,,,,,,,,,,,,X,X,,X,,X,,
+Ordens de serviço,order.editor_feedstock,Alterar quantidades de insumos dos serviços na OS,,,,,,,,,,,,,,,,X,,X,,,,
+Ordens de serviço,order.manual_discount,Aplicar descontos manuais,X,X,X,,X,,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Ordens de serviço,order.manager_closed,Cancelar OSs fechadas,X,X,X,,,,,X,X,,,X,X,X,,X,,X,X,,,
+Ordens de serviço,order.manager,Incluir/Alterar/Cancelar OS,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Ordens de serviço,order.inform_closed_at,Informar data fechamento na OS,,,,,,,,,,,,,,,,,,X,,,,
+Pacotes,package.walletmanager,Alterar data expiração de pacote vendido,X,X,X,,,,,X,X,X,X,X,X,X,X,X,,X,X,,,
+Pacotes,package.manager,Incluir/Alterar/Inativar,,X,,,,,,,,,,,X,,,X,,X,,,,
+Pacotes,package.customers_transfer,Transferir créditos entre clientes,,X,X,,,,,X,X,X,,X,X,X,,X,,X,X,,,
+Pacotes,package.money_transfer,Transferir créditos para dinheiro,,X,X,,,,,X,X,X,,X,X,X,,X,,X,X,,,
+Pacotes,package.transfer,Transferir créditos para outra unidade,,X,X,,,,,X,X,,,,X,,,X,,X,X,,,
+Pacotes,package.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Perfis de acesso,role.manager,Gerenciar,X,,,,,,,,,,,,,,,,,X,,,,
+Perfis de acesso,role.viewer,Visualizar,X,X,X,X,,,,X,X,X,,X,X,X,,X,,X,X,X,,
+Planos de Assinatura,subscription_plan.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,,,X,,,,
+Planos de Assinatura,subscription_plan.viewer,Visualizar,X,X,,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,,X,,
+Produtos,product.stockmanager,Adicionar / Remover do estoque,X,X,X,X,,,,,X,X,,,X,,,X,,X,,,,
+Produtos,product.standardmanager,Gerenciar produto padrão,,X,,,,,,,,,,,,,,,,X,,,,
+Produtos,product.manager,Incluir/Alterar/Inativar,X,X,X,X,,,,,,,,,X,,,,,X,,,,
+Produtos,product.read,Visualizar,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Relatórios,report.customer_events,Acompanhamentos,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.schedules,Agendamentos,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.schedule_recurrences,Agendamentos recorrentes,X,,,X,,,,X,X,X,X,X,X,X,,X,,X,,,,X
+Relatórios,report.custom_entities,Anamnese / Ficha Técnica,X,X,,X,,,,X,X,X,X,X,X,X,X,X,,X,X,,,X
+Relatórios,report.subscriptions,Assinaturas / Assinaturas,X,X,,X,,,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.subscription_quotas,Assinaturas / Pagamentos,X,X,,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.subscription_apportionment,Assinaturas / Rateio de Assinaturas,X,X,,X,,,,X,X,X,X,,,,X,X,,X,X,,,X
+Relatórios,report.services,Atendimentos,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.schedules_rating,Avaliações,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.crm_sales_funnel,CRM / Funil de vendas,X,X,,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.board_cards,CRM / Leads,X,X,,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.cash_station,Caixas,X,X,X,X,,,,X,X,X,,X,X,X,X,,,X,,X,,X
+Relatórios,report.wallet,Carteira e Créditos,X,,,,,,,,X,,,X,X,X,,,,X,X,,,X
+Relatórios,report.customers,"Clientes / Aniversariantes, Retornos, Novos, Abandonos, Duplicados, Origem, Únicos",X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.bonifications,Comissões por meta,,,,,,,,,,,,X,,X,,,,X,X,,,X
+Relatórios,report.customer_contracts,Contratos,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.payment_recurring,Crédito Recorrente,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.wallet_money_movements,Créditos em Dinheiro / Movimentação dos créditos em dinheiro,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.wallet_money_status,Créditos em Dinheiro / Situação dos créditos em dinheiro,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,,,X
+Relatórios,report.discounts,Descontos,X,X,X,X,,X,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.user_stats,Estatísticas / Colaborador,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.stats,Estatísticas / Unidade,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.product_movement,Estoque / Movimentação de produtos,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,,,X
+Relatórios,report.stock_situation,Estoque / Situação do estoque,X,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.billing,Faturamento / Faturamento,X,X,X,X,X,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.billing_payment_method,Faturamento / Faturamento por forma de pagamento,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.billing_comparison_salon,Faturamento / Faturamento por unidade,X,X,X,X,,,,X,X,X,X,X,X,X,,X,,X,X,,,X
+Relatórios,report.rewards_movements,Fidelidade / Movimentação de pontos,X,X,X,X,X,,,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.rewards_status,Fidelidade / Situação do fidelidade,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.loyalty,Fidelização de clientes,,,,,,,,,,,,,,,,,,X,,,,
+Relatórios,report.account_payables,Financeiro/Contábil / Contas a Pagar,X,X,X,X,,,,X,X,X,,,,,,X,,X,X,,,X
+Relatórios,report.account_receivables,Financeiro/Contábil / Contas a Receber,X,X,X,X,,,,X,X,X,,,,,,X,,X,X,,,X
+Relatórios,report.goals,Metas,X,X,X,X,,,,X,X,X,,X,X,X,X,X,,X,X,,,X
+Relatórios,report.invoices,Notas Fiscais,X,X,X,X,,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.orders,Ordens de Serviço,X,X,X,X,,X,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.executed_packages_report,Pacotes / Execução de pacotes,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,,,X
+Relatórios,report.packages_movements,Pacotes / Movimentação de pacotes,X,X,X,X,X,,,X,X,X,X,X,X,X,X,X,,X,X,,,X
+Relatórios,report.packages_balance,Pacotes / Saldo de pacotes,X,X,,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.packages_status,Pacotes / Situação dos pacotes,X,X,X,X,X,,X,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.user_payments,Pagamentos,X,X,X,X,X,,,X,X,X,X,X,X,X,X,X,X,X,X,X,,X
+Relatórios,report.roles,Perfis de Acesso,X,,,X,,,,X,X,,,,,,,X,,X,,,,
+Relatórios,report.sales_ranking,Ranking de Vendas,X,X,X,X,,,,X,X,X,X,X,X,X,X,X,,X,X,X,,X
+Relatórios,report.exports,Relatório de Exportações,X,X,,X,,,,X,X,X,X,X,X,,X,X,,X,X,,,X
+Relatórios,report.advance_payments,Vales/Adiantamentos,X,,,X,,,,X,X,,,,,,X,X,,X,,,,X
+Serviços,service.manager,Incluir/Alterar/Inativar,,,,,,,,,,,,,,,,X,,X,,,,
+Serviços,service.default_price_manager,Modificar preço padrão,,,,,,,,,,,,,,,,X,,X,X,,,
+Serviços,service.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,
+Usuários,user.manager,Incluir/Alterar/Inativar,,,X,,,,,,,,,,,,,,,X,,,,
+Usuários,user.viewer,Visualizar,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,,
+Usuários,user.other_users,Visualizar todos os usuários,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,X,,X,X,X,X,
+Vale/Adiantamento,advance_payment.manager,Gerenciar,,,,,,,,,,,,,,,,,,X,,,,
