@@ -23,6 +23,11 @@ export function moedaBR(v: number | null | undefined): string {
   return 'R$ ' + Math.round(v || 0).toLocaleString('pt-BR')
 }
 
+/** "R$ 199,90" (com centavos) — para catálogo de preços, onde arredondar distorce (199,90 ≠ 200). */
+export function moedaCentavos(v: number | null | undefined): string {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 /** Só os dígitos de um telefone/documento. */
 export function digitos(raw: string | null | undefined): string {
   return (raw || '').replace(/\D/g, '')

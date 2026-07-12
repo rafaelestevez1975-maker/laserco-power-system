@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { moedaBR } from '@/lib/fmt'
+import { moedaBR, moedaCentavos } from '@/lib/fmt'
 import {
   criarPlano,
   editarPlano,
@@ -185,8 +185,8 @@ export function PlanosManager(props: Props) {
                         </div>
                       )}
                     </td>
-                    <td className="num-r">{p.valor_adesao ? moedaBR(p.valor_adesao) : <span className="orig-tag">Sem adesão</span>}</td>
-                    <td className="num-r"><b>{moedaBR(p.valor_mensal)}</b></td>
+                    <td className="num-r">{p.valor_adesao ? moedaCentavos(p.valor_adesao) : <span className="orig-tag">Sem adesão</span>}</td>
+                    <td className="num-r"><b>{moedaCentavos(p.valor_mensal)}</b></td>
                     <td className="num-r">{p.duracao_meses != null ? `${p.duracao_meses} m` : ''}</td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 260 }}>
                       {p.itens.length === 0 ? (
