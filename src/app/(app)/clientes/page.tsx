@@ -67,14 +67,13 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const kpiNovos = novosRes.count ?? 0
 
   // ── Lista paginada server-side ──
-  // ORDER BY nome sem índice = sort de ~350k linhas sob RLS → statement timeout (57014) e a
-  // tela mostrava "0 clientes". Sem busca, ordena pela PK (index scan, <1s); com busca o
-  // result set é pequeno e aí sim dá para ordenar por nome.
-  const temBusca = !!(q || cidade || estado)
+  // Ordena por nome (alfabético, como o BEMP). Isto só é viável porque: (1) existe índice
+  // btree em clientes(nome); (2) a RLS de SELECT foi reescrita com (select tem_acesso_cliente_final())
+  // — sem isso a função rodava por-linha nas 350k e travava a tela em "0 clientes" (timeout 57014).
   let query = sb
     .from('clientes')
     .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'estimated' })
-    .order(temBusca ? 'nome' : 'id', { ascending: true })
+    .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
   if (unidadeFiltro) query = query.eq('unidade_origem_id', unidadeFiltro)
