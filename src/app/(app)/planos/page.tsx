@@ -38,7 +38,7 @@ export default async function PlanosPage({ searchParams }: { searchParams: Promi
   // ── Lista paginada ──
   let query = sb
     .from('planos_assinatura')
-    .select('id, nome, descricao, valor_mensal, valor_adesao, duracao_meses, beneficios, ativo, criado_em', { count: 'exact' })
+    .select('id, nome, descricao, valor_mensal, valor_adesao, duracao_meses, modo_utilizacao, tipo_comissao, beneficios, ativo, criado_em', { count: 'exact' })
     .order('valor_mensal', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
   if (ativo === 'sim') query = query.eq('ativo', true)

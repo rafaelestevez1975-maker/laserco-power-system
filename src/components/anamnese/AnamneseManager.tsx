@@ -71,6 +71,12 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela,
   const nomesPorId = Object.fromEntries(unidades.map((u) => [u.id, u.nome]))
 
   const temFiltro = !!filtros.q || !!filtros.ativo
+  /** Exporta a lista filtrada (mesmos filtros da URL) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams(sp.toString())
+    const s = p.toString()
+    window.open(`/cadastros/anamnese/export${s ? `?${s}` : ''}`, '_blank')
+  }
   function setParams(updates: Record<string, string>) {
     const p = new URLSearchParams(sp.toString())
     for (const [k, v] of Object.entries(updates)) {
@@ -100,7 +106,12 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela,
         têm acesso a cada documento.
       </p>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 8 }}>
+        {!semTabela && (
+          <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV">
+            <i className="ti ti-download" /> Exportar
+          </button>
+        )}
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setEditor('novo') }}>
             <i className="ti ti-plus" /> Novo documento

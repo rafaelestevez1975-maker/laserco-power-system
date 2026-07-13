@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   const sb = await createClient()
   let query = sb
     .from('planos_assinatura')
-    .select('id, nome, descricao, valor_mensal, valor_adesao, duracao_meses, beneficios, ativo')
+    .select('id, nome, descricao, valor_mensal, valor_adesao, duracao_meses, modo_utilizacao, tipo_comissao, beneficios, ativo')
     .order('valor_mensal', { ascending: true })
     .range(0, 9999) // teto de segurança
   if (ativo === 'sim') query = query.eq('ativo', true)
@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
     valor_mensal: number | null
     valor_adesao: number | null
     duracao_meses: number | null
+    modo_utilizacao: string | null
+    tipo_comissao: string | null
     beneficios: string[] | null
     ativo: boolean | null
   }
@@ -67,7 +69,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const header = ['Plano', 'Descrição', 'Adesão', 'Mensalidade', 'Duração (meses)', 'Serviços incluídos', 'Benefícios', 'Ativo']
+  const header = ['Plano', 'Descrição', 'Adesão', 'Mensalidade', 'Modo de utilização', 'Tipo de comissão', 'Duração (meses)', 'Serviços incluídos', 'Benefícios', 'Ativo']
   const lines = [header.join(';')]
   for (const r of rows) {
     lines.push([
@@ -75,6 +77,8 @@ export async function GET(req: NextRequest) {
       r.descricao || '',
       r.valor_adesao ? valor2(r.valor_adesao) : 'Sem adesão',
       valor2(r.valor_mensal),
+      r.modo_utilizacao || '',
+      r.tipo_comissao || '',
       r.duracao_meses != null ? String(r.duracao_meses) : '',
       (servByPlano[r.id] ?? []).join(' | '),
       (r.beneficios ?? []).filter(Boolean).join(' | '),

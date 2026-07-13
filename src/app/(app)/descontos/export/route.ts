@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
+import { dataBR } from '@/lib/fmt'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,10 +11,10 @@ function csvCell(v: unknown): string {
   return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-function rotuloValor(tipo: string | null, valor: number | null): string {
-  const v = valor ?? 0
-  if (tipo === 'percentual') return `${v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** "5,00%" (2 casas, pt-BR) ou "—" quando null. */
+function pct(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'
 }
 
 /** Exporta a lista de descontos/parcerias (tabela `descontos`) em CSV com BOM. */
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
   const sb = await createClient()
   let q = sb
     .from('descontos')
-    .select('nome, tipo, valor, ativo')
+    .select('nome, tipo, pct_servico, pct_produto, pct_pacote, data_expiracao, ativo')
     .order('criado_em', { ascending: false })
     .range(0, 9999) // teto de segurança
   const busca = (sp.get('q') || '').trim()
@@ -37,16 +38,27 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  type Row = { nome: string | null; tipo: string | null; valor: number | null; ativo: boolean | null }
+  type Row = {
+    nome: string | null
+    tipo: string | null
+    pct_servico: number | null
+    pct_produto: number | null
+    pct_pacote: number | null
+    data_expiracao: string | null
+    ativo: boolean | null
+  }
   const rows = (data ?? []) as Row[]
 
-  const header = ['Nome / Parceria', 'Tipo', 'Valor', 'Ativo']
+  const header = ['Nome / Parceria', 'Tipo', 'Serviço %', 'Produto %', 'Pacote %', 'Expiração', 'Ativo']
   const lines = [header.join(';')]
   for (const r of rows) {
     lines.push([
       r.nome,
       r.tipo === 'percentual' ? 'Percentual' : r.tipo === 'valor' ? 'Valor fixo' : (r.tipo || ''),
-      rotuloValor(r.tipo, r.valor),
+      pct(r.pct_servico),
+      pct(r.pct_produto),
+      pct(r.pct_pacote),
+      r.data_expiracao ? dataBR(r.data_expiracao) : '—',
       r.ativo === false ? 'Não' : 'Sim',
     ].map(csvCell).join(';'))
   }

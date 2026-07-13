@@ -18,6 +18,9 @@ export type ServicoRow = {
   pagar_comissao: string | null
   comissionavel: boolean | null
   dynamic_price: boolean | null
+  encaixe: boolean | null
+  agendamento_online: boolean | null
+  ordem_app: number | null
   ativo: boolean | null
 }
 
@@ -88,6 +91,9 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
                 <th className="num-r">Desc. Máx</th>
                 <th>Comissão</th>
                 <th>Pagar comissão</th>
+                <th>Encaixe</th>
+                <th>Online</th>
+                <th className="num-r">Ordem</th>
                 <th>Status</th>
                 {podeEscrever && <th></th>}
               </tr>
@@ -95,7 +101,7 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
             <tbody>
               {servicos.length === 0 && (
                 <tr>
-                  <td colSpan={podeEscrever ? 9 : 8} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={podeEscrever ? 12 : 11} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum serviço encontrado para os filtros selecionados.
                   </td>
@@ -122,6 +128,9 @@ export function ServicosList({ servicos, grupos, page, totalPages, total, search
                     <td className="num-r">{s.desc_max != null && s.desc_max > 0 ? `${s.desc_max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : <span className="muted"></span>}</td>
                     <td>{s.comissionavel ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
                     <td><ComTag v={s.pagar_comissao} /></td>
+                    <td>{s.encaixe ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
+                    <td>{s.agendamento_online ? <span className="pill-yes">Sim</span> : <span className="pill-no">Não</span>}</td>
+                    <td className="num-r">{s.ordem_app != null ? s.ordem_app : <span className="muted"></span>}</td>
                     <td>{inativo ? <span className="os-st os-cancelada">Inativo</span> : <span className="os-st os-fechada">Ativo</span>}</td>
                     {podeEscrever && (
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>

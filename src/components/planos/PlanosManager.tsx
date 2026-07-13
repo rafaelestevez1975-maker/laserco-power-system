@@ -23,6 +23,8 @@ export type PlanoRow = {
   valor_mensal: number | null
   valor_adesao: number | null
   duracao_meses: number | null
+  modo_utilizacao: string | null
+  tipo_comissao: string | null
   beneficios: string[] | null
   ativo: boolean | null
   criado_em: string | null
@@ -163,6 +165,8 @@ export function PlanosManager(props: Props) {
                 <th>Plano</th>
                 <th className="num-r">Adesão</th>
                 <th className="num-r">Mensalidade</th>
+                <th>Modo de utilização</th>
+                <th>Tipo de comissão</th>
                 <th className="num-r">Duração</th>
                 <th>Incluído</th>
                 <th>Ativo</th>
@@ -172,7 +176,7 @@ export function PlanosManager(props: Props) {
             <tbody>
               {planos.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-database-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum plano{temFiltro ? ' com esses filtros' : ' cadastrado'}.
                     {podeEscrever && !temFiltro && ' Clique em “Novo plano” para criar o primeiro.'}
@@ -194,6 +198,8 @@ export function PlanosManager(props: Props) {
                     </td>
                     <td className="num-r">{p.valor_adesao ? moedaCentavos(p.valor_adesao) : <span className="orig-tag">Sem adesão</span>}</td>
                     <td className="num-r"><b>{moedaCentavos(p.valor_mensal)}</b></td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{p.modo_utilizacao || '—'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.tipo_comissao || undefined}>{p.tipo_comissao || '—'}</td>
                     <td className="num-r">{p.duracao_meses != null ? `${p.duracao_meses} m` : ''}</td>
                     <td style={{ color: 'var(--text-2)', fontSize: 12, whiteSpace: 'normal', maxWidth: 260 }}>
                       {p.itens.length === 0 ? (

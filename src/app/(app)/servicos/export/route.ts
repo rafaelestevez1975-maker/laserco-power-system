@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   let q = sb
     .from('servicos')
-    .select('nome, grupo, duracao_min, preco_padrao, desc_max, comissionavel, pagar_comissao, ativo')
+    .select('nome, grupo, duracao_min, preco_padrao, desc_max, comissionavel, pagar_comissao, encaixe, agendamento_online, ordem_app, ativo')
     .order('grupo', { ascending: true, nullsFirst: false })
     .order('nome', { ascending: true })
     .range(0, 19999) // teto de segurança
@@ -59,11 +59,14 @@ export async function GET(req: NextRequest) {
     desc_max: number | null
     comissionavel: boolean | null
     pagar_comissao: string | null
+    encaixe: boolean | null
+    agendamento_online: boolean | null
+    ordem_app: number | null
     ativo: boolean | null
   }
   const rows = (data ?? []) as Row[]
 
-  const header = ['Nome', 'Grupo', 'Duração (min)', 'Preço', 'Desc. Máx (%)', 'Comissionável', 'Pagar comissão', 'Status']
+  const header = ['Nome', 'Grupo', 'Duração (min)', 'Preço', 'Desc. Máx (%)', 'Comissionável', 'Pagar comissão', 'Encaixe', 'Online', 'Ordem', 'Status']
   const lines = [header.join(';')]
   for (const s of rows) {
     lines.push([
@@ -74,6 +77,9 @@ export async function GET(req: NextRequest) {
       s.desc_max ?? '',
       s.comissionavel ? 'Sim' : 'Não',
       s.pagar_comissao || 'Execução',
+      s.encaixe ? 'Sim' : 'Não',
+      s.agendamento_online ? 'Sim' : 'Não',
+      s.ordem_app ?? '',
       s.ativo === false ? 'Inativo' : 'Ativo',
     ].map(csvCell).join(';'))
   }

@@ -9,12 +9,17 @@ import {
   type DescontoInput,
 } from '@/app/(app)/descontos/actions'
 import { TIPOS_DESCONTO, type TipoDesconto } from '@/app/(app)/descontos/constants'
+import { dataBR } from '@/lib/fmt'
 
 export type DescontoRow = {
   id: string
   nome: string
   tipo: string | null
   valor: number | null
+  pct_servico: number | null
+  pct_produto: number | null
+  pct_pacote: number | null
+  data_expiracao: string | null
   ativo: boolean | null
   criado_em: string | null
 }
@@ -26,10 +31,10 @@ type Props = {
   filtroAtivo: string // '' | 'sim' | 'nao'
 }
 
-function rotuloValor(tipo: string | null, valor: number | null): string {
-  const v = valor ?? 0
-  if (tipo === 'percentual') return `${v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** "5,00%" (2 casas, pt-BR) ou "—" quando null/undefined. */
+function pct(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'
 }
 
 export function DescontosManager({ rows, podeGerir, filtroNome, filtroAtivo }: Props) {
@@ -126,16 +131,19 @@ export function DescontosManager({ rows, podeGerir, filtroNome, filtroAtivo }: P
             <thead>
               <tr>
                 <th>Nome / Parceria</th>
-                <th style={{ width: 130 }}>Tipo</th>
-                <th className="num-r" style={{ width: 140 }}>Valor</th>
-                <th style={{ width: 110 }}>Situação</th>
-                <th style={{ width: 130 }}></th>
+                <th style={{ width: 110 }}>Tipo</th>
+                <th className="num-r" style={{ width: 90 }}>Serviço</th>
+                <th className="num-r" style={{ width: 90 }}>Produto</th>
+                <th className="num-r" style={{ width: 90 }}>Pacote</th>
+                <th style={{ width: 110 }}>Expiração</th>
+                <th style={{ width: 100 }}>Situação</th>
+                <th style={{ width: 110 }}></th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-discount-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhum desconto ou parceria cadastrado ainda.
                   </td>
@@ -147,7 +155,10 @@ export function DescontosManager({ rows, podeGerir, filtroNome, filtroAtivo }: P
                   <tr key={r.id}>
                     <td><b>{r.nome}</b></td>
                     <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.tipo === 'percentual' ? 'Percentual' : r.tipo === 'valor' ? 'Valor fixo' : (r.tipo || '')}</td>
-                    <td className="num-r"><b>{rotuloValor(r.tipo, r.valor)}</b></td>
+                    <td className="num-r">{pct(r.pct_servico)}</td>
+                    <td className="num-r">{pct(r.pct_produto)}</td>
+                    <td className="num-r">{pct(r.pct_pacote)}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{r.data_expiracao ? dataBR(r.data_expiracao) : '—'}</td>
                     <td>
                       {ativa
                         ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#E7F0EC', color: '#15803D' }}>Ativo</span>

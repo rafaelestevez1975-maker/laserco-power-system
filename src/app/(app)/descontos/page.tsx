@@ -21,7 +21,7 @@ export default async function DescontosPage({ searchParams }: { searchParams: Pr
 
   let q = sb
     .from('descontos')
-    .select('id, nome, tipo, valor, ativo, criado_em')
+    .select('id, nome, tipo, valor, pct_servico, pct_produto, pct_pacote, data_expiracao, ativo, criado_em')
     .order('criado_em', { ascending: false })
 
   const busca = (sp.q ?? '').trim()
