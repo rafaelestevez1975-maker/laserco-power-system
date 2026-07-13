@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   criarMotivo,
   salvarMotivo,
@@ -35,16 +35,33 @@ type Props = {
   contador: { total: number; sistema: number }
   noshow: NoshowRow | null
   semTabela: boolean
+  filtroNome: string
+  filtroAtivo: string // '' | 'sim' | 'nao'
 }
 
 const MSG_PADRAO = 'Olá {cliente}! 💙 Notamos que você não compareceu à sua sessão de {serviço} hoje às {hora}. Aconteceu algo? Temos horários disponíveis e adoraríamos remarcar para você. É só responder aqui que reagendamos na hora! 😊'
 
-export function MotivosManager({ motivos, podeEscrever, contador, noshow, semTabela }: Props) {
+export function MotivosManager({ motivos, podeEscrever, contador, noshow, semTabela, filtroNome, filtroAtivo }: Props) {
   const router = useRouter()
+  const sp = useSearchParams()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const [novoOpen, setNovoOpen] = useState(false)
   const [editRow, setEditRow] = useState<MotivoRow | null>(null)
+  const [busca, setBusca] = useState(filtroNome)
+
+  const temFiltro = !!(filtroNome || filtroAtivo)
+  const exportHref = `/cadastros/motivos/export${sp.toString() ? `?${sp.toString()}` : ''}`
+
+  function setParams(updates: Record<string, string>) {
+    const p = new URLSearchParams(sp.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) p.set(k, v)
+      else p.delete(k)
+    }
+    const s = p.toString()
+    router.push(`/cadastros/motivos${s ? `?${s}` : ''}`)
+  }
 
   async function run(id: string, fn: () => Promise<{ ok: boolean; error?: string }>) {
     setBusy(id); setMsg('')
@@ -65,8 +82,43 @@ export function MotivosManager({ motivos, podeEscrever, contador, noshow, semTab
 
   return (
     <div className="view active">
+      {!semTabela && (
+        <div className="rel-card" style={{ padding: 14, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontWeight: 600, fontSize: 13 }}>
+            <i className="ti ti-filter" /> Filtros
+            {temFiltro && (
+              <button className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }} onClick={() => { setBusca(''); router.push('/cadastros/motivos') }}>
+                <i className="ti ti-x" /> Limpar
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 10 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Nome</label>
+              <form onSubmit={(e) => { e.preventDefault(); setParams({ q: busca.trim() }) }}>
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  onBlur={() => { if (busca.trim() !== filtroNome) setParams({ q: busca.trim() }) }}
+                  placeholder="Buscar por nome…"
+                  style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }}
+                />
+              </form>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Ativo</label>
+              <select value={filtroAtivo} onChange={(e) => setParams({ ativo: e.target.value })} style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }}>
+                <option value="">Todos</option>
+                <option value="sim">Sim</option>
+                <option value="nao">Não</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
-        <a className="btn" href="/cadastros/motivos/export" target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
+        <a className="btn" href={exportHref} target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo motivo

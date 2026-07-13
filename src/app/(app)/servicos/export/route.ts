@@ -33,6 +33,15 @@ export async function GET(req: NextRequest) {
   const ativo = sp.get('ativo') ?? 'sim'
   if (ativo === 'sim') q = q.eq('ativo', true)
   else if (ativo === 'nao') q = q.eq('ativo', false)
+  // Tipo de preço (mesma semântica da listagem): Fixo · Variável · Gratuito
+  const tipoPreco = sp.get('tipo_preco') ?? ''
+  if (tipoPreco === 'fixo') q = q.eq('dynamic_price', false).gt('preco_padrao', 0)
+  else if (tipoPreco === 'variavel') q = q.eq('dynamic_price', true)
+  else if (tipoPreco === 'gratuito') q = q.eq('preco_padrao', 0)
+  // Comissionável (Sim/Não)
+  const comiss = sp.get('comiss') ?? ''
+  if (comiss === 'sim') q = q.eq('comissionavel', true)
+  else if (comiss === 'nao') q = q.eq('comissionavel', false)
   const livre = sp.get('q')
   if (livre) {
     const qs = livre.replace(/[,()*]/g, ' ').trim()

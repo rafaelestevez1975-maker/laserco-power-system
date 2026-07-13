@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   criarDocumento,
   salvarDocumento,
@@ -43,6 +43,7 @@ type Props = {
   unidades: Unidade[]
   podeEscrever: boolean
   semTabela: boolean
+  filtros: { q: string; ativo: string }
 }
 
 function statusClass(status: string | null): string {
@@ -51,8 +52,9 @@ function statusClass(status: string | null): string {
   return 'os-inativo'
 }
 
-export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela }: Props) {
+export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela, filtros }: Props) {
   const router = useRouter()
+  const sp = useSearchParams()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   // null = lista; 'novo' = editor em branco; row = editor com documento.
@@ -67,6 +69,17 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela 
   }
 
   const nomesPorId = Object.fromEntries(unidades.map((u) => [u.id, u.nome]))
+
+  const temFiltro = !!filtros.q || !!filtros.ativo
+  function setParams(updates: Record<string, string>) {
+    const p = new URLSearchParams(sp.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) p.set(k, v)
+      else p.delete(k)
+    }
+    const s = p.toString()
+    router.push(`/cadastros/anamnese${s ? `?${s}` : ''}`)
+  }
 
   if (editor) {
     return (
@@ -94,6 +107,25 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela 
           </button>
         )}
       </div>
+
+      {!semTabela && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '4px 0 14px' }}>
+          <input
+            defaultValue={filtros.q}
+            placeholder="🔎 Nome do documento..."
+            onKeyDown={(e) => { if (e.key === 'Enter') setParams({ q: (e.target as HTMLInputElement).value }) }}
+            style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff', minWidth: 260 }}
+          />
+          <select value={filtros.ativo} onChange={(e) => setParams({ ativo: e.target.value })} style={{ padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }} title="Ativo">
+            <option value="">Todos</option>
+            <option value="sim">Ativos</option>
+            <option value="nao">Inativos</option>
+          </select>
+          {temFiltro && (
+            <button className="btn" onClick={() => router.push('/cadastros/anamnese')}><i className="ti ti-x" /> Limpar</button>
+          )}
+        </div>
+      )}
 
       {msg && <div style={{ fontSize: 12.5, color: 'var(--red)', margin: '0 0 8px' }}>{msg}</div>}
 
@@ -125,7 +157,7 @@ export function AnamneseManager({ documentos, unidades, podeEscrever, semTabela 
                 {documentos.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-3)' }}>
-                      Nenhum documento cadastrado. Use “Novo documento” para criar o primeiro.
+                      {temFiltro ? 'Nenhum documento encontrado para os filtros selecionados.' : 'Nenhum documento cadastrado. Use “Novo documento” para criar o primeiro.'}
                     </td>
                   </tr>
                 )}

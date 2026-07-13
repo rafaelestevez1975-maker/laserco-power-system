@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { moedaBR, dataHoraBR } from '@/lib/fmt'
+import { moedaBR, dataHoraBR, dataBR } from '@/lib/fmt'
 import { OsDetalheModal } from './OsDetalheModal'
 
 export type OsRow = {
@@ -62,10 +62,12 @@ export function OsList({ rows, page, totalPages, total, searchParams, podeEscrev
           <table className="cli-table">
             <thead>
               <tr>
-                <th>Nº</th>
+                <th>Nº / Comanda</th>
                 <th>Cliente</th>
                 <th>Origem</th>
                 <th>Criação</th>
+                <th>Fechada em</th>
+                <th>Cancelada em</th>
                 <th>Status</th>
                 <th className="num-r">Desconto</th>
                 <th className="num-r">Total</th>
@@ -75,7 +77,7 @@ export function OsList({ rows, page, totalPages, total, searchParams, podeEscrev
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-clipboard-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhuma ordem de serviço para os filtros selecionados.
                   </td>
@@ -90,6 +92,8 @@ export function OsList({ rows, page, totalPages, total, searchParams, podeEscrev
                   </td>
                   <td><span className="orig-tag">{ORIGEM_LABEL[r.origem || ''] || r.origem || ''}</span></td>
                   <td style={{ fontSize: 12.5 }}>{dataHoraBR(r.criado_em)}</td>
+                  <td style={{ fontSize: 12.5 }}>{r.fechada_em ? dataBR(r.fechada_em) : <span className="muted">—</span>}</td>
+                  <td style={{ fontSize: 12.5 }}>{r.cancelada_em ? dataBR(r.cancelada_em) : <span className="muted">—</span>}</td>
                   <td><span className={`os-st ${STATUS_CLASS[r.status] || ''}`}>{STATUS_LABEL[r.status] || r.status}</span></td>
                   <td className="num-r">{r.desconto_total ? moedaBR(r.desconto_total) : <span className="muted"></span>}</td>
                   <td className="num-r" style={{ fontWeight: 600 }}>{moedaBR(r.total)}</td>

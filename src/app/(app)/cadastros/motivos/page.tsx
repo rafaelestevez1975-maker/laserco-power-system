@@ -7,16 +7,29 @@ export const dynamic = 'force-dynamic'
 
 const PAPEIS_ESCRITA = ['gestor']
 
-export default async function MotivosPage() {
+type SP = {
+  q?: string // busca por nome
+  ativo?: string // 'sim' | 'nao' (vazio = todos)
+}
+
+export default async function MotivosPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams
   const ctx = await getSessionContext()
   const sb = await createClient()
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
 
-  const { data, error } = await sb
+  let q = sb
     .from('motivos_cancelamento')
     .select('id, nome, sistema, ativo')
     .order('ordem', { ascending: true })
     .order('nome', { ascending: true })
+
+  const busca = (sp.q ?? '').trim()
+  if (busca) q = q.ilike('nome', `%${busca}%`)
+  if (sp.ativo === 'sim') q = q.eq('ativo', true)
+  else if (sp.ativo === 'nao') q = q.eq('ativo', false)
+
+  const { data, error } = await q
 
   const motivos = (data ?? []) as MotivoRow[]
   const semTabela = !!error
@@ -38,6 +51,8 @@ export default async function MotivosPage() {
       contador={{ total: motivos.length, sistema }}
       noshow={noshow}
       semTabela={semTabela}
+      filtroNome={busca}
+      filtroAtivo={sp.ativo ?? ''}
     />
   )
 }

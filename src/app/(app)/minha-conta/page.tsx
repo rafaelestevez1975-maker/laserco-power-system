@@ -1,13 +1,28 @@
 import { createClient } from '@/lib/supabase/server'
-import { MinhaContaPanel, type PerfilDados } from '@/components/unidades/MinhaContaPanel'
+import { getSessionContext } from '@/lib/session'
+import { FRANQUEADORA_EMPRESA_ID } from '@/lib/sac-ingest'
+import { OrganizacaoConfig, type OrganizacaoDados } from '@/components/minha-conta/OrganizacaoConfig'
+import { type PerfilDados } from '@/components/unidades/MinhaContaPanel'
 
 export const dynamic = 'force-dynamic'
 
-/** Dados do perfil do usuário logado (perfis_usuario). Nome/telefone editáveis;
- *  e-mail e papel são somente leitura (geridos em RH/auth). */
+/**
+ * "Minha conta" espelha o BEMP: o foco é a CONFIGURAÇÃO DA ORGANIZAÇÃO
+ * (organizacao_config), não o perfil pessoal. O perfil pessoal do usuário
+ * continua acessível numa seção "Meu perfil" no fim da tela.
+ * Edição da organização só para admin_geral (getSessionContext.isAdmin).
+ */
 export default async function MinhaContaPage() {
   const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
+  const [{ data: { user } }, ctx] = await Promise.all([sb.auth.getUser(), getSessionContext()])
+
+  const { data: orgRow } = await sb
+    .from('organizacao_config')
+    .select('empresa_id, nome, tema, subdominio, validade_pontos_meses, informar_vendedor_os, bloquear_inadimplente, agendamento_online, razao_social, cnpj')
+    .eq('empresa_id', FRANQUEADORA_EMPRESA_ID)
+    .maybeSingle()
+
+  const org = (orgRow as OrganizacaoDados | null) ?? null
 
   let perfil: PerfilDados | null = null
   if (user) {
@@ -17,9 +32,8 @@ export default async function MinhaContaPage() {
       .eq('id', user.id)
       .maybeSingle()
     perfil = (data as PerfilDados | null) ?? null
-    // Fallback de e-mail vindo do auth quando o perfil ainda não tem.
     if (perfil && !perfil.email) perfil.email = user.email ?? null
   }
 
-  return <MinhaContaPanel perfil={perfil} />
+  return <OrganizacaoConfig org={org} perfil={perfil} ehAdmin={!!ctx?.isAdmin} />
 }

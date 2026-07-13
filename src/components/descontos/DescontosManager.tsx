@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   criarDesconto,
   editarDesconto,
@@ -22,6 +22,8 @@ export type DescontoRow = {
 type Props = {
   rows: DescontoRow[]
   podeGerir: boolean
+  filtroNome: string
+  filtroAtivo: string // '' | 'sim' | 'nao'
 }
 
 function rotuloValor(tipo: string | null, valor: number | null): string {
@@ -30,14 +32,29 @@ function rotuloValor(tipo: string | null, valor: number | null): string {
   return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function DescontosManager({ rows, podeGerir }: Props) {
+export function DescontosManager({ rows, podeGerir, filtroNome, filtroAtivo }: Props) {
   const router = useRouter()
+  const sp = useSearchParams()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
   const [novoOpen, setNovoOpen] = useState(false)
   const [editRow, setEditRow] = useState<DescontoRow | null>(null)
+  const [busca, setBusca] = useState(filtroNome)
 
   const ativos = rows.filter((r) => r.ativo !== false).length
+  const temFiltro = !!(filtroNome || filtroAtivo)
+
+  function setParams(updates: Record<string, string>) {
+    const p = new URLSearchParams(sp.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) p.set(k, v)
+      else p.delete(k)
+    }
+    const s = p.toString()
+    router.push(`/descontos${s ? `?${s}` : ''}`)
+  }
+
+  const exportHref = `/descontos/export${sp.toString() ? `?${sp.toString()}` : ''}`
 
   async function toggle(r: DescontoRow) {
     setBusy(r.id); setMsg('')
@@ -59,8 +76,41 @@ export function DescontosManager({ rows, podeGerir }: Props) {
         <div className="metric-box"><span>Ativos</span><b style={{ color: '#15803D' }}>{ativos}</b></div>
       </div>
 
+      <div className="rel-card" style={{ padding: 14, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontWeight: 600, fontSize: 13 }}>
+          <i className="ti ti-filter" /> Filtros
+          {temFiltro && (
+            <button className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }} onClick={() => { setBusca(''); router.push('/descontos') }}>
+              <i className="ti ti-x" /> Limpar
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Nome / Parceria</label>
+            <form onSubmit={(e) => { e.preventDefault(); setParams({ q: busca.trim() }) }}>
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                onBlur={() => { if (busca.trim() !== filtroNome) setParams({ q: busca.trim() }) }}
+                placeholder="Buscar por nome…"
+                style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }}
+              />
+            </form>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }}>Ativo</label>
+            <select value={filtroAtivo} onChange={(e) => setParams({ ativo: e.target.value })} style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }}>
+              <option value="">Todos</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
-        <a className="btn" href="/descontos/export" target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
+        <a className="btn" href={exportHref} target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeGerir && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo desconto

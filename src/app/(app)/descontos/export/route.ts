@@ -17,16 +17,23 @@ function rotuloValor(tipo: string | null, valor: number | null): string {
 }
 
 /** Exporta a lista de descontos/parcerias (tabela `descontos`) em CSV com BOM. */
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const ctx = await getSessionContext()
   if (!ctx) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
 
+  const sp = req.nextUrl.searchParams
   const sb = await createClient()
-  const { data, error } = await sb
+  let q = sb
     .from('descontos')
     .select('nome, tipo, valor, ativo')
     .order('criado_em', { ascending: false })
     .range(0, 9999) // teto de segurança
+  const busca = (sp.get('q') || '').trim()
+  if (busca) q = q.ilike('nome', `%${busca}%`)
+  const ativo = sp.get('ativo')
+  if (ativo === 'sim') q = q.eq('ativo', true)
+  else if (ativo === 'nao') q = q.eq('ativo', false)
+  const { data, error } = await q
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

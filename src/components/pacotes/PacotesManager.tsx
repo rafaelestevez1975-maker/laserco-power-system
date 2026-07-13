@@ -49,7 +49,7 @@ type Props = {
   servicos: ServicoOpt[]
   podeEscrever: boolean
   kpis: { total: number; ativos: number; inativos: number }
-  filtros: { q: string; ativo: string }
+  filtros: { q: string; ativo: string; pagar: string }
   page: number
   totalPages: number
   total: number
@@ -75,6 +75,7 @@ export function PacotesManager(props: Props) {
     const p = new URLSearchParams()
     if (filtros.q) p.set('q', filtros.q)
     if (filtros.ativo && filtros.ativo !== 'sim') p.set('ativo', filtros.ativo)
+    if (filtros.pagar) p.set('pagar', filtros.pagar)
     for (const [k, v] of Object.entries(extra)) {
       if (v === undefined || v === '' || v === null) p.delete(k)
       else p.set(k, String(v))
@@ -89,6 +90,7 @@ export function PacotesManager(props: Props) {
     const p = new URLSearchParams()
     if (filtros.q) p.set('q', filtros.q)
     if (filtros.ativo && filtros.ativo !== 'sim') p.set('ativo', filtros.ativo)
+    if (filtros.pagar) p.set('pagar', filtros.pagar)
     p.set('export', 'csv')
     window.open(`/pacotes/export?${p.toString()}`, '_blank')
   }
@@ -146,7 +148,7 @@ export function PacotesManager(props: Props) {
         <div className="rel-card-h" style={{ cursor: 'default' }}>
           <span><i className="ti ti-filter flt" /> Filtros</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginTop: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14, marginTop: 12 }}>
           <div className="field">
             <label>Buscar por nome</label>
             <input name="q" defaultValue={filtros.q} placeholder="Ex.: Depilação Corpo Todo" />
@@ -157,6 +159,14 @@ export function PacotesManager(props: Props) {
               <option value="sim">Ativos</option>
               <option value="nao">Inativos</option>
               <option value="todos">Todos</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Pagar comissão na</label>
+            <select name="pagar" defaultValue={filtros.pagar}>
+              <option value="">Todas</option>
+              <option value="Venda">Venda</option>
+              <option value="Execução">Execução</option>
             </select>
           </div>
         </div>

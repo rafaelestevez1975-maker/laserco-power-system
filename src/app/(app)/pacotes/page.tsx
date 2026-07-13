@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 20
 
-type SP = { q?: string; ativo?: string; page?: string }
+type SP = { q?: string; ativo?: string; pagar?: string; page?: string }
 
 // Papéis com escrita no catálogo de pacotes (gate de UI; o servidor revalida).
 const PAPEIS_ESCRITA = ['gestor', 'operacoes']
@@ -16,6 +16,7 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams
   const ativo = sp.ativo ?? 'sim'
   const q = (sp.q ?? '').trim()
+  const pagar = sp.pagar ?? ''
   const ctx = await getSessionContext()
   const sb = await createClient()
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
@@ -40,6 +41,7 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
     .range(from, from + PAGE_SIZE - 1)
   if (ativo === 'sim') query = query.eq('ativo', true)
   else if (ativo === 'nao') query = query.eq('ativo', false)
+  if (pagar === 'Venda' || pagar === 'Execução') query = query.eq('pagar_comissao', pagar)
   if (q) query = query.ilike('nome', `%${q}%`)
 
   const { data: pacRaw, count } = await query
@@ -81,7 +83,7 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
     .order('nome', { ascending: true })
   const servicos = (servRaw ?? []) as ServicoOpt[]
 
-  const temFiltro = !!(q || ativo !== 'sim')
+  const temFiltro = !!(q || ativo !== 'sim' || pagar)
 
   return (
     <PacotesManager
@@ -89,7 +91,7 @@ export default async function PacotesPage({ searchParams }: { searchParams: Prom
       servicos={servicos}
       podeEscrever={podeEscrever}
       kpis={{ total: kpiTotal, ativos: kpiAtivos, inativos: kpiInativos }}
-      filtros={{ q, ativo }}
+      filtros={{ q, ativo, pagar }}
       page={page}
       totalPages={totalPages}
       total={total}

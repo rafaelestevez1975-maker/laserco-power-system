@@ -17,12 +17,14 @@ type SP = {
   q?: string
   grupo?: string
   ativo?: string // 'sim' (default) | 'nao' | '' (todos)
+  tipo_preco?: string // '' (todos) | 'fixo' | 'variavel' | 'gratuito'
+  comiss?: string // '' (todos) | 'sim' | 'nao'
   page?: string
 }
 
 export default async function ServicosPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, grupo, ativo = 'sim', page: pageRaw } = sp
+  const { q, grupo, ativo = 'sim', tipo_preco = '', comiss = '', page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
@@ -85,6 +87,13 @@ export default async function ServicosPage({ searchParams }: { searchParams: Pro
   if (grupo) query = query.eq('grupo', grupo)
   if (ativo === 'sim') query = query.eq('ativo', true)
   else if (ativo === 'nao') query = query.eq('ativo', false)
+  // Tipo de preço: Fixo = preço fixo > 0 · Variável = preço dinâmico · Gratuito = preço 0
+  if (tipo_preco === 'fixo') query = query.eq('dynamic_price', false).gt('preco_padrao', 0)
+  else if (tipo_preco === 'variavel') query = query.eq('dynamic_price', true)
+  else if (tipo_preco === 'gratuito') query = query.eq('preco_padrao', 0)
+  // Comissionável (Sim/Não)
+  if (comiss === 'sim') query = query.eq('comissionavel', true)
+  else if (comiss === 'nao') query = query.eq('comissionavel', false)
   if (q) {
     const qs = q.replace(/[,()*]/g, ' ').trim()
     if (qs) query = query.or(`nome.ilike.%${qs}%,descricao.ilike.%${qs}%`)
@@ -94,7 +103,7 @@ export default async function ServicosPage({ searchParams }: { searchParams: Pro
   const servicos = (data ?? []) as ServicoRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(q || grupo || ativo !== 'sim')
+  const temFiltro = !!(q || grupo || ativo !== 'sim' || tipo_preco || comiss)
 
   return (
     <div className="view active">

@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
   const ativo = sp.get('ativo') ?? 'sim'
   if (ativo === 'sim') q = q.eq('ativo', true)
   else if (ativo === 'nao') q = q.eq('ativo', false)
+  const pagar = sp.get('pagar') ?? ''
+  if (pagar === 'Venda' || pagar === 'Execução') q = q.eq('pagar_comissao', pagar)
   const livre = (sp.get('q') ?? '').trim()
   if (livre) q = q.ilike('nome', `%${livre}%`)
 

@@ -156,6 +156,125 @@ export async function excluirMeta(id: string): Promise<ActionResult> {
   return { ok: true }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Catálogo de metas (tabela REAL `public.metas`) — paridade com a LISTAGEM do BEMP.
+// Colunas: id, empresa_id, unidade_id (nullable, FK unidades), nome, indicador
+// ('agendamentos'|'atendimentos'|'faturamento_bruto'|'faturamento_valor'|'vendas'),
+// ciclo ('mensal'|'semanal'), valor (numeric), ativo (bool), criado_em, atualizado_em.
+// unidade_id NULL = meta global (todas as unidades). RBAC: gestor/admin escrevem.
+// (Distinto de metas_colaborador acima — nomes próprios p/ não colidir com criarMeta/salvarMeta.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const META_INDICADORES = ['agendamentos', 'atendimentos', 'faturamento_bruto', 'faturamento_valor', 'vendas'] as const
+export type MetaIndicador = (typeof META_INDICADORES)[number]
+const META_CICLOS = ['mensal', 'semanal'] as const
+export type MetaCiclo = (typeof META_CICLOS)[number]
+
+export type MetaCatInput = {
+  nome: string
+  indicador: string
+  ciclo: string
+  unidade_id?: string | null
+  valor: number
+  ativo?: boolean
+}
+
+/** Resolve a empresa do operador (via unidade do perfil; senão a 1ª empresa). */
+async function resolverEmpresaMeta(op: NonNullable<Awaited<ReturnType<typeof requireOperador>>['op']>): Promise<string | null> {
+  const { sb, userId } = op
+  const { data: perfil } = await sb.from('perfis_usuario').select('unidade_id').eq('id', userId).maybeSingle()
+  const unidadeId = (perfil as { unidade_id?: string | null } | null)?.unidade_id ?? null
+  if (unidadeId) {
+    const { data: uni } = await sb.from('unidades').select('empresa_id').eq('id', unidadeId).maybeSingle()
+    const eid = (uni as { empresa_id?: string | null } | null)?.empresa_id ?? null
+    if (eid) return eid
+  }
+  const { data: emp } = await sb.from('empresas').select('id').order('criada_em', { ascending: true }).limit(1).maybeSingle()
+  return (emp as { id?: string } | null)?.id ?? null
+}
+
+/** Validação por campo do catálogo de metas. Retorna msg ou null. */
+function validarMetaCat(input: MetaCatInput): string | null {
+  const nome = (input.nome || '').trim()
+  if (!nome) return 'Informe o nome da meta.'
+  const ind = (input.indicador || '').trim()
+  if (!ind || !(META_INDICADORES as readonly string[]).includes(ind)) return 'Selecione um indicador válido.'
+  const ciclo = (input.ciclo || '').trim()
+  if (!ciclo || !(META_CICLOS as readonly string[]).includes(ciclo)) return 'Selecione um ciclo válido.'
+  if (input.valor == null || !Number.isFinite(input.valor)) return 'Informe o valor da meta.'
+  if (input.valor < 0) return 'O valor não pode ser negativo.'
+  return null
+}
+
+function payloadMetaCat(input: MetaCatInput) {
+  return {
+    nome: (input.nome || '').trim(),
+    indicador: (input.indicador || '').trim(),
+    ciclo: (input.ciclo || '').trim(),
+    unidade_id: input.unidade_id || null,
+    valor: input.valor,
+    ativo: input.ativo !== false,
+  }
+}
+
+/** Cria uma meta no catálogo `metas`. RBAC: gestor/admin. */
+export async function criarMetaCatalogo(input: MetaCatInput): Promise<ActionResult> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeEscrever(op.papel)) return { ok: false, error: 'Você não tem permissão para cadastrar metas.' }
+
+  const v = validarMetaCat(input)
+  if (v) return { ok: false, error: v }
+
+  const empresa_id = await resolverEmpresaMeta(op)
+  const { data, error: e } = await op.sb
+    .from('metas')
+    .insert({ ...payloadMetaCat(input), empresa_id })
+    .select('id')
+    .single()
+
+  if (e) return { ok: false, error: msgErro(e.message, 'cadastrar meta') }
+  revalidatePath('/cadastros/metas')
+  return { ok: true, id: (data as { id: string }).id }
+}
+
+/** Edita uma meta do catálogo `metas`. RBAC: gestor/admin. */
+export async function editarMetaCatalogo(id: string, input: MetaCatInput): Promise<ActionResult> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeEscrever(op.papel)) return { ok: false, error: 'Você não tem permissão para editar metas.' }
+  if (!id) return { ok: false, error: 'Meta inválida.' }
+
+  const v = validarMetaCat(input)
+  if (v) return { ok: false, error: v }
+
+  const { error: e } = await op.sb
+    .from('metas')
+    .update({ ...payloadMetaCat(input), atualizado_em: new Date().toISOString() })
+    .eq('id', id)
+
+  if (e) return { ok: false, error: msgErro(e.message, 'salvar meta') }
+  revalidatePath('/cadastros/metas')
+  return { ok: true }
+}
+
+/** Ativa/inativa uma meta do catálogo `metas`. RBAC: gestor/admin. */
+export async function toggleMetaAtiva(id: string, ativo: boolean): Promise<ActionResult> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!podeEscrever(op.papel)) return { ok: false, error: 'Você não tem permissão para alterar metas.' }
+  if (!id) return { ok: false, error: 'Meta inválida.' }
+
+  const { error: e } = await op.sb
+    .from('metas')
+    .update({ ativo, atualizado_em: new Date().toISOString() })
+    .eq('id', id)
+
+  if (e) return { ok: false, error: msgErro(e.message, ativo ? 'ativar meta' : 'inativar meta') }
+  revalidatePath('/cadastros/metas')
+  return { ok: true }
+}
+
 // TODO(needs-table: metas_unidade)  metas de unidade (venda mín. R$100k, agendamentos,
 // clientes novos, indicações) com regras automáticas de reajuste do legado (3º mês = média
 // dos 2 anteriores; novembro +40%; dezembro = patamar de outubro). Sem tabela própria no
