@@ -115,19 +115,14 @@ export function PerfisLista({
         </div>
       )}
 
-      {!temBatePonto && isAdmin && (
-        <div className="modal-note" style={{ marginBottom: 14, background: 'var(--amber-bg, #FFF7E6)', color: 'var(--amber, #B45309)' }}>
-          <i className="ti ti-info-circle" /> Aplique a migration <b>scripts/migrations/rbac.sql</b> no lkii para habilitar o toggle &quot;Bate ponto&quot;.
-        </div>
-      )}
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, margin: '0 0 18px' }}>
         {([
-          ['Cargos cadastrados', cargos.length, 'ti-id-badge-2'],
-          ['Cargos do sistema', sistemaCount, 'ti-lock'],
-          ['Cargos da empresa', empresaCount, 'ti-building'],
-          ['Vínculos de usuário', totalUsuariosVinc, 'ti-users'],
+          ['Perfis de acesso', empresaCount, 'ti-id-badge-2'],
+          ['Colaboradores vinculados', totalUsuariosVinc, 'ti-users'],
+          ['Perfis internos (sistema)', sistemaCount, 'ti-lock'],
+          ['Total de perfis', cargos.length, 'ti-list'],
         ] as [string, number, string][]).map(([label, val, icon]) => (
           <div key={label} className="metric-box" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 9, background: 'var(--brand-50, #F7E7EB)', color: 'var(--brand-500)', flexShrink: 0 }}>
@@ -166,12 +161,25 @@ export function PerfisLista({
         </div>
       </div>
 
-      <Secao titulo="Cargos do sistema" sub="Pré-definidos (RBAC base). Editáveis, exceto Super Admin." icon="ti-lock"
-        cargos={sistema} permPorCargo={permPorCargo} usuariosPorCargo={usuariosPorCargo} isAdmin={isAdmin}
-        temBatePonto={temBatePonto} busy={busy} run={run} />
-      <Secao titulo="Cargos da empresa" sub="Criados/importados por empresa (ex.: BEMP)." icon="ti-building"
+      {/* Perfis da operação (espelhados do BEMP) — a lista principal, como no BEMP. */}
+      <Secao titulo="Perfis de acesso" sub="Perfis da operação. Clique num perfil para definir o que cada um acessa e faz (agenda, anamnese, assinatura, financeiro…)." icon="ti-id-badge-2"
         cargos={empresa} permPorCargo={permPorCargo} usuariosPorCargo={usuariosPorCargo} isAdmin={isAdmin}
         temBatePonto={temBatePonto} busy={busy} run={run} />
+      {/* Perfis técnicos internos — sustentam SAC, menu e automações. Recolhidos por padrão. */}
+      {isAdmin && sistema.length > 0 && (
+        <details style={{ marginBottom: 22 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 13, color: 'var(--text-2)', padding: '6px 0' }}>
+            <i className="ti ti-lock" style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            Perfis internos do sistema ({sistema.length}) — avançado
+          </summary>
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', margin: '6px 0 10px' }}>
+            Perfis técnicos que sustentam SAC, menu e automações. Não remova; edite só se souber o efeito.
+          </p>
+          <Secao titulo="" sub="" icon=""
+            cargos={sistema} permPorCargo={permPorCargo} usuariosPorCargo={usuariosPorCargo} isAdmin={isAdmin}
+            temBatePonto={temBatePonto} busy={busy} run={run} />
+        </details>
+      )}
 
       {filtrados.length === 0 && (
         <div className="rel-card" style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
@@ -201,11 +209,15 @@ function Secao({
   const ativos = cargos.filter((c) => c.ativo !== false).length
   return (
     <section style={{ marginBottom: 22 }}>
-      <h3 style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-        <i className={`ti ${icon}`} style={{ color: 'var(--brand-500)' }} /> {titulo}
-        <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 400 }}>({cargos.length})</span>
-      </h3>
-      <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 10 }}>{sub}</p>
+      {titulo && (
+        <>
+          <h3 style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+            <i className={`ti ${icon}`} style={{ color: 'var(--brand-500)' }} /> {titulo}
+            <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 400 }}>({cargos.length})</span>
+          </h3>
+          <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 10 }}>{sub}</p>
+        </>
+      )}
       <div className="cli-card">
         <div className="cli-scroll">
           <table className="cli-table">
