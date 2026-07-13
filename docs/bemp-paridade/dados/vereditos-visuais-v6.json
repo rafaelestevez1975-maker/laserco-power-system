@@ -7,12 +7,12 @@
  {
   "slug": "os",
   "status": "parcial",
-  "nota": "Lista com dados reais + colunas Nº/Comanda, Fechada em, Cancelada em + Exportar. Faltam alguns filtros do BEMP (pagamento, serviço, vendedor)."
+  "nota": "Lista com dados reais + colunas Nº/Comanda, Fechada em, Cancelada em + filtros Status/Origem/Cliente/Vendedor/Período + Exportar. Falta 'forma de pagamento' (precisa cruzar as 210k vendas)."
  },
  {
   "slug": "clientes",
   "status": "parcial",
-  "nota": "Tabela com dados reais (116.811 clientes, telefone com botão WhatsApp, documento, gênero) e Exportar presentes. Faltam colunas Ativo/Verificado/App e filtros de tipo de documento, App, Bloqueado, Pendência e Leads."
+  "nota": "Lista destravada (busca 0,75s) + filtro Tipo de documento (Com CPF/Com RG/Sem) + Exportar. Filtros 'com app' e 'bloqueado' do BEMP dependem de campos que não vieram na importação (banco do BEMP)."
  },
  {
   "slug": "servicos",
@@ -127,7 +127,7 @@
  {
   "slug": "rel-agendamentos",
   "status": "parcial",
-  "nota": "Dados reais por status/dia; faltam os 9 filtros do BEMP (criação/cancelamento, origem, serviço, profissional…) e Exportar."
+  "nota": "Dados reais (por status e por dia) + filtros Período, Status, Profissional, Serviço e Unidade (admin). Faltam origem e 'agendou pelo SAC' (dependem de dado do BEMP)."
  },
  {
   "slug": "exportacoes",
