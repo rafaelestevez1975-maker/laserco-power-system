@@ -13,6 +13,7 @@ export type UnidadeRow = {
   cidade: string | null
   estado: string | null
   cep: string | null
+  telefone: string | null
   ativa: boolean | null
   bemp_salon_id: number | null
 }
@@ -152,6 +153,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
               <tr>
                 <th>Unidade</th>
                 <th>Cidade / UF</th>
+                <th>Telefone</th>
                 <th>CNPJ</th>
                 <th>Status</th>
                 <th></th>
@@ -160,7 +162,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: 38, color: 'var(--text-3)' }}>
                     <i className="ti ti-building-off" style={{ fontSize: 22, display: 'block', marginBottom: 8 }} />
                     Nenhuma unidade {temFiltro ? 'com esses filtros' : 'encontrada'}.
                   </td>
@@ -182,6 +184,7 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
                   <td style={{ fontSize: 12.5 }}>
                     {u.cidade || <span className="muted"></span>}{u.estado ? ` / ${u.estado}` : ''}
                   </td>
+                  <td style={{ fontSize: 12 }}>{u.telefone || <span className="muted"></span>}</td>
                   <td style={{ fontSize: 12 }}>{u.cnpj || <span className="muted"></span>}</td>
                   <td>
                     {u.ativa === false

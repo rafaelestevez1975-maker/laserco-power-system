@@ -17,6 +17,7 @@ type Row = {
   cnpj: string | null
   cidade: string | null
   estado: string | null
+  telefone?: string | null
   ativa: boolean | null
   tipo_loja?: string | null
 }
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const uf = (sp.get('uf') || '').trim().toUpperCase()
   const status = sp.get('status') === 'inativa' ? 'inativa' : sp.get('status') === 'ativa' ? 'ativa' : ''
 
-  const COLS_FULL = 'nome, cnpj, cidade, estado, ativa, tipo_loja'
+  const COLS_FULL = 'nome, cnpj, cidade, estado, telefone, ativa, tipo_loja'
   const COLS_BASE = 'nome, cnpj, cidade, estado, ativa'
 
   const montarConsulta = (cols: string) => {
@@ -56,11 +57,11 @@ export async function GET(req: NextRequest) {
 
   const rows = (data ?? []) as unknown as Row[]
 
-  const header = ['Nome', 'CNPJ', 'Cidade', 'Estado', 'Ativa', 'Tipo de loja']
+  const header = ['Nome', 'CNPJ', 'Cidade', 'Estado', 'Telefone', 'Ativa', 'Tipo de loja']
   const lines = [header.join(';')]
   for (const u of rows) {
     lines.push([
-      u.nome, u.cnpj, u.cidade, u.estado,
+      u.nome, u.cnpj, u.cidade, u.estado, u.telefone ?? '',
       u.ativa === false ? 'Não' : 'Sim',
       u.tipo_loja ? (TIPO_LOJA_LABEL[u.tipo_loja] ?? u.tipo_loja) : '',
     ].map(csvCell).join(';'))

@@ -44,7 +44,7 @@ export default async function UnidadesPage({ searchParams }: { searchParams: Pro
   // ── Página de unidades (server-side .range + count exato sobre o filtro) ──
   let q = sb
     .from('unidades')
-    .select('id, nome, cnpj, endereco, cidade, estado, cep, ativa, bemp_salon_id', { count: 'exact' })
+    .select('id, nome, cnpj, endereco, cidade, estado, cep, telefone, ativa, bemp_salon_id', { count: 'exact' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
   if (busca) q = q.or(`nome.ilike.%${busca}%,cidade.ilike.%${busca}%,cnpj.ilike.%${busca}%`)
