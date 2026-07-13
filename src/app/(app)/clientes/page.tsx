@@ -16,6 +16,8 @@ type SP = {
   verificado?: string // 'sim' | 'nao' | ''
   genero?: string // 'female' | 'male' | 'other' | ''
   doc?: string // 'cpf' | 'rg' | 'sem' — tipo de documento (paridade BEMP)
+  bloqueado?: string // 'sim' | 'nao' | '' — coluna direta clientes.bloqueado (paridade BEMP)
+  app?: string // 'sim' | 'nao' | '' — coluna direta clientes.tem_app (paridade BEMP)
   cidade?: string
   estado?: string
   unidade?: string // id de unidade (admin filtra entre todas)
@@ -27,7 +29,7 @@ const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, ativo = 'sim', verificado, genero, doc, cidade, estado, unidade, page: pageRaw } = sp
+  const { q, ativo = 'sim', verificado, genero, doc, bloqueado, app, cidade, estado, unidade, page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
@@ -87,6 +89,11 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   if (doc === 'cpf') query = query.not('cpf', 'is', null)
   else if (doc === 'rg') query = query.not('rg', 'is', null)
   else if (doc === 'sem') query = query.is('cpf', null).is('rg', null)
+  // Bloqueado / Com app (paridade BEMP): colunas booleanas diretas → filtro barato via .eq().
+  if (bloqueado === 'sim') query = query.eq('bloqueado', true)
+  else if (bloqueado === 'nao') query = query.eq('bloqueado', false)
+  if (app === 'sim') query = query.eq('tem_app', true)
+  else if (app === 'nao') query = query.eq('tem_app', false)
   if (cidade) query = query.ilike('cidade', `%${cidade}%`)
   if (estado) query = query.ilike('estado', `%${estado}%`)
   if (q) {
@@ -103,7 +110,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const clientes = (data ?? []) as ClienteRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(q || verificado || genero || doc || cidade || estado || (isAdmin && unidade) || ativo !== 'sim')
+  const temFiltro = !!(q || verificado || genero || doc || bloqueado || app || cidade || estado || (isAdmin && unidade) || ativo !== 'sim')
 
   // unidade padrão sugerida no modal de novo cliente
   const unidadeSugerida = activeUnit ?? (ctx?.unidades?.[0]?.id ?? null)

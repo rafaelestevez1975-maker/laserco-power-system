@@ -9,6 +9,9 @@ const STATUS_LABEL: Record<string, string> = { aberta: 'Aberta', fechada: 'Fecha
 const ORIGEM_LABEL: Record<string, string> = {
   avulsa: 'Avulsa', agendamento: 'Agendamento', pacote: 'Pacote', assinatura: 'Assinatura', interna: 'Interna', multa_assinatura: 'Multa',
 }
+const PAGAMENTO_LABEL: Record<string, string> = {
+  package_credit: 'Crédito de pacote', normal: 'Pagamento normal', monthly: 'Mensalidade', wallet_points: 'Pontos/carteira', subscription_credit: 'Crédito de assinatura',
+}
 const STATUS_FILTRO = ['aberta', 'fechada', 'cancelada']
 
 /** Escapa um campo para CSV (separador ;). */
@@ -28,6 +31,7 @@ type Raw = {
   numero: number | null
   status: string
   origem: string | null
+  forma_pagamento: string | null
   total: number | null
   valor_pago: number | null
   valor_pendente: number | null
@@ -53,6 +57,7 @@ export async function GET(req: NextRequest) {
   const cliente = sp.get('cliente')
   const colaborador = sp.get('colaborador')
   const origem = sp.get('origem')
+  const pagamento = sp.get('pagamento')
   const di = sp.get('di')
   const df = sp.get('df')
 
@@ -60,7 +65,7 @@ export async function GET(req: NextRequest) {
   // resolvemos os nomes num 2º lookup por PK, em lotes.
   let q: FiltroQuery = sb
     .from('os')
-    .select('numero, status, origem, total, valor_pago, valor_pendente, criado_em, fechada_em, cancelada_em, cliente_id')
+    .select('numero, status, origem, forma_pagamento, total, valor_pago, valor_pendente, criado_em, fechada_em, cancelada_em, cliente_id')
     .order('criado_em', { ascending: false, nullsFirst: false })
     .range(0, 19999) as unknown as FiltroQuery
   if (unidadeId) q = q.eq('unidade_id', unidadeId)
@@ -68,6 +73,7 @@ export async function GET(req: NextRequest) {
   if (cliente) q = q.eq('cliente_id', cliente)
   if (colaborador) q = q.eq('criado_por', colaborador)
   if (origem) q = q.eq('origem', origem)
+  if (pagamento) q = q.eq('forma_pagamento', pagamento)
   if (di) q = q.gte('criado_em', `${di}T00:00:00`)
   if (df) q = q.lte('criado_em', `${df}T23:59:59`)
 
@@ -84,13 +90,14 @@ export async function GET(req: NextRequest) {
     for (const c of (cliRaw ?? []) as { id: string; nome: string | null }[]) nomesCli.set(c.id, c.nome)
   }
 
-  const header = ['Número', 'Status', 'Origem', 'Cliente', 'Total', 'Valor pago', 'Valor pendente', 'Criado em', 'Fechada em', 'Cancelada em']
+  const header = ['Número', 'Status', 'Origem', 'Forma de pagamento', 'Cliente', 'Total', 'Valor pago', 'Valor pendente', 'Criado em', 'Fechada em', 'Cancelada em']
   const lines = [header.join(';')]
   for (const r of rows) {
     lines.push([
       r.numero ?? '',
       r.status ? (STATUS_LABEL[r.status] ?? r.status) : '',
       r.origem ? (ORIGEM_LABEL[r.origem] ?? r.origem) : '',
+      r.forma_pagamento ? (PAGAMENTO_LABEL[r.forma_pagamento] ?? r.forma_pagamento) : '',
       (r.cliente_id ? nomesCli.get(r.cliente_id) : null) ?? '',
       moedaBR(r.total),
       moedaBR(r.valor_pago),

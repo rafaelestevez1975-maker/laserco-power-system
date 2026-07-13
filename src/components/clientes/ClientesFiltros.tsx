@@ -29,7 +29,7 @@ export function ClientesFiltros({ unidades = [] }: { unidades?: Unidade[] }) {
 
   const sel: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
   const ativo = sp.get('ativo') ?? 'sim'
-  const temFiltro = ['q', 'verificado', 'genero', 'cidade', 'estado', 'unidade'].some((k) => sp.get(k)) || ativo !== 'sim'
+  const temFiltro = ['q', 'verificado', 'genero', 'doc', 'bloqueado', 'app', 'cidade', 'estado', 'unidade'].some((k) => sp.get(k)) || ativo !== 'sim'
 
   return (
     <div className="fil-card" style={{ border: '1px solid var(--line)', borderRadius: 12, marginBottom: 14, background: 'var(--surface)' }}>
@@ -72,6 +72,16 @@ export function ClientesFiltros({ unidades = [] }: { unidades?: Unidade[] }) {
             <option value="cpf">Com CPF</option>
             <option value="rg">Com RG</option>
             <option value="sem">Sem documento</option>
+          </select>
+          <select value={sp.get('bloqueado') ?? ''} onChange={(e) => setParams({ bloqueado: e.target.value })} style={sel}>
+            <option value="">Bloqueado (todos)</option>
+            <option value="sim">Bloqueados</option>
+            <option value="nao">Não bloqueados</option>
+          </select>
+          <select value={sp.get('app') ?? ''} onChange={(e) => setParams({ app: e.target.value })} style={sel}>
+            <option value="">App (todos)</option>
+            <option value="sim">Com app</option>
+            <option value="nao">Sem app</option>
           </select>
           {unidades.length > 0 && (
             <select value={sp.get('unidade') ?? ''} onChange={(e) => setParams({ unidade: e.target.value })} style={sel}>

@@ -16,6 +16,7 @@ type SP = {
   cliente?: string // cliente_id
   colaborador?: string // criado_por (perfil)
   origem?: string
+  pagamento?: string // forma_pagamento (coluna direta)
   di?: string // criado_em >= (data)
   df?: string // criado_em <= (data)
   page?: string
@@ -41,6 +42,7 @@ function aplicarFiltros<Q extends FiltroQuery>(q: Q, unidadeId: string | null, s
   if (sp.cliente) out = out.eq('cliente_id', sp.cliente)
   if (sp.colaborador) out = out.eq('criado_por', sp.colaborador)
   if (sp.origem) out = out.eq('origem', sp.origem)
+  if (sp.pagamento) out = out.eq('forma_pagamento', sp.pagamento)
   if (sp.di) out = out.gte('criado_em', `${sp.di}T00:00:00`)
   if (sp.df) out = out.lte('criado_em', `${sp.df}T23:59:59`)
   return out as Q
@@ -166,7 +168,7 @@ export default async function OsPage({ searchParams }: { searchParams: Promise<S
     preco: Number(s.preco_padrao) || 0,
   }))
 
-  const temFiltro = !!(sp.status || sp.cliente || sp.colaborador || sp.origem || sp.di || sp.df)
+  const temFiltro = !!(sp.status || sp.cliente || sp.colaborador || sp.origem || sp.pagamento || sp.di || sp.df)
 
   return (
     <div className="view active">

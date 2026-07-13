@@ -13,7 +13,20 @@ type Props = {
   unidade: string
   profissional: string
   servico: string
+  origem: string
+  sac: string
 }
+
+/** Origens previstas de um agendamento. Hoje a base só tem 'sistema'; as demais
+ *  populam quando o sync do BEMP trouxer variedade — o filtro já fica pronto. */
+const ORIGENS: FiltroOpcao[] = [
+  { id: 'sistema', nome: 'Sistema' },
+  { id: 'site', nome: 'Site' },
+  { id: 'whatsapp', nome: 'WhatsApp' },
+  { id: 'app', nome: 'App' },
+  { id: 'presencial', nome: 'Presencial' },
+  { id: 'indicacao', nome: 'Indicação' },
+]
 
 /**
  * Filtros extras do relatório de Agendamentos (unidade / profissional / serviço).
@@ -23,12 +36,12 @@ type Props = {
  * Componente próprio desta tela: RelFiltros é compartilhado por ~20 relatórios,
  * então NÃO é estendido aqui.
  */
-export function AgendamentosFiltros({ unidades, colaboradores, servicos, unidade, profissional, servico }: Props) {
+export function AgendamentosFiltros({ unidades, colaboradores, servicos, unidade, profissional, servico, origem, sac }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  function aplicar(chave: 'unidade' | 'profissional' | 'servico', valor: string) {
+  function aplicar(chave: 'unidade' | 'profissional' | 'servico' | 'origem' | 'sac', valor: string) {
     const sp = new URLSearchParams(searchParams.toString())
     if (valor) sp.set(chave, valor)
     else sp.delete(chave)
@@ -89,6 +102,31 @@ export function AgendamentosFiltros({ unidades, colaboradores, servicos, unidade
               {s.nome}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mf-l" style={labelStyle}>
+          Origem
+        </label>
+        <select className="mf" value={origem} onChange={(e) => aplicar('origem', e.target.value)}>
+          <option value="">Todas as origens</option>
+          {ORIGENS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.nome}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mf-l" style={labelStyle}>
+          Agendou pelo SAC
+        </label>
+        <select className="mf" value={sac} onChange={(e) => aplicar('sac', e.target.value)}>
+          <option value="">Todos</option>
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
         </select>
       </div>
     </div>

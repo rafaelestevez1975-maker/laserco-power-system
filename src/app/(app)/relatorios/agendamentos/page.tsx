@@ -9,7 +9,7 @@ import { resolveRelRange, asTsStart } from '@/components/relatorios/relPeriodo'
 
 export const dynamic = 'force-dynamic'
 
-type SP = { periodo?: string; di?: string; df?: string; unidade?: string; profissional?: string; servico?: string }
+type SP = { periodo?: string; di?: string; df?: string; unidade?: string; profissional?: string; servico?: string; origem?: string; sac?: string }
 
 // Status reais descobertos na introspecção (agendamentos.status):
 //   aberto, confirmado, cancelado, concluido
@@ -32,6 +32,8 @@ async function contar(
     fimTs: string | null
     profissionalId?: string | null
     servicoId?: string | null
+    origem?: string | null
+    sac?: string | null
   },
 ): Promise<number> {
   let q = sb.from('agendamentos').select('id', { count: 'exact', head: true })
@@ -39,6 +41,9 @@ async function contar(
   if (opts.unidadeId) q = q.eq('unidade_id', opts.unidadeId)
   if (opts.profissionalId) q = q.eq('profissional_id', opts.profissionalId)
   if (opts.servicoId) q = q.eq('servico_id', opts.servicoId)
+  if (opts.origem) q = q.eq('origem', opts.origem)
+  if (opts.sac === 'sim') q = q.eq('via_sac', true)
+  else if (opts.sac === 'nao') q = q.eq('via_sac', false)
   if (opts.iniTs) q = q.gte('inicio', opts.iniTs)
   if (opts.fimTs) q = q.lt('inicio', opts.fimTs)
   const { count } = await q
@@ -56,6 +61,8 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
   const unidadeId = unidadeFixa ?? (sp.unidade || null)
   const profissionalId = sp.profissional || null
   const servicoId = sp.servico || null
+  const origem = sp.origem || null
+  const sac = sp.sac || null
 
   // Default mais útil aqui: a base tem datas futuras (até 2035); 'mes' funciona bem.
   const range = resolveRelRange(sp.periodo, sp.di, sp.df)
@@ -81,8 +88,8 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
 
   // ── Contagens por status (paralelo, head:true  nunca puxa as 136k linhas) ──
   const [total, ...porStatus] = await Promise.all([
-    contar(sb, { unidadeId, iniTs, fimTs, profissionalId, servicoId }),
-    ...STATUS.map((s) => contar(sb, { status: s.val, unidadeId, iniTs, fimTs, profissionalId, servicoId })),
+    contar(sb, { unidadeId, iniTs, fimTs, profissionalId, servicoId, origem, sac }),
+    ...STATUS.map((s) => contar(sb, { status: s.val, unidadeId, iniTs, fimTs, profissionalId, servicoId, origem, sac })),
   ])
   const statusCounts = STATUS.map((s, i) => ({ ...s, count: porStatus[i] }))
 
@@ -112,6 +119,9 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
             if (unidadeId) q = q.eq('unidade_id', unidadeId)
             if (profissionalId) q = q.eq('profissional_id', profissionalId)
             if (servicoId) q = q.eq('servico_id', servicoId)
+            if (origem) q = q.eq('origem', origem)
+            if (sac === 'sim') q = q.eq('via_sac', true)
+            else if (sac === 'nao') q = q.eq('via_sac', false)
             const { count } = await q
             return { dia: label, count: count ?? 0 }
           })(),
@@ -158,6 +168,8 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
         unidade={sp.unidade || ''}
         profissional={sp.profissional || ''}
         servico={sp.servico || ''}
+        origem={sp.origem || ''}
+        sac={sp.sac || ''}
       />
 
       <RelKpis kpis={kpis} />

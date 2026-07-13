@@ -4,6 +4,15 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 type Opt = { id: string; nome: string }
 
+/** Rótulos pt-BR das formas de pagamento (valor cru vindo do BEMP → label amigável). */
+const PAGAMENTO_LABEL: Record<string, string> = {
+  package_credit: 'Crédito de pacote',
+  normal: 'Pagamento normal',
+  monthly: 'Mensalidade',
+  wallet_points: 'Pontos/carteira',
+  subscription_credit: 'Crédito de assinatura',
+}
+
 /**
  * Filtros extensos da lista de OS (período de criação, status, cliente, colaborador, origem).
  * Tudo via querystring → server re-renderiza com os filtros aplicados (server-side).
@@ -36,9 +45,10 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
   const cliente = sp.get('cliente') ?? ''
   const colaborador = sp.get('colaborador') ?? ''
   const origem = sp.get('origem') ?? ''
+  const pagamento = sp.get('pagamento') ?? ''
   const di = sp.get('di') ?? ''
   const df = sp.get('df') ?? ''
-  const temFiltro = !!(status || cliente || colaborador || origem || di || df)
+  const temFiltro = !!(status || cliente || colaborador || origem || pagamento || di || df)
 
   return (
     <div className="rel-card" style={{ padding: 14, marginBottom: 14 }}>
@@ -83,6 +93,15 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
             <option value="assinatura">Assinatura</option>
             <option value="interna">Interna</option>
             <option value="multa_assinatura">Multa de assinatura</option>
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Forma de pagamento</label>
+          <select value={pagamento} onChange={(e) => setParams({ pagamento: e.target.value })} style={{ ...inp, width: '100%' }}>
+            <option value="">Todas</option>
+            {Object.entries(PAGAMENTO_LABEL).map(([valor, label]) => (
+              <option key={valor} value={valor}>{label}</option>
+            ))}
           </select>
         </div>
         <div>
