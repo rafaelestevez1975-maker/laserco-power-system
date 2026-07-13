@@ -15,6 +15,7 @@ type SP = {
   ativo?: string // 'sim' | 'nao' | '' (todos)
   verificado?: string // 'sim' | 'nao' | ''
   genero?: string // 'female' | 'male' | 'other' | ''
+  doc?: string // 'cpf' | 'rg' | 'sem' — tipo de documento (paridade BEMP)
   cidade?: string
   estado?: string
   unidade?: string // id de unidade (admin filtra entre todas)
@@ -26,7 +27,7 @@ const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, ativo = 'sim', verificado, genero, cidade, estado, unidade, page: pageRaw } = sp
+  const { q, ativo = 'sim', verificado, genero, doc, cidade, estado, unidade, page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
@@ -82,6 +83,10 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   if (verificado === 'sim') query = query.eq('verificado', true)
   else if (verificado === 'nao') query = query.eq('verificado', false)
   if (genero && ['female', 'male', 'other'].includes(genero)) query = query.eq('genero', genero)
+  // Tipo de documento (paridade BEMP): CPF preenchido / RG preenchido / sem documento.
+  if (doc === 'cpf') query = query.not('cpf', 'is', null)
+  else if (doc === 'rg') query = query.not('rg', 'is', null)
+  else if (doc === 'sem') query = query.is('cpf', null).is('rg', null)
   if (cidade) query = query.ilike('cidade', `%${cidade}%`)
   if (estado) query = query.ilike('estado', `%${estado}%`)
   if (q) {
@@ -98,7 +103,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const clientes = (data ?? []) as ClienteRow[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const temFiltro = !!(q || verificado || genero || cidade || estado || (isAdmin && unidade) || ativo !== 'sim')
+  const temFiltro = !!(q || verificado || genero || doc || cidade || estado || (isAdmin && unidade) || ativo !== 'sim')
 
   // unidade padrão sugerida no modal de novo cliente
   const unidadeSugerida = activeUnit ?? (ctx?.unidades?.[0]?.id ?? null)

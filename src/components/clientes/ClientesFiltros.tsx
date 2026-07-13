@@ -67,6 +67,12 @@ export function ClientesFiltros({ unidades = [] }: { unidades?: Unidade[] }) {
             <option value="male">Masculino</option>
             <option value="other">Outro</option>
           </select>
+          <select value={sp.get('doc') ?? ''} onChange={(e) => setParams({ doc: e.target.value })} style={sel}>
+            <option value="">Documento (todos)</option>
+            <option value="cpf">Com CPF</option>
+            <option value="rg">Com RG</option>
+            <option value="sem">Sem documento</option>
+          </select>
           {unidades.length > 0 && (
             <select value={sp.get('unidade') ?? ''} onChange={(e) => setParams({ unidade: e.target.value })} style={sel}>
               <option value="">Todas as unidades</option>
