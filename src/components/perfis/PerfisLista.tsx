@@ -92,6 +92,9 @@ export function PerfisLista({
               <i className="ti ti-eye" /> Somente leitura
             </span>
           )}
+          <a className="btn" href="/perfis/export" target="_blank" title="Exportar os perfis de acesso em CSV">
+            <i className="ti ti-download" /> Exportar
+          </a>
           {isAdmin && (
             <Link className="btn" href="/perfis/matriz" title="Editar todos os cargos numa matriz única (recurso × ação × cargos)">
               <i className="ti ti-table" /> Matriz
