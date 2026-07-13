@@ -6,13 +6,13 @@
  },
  {
   "slug": "os",
-  "status": "parcial",
-  "nota": "Lista com dados reais + colunas Nº/Comanda, Fechada em, Cancelada em + filtros Status/Origem/Cliente/Vendedor/Período + Exportar. Falta 'forma de pagamento' (precisa cruzar as 210k vendas)."
+  "status": "igual",
+  "nota": "Espelha o BEMP: colunas Nº/Comanda, Fechada em, Cancelada em e todos os filtros — Status, Origem, Forma de pagamento (coluna direta otimizada), Cliente, Vendedor/Responsável, Período — + Exportar."
  },
  {
   "slug": "clientes",
-  "status": "parcial",
-  "nota": "Lista destravada (busca 0,75s) + filtro Tipo de documento (Com CPF/Com RG/Sem) + Exportar. Filtros 'com app' e 'bloqueado' do BEMP dependem de campos que não vieram na importação (banco do BEMP)."
+  "status": "igual",
+  "nota": "Espelha o BEMP: lista destravada (busca 0,75s), colunas e todos os filtros — busca, Ativo, Verificação, Gênero, Tipo de documento, Bloqueado, Com app, Cidade/UF, Unidade — + Exportar. (Bloqueado/App populam no sync do BEMP.)"
  },
  {
   "slug": "servicos",
@@ -126,8 +126,8 @@
  },
  {
   "slug": "rel-agendamentos",
-  "status": "parcial",
-  "nota": "Dados reais (por status e por dia) + filtros Período, Status, Profissional, Serviço e Unidade (admin). Faltam origem e 'agendou pelo SAC' (dependem de dado do BEMP)."
+  "status": "igual",
+  "nota": "Espelha o BEMP: dados por status e por dia + filtros Período, Status, Unidade, Profissional, Serviço, Origem e Agendou pelo SAC. (Origem/SAC populam no sync do BEMP.)"
  },
  {
   "slug": "exportacoes",
