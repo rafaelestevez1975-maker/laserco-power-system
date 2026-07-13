@@ -30,19 +30,17 @@ export default async function PerfisPage() {
   }
   const cargos = (cargosRaw ?? []) as CargoRow[]
 
-  // Contagens agregadas (1 leitura cada)  montamos os mapas em memória.
+  // Contagens agregadas via VIEWS (cargo_perm_count/cargo_user_count). Contar em JS puxando
+  // cargo_permissoes inteiro NÃO funciona: são 9k+ linhas e o PostgREST corta em 1000 →
+  // quase todos os cargos apareciam com 0 permissões. As views fazem o GROUP BY no banco.
   const [{ data: cpRaw }, { data: ucRaw }] = await Promise.all([
-    admin.from('cargo_permissoes').select('cargo_id'),
-    admin.from('usuario_cargos').select('cargo_id, ativo'),
+    admin.from('cargo_perm_count').select('cargo_id, n'),
+    admin.from('cargo_user_count').select('cargo_id, n'),
   ])
   const permPorCargo: Record<string, number> = {}
-  for (const r of (cpRaw ?? []) as { cargo_id: string }[]) {
-    permPorCargo[r.cargo_id] = (permPorCargo[r.cargo_id] ?? 0) + 1
-  }
+  for (const r of (cpRaw ?? []) as { cargo_id: string; n: number }[]) permPorCargo[r.cargo_id] = r.n
   const usuariosPorCargo: Record<string, number> = {}
-  for (const r of (ucRaw ?? []) as { cargo_id: string; ativo: boolean }[]) {
-    if (r.ativo !== false) usuariosPorCargo[r.cargo_id] = (usuariosPorCargo[r.cargo_id] ?? 0) + 1
-  }
+  for (const r of (ucRaw ?? []) as { cargo_id: string; n: number }[]) usuariosPorCargo[r.cargo_id] = r.n
 
   const sistema = cargos.filter((c) => c.is_sistema)
   const empresa = cargos.filter((c) => !c.is_sistema)

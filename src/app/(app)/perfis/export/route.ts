@@ -27,16 +27,15 @@ export async function GET(req: NextRequest) {
     .order('nome', { ascending: true })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Contagens via VIEWS agregadas (cargo_permissoes tem 9k+ linhas; contar em JS cortaria em 1000).
   const [{ data: cpRaw }, { data: ucRaw }] = await Promise.all([
-    admin.from('cargo_permissoes').select('cargo_id'),
-    admin.from('usuario_cargos').select('cargo_id, ativo'),
+    admin.from('cargo_perm_count').select('cargo_id, n'),
+    admin.from('cargo_user_count').select('cargo_id, n'),
   ])
   const perm: Record<string, number> = {}
-  for (const r of (cpRaw ?? []) as { cargo_id: string }[]) perm[r.cargo_id] = (perm[r.cargo_id] ?? 0) + 1
+  for (const r of (cpRaw ?? []) as { cargo_id: string; n: number }[]) perm[r.cargo_id] = r.n
   const users: Record<string, number> = {}
-  for (const r of (ucRaw ?? []) as { cargo_id: string; ativo: boolean }[]) {
-    if (r.ativo !== false) users[r.cargo_id] = (users[r.cargo_id] ?? 0) + 1
-  }
+  for (const r of (ucRaw ?? []) as { cargo_id: string; n: number }[]) users[r.cargo_id] = r.n
 
   type Cargo = { id: string; nome: string | null; descricao: string | null; is_sistema: boolean | null; ativo: boolean | null; atualizado_em: string | null }
   const cargos = (cargosRaw ?? []) as Cargo[]
