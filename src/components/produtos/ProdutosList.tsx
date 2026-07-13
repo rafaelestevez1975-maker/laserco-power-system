@@ -18,6 +18,7 @@ export type ProdutoRow = {
   estoque_atual: number | null
   estoque_minimo: number | null
   feedstock: boolean | null
+  default_product: boolean | null
   ativo: boolean | null
 }
 
@@ -91,6 +92,11 @@ export function ProdutosList({ produtos, grupos, page, totalPages, total, search
                   <tr key={p.id} style={{ opacity: inativo ? 0.55 : 1 }}>
                     <td>
                       <span className="cli-name">{p.nome || '(sem nome)'}</span>
+                      {p.default_product && (
+                        <span className="orig-tag" style={{ marginLeft: 6, background: '#E7EEFB', color: '#1E3A8A' }} title="Produto padrão da rede">
+                          <i className="ti ti-star" /> Padrão
+                        </span>
+                      )}
                       {p.descricao && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{p.descricao}</div>}
                     </td>
                     <td>{p.grupo ? <span className="orig-tag">{p.grupo}</span> : <span className="muted"></span>}</td>

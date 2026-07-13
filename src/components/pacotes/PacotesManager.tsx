@@ -84,6 +84,15 @@ export function PacotesManager(props: Props) {
   }
   const urlPagina = (pg: number) => urlCom({ page: pg > 1 ? pg : undefined })
 
+  /** Exporta a lista filtrada (mesmos filtros ativos) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams()
+    if (filtros.q) p.set('q', filtros.q)
+    if (filtros.ativo && filtros.ativo !== 'sim') p.set('ativo', filtros.ativo)
+    p.set('export', 'csv')
+    window.open(`/pacotes/export?${p.toString()}`, '_blank')
+  }
+
   async function toggle(p: PacoteRow) {
     setBusy(p.id)
     setMsg('')
@@ -123,7 +132,8 @@ export function PacotesManager(props: Props) {
       </div>
 
       {/* Ações */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+        <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</button>
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo pacote

@@ -65,7 +65,8 @@ export function MotivosManager({ motivos, podeEscrever, contador, noshow, semTab
 
   return (
     <div className="view active">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+        <a className="btn" href="/cadastros/motivos/export" target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo motivo

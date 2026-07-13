@@ -22,6 +22,13 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
     router.push(`/os?${p.toString()}`)
   }
 
+  /** Exporta a lista filtrada (mesmos filtros da URL) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams(sp.toString())
+    p.delete('page')
+    window.open(`/os/export?${p.toString()}`, '_blank')
+  }
+
   const inp: React.CSSProperties = { padding: '7px 10px', border: '1px solid var(--line-strong)', borderRadius: 8, fontSize: 12.5, background: '#fff', fontFamily: 'inherit' }
   const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: 4 }
 
@@ -37,11 +44,16 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
     <div className="rel-card" style={{ padding: 14, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontWeight: 600, fontSize: 13 }}>
         <i className="ti ti-filter" /> Filtros
-        {temFiltro && (
-          <button className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '4px 10px' }} onClick={() => router.push('/os')}>
-            <i className="ti ti-x" /> Limpar
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button className="btn" style={{ padding: '4px 10px' }} onClick={exportar} title="Exportar a lista filtrada em CSV">
+            <i className="ti ti-download" /> Exportar
           </button>
-        )}
+          {temFiltro && (
+            <button className="btn btn-ghost" style={{ padding: '4px 10px' }} onClick={() => router.push('/os')}>
+              <i className="ti ti-x" /> Limpar
+            </button>
+          )}
+        </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10 }}>
         <div>

@@ -50,7 +50,7 @@ export default async function ColaboradoresPage({ searchParams }: { searchParams
   // ── Lista paginada server-side ──
   // Colunas exibe_agenda/ultimo_acesso vêm de scripts/migrations/comissoes.sql; se a
   // migration não foi aplicada o select falha → cai num select sem essas colunas (degrade).
-  const COLS_FULL = 'id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao, exibe_agenda, ultimo_acesso'
+  const COLS_FULL = 'id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao, exibe_agenda, disponivel_online, ordem_app, ultimo_acesso'
   const COLS_BASE = 'id, nome, cpf, telefone, email, cargo, area, departamento, regime, tipo, status, data_admissao'
 
   // Monta um SELECT (com os mesmos filtros) para uma dada lista de colunas.

@@ -16,6 +16,13 @@ export function ServicosFiltros({ grupos }: { grupos: string[] }) {
     router.push(`/servicos?${p.toString()}`)
   }
 
+  /** Exporta a lista filtrada (mesmos filtros da URL) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams(sp.toString())
+    p.set('export', 'csv')
+    window.open(`/servicos/export?${p.toString()}`, '_blank')
+  }
+
   const sel: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
   const ativo = sp.get('ativo') ?? 'sim'
   const grupo = sp.get('grupo') ?? ''
@@ -38,9 +45,12 @@ export function ServicosFiltros({ grupos }: { grupos: string[] }) {
         <option value="nao">Inativos</option>
         <option value="">Todos</option>
       </select>
-      {temFiltro && (
-        <button className="btn" onClick={() => router.push('/servicos')}><i className="ti ti-x" /> Limpar</button>
-      )}
+      <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+        <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</button>
+        {temFiltro && (
+          <button className="btn" onClick={() => router.push('/servicos')}><i className="ti ti-x" /> Limpar</button>
+        )}
+      </div>
     </div>
   )
 }

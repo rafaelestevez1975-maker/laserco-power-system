@@ -69,6 +69,12 @@ export function PlanosManager(props: Props) {
   }
   const urlPagina = (pg: number) => urlCom({ page: pg > 1 ? pg : undefined })
 
+  // Exporta a lista em CSV carregando os mesmos filtros da URL (q + situação).
+  const exportParams = new URLSearchParams()
+  if (filtros.q) exportParams.set('q', filtros.q)
+  if (filtros.ativo && filtros.ativo !== 'sim') exportParams.set('ativo', filtros.ativo)
+  const exportHref = `/planos/export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`
+
   async function toggle(p: PlanoRow) {
     setBusy(p.id)
     setMsg('')
@@ -108,7 +114,8 @@ export function PlanosManager(props: Props) {
       </div>
 
       {/* Ações */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+        <a className="btn" href={exportHref} target="_blank" title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo plano

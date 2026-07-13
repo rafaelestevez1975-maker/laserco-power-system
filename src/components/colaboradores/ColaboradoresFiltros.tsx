@@ -17,6 +17,13 @@ export function ColaboradoresFiltros({ areas }: { areas: string[] }) {
     router.push(`/colaboradores?${p.toString()}`)
   }
 
+  /** Exporta a lista filtrada (mesmos filtros da URL) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams(sp.toString())
+    p.delete('page')
+    window.open(`/colaboradores/export?${p.toString()}`, '_blank')
+  }
+
   const selSt: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
   const status = sp.get('status') ?? 'ativo'
   const temFiltro = ['q', 'regime', 'cargo', 'area'].some((k) => sp.get(k)) || status !== 'ativo'
@@ -49,9 +56,12 @@ export function ColaboradoresFiltros({ areas }: { areas: string[] }) {
           {areas.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
       )}
-      {temFiltro && (
-        <button className="btn" onClick={() => router.push('/colaboradores')}><i className="ti ti-x" /> Limpar</button>
-      )}
+      <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+        <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</button>
+        {temFiltro && (
+          <button className="btn" onClick={() => router.push('/colaboradores')}><i className="ti ti-x" /> Limpar</button>
+        )}
+      </div>
     </div>
   )
 }

@@ -50,6 +50,16 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
   const urlPagina = (pg: number) => urlCom({ page: pg > 1 ? pg : undefined })
   const temFiltro = !!(filtros.q || filtros.uf || filtros.status)
 
+  /** Exporta a lista filtrada (mesmos filtros) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams()
+    if (filtros.q) p.set('q', filtros.q)
+    if (filtros.uf) p.set('uf', filtros.uf)
+    if (filtros.status) p.set('status', filtros.status)
+    const s = p.toString()
+    window.open(`/unidades/export${s ? `?${s}` : ''}`, '_blank')
+  }
+
   async function toggle(u: UnidadeRow) {
     setBusy(u.id)
     setMsg('')
@@ -77,6 +87,9 @@ export function UnidadesManager({ rows, kpis, ufs, podeGerir, filtros, page, tot
           {!podeGerir && (
             <span className="os-st os-cancelada"><i className="ti ti-eye" /> Somente leitura</span>
           )}
+          <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV">
+            <i className="ti ti-download" /> Exportar
+          </button>
           {podeGerir && (
             <button className="btn btn-primary" onClick={() => { setMsg(''); setNovaOpen(true) }}>
               <i className="ti ti-plus" /> Nova unidade

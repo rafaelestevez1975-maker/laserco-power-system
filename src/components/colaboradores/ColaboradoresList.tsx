@@ -21,6 +21,8 @@ export type ColaboradorRow = {
   status: string | null
   data_admissao: string | null
   exibe_agenda?: boolean | null
+  disponivel_online?: boolean | null
+  ordem_app?: number | null
   ultimo_acesso?: string | null
 }
 
@@ -90,12 +92,15 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
             <thead>
               <tr>
                 <th>Nome</th>
+                <th>E-mail</th>
                 <th>Perfil de acesso</th>
                 <th>Área / Depto</th>
                 <th>Regime</th>
                 <th>Telefone</th>
                 <th>Último acesso</th>
                 <th>Exibe na agenda</th>
+                <th>Disponível online</th>
+                <th>Ordem no App</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -103,7 +108,7 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
             <tbody>
               {colaboradores.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={12} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum colaborador encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -124,6 +129,7 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                         {c.nome || '(sem nome)'}
                       </Link>
                     </td>
+                    <td>{c.email ? <a href={`mailto:${c.email}`} onClick={(e) => e.stopPropagation()} style={{ color: 'var(--text-2)', textDecoration: 'none' }}>{c.email}</a> : <span className="muted"></span>}</td>
                     <td><span className="orig-tag">{perfilLabel(c.cargo)}</span></td>
                     <td>{local || <span className="muted"></span>}</td>
                     <td>{regimeLabel(c.regime)}</td>
@@ -147,6 +153,14 @@ export function ColaboradoresList({ colaboradores, page, totalPages, basePath, s
                           ? <span className="pill-yes">Sim</span>
                           : <span className="pill-no">Não</span>}
                     </td>
+                    <td>
+                      {c.disponivel_online == null
+                        ? <span className="muted"></span>
+                        : c.disponivel_online
+                          ? <span className="pill-yes">Sim</span>
+                          : <span className="pill-no">Não</span>}
+                    </td>
+                    <td>{c.ordem_app == null ? <span className="muted"></span> : c.ordem_app}</td>
                     <td>
                       {inativo
                         ? <span className="os-st os-cancelada">Inativo</span>

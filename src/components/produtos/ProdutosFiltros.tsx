@@ -16,10 +16,18 @@ export function ProdutosFiltros({ grupos }: { grupos: string[] }) {
     router.push(`/produtos?${p.toString()}`)
   }
 
+  /** Exporta a lista filtrada (mesmos filtros da URL) em CSV via endpoint server-side. */
+  function exportar() {
+    const p = new URLSearchParams(sp.toString())
+    p.set('export', 'csv')
+    window.open(`/produtos/export?${p.toString()}`, '_blank')
+  }
+
   const sel: React.CSSProperties = { padding: '8px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13, background: '#fff' }
   const ativo = sp.get('ativo') ?? 'sim'
   const grupo = sp.get('grupo') ?? ''
-  const temFiltro = !!sp.get('q') || !!grupo || ativo !== 'sim'
+  const insumo = sp.get('insumo') ?? ''
+  const temFiltro = !!sp.get('q') || !!grupo || !!insumo || ativo !== 'sim'
 
   return (
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '4px 0 14px' }}>
@@ -40,9 +48,17 @@ export function ProdutosFiltros({ grupos }: { grupos: string[] }) {
         <option value="nao">Inativos</option>
         <option value="">Todos</option>
       </select>
-      {temFiltro && (
-        <button className="btn" onClick={() => router.push('/produtos')}><i className="ti ti-x" /> Limpar</button>
-      )}
+      <select value={insumo} onChange={(e) => setParams({ insumo: e.target.value })} style={sel}>
+        <option value="">Insumo (todos)</option>
+        <option value="sim">É insumo</option>
+        <option value="nao">Não é insumo</option>
+      </select>
+      <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+        <button className="btn" onClick={exportar} title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</button>
+        {temFiltro && (
+          <button className="btn" onClick={() => router.push('/produtos')}><i className="ti ti-x" /> Limpar</button>
+        )}
+      </div>
     </div>
   )
 }

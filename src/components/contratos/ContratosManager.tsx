@@ -48,6 +48,12 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
     window.open(res.url, '_blank', 'noopener')
   }
 
+  // Exporta a lista em CSV carregando os mesmos filtros da URL (ativo + nome).
+  const exportParams = new URLSearchParams()
+  if (filtros.ativo && filtros.ativo !== 'Sim') exportParams.set('ativo', filtros.ativo)
+  if (filtros.nome) exportParams.set('nome', filtros.nome)
+  const exportHref = `/cadastros/contratos/export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`
+
   return (
     <div className="view active">
       <div className="crm-note" style={{ marginBottom: 14 }}>
@@ -75,7 +81,8 @@ export function ContratosManager({ modelos, podeEscrever, semTabela, filtros, kp
         ))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+        <a className="btn" href={exportHref} target="_blank" title="Exportar a lista filtrada em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeEscrever && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo

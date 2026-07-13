@@ -16,12 +16,13 @@ type SP = {
   q?: string
   grupo?: string
   ativo?: string // 'sim' (default) | 'nao' | '' (todos)
+  insumo?: string // '' (todos) | 'sim' | 'nao'
   page?: string
 }
 
 export default async function ProdutosPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, grupo, ativo = 'sim', page: pageRaw } = sp
+  const { q, grupo, ativo = 'sim', insumo, page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const podeEscrever = ehAdmin(ctx?.papel) || (!!ctx?.papel && PAPEIS_ESCRITA.includes(ctx.papel))
@@ -55,13 +56,15 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
   // ── Lista paginada server-side ──
   let query = sb
     .from('produtos')
-    .select('id, nome, grupo, descricao, preco_padrao, desc_max, custo, estoque_atual, estoque_minimo, feedstock, ativo', { count: 'exact' })
+    .select('id, nome, grupo, descricao, preco_padrao, desc_max, custo, estoque_atual, estoque_minimo, feedstock, default_product, ativo', { count: 'exact' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
   if (grupo) query = query.eq('grupo', grupo)
   if (ativo === 'sim') query = query.eq('ativo', true)
   else if (ativo === 'nao') query = query.eq('ativo', false)
+  if (insumo === 'sim') query = query.eq('feedstock', true)
+  else if (insumo === 'nao') query = query.eq('feedstock', false)
   if (q) {
     const qs = q.replace(/[,()*]/g, ' ').trim()
     if (qs) query = query.or(`nome.ilike.%${qs}%,descricao.ilike.%${qs}%`)

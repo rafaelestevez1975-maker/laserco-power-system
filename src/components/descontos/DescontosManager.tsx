@@ -59,7 +59,8 @@ export function DescontosManager({ rows, podeGerir }: Props) {
         <div className="metric-box"><span>Ativos</span><b style={{ color: '#15803D' }}>{ativos}</b></div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
+        <a className="btn" href="/descontos/export" target="_blank" title="Exportar a lista em CSV"><i className="ti ti-download" /> Exportar</a>
         {podeGerir && (
           <button className="btn btn-primary" onClick={() => { setMsg(''); setNovoOpen(true) }}>
             <i className="ti ti-plus" /> Novo desconto
