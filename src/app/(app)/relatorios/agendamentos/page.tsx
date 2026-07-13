@@ -2,13 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { RelTabs, relQuery } from '@/components/relatorios/RelTabs'
 import { RelFiltros } from '@/components/relatorios/RelFiltros'
+import { AgendamentosFiltros } from '@/components/relatorios/AgendamentosFiltros'
 import { RelKpis, type RelKpi } from '@/components/relatorios/RelKpis'
 import { BarChart, type BarRow } from '@/components/relatorios/BarChart'
 import { resolveRelRange, asTsStart } from '@/components/relatorios/relPeriodo'
 
 export const dynamic = 'force-dynamic'
 
-type SP = { periodo?: string; di?: string; df?: string }
+type SP = { periodo?: string; di?: string; df?: string; unidade?: string; profissional?: string; servico?: string }
 
 // Status reais descobertos na introspecção (agendamentos.status):
 //   aberto, confirmado, cancelado, concluido
@@ -24,11 +25,20 @@ const STATUS: { val: string; label: string; icon: string; cls: string }[] = [
 /** Conta agendamentos (head:true → só count) aplicando filtros. */
 async function contar(
   sb: Awaited<ReturnType<typeof createClient>>,
-  opts: { status?: string; unidadeId: string | null; iniTs: string | null; fimTs: string | null },
+  opts: {
+    status?: string
+    unidadeId: string | null
+    iniTs: string | null
+    fimTs: string | null
+    profissionalId?: string | null
+    servicoId?: string | null
+  },
 ): Promise<number> {
   let q = sb.from('agendamentos').select('id', { count: 'exact', head: true })
   if (opts.status) q = q.eq('status', opts.status)
   if (opts.unidadeId) q = q.eq('unidade_id', opts.unidadeId)
+  if (opts.profissionalId) q = q.eq('profissional_id', opts.profissionalId)
+  if (opts.servicoId) q = q.eq('servico_id', opts.servicoId)
   if (opts.iniTs) q = q.gte('inicio', opts.iniTs)
   if (opts.fimTs) q = q.lt('inicio', opts.fimTs)
   const { count } = await q
@@ -39,17 +49,40 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
   const sp = await searchParams
   const ctx = await getSessionContext()
   const sb = await createClient()
-  const unidadeId = ctx?.activeUnitId ?? null
+
+  // Unidade: o contexto do franqueado fixa a unidade; para admin (sem fixação),
+  // o filtro ?unidade= escolhe. Estas colunas são indexadas → .eq() barato.
+  const unidadeFixa = ctx?.activeUnitId ?? null
+  const unidadeId = unidadeFixa ?? (sp.unidade || null)
+  const profissionalId = sp.profissional || null
+  const servicoId = sp.servico || null
 
   // Default mais útil aqui: a base tem datas futuras (até 2035); 'mes' funciona bem.
   const range = resolveRelRange(sp.periodo, sp.di, sp.df)
   const iniTs = asTsStart(range.ini)
   const fimTs = asTsStart(range.fim)
 
+  // ── Listas dos dropdowns (pequenas; só nomes) ──
+  const [unidadesRes, colaboradoresRes, servicosRes] = await Promise.all([
+    // Filtro de unidade só faz sentido quando o contexto NÃO fixa a unidade.
+    unidadeFixa
+      ? Promise.resolve({ data: [] as { id: string; nome: string }[] })
+      : sb.from('unidades').select('id,nome').eq('ativa', true).order('nome'),
+    (() => {
+      let q = sb.from('colaboradores').select('id,nome').eq('status', 'ativo').order('nome').limit(500)
+      if (unidadeId) q = q.eq('unidade_id', unidadeId)
+      return q
+    })(),
+    sb.from('servicos').select('id,nome').eq('ativo', true).order('nome').limit(1000),
+  ])
+  const unidades = (unidadesRes.data ?? []) as { id: string; nome: string }[]
+  const colaboradores = (colaboradoresRes.data ?? []) as { id: string; nome: string }[]
+  const servicos = (servicosRes.data ?? []) as { id: string; nome: string }[]
+
   // ── Contagens por status (paralelo, head:true  nunca puxa as 136k linhas) ──
   const [total, ...porStatus] = await Promise.all([
-    contar(sb, { unidadeId, iniTs, fimTs }),
-    ...STATUS.map((s) => contar(sb, { status: s.val, unidadeId, iniTs, fimTs })),
+    contar(sb, { unidadeId, iniTs, fimTs, profissionalId, servicoId }),
+    ...STATUS.map((s) => contar(sb, { status: s.val, unidadeId, iniTs, fimTs, profissionalId, servicoId })),
   ])
   const statusCounts = STATUS.map((s, i) => ({ ...s, count: porStatus[i] }))
 
@@ -77,6 +110,8 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
           (async () => {
             let q = sb.from('agendamentos').select('id', { count: 'exact', head: true }).gte('inicio', aTs).lt('inicio', bTs)
             if (unidadeId) q = q.eq('unidade_id', unidadeId)
+            if (profissionalId) q = q.eq('profissional_id', profissionalId)
+            if (servicoId) q = q.eq('servico_id', servicoId)
             const { count } = await q
             return { dia: label, count: count ?? 0 }
           })(),
@@ -85,6 +120,13 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
       porDia = await Promise.all(tarefas)
     }
   }
+
+  // Rótulo da unidade no cabeçalho: contexto fixo → nome do contexto; filtro do admin → nome escolhido.
+  const unidadeNome = unidadeFixa
+    ? ctx?.activeUnitName
+    : sp.unidade
+      ? (unidades.find((u) => u.id === sp.unidade)?.nome ?? 'Unidade')
+      : 'Todas as unidades'
 
   const barStatus: BarRow[] = statusCounts.map((s) => ({ label: s.label, value: s.count, display: s.count.toLocaleString('pt-BR') }))
   const barDias: BarRow[] = porDia.map((d) => ({ label: d.dia, value: d.count, display: d.count.toLocaleString('pt-BR') }))
@@ -103,11 +145,20 @@ export default async function RelAgendamentosPage({ searchParams }: { searchPara
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, margin: '0 0 6px' }}>
         <h2 style={{ fontSize: 19, fontWeight: 800, margin: 0 }}>Agendamentos</h2>
         <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
-          {range.label} · {unidadeId ? ctx?.activeUnitName : 'Todas as unidades'}
+          {range.label} · {unidadeNome}
         </span>
       </div>
 
       <RelFiltros periodo={sp.periodo || 'mes'} di={sp.di || ''} df={sp.df || ''} basePath="/relatorios/agendamentos" />
+
+      <AgendamentosFiltros
+        unidades={unidades}
+        colaboradores={colaboradores}
+        servicos={servicos}
+        unidade={sp.unidade || ''}
+        profissional={sp.profissional || ''}
+        servico={sp.servico || ''}
+      />
 
       <RelKpis kpis={kpis} />
 

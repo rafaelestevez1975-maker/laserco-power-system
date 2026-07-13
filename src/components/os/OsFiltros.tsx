@@ -93,7 +93,7 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
           </select>
         </div>
         <div>
-          <label style={lbl}>Colaborador (criou)</label>
+          <label style={lbl}>Vendedor / Responsável</label>
           <select value={colaborador} onChange={(e) => setParams({ colaborador: e.target.value })} style={{ ...inp, width: '100%' }}>
             <option value="">Todos</option>
             {colaboradores.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
