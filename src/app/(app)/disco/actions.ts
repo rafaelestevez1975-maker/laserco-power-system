@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB } from '@/lib/sb'
 import { adminClient } from '@/lib/supabase/admin'
+import { bunnyStorageOn, bunnyUpload, bunnyRemove, bunnySignedUrl } from '@/lib/bunny'
 import { ehAdmin } from '@/lib/rbac'
 import { discoExt } from '@/lib/marketing'
 
@@ -89,7 +90,7 @@ export async function excluirPasta(id: string): Promise<ActionResult> {
 
   const { data: arqs } = await op.sb.from('disco_arquivos').select('arquivo_path').in('pasta_id', alvo)
   const paths = ((arqs ?? []) as { arquivo_path: string | null }[]).map((a) => a.arquivo_path).filter(Boolean) as string[]
-  if (paths.length) { try { await adminClient().storage.from(BUCKET).remove(paths) } catch { /* ignore */ } }
+  if (paths.length) { try { if (bunnyStorageOn()) await bunnyRemove(BUCKET, paths); else await adminClient().storage.from(BUCKET).remove(paths) } catch { /* ignore */ } }
 
   const { error: e } = await op.sb.from('disco_pastas').delete().eq('id', id).eq('empresa_id', empresa_id)
   if (e) return { ok: false, error: msgErro(e.message, 'excluir pasta') }
@@ -129,8 +130,14 @@ export async function uploadArquivo(input: UploadInput): Promise<ActionResult> {
   const ext = (nome.split('.').pop() || 'bin').toLowerCase()
   const path = `${empresa_id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`
   const sbAdmin = adminClient()
-  const { error: upErr } = await sbAdmin.storage.from(BUCKET).upload(path, bytes, { contentType: mime, upsert: false })
-  if (upErr) return { ok: false, error: 'Falha ao enviar arquivo: ' + upErr.message }
+  // Bunny CDN é o destino padrão; degrada p/ Supabase Storage se ainda não houver chave.
+  if (bunnyStorageOn()) {
+    const { error } = await bunnyUpload(BUCKET, path, bytes, mime)
+    if (error) return { ok: false, error: 'Falha ao enviar arquivo: ' + error }
+  } else {
+    const { error: upErr } = await sbAdmin.storage.from(BUCKET).upload(path, bytes, { contentType: mime, upsert: false })
+    if (upErr) return { ok: false, error: 'Falha ao enviar arquivo: ' + upErr.message }
+  }
 
   const { data, error: e } = await op.sb
     .from('disco_arquivos')
@@ -142,7 +149,7 @@ export async function uploadArquivo(input: UploadInput): Promise<ActionResult> {
     .select('id')
     .single()
 
-  if (e) { try { await sbAdmin.storage.from(BUCKET).remove([path]) } catch { /* ignore */ }; return { ok: false, error: msgErro(e.message, 'registrar arquivo') } }
+  if (e) { try { if (bunnyStorageOn()) await bunnyRemove(BUCKET, [path]); else await sbAdmin.storage.from(BUCKET).remove([path]) } catch { /* ignore */ }; return { ok: false, error: msgErro(e.message, 'registrar arquivo') } }
   revalidatePath('/disco')
   return { ok: true, id: (data as { id: string }).id }
 }
@@ -157,6 +164,7 @@ export async function urlArquivo(id: string): Promise<{ ok: boolean; url?: strin
   const path = (row as { arquivo_path?: string | null } | null)?.arquivo_path ?? null
   if (!path) return { ok: false, error: 'Arquivo de exemplo  disponível na nuvem da rede.' }
 
+  if (bunnyStorageOn()) return { ok: true, url: bunnySignedUrl(BUCKET, path, 60 * 5) }
   const { data, error: e } = await adminClient().storage.from(BUCKET).createSignedUrl(path, 60 * 5)
   if (e || !data?.signedUrl) return { ok: false, error: 'Não foi possível gerar o link do arquivo.' }
   return { ok: true, url: data.signedUrl }
@@ -174,7 +182,7 @@ export async function excluirArquivo(id: string): Promise<ActionResult> {
 
   const { data: row } = await op.sb.from('disco_arquivos').select('arquivo_path').eq('id', id).eq('empresa_id', empresa_id).maybeSingle()
   const path = (row as { arquivo_path?: string | null } | null)?.arquivo_path ?? null
-  if (path) { try { await adminClient().storage.from(BUCKET).remove([path]) } catch { /* ignore */ } }
+  if (path) { try { if (bunnyStorageOn()) await bunnyRemove(BUCKET, [path]); else await adminClient().storage.from(BUCKET).remove([path]) } catch { /* ignore */ } }
 
   const { error: e } = await op.sb.from('disco_arquivos').delete().eq('id', id).eq('empresa_id', empresa_id)
   if (e) return { ok: false, error: msgErro(e.message, 'excluir arquivo') }

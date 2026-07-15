@@ -51,6 +51,18 @@ const SB = env.NEXT_PUBLIC_SUPABASE_URL
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY
 const MAX = Number(process.argv[2]) || Infinity
 
+// Destino dos arquivos: Bunny Storage (não mais Supabase Storage).
+const BUNNY_HOST = env.BUNNY_STORAGE_HOST || 'br.storage.bunnycdn.com'
+const BUNNY_ZONE = env.BUNNY_STORAGE_ZONE
+const BUNNY_KEY = env.BUNNY_STORAGE_KEY
+const BUNNY_BUCKET = 'clientes-docs'
+async function subirBunny(path, bytes, mime) {
+  const r = await fetch(`https://${BUNNY_HOST}/${BUNNY_ZONE}/${BUNNY_BUCKET}/${path}`, {
+    method: 'PUT', headers: { AccessKey: BUNNY_KEY, 'Content-Type': mime || 'application/octet-stream' }, body: Buffer.from(bytes),
+  })
+  return r.ok
+}
+
 async function loginBemp() {
   // TODO(1 sessão de DevTools): POST de login do app (rota, campos, cookie/bearer de sessão).
   throw new Error('mapear rota de login do app BEMP (aguardando credenciais)')
@@ -77,8 +89,8 @@ for (const cli of clientes.slice(0, MAX)) {
       const ja = await (await fetch(`${SB}/rest/v1/clientes_documentos?select=id&arquivo_path=eq.${encodeURIComponent(path)}&limit=1`, { headers: H })).json()
       if (ja.length) { pulados++; continue }
       const bin = await (await fetch(d.url, { headers: sessao.headers })).arrayBuffer()
-      const up = await fetch(`${SB}/storage/v1/object/clientes-docs/${path}`, { method: 'POST', headers: { ...H, 'Content-Type': d.mime || 'application/octet-stream' }, body: Buffer.from(bin) })
-      if (!up.ok) { falhas++; continue }
+      const ok = await subirBunny(path, bin, d.mime) // Bunny Storage (bucket clientes-docs)
+      if (!ok) { falhas++; continue }
       await fetch(`${SB}/rest/v1/clientes_documentos`, { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({
         bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || nomeArq, arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
       }) })

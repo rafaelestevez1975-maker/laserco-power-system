@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
 import { adminClient } from '@/lib/supabase/admin'
+import { bunnyStorageOn, bunnyUpload, bunnySignedUrl } from '@/lib/bunny'
 import { QUANDO_EMITIDO, ARQ_MIME_OK, type QuandoEmitido } from '@/lib/contratos'
 
 export type ActionResult = { ok: boolean; error?: string; id?: string }
@@ -73,6 +74,12 @@ async function subirArquivo(dataUri: string, nomeOriginal: string | null): Promi
   if (bytes.byteLength > 10 * 1024 * 1024) return { erro: 'Arquivo muito grande (máx. 10 MB).' }
   const ext = mime.includes('pdf') ? 'pdf' : mime.includes('wordprocessingml') ? 'docx' : 'doc'
   const path = `modelos/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`
+  // Bunny CDN é o destino padrão de arquivos; degrada p/ Supabase Storage se ainda não houver chave.
+  if (bunnyStorageOn()) {
+    const { error } = await bunnyUpload(BUCKET, path, bytes, mime)
+    if (error) return { erro: 'Falha ao anexar arquivo: ' + error }
+    return { path, nome: (nomeOriginal || '').trim() || `contrato.${ext}` }
+  }
   const sb = adminClient()
   const { error } = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: mime, upsert: false })
   if (error) return { erro: 'Falha ao anexar arquivo: ' + error.message }
@@ -167,6 +174,7 @@ export async function urlArquivoContrato(id: string): Promise<{ ok: boolean; url
   const path = (row as { arquivo_path?: string | null } | null)?.arquivo_path ?? null
   if (!path) return { ok: false, error: 'Este modelo não tem arquivo anexado.' }
 
+  if (bunnyStorageOn()) return { ok: true, url: bunnySignedUrl(BUCKET, path, 60 * 5) }
   const sb = adminClient()
   const { data, error: e } = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 5)
   if (e || !data?.signedUrl) return { ok: false, error: 'Não foi possível gerar o link do arquivo.' }

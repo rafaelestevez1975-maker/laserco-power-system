@@ -1,4 +1,5 @@
 import { adminClient } from '@/lib/supabase/admin'
+import { bunnyStorageOn, bunnyUpload, bunnyPublicUrl } from '@/lib/bunny'
 
 const BUCKET = 'sac-midia'
 
@@ -47,6 +48,12 @@ export async function reHostMidia(
     }
     if (bytes.byteLength === 0 || bytes.byteLength > 16 * 1024 * 1024) return src
     const path = `${opts.prefixo || 'sac'}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extFromMime(mime)}`
+    // Bunny CDN é o destino padrão; degrada p/ Supabase Storage se ainda não houver chave.
+    if (bunnyStorageOn()) {
+      const { error } = await bunnyUpload(BUCKET, path, bytes, mime)
+      if (error) return src
+      return bunnyPublicUrl(BUCKET, path)
+    }
     const sb = adminClient()
     const { error } = await sb.storage.from(BUCKET).upload(path, bytes, { contentType: mime, upsert: false })
     if (error) return src
