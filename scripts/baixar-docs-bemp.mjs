@@ -32,6 +32,10 @@ if (!BEMP_WEB_EMAIL || !BEMP_WEB_SENHA) {
 }
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) LaserCoMigracao/1.0'
 
+// blindagem: uma rejeição solta não pode derrubar o robô no meio do lote.
+process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e?.message || e))
+process.on('uncaughtException', (e) => console.error('uncaughtException:', e?.message || e))
+
 const SB = env.NEXT_PUBLIC_SUPABASE_URL
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY
 const MAX = Number(process.argv[2]) || Infinity
@@ -162,7 +166,7 @@ let qi = 0
 await Promise.all(Array.from({ length: N_CLIENTES }, async () => {
   while (qi < fila.length) {
     const cli = fila[qi++]
-    await processarCliente(cli)
+    try { await processarCliente(cli) } catch (e) { falhas++; console.error(`cliente ${cli.id}: ${e?.message || e}`) }
     feitos++
     if (feitos % 25 === 0) console.log(`[${feitos}/${fila.length}] baixados=${baixados} pulados=${pulados} falhas=${falhas} c/doc=${clientesComDoc}`)
   }
