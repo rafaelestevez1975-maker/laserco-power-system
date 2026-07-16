@@ -413,8 +413,8 @@ function Gerenciar(props: { trilhas: Trilha[]; onEditar: (id: string) => void; o
       </div>
       <div className="rel-card" style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12.5, color: 'var(--text-2)' }}>
-          <i className="ti ti-brand-youtube" style={{ color: '#c4302b', fontSize: 18 }} />
-          <span>No YouTube, suba o vídeo como <b>&quot;Não listado&quot;</b> (unlisted)  não aparece em buscas e é <b>gratuito</b>. Cole o link/ID aqui na etapa.</span>
+          <i className="ti ti-cloud-upload" style={{ color: 'var(--brand-500)', fontSize: 18 }} />
+          <span>Em cada etapa, clique em <b>&quot;Enviar vídeo (Bunny)&quot;</b> e escolha o arquivo — o vídeo é hospedado no <b>Bunny</b> e toca direto na trilha. (O link do YouTube fica só como alternativa.)</span>
         </div>
       </div>
       <div className="cli-card"><div className="cli-scroll">
