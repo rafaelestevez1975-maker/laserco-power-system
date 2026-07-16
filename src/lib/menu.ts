@@ -139,10 +139,10 @@ export const MENU: Section[] = [
       { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist', perm: 'operacoes.' },
       {
         label: 'Universidade', icon: 'ti-school', key: 'unim', perm: 'treinamento.', children: [
-          { label: 'Trilhas', href: '/universidade?aba=trilhas', icon: 'ti-school', title: 'Universidade · Trilhas' },
-          { label: 'Alunos & Notas', href: '/universidade?aba=alunos', icon: 'ti-users', title: 'Universidade · Alunos & Notas' },
-          { label: 'Dashboards', href: '/universidade?aba=dash', icon: 'ti-gauge', title: 'Universidade · Dashboards' },
-          { label: 'Gerenciar conteúdo', href: '/universidade?aba=gerenciar', icon: 'ti-settings', title: 'Universidade · Gerenciar' },
+          { label: 'Trilhas', href: '/universidade', icon: 'ti-school', title: 'Universidade · Trilhas' },
+          { label: 'Alunos & Notas', href: '/universidade/alunos', icon: 'ti-users', title: 'Universidade · Alunos & Notas' },
+          { label: 'Dashboards', href: '/universidade/dashboards', icon: 'ti-gauge', title: 'Universidade · Dashboards' },
+          { label: 'Gerenciar conteúdo', href: '/universidade/gerenciar', icon: 'ti-settings', title: 'Universidade · Gerenciar' },
         ],
       },
       { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud', perm: 'operacoes.' },
@@ -243,7 +243,9 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/dashboards/financeiro', '/dashboards/gerencial', '/dashboards/funil',
   // Gestão · diversos
   '/automacoes', '/disparos', '/crm', '/leads-site', '/canais', '/indiques',
-  '/marketing', '/comunicados', '/chamados', '/checklist', '/universidade', '/disco', '/notas',
+  '/marketing', '/comunicados', '/chamados', '/checklist',
+  '/universidade', '/universidade/alunos', '/universidade/dashboards', '/universidade/gerenciar',
+  '/disco', '/notas',
   // Gestão · RH
   '/ponto', '/rh', '/rh/colaboradores', '/rh/ponto', '/rh/recrutamento', '/rh/folha', '/rh/ferias', '/rh/desempenho', '/rh/regras',
   // Administração · Expansão
@@ -279,7 +281,10 @@ export function ehFuncional(href: string): boolean {
 /** Rotas funcionais que não constam no MENU (CRUDs acessados por link direto) — sem isso o
  *  fallback exibia "Dashboard" no topo dessas telas. */
 const TITULOS_EXTRA: Record<string, { icon: string; title: string }> = {
-  '/universidade': { icon: 'ti-school', title: 'Universidade' },
+  '/universidade': { icon: 'ti-school', title: 'Universidade · Trilhas' },
+  '/universidade/alunos': { icon: 'ti-users', title: 'Universidade · Alunos & Notas' },
+  '/universidade/dashboards': { icon: 'ti-gauge', title: 'Universidade · Dashboards' },
+  '/universidade/gerenciar': { icon: 'ti-settings', title: 'Universidade · Gerenciar' },
   '/descontos': { icon: 'ti-discount', title: 'Descontos' },
   '/planos': { icon: 'ti-id-badge-2', title: 'Planos de Assinatura' },
   '/pacotes': { icon: 'ti-packages', title: 'Pacotes' },
@@ -301,5 +306,7 @@ export function titleFor(pathname: string): { icon: string; title: string } {
     }
   }
   if (TITULOS_EXTRA[pathname]) return TITULOS_EXTRA[pathname]
+  // Editor de trilha (rota dinâmica /universidade/gerenciar/[id]).
+  if (pathname.startsWith('/universidade/gerenciar/')) return { icon: 'ti-settings', title: 'Universidade · Editar trilha' }
   return { icon: 'ti-layout-dashboard', title: 'Dashboard' }
 }

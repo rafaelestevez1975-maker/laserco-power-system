@@ -14,7 +14,7 @@ const SAC_CONSULTA = new Set(['/sac', '/sac/chamados', '/sac/kanban', '/sac/tria
 
 // Raízes que têm SUB-ROTAS com item próprio no menu: acendem só no match exato
 // (senão "Fluxo de Caixa" /financeiro ficava aceso junto com "DRE" /financeiro/dre).
-const RAIZ_EXATA = new Set(['/', '/financeiro', '/rh', '/expansao', '/sac'])
+const RAIZ_EXATA = new Set(['/', '/financeiro', '/rh', '/expansao', '/sac', '/universidade'])
 function leafActive(href: string, pathname: string) {
   return RAIZ_EXATA.has(href) ? pathname === href : pathname === href || pathname.startsWith(href + '/')
 }
