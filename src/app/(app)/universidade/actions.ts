@@ -1,9 +1,26 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireOperador, msgErro, type SB } from '@/lib/sb'
+import { requireOperador, msgErro, type SB, type Operador } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
+import { getSessionContext } from '@/lib/session'
+import { bunnyStreamOn, bunnyStreamCriarVideo, bunnyStreamUpload, bunnyStreamRemover } from '@/lib/bunny'
 import { uniNota, UNI_NOTA_MIN, type Questao } from '@/lib/marketing'
+
+/**
+ * Gate de ESCRITA da Universidade. Passa admin_geral (ehAdmin) OU quem tem o cargo
+ * "Admin Universidade" (recurso `treinamento.curso` resolvido em getSessionContext).
+ * admin_geral tem recursos=[] mas isAdmin=true → por isso checamos ehAdmin PRIMEIRO.
+ * Mantém requireOperador (exige login) em todos os casos.
+ */
+async function podeGerirUni(): Promise<{ ok: true; op: Operador } | { ok: false; error: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error: error ?? 'Sessão expirada.' }
+  if (ehAdmin(op.papel)) return { ok: true, op }
+  const ctx = await getSessionContext()
+  if (ctx?.recursos.includes('treinamento.curso')) return { ok: true, op }
+  return { ok: false, error: 'Sem permissão para gerenciar a Universidade.' }
+}
 
 /**
  * UNIVERSIDADE CORPORATIVA (paridade legado buildUni/uniRender ~5950).
@@ -100,9 +117,9 @@ export type TrilhaInput = { nome: string; role: string; prazo: string; cor?: str
 
 /** Cria uma nova trilha com 1 etapa exemplo + prova final (uniGerNew 6074). Só admin. */
 export async function criarTrilha(input: TrilhaInput): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
 
   const nome = (input.nome || '').trim() || 'Nova trilha'
   const role = (input.role || '').trim() || 'Novo cargo'
@@ -129,9 +146,9 @@ export async function criarTrilha(input: TrilhaInput): Promise<ActionResult> {
 
 /** Edita dados da trilha (nome/cargo/prazo/cor). Só admin (uniGerEditor 6065). */
 export async function salvarTrilha(id: string, input: TrilhaInput): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
   if (!id) return { ok: false, error: 'Trilha inválida.' }
 
   const patch: Record<string, unknown> = {}
@@ -148,9 +165,9 @@ export async function salvarTrilha(id: string, input: TrilhaInput): Promise<Acti
 
 /** Exclui uma trilha (CASCADE remove etapas e progresso). Só admin (uniGerDel 6075). */
 export async function excluirTrilha(id: string): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
   if (!id) return { ok: false, error: 'Trilha inválida.' }
 
   const { error: e } = await op.sb.from('uni_trilhas').delete().eq('id', id)
@@ -161,9 +178,9 @@ export async function excluirTrilha(id: string): Promise<ActionResult> {
 
 /** Adiciona uma etapa (vídeo) à trilha (uniAddEtapa 6076). Só admin. */
 export async function adicionarEtapa(trilhaId: string): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
   if (!trilhaId) return { ok: false, error: 'Trilha inválida.' }
 
   // Próxima ordem entre as etapas não-finais.
@@ -180,9 +197,9 @@ export async function adicionarEtapa(trilhaId: string): Promise<ActionResult> {
 
 /** Atualiza uma etapa (nome/yt/min/prova) (uniGerEditor inline 6058 / uniEditProva 6078). Só admin. */
 export async function salvarEtapa(input: EtapaInput): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
   if (!input.id) return { ok: false, error: 'Etapa inválida.' }
 
   const prova = Array.isArray(input.prova) ? input.prova.filter((q) => q && q.q && Array.isArray(q.opts) && q.opts.length >= 2) : []
@@ -200,13 +217,77 @@ export async function salvarEtapa(input: EtapaInput): Promise<ActionResult> {
 
 /** Remove uma etapa (uniDelEtapa 6077). Só admin. */
 export async function excluirEtapa(id: string): Promise<ActionResult> {
-  const { op, error } = await requireOperador()
-  if (!op) return { ok: false, error }
-  if (!ehAdmin(op.papel)) return { ok: false, error: 'A gestão de trilhas é restrita a administradores.' }
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
   if (!id) return { ok: false, error: 'Etapa inválida.' }
 
   const { error: e } = await op.sb.from('uni_etapas').delete().eq('id', id).eq('is_final', false)
   if (e) return { ok: false, error: msgErro(e.message, 'excluir etapa') }
+  revalidatePath('/universidade')
+  return { ok: true }
+}
+
+// ─────────────── Vídeo da etapa via Bunny Stream (fallback do YouTube) ───────────────
+
+export type VideoResult = { ok: boolean; error?: string; guid?: string }
+
+const UNI_VIDEO_MAX_BYTES = 500 * 1024 * 1024 // ~500 MB
+
+/**
+ * Sobe um vídeo para o Bunny Stream e vincula o guid à etapa (uni_etapas.bunny_guid).
+ * Quando a etapa tem bunny_guid, o player usa o Bunny; senão cai no YouTube (yt).
+ * Gate: mesmo `podeGerirUni` (admin_geral ou Admin Universidade).
+ */
+export async function subirVideoEtapa(etapaId: string, dataUri: string, titulo: string): Promise<VideoResult> {
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
+  if (!etapaId) return { ok: false, error: 'Etapa inválida.' }
+  if (!bunnyStreamOn()) return { ok: false, error: 'Configure o Bunny Stream para enviar vídeos.' }
+
+  // data URI (data:video/mp4;base64,XXXX) → bytes.
+  const base64 = (dataUri || '').split(',')[1] ?? ''
+  if (!base64) return { ok: false, error: 'Arquivo de vídeo vazio ou inválido.' }
+  const bytes = Buffer.from(base64, 'base64')
+  if (bytes.length === 0) return { ok: false, error: 'Arquivo de vídeo vazio.' }
+  if (bytes.length > UNI_VIDEO_MAX_BYTES) return { ok: false, error: 'Vídeo acima do limite de 500 MB.' }
+
+  const criado = await bunnyStreamCriarVideo((titulo || 'Aula').trim() || 'Aula')
+  if ('error' in criado) return { ok: false, error: criado.error }
+  const guid = criado.guid
+
+  const up = await bunnyStreamUpload(guid, bytes)
+  if (up.error) {
+    await bunnyStreamRemover(guid) // limpa o vídeo órfão no Bunny
+    return { ok: false, error: up.error }
+  }
+
+  const { error: e } = await op.sb.from('uni_etapas').update({ bunny_guid: guid }).eq('id', etapaId)
+  if (e) {
+    await bunnyStreamRemover(guid)
+    return { ok: false, error: msgErro(e.message, 'salvar vídeo') }
+  }
+
+  revalidatePath('/universidade')
+  return { ok: true, guid }
+}
+
+/** Remove o vídeo do Bunny e zera uni_etapas.bunny_guid (volta ao fallback YouTube). */
+export async function removerVideoEtapa(etapaId: string): Promise<ActionResult> {
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
+  if (!etapaId) return { ok: false, error: 'Etapa inválida.' }
+
+  const { data, error: eSel } = await op.sb.from('uni_etapas').select('bunny_guid').eq('id', etapaId).maybeSingle()
+  if (eSel) return { ok: false, error: msgErro(eSel.message, 'carregar vídeo') }
+  const guid = (data as { bunny_guid?: string | null } | null)?.bunny_guid ?? null
+  if (guid) await bunnyStreamRemover(guid)
+
+  const { error: e } = await op.sb.from('uni_etapas').update({ bunny_guid: null }).eq('id', etapaId)
+  if (e) return { ok: false, error: msgErro(e.message, 'remover vídeo') }
+
   revalidatePath('/universidade')
   return { ok: true }
 }

@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
+import { bunnyStreamEmbedUrl } from '@/lib/bunny'
 import { UniversidadeManager, type Trilha, type ProgressoUsuario, type AlunoRow } from '@/components/universidade/UniversidadeManager'
 import type { Questao } from '@/lib/marketing'
 
 export const dynamic = 'force-dynamic'
 
-type EtapaDb = { id: string; trilha_id: string; ordem: number; nome: string; yt: string | null; min: number; prova: Questao[]; is_final: boolean }
+type EtapaDb = { id: string; trilha_id: string; ordem: number; nome: string; yt: string | null; bunny_guid: string | null; min: number; prova: Questao[]; is_final: boolean }
 type TrilhaDb = { id: string; slug: string; nome: string; role: string; cor: string; prazo: string; ordem: number }
 type ProgDb = { trilha_id: string; perfil_id: string; etapa_key: string; concluido: boolean; nota: number | null }
 
@@ -14,6 +15,8 @@ export default async function UniversidadePage() {
   const ctx = await getSessionContext()
   const sb = await createClient()
   const isAdmin = ehAdmin(ctx?.papel)
+  // Pode gerenciar: admin_geral OU cargo "Admin Universidade" (recurso treinamento.curso).
+  const podeGerir = isAdmin || !!ctx?.recursos.includes('treinamento.curso')
 
   let migrationPendente = false
 
@@ -27,14 +30,14 @@ export default async function UniversidadePage() {
       const ids = trs.map((t) => t.id)
       let etapas: EtapaDb[] = []
       if (ids.length) {
-        const { data: ed } = await sb.from('uni_etapas').select('id, trilha_id, ordem, nome, yt, min, prova, is_final').in('trilha_id', ids).order('ordem', { ascending: true })
+        const { data: ed } = await sb.from('uni_etapas').select('id, trilha_id, ordem, nome, yt, bunny_guid, min, prova, is_final').in('trilha_id', ids).order('ordem', { ascending: true })
         etapas = (ed ?? []) as EtapaDb[]
       }
       trilhas = trs.map((t) => {
         const f = etapas.find((e) => e.trilha_id === t.id && e.is_final)
         return {
           id: t.id, slug: t.slug, nome: t.nome, role: t.role, cor: t.cor, prazo: t.prazo,
-          etapas: etapas.filter((e) => e.trilha_id === t.id && !e.is_final).map((e) => ({ id: e.id, ordem: e.ordem, nome: e.nome, yt: e.yt, min: e.min, prova: e.prova || [] })),
+          etapas: etapas.filter((e) => e.trilha_id === t.id && !e.is_final).map((e) => ({ id: e.id, ordem: e.ordem, nome: e.nome, yt: e.yt, bunny_guid: e.bunny_guid, bunnyEmbed: e.bunny_guid ? bunnyStreamEmbedUrl(e.bunny_guid) : null, min: e.min, prova: e.prova || [] })),
           final: f ? { id: f.id, nome: f.nome, prova: f.prova || [] } : null,
         }
       })
@@ -92,7 +95,7 @@ export default async function UniversidadePage() {
   return (
     <div className="view active">
       <UniversidadeManager
-        isAdmin={isAdmin}
+        podeGerir={podeGerir}
         migrationPendente={migrationPendente}
         trilhas={trilhas}
         meuProgresso={meuProgresso}

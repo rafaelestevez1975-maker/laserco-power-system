@@ -5,18 +5,22 @@ import { useRouter } from 'next/navigation'
 import {
   submeterProva, criarTrilha, salvarTrilha, excluirTrilha,
   adicionarEtapa, salvarEtapa, excluirEtapa,
+  subirVideoEtapa, removerVideoEtapa,
 } from '@/app/(app)/universidade/actions'
 import { ytUrl, UNI_NOTA_MIN, type Questao } from '@/lib/marketing'
 
 // ── Tipos vindos de uni_trilhas / uni_etapas / uni_progresso ──
-export type Etapa = { id: string; ordem: number; nome: string; yt: string | null; min: number; prova: Questao[] }
+// bunny_guid: id do vídeo no Bunny Stream (null = usa o YouTube via yt).
+// bunnyEmbed: URL do player iframe já resolvida no servidor (não expõe a AccessKey).
+export type Etapa = { id: string; ordem: number; nome: string; yt: string | null; bunny_guid: string | null; bunnyEmbed: string | null; min: number; prova: Questao[] }
 export type ProvaFinal = { id: string; nome: string; prova: Questao[] }
 export type Trilha = { id: string; slug: string; nome: string; role: string; cor: string; prazo: string; etapas: Etapa[]; final: ProvaFinal | null }
 export type ProgressoUsuario = Record<string, { concluido: boolean; nota: number | null }> // key 'trilhaId:etapaKey'
 export type AlunoRow = { perfilId: string; nome: string; cargo: string; trilhaId: string; trilhaNome: string; prog: number; nota: number; prazo: string; status: string }
 
 type Props = {
-  isAdmin: boolean
+  /** true p/ admin_geral OU quem tem o cargo "Admin Universidade" (recurso treinamento.curso). */
+  podeGerir: boolean
   migrationPendente: boolean
   trilhas: Trilha[]
   meuProgresso: ProgressoUsuario
@@ -34,7 +38,7 @@ const TABS: [Tab, string, string][] = [
 ]
 
 export function UniversidadeManager(props: Props) {
-  const { isAdmin, migrationPendente, trilhas, meuProgresso, alunos } = props
+  const { podeGerir, migrationPendente, trilhas, meuProgresso, alunos } = props
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('trilhas')
   const [trAberta, setTrAberta] = useState<string | null>(null) // detalhe de trilha
@@ -68,7 +72,7 @@ export function UniversidadeManager(props: Props) {
 
       {trilhas.length === 0 && !migrationPendente && (
         <div className="rel-card" style={{ textAlign: 'center', color: 'var(--text-3)', padding: 34 }}>
-          <i className="ti ti-school" style={{ fontSize: 28 }} /><p style={{ marginTop: 8 }}>Nenhuma trilha cadastrada. {isAdmin ? 'Crie a primeira na aba Gerenciar.' : ''}</p>
+          <i className="ti ti-school" style={{ fontSize: 28 }} /><p style={{ marginTop: 8 }}>Nenhuma trilha cadastrada. {podeGerir ? 'Crie a primeira na aba Gerenciar.' : ''}</p>
         </div>
       )}
 
@@ -119,8 +123,8 @@ export function UniversidadeManager(props: Props) {
 
       {/* ─── GERENCIAR ─── */}
       {tab === 'gerenciar' && (
-        !isAdmin ? (
-          <div className="rel-legend"><i className="ti ti-shield-lock" /> A gestão de trilhas, vídeos e provas é restrita a <b>administradores</b>.</div>
+        !podeGerir ? (
+          <div className="rel-legend"><i className="ti ti-shield-lock" /> A gestão de trilhas, vídeos e provas é restrita a <b>administradores</b> e ao <b>Admin Universidade</b>.</div>
         ) : editTr ? (
           <GerenciarEditor tr={trilhas.find((t) => t.id === editTr)!} onVoltar={() => { setEditTr(null); router.refresh() }} setBusy={setBusy} flash={flash} busy={busy} />
         ) : (
@@ -190,9 +194,21 @@ function TrilhaDetalhe(props: {
             <div style={{ width: 34, height: 34, borderRadius: 9, background: done ? 'var(--green)' : 'var(--surface-2)', color: done ? '#fff' : 'var(--text-2)', display: 'grid', placeItems: 'center', fontWeight: 700 }}>
               {done ? <i className="ti ti-check" /> : i + 1}
             </div>
-            <a href={ytUrl(e.yt)} target="_blank" rel="noopener noreferrer" onClick={(ev) => ev.stopPropagation()} style={{ width: 96, height: 56, borderRadius: 8, background: '#000', color: '#fff', display: 'grid', placeItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-              <span style={{ textAlign: 'center' }}><i className="ti ti-brand-youtube" style={{ fontSize: 18, color: '#ff0000' }} /><br /><span style={{ fontSize: 9 }}>YouTube · {e.min} min</span></span>
-            </a>
+            {e.bunnyEmbed ? (
+              <iframe
+                src={e.bunnyEmbed}
+                title={e.nome}
+                loading="lazy"
+                onClick={(ev) => ev.stopPropagation()}
+                allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture"
+                allowFullScreen
+                style={{ width: 160, height: 90, borderRadius: 8, background: '#000', border: 0, flexShrink: 0 }}
+              />
+            ) : (
+              <a href={ytUrl(e.yt)} target="_blank" rel="noopener noreferrer" onClick={(ev) => ev.stopPropagation()} style={{ width: 96, height: 56, borderRadius: 8, background: '#000', color: '#fff', display: 'grid', placeItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+                <span style={{ textAlign: 'center' }}><i className="ti ti-brand-youtube" style={{ fontSize: 18, color: '#ff0000' }} /><br /><span style={{ fontSize: 9 }}>YouTube · {e.min} min</span></span>
+              </a>
+            )}
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 13.5 }}>{e.nome}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{done ? `Concluído · nota ${p?.nota ?? ''}` : 'Assista e faça a prova da etapa'}</div>
@@ -461,6 +477,34 @@ function EtapaEditor(props: { etapa: Etapa; setBusy: (b: boolean) => void; flash
   const [pergunta, setPergunta] = useState(q0?.q || '')
   const [opcoes, setOpcoes] = useState((q0?.opts || []).join(';'))
   const [edProva, setEdProva] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  // Lê o arquivo como data URI e envia ao Bunny Stream (via server action).
+  async function enviarVideo(file: File) {
+    setUploading(true)
+    try {
+      const dataUri = await new Promise<string>((resolve, reject) => {
+        const fr = new FileReader()
+        fr.onload = () => resolve(String(fr.result))
+        fr.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
+        fr.readAsDataURL(file)
+      })
+      const r = await subirVideoEtapa(etapa.id, dataUri, nome || etapa.nome || 'Aula')
+      if (!r.ok) flash(r.error || 'Erro ao enviar vídeo.')
+      else { flash('Vídeo enviado ✓'); router.refresh() }
+    } catch (err) {
+      flash((err as Error).message || 'Erro ao ler o vídeo.')
+    } finally {
+      setUploading(false)
+    }
+  }
+  async function removerVideo() {
+    if (!window.confirm('Remover o vídeo do Bunny desta etapa?')) return
+    setUploading(true)
+    const r = await removerVideoEtapa(etapa.id)
+    setUploading(false)
+    if (!r.ok) flash(r.error || 'Erro.'); else { flash('Vídeo removido.'); router.refresh() }
+  }
 
   async function salvar(extraProva?: Questao[]) {
     setBusy(true)
@@ -480,8 +524,23 @@ function EtapaEditor(props: { etapa: Etapa; setBusy: (b: boolean) => void; flash
     <div className="rel-card" style={{ marginBottom: 10 }}>
       <div style={{ display: 'grid', gap: 7 }}>
         <input style={{ ...inp, fontWeight: 600 }} value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => salvar()} placeholder="Título da etapa" />
+        {/* Vídeo pelo Bunny Stream (prioritário sobre o YouTube). */}
+        {etapa.bunny_guid ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--green)', padding: '4px 0' }}>
+            <i className="ti ti-circle-check" /> Vídeo enviado (Bunny) ✓
+            <button className="btn btn-ghost" style={{ marginLeft: 'auto', color: 'var(--red)', padding: '4px 8px' }} disabled={uploading || busy} onClick={removerVideo}>
+              <i className="ti ti-trash" /> {uploading ? 'Removendo…' : 'Remover vídeo'}
+            </button>
+          </div>
+        ) : (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
+            <i className="ti ti-cloud-upload" /> {uploading ? 'Enviando…' : 'Enviar vídeo (Bunny)'}
+            <input type="file" accept="video/*" disabled={uploading || busy} style={{ fontSize: 12 }}
+              onChange={(ev) => { const f = ev.target.files?.[0]; if (f) enviarVideo(f); ev.target.value = '' }} />
+          </label>
+        )}
         <div style={{ display: 'flex', gap: 7 }}>
-          <input style={{ ...inp, flex: 1, fontSize: 12 }} value={yt} onChange={(e) => setYt(e.target.value)} onBlur={() => salvar()} placeholder="Link ou ID do YouTube (não listado)" />
+          <input style={{ ...inp, flex: 1, fontSize: 12 }} value={yt} onChange={(e) => setYt(e.target.value)} onBlur={() => salvar()} placeholder="Link ou ID do YouTube (alternativa ao Bunny)" />
           <input style={{ ...inp, width: 70, fontSize: 12 }} type="number" min={0} value={min} onChange={(e) => setMin(Number(e.target.value))} onBlur={() => salvar()} title="minutos" /> <span style={{ alignSelf: 'center', fontSize: 12 }}>min</span>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
