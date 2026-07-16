@@ -101,6 +101,7 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
   const [min, setMin] = useState(etapa.min)
   const [uploading, setUploading] = useState(false)
   const [prog, setProg] = useState(0)
+  const [removing, setRemoving] = useState(false)
 
   // Salva o array de prova COMPLETO junto com nome/minutos atuais. `prova` sempre explícito:
   //  - blur de nome/minutos → passa a prova JÁ gravada (etapa.prova), preservando as questões;
@@ -154,9 +155,9 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
 
   async function removerVideo() {
     if (!window.confirm('Remover o vídeo do Bunny desta etapa?')) return
-    setUploading(true)
+    setRemoving(true)
     const r = await removerVideoEtapa(etapa.id)
-    setUploading(false)
+    setRemoving(false)
     if (!r.ok) flash(r.error || 'Erro.'); else { flash('Vídeo removido.'); router.refresh() }
   }
 
@@ -181,9 +182,19 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
         </div>
       </div>
 
-      {/* Vídeo (Bunny) */}
+      {/* Vídeo (Bunny) — enquanto envia mostra SEMPRE "Enviando…" (nunca "Removendo…"). */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', flexWrap: 'wrap' }}>
-        {etapa.bunny_guid ? (
+        {uploading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240 }}>
+            <span style={{ fontSize: 12.5, color: 'var(--brand-500)', fontWeight: 600 }}>
+              <i className="ti ti-cloud-upload" /> Enviando vídeo… {prog}%
+            </span>
+            <div style={{ height: 7, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden', width: 240 }}>
+              <span style={{ display: 'block', height: '100%', width: `${prog}%`, background: 'var(--brand-500)', transition: 'width .2s' }} />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Não feche esta aba até concluir o envio.</span>
+          </div>
+        ) : etapa.bunny_guid ? (
           <>
             {etapa.bunnyEmbed && (
               <iframe
@@ -197,17 +208,17 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 12.5, color: 'var(--green)', fontWeight: 600 }}><i className="ti ti-circle-check" /> Vídeo enviado ✓ (Bunny)</span>
-              <button className="btn btn-ghost" style={{ color: 'var(--red)', padding: '5px 10px', alignSelf: 'flex-start' }} disabled={uploading || busy} onClick={removerVideo}>
-                <i className="ti ti-trash" /> {uploading ? 'Removendo…' : 'Remover vídeo'}
+              <button className="btn btn-ghost" style={{ color: 'var(--red)', padding: '5px 10px', alignSelf: 'flex-start' }} disabled={removing || busy} onClick={removerVideo}>
+                <i className="ti ti-trash" /> {removing ? 'Removendo…' : 'Remover vídeo'}
               </button>
             </div>
           </>
         ) : (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-2)', flexWrap: 'wrap', cursor: uploading ? 'default' : 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-2)', flexWrap: 'wrap', cursor: 'pointer' }}>
             <span className="btn btn-ghost" style={{ padding: '6px 12px', pointerEvents: 'none' }}>
-              <i className="ti ti-cloud-upload" /> {uploading ? `Enviando… ${prog}%` : (isFinal ? 'Enviar vídeo (opcional)' : 'Enviar vídeo (Bunny)')}
+              <i className="ti ti-cloud-upload" /> {isFinal ? 'Enviar vídeo (opcional)' : 'Enviar vídeo (Bunny)'}
             </span>
-            <input type="file" accept="video/*" disabled={uploading || busy} style={{ display: 'none' }}
+            <input type="file" accept="video/*" disabled={busy} style={{ display: 'none' }}
               onChange={(ev) => { const f = ev.target.files?.[0]; if (f) enviarVideo(f); ev.target.value = '' }} />
           </label>
         )}

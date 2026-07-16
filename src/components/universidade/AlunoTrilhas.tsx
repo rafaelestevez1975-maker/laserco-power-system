@@ -100,26 +100,26 @@ export function AlunoTrilhas(props: { trilhas: Trilha[]; meuProgresso: Progresso
   )
 }
 
-// ───────────────────────────── Detalhe da trilha ─────────────────────────────
+// ───────────────────────────── Detalhe da trilha (player + playlist) ─────────────────────────────
 
-function VideoBox({ embed, titulo, small }: { embed: string | null; titulo: string; small?: boolean }) {
-  const w = small ? 160 : 220, h = small ? 90 : 124
-  if (embed) {
-    return (
-      <iframe
-        src={embed}
-        title={titulo}
-        loading="lazy"
-        onClick={(ev) => ev.stopPropagation()}
-        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture"
-        allowFullScreen
-        style={{ width: w, height: h, borderRadius: 8, background: '#000', border: 0, flexShrink: 0 }}
-      />
-    )
-  }
+function PlayerGrande({ embed, titulo }: { embed: string | null; titulo: string }) {
   return (
-    <div style={{ width: w, height: h, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--text-3)', display: 'grid', placeItems: 'center', flexShrink: 0, fontSize: 11, textAlign: 'center' }}>
-      <span><i className="ti ti-video-off" style={{ fontSize: 18 }} /><br />Vídeo em breve</span>
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+      {embed ? (
+        <iframe
+          key={embed}
+          src={embed}
+          title={titulo}
+          loading="lazy"
+          allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture"
+          allowFullScreen
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+        />
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'rgba(255,255,255,.7)', fontSize: 13, textAlign: 'center' }}>
+          <span><i className="ti ti-video-off" style={{ fontSize: 30 }} /><br />Vídeo desta aula em breve</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -132,6 +132,8 @@ function TrilhaDetalhe(props: {
   const dn = doneCount(tr), pc = tr.etapas.length ? Math.round((dn / tr.etapas.length) * 100) : 0
   const allDone = tr.etapas.length > 0 && dn === tr.etapas.length
   const finalDone = meuProgresso[`${tr.id}:final`]?.concluido
+  const [ativa, setAtiva] = useState(0)
+  const etapaAtiva = tr.etapas[ativa] ?? null
 
   return (
     <>
@@ -147,25 +149,64 @@ function TrilhaDetalhe(props: {
         </div>
       </div>
 
-      {tr.etapas.map((e, i) => {
-        const p = meuProgresso[`${tr.id}:${e.ordem}`]
-        const done = !!p?.concluido
-        return (
-          <div key={e.id} className="rel-card" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: done ? 'var(--green)' : 'var(--surface-2)', color: done ? '#fff' : 'var(--text-2)', display: 'grid', placeItems: 'center', fontWeight: 700 }}>
-              {done ? <i className="ti ti-check" /> : i + 1}
-            </div>
-            <VideoBox embed={e.bunnyEmbed} titulo={e.nome} small />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 13.5 }}>{e.nome}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{done ? `Concluído · nota ${p?.nota ?? ''}` : `Assista (${e.min} min) e faça a prova da etapa`}</div>
-            </div>
-            <button className={`btn ${done ? 'btn-ghost' : 'btn-primary'}`} style={{ padding: '8px 12px' }} onClick={() => onProva(e.id, String(e.ordem), `Prova · etapa ${i + 1} · ${tr.nome}`, e.prova)}>
-              <i className="ti ti-writing" /> {done ? 'Refazer' : 'Prova'}
-            </button>
+      {tr.etapas.length > 0 && (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 14 }}>
+          {/* Player grande da aula ativa */}
+          <div style={{ flex: '1 1 460px', minWidth: 0 }}>
+            <PlayerGrande embed={etapaAtiva?.bunnyEmbed ?? null} titulo={etapaAtiva?.nome ?? tr.nome} />
+            {etapaAtiva && (() => {
+              const p = meuProgresso[`${tr.id}:${etapaAtiva.ordem}`]
+              const done = !!p?.concluido
+              return (
+                <div className="rel-card" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ fontSize: 11, color: tr.cor, fontWeight: 700, textTransform: 'uppercase' }}>Aula {ativa + 1} de {tr.etapas.length}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{etapaAtiva.nome}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                      <i className="ti ti-clock" /> {etapaAtiva.min} min · {done ? `concluída · nota ${p?.nota ?? ''}` : 'assista e faça a prova para concluir'}
+                    </div>
+                  </div>
+                  <button className={`btn ${done ? 'btn-ghost' : 'btn-primary'}`} style={{ padding: '9px 14px' }}
+                    onClick={() => onProva(etapaAtiva.id, String(etapaAtiva.ordem), `Prova · aula ${ativa + 1} · ${tr.nome}`, etapaAtiva.prova)}>
+                    <i className="ti ti-writing" /> {done ? 'Refazer prova' : 'Fazer prova desta aula'}
+                  </button>
+                </div>
+              )
+            })()}
           </div>
-        )
-      })}
+
+          {/* Playlist de aulas */}
+          <div className="rel-card" style={{ flex: '1 1 300px', minWidth: 260, maxWidth: 440, padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontWeight: 700, fontSize: 13 }}>
+              <i className="ti ti-list-check" /> Conteúdo do curso · {dn}/{tr.etapas.length}
+            </div>
+            <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+              {tr.etapas.map((e, i) => {
+                const done = !!meuProgresso[`${tr.id}:${e.ordem}`]?.concluido
+                const active = i === ativa
+                return (
+                  <div key={e.id} onClick={() => setAtiva(i)} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer',
+                    borderBottom: '1px solid var(--line)', background: active ? `${tr.cor}12` : 'transparent',
+                    borderLeft: active ? `3px solid ${tr.cor}` : '3px solid transparent',
+                  }}>
+                    <div style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 7, background: done ? 'var(--green)' : 'var(--surface-2)', color: done ? '#fff' : 'var(--text-2)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12 }}>
+                      {done ? <i className="ti ti-check" /> : i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.nome}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        <i className={`ti ${e.bunnyEmbed ? 'ti-player-play' : 'ti-clock'}`} /> {e.bunnyEmbed ? `${e.min} min` : 'sem vídeo'}
+                      </div>
+                    </div>
+                    {active && <i className="ti ti-player-play-filled" style={{ color: tr.cor, flexShrink: 0 }} />}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {!allDone && (
         <div className="rel-legend" style={{ background: 'var(--amber-bg, #FFF7E6)', border: '1px solid var(--amber)', marginBottom: 10 }}>
