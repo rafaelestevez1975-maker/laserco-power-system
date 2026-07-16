@@ -162,8 +162,8 @@ function TrilhaDetalhe(props: {
                   <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ fontSize: 11, color: tr.cor, fontWeight: 700, textTransform: 'uppercase' }}>Aula {ativa + 1} de {tr.etapas.length}</div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{etapaAtiva.nome}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-                      <i className="ti ti-clock" /> {etapaAtiva.min} min · {done ? `concluída · nota ${p?.nota ?? ''}` : 'assista e faça a prova para concluir'}
+                    <div style={{ fontSize: 12, color: done ? 'var(--green)' : 'var(--text-3)' }}>
+                      <i className={`ti ${done ? 'ti-circle-check' : 'ti-clock'}`} /> {etapaAtiva.min} min · {done ? `concluída · nota ${p?.nota ?? ''}` : `assista o vídeo e passe na prova (mín. ${UNI_NOTA_MIN.toFixed(1).replace('.', ',')}) para concluir`}
                     </div>
                   </div>
                   <button className={`btn ${done ? 'btn-ghost' : 'btn-primary'}`} style={{ padding: '9px 14px' }}

@@ -63,10 +63,9 @@ export async function submeterProva(input: SubmitQuizInput): Promise<{ ok: boole
   const { op, error } = await requireOperador()
   if (!op) return { ok: false, error }
 
-  const empresa_id = await resolverEmpresaId(op.sb, op.userId)
-  if (!empresa_id) return { ok: false, error: 'Não foi possível resolver a empresa.' }
-
-  // Carrega a etapa (com a prova) e confere que pertence à trilha da empresa.
+  // Carrega a etapa (com a prova) e usa a empresa da PRÓPRIA trilha. A Universidade é um
+  // catálogo único (centralizado na franqueadora); não se resolve empresa pela unidade do
+  // usuário (Admin Universidade tem unidade_id NULL e colaboradores são de outras empresas).
   const { data: etapa, error: eE } = await op.sb
     .from('uni_etapas')
     .select('id, trilha_id, prova, is_final, uni_trilhas!inner(empresa_id)')
@@ -75,8 +74,8 @@ export async function submeterProva(input: SubmitQuizInput): Promise<{ ok: boole
   if (eE) return { ok: false, error: msgErro(eE.message, 'carregar prova') }
   const e = etapa as { id: string; trilha_id: string; prova: Questao[]; is_final: boolean; uni_trilhas: { empresa_id: string } | { empresa_id: string }[] } | null
   if (!e) return { ok: false, error: 'Prova não encontrada.' }
-  const empE = Array.isArray(e.uni_trilhas) ? e.uni_trilhas[0]?.empresa_id : e.uni_trilhas?.empresa_id
-  if (empE !== empresa_id) return { ok: false, error: 'Prova de outra empresa.' }
+  const empresa_id = Array.isArray(e.uni_trilhas) ? e.uni_trilhas[0]?.empresa_id : e.uni_trilhas?.empresa_id
+  if (!empresa_id) return { ok: false, error: 'Trilha sem empresa vinculada.' }
 
   // Pré-requisito da prova final: todas as etapas (não-finais) concluídas (uniTrilhaDet 5965/5972).
   if (e.is_final) {
