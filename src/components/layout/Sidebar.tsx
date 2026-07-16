@@ -147,9 +147,10 @@ export function Sidebar({
       )
     }
     const itens = minhaConta ? [...ordenados, minhaConta] : ordenados
+    const tituloModulo = soModulo === 'universidade' ? 'Universidade' : 'SAC'
     return (
       <nav className="nav">
-        <SectionBlock title="SAC" items={itens} pathname={pathname}
+        <SectionBlock title={tituloModulo} items={itens} pathname={pathname}
           isAdmin={isAdmin} recursos={recursos} soModulo={soModulo} sacNivel={sacNivel} onNavigate={onNavigate} />
       </nav>
     )

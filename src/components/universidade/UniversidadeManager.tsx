@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMemo, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   submeterProva, criarTrilha, salvarTrilha, excluirTrilha,
   adicionarEtapa, salvarEtapa, excluirEtapa,
@@ -41,8 +41,16 @@ const TABS: [Tab, string, string][] = [
 export function UniversidadeManager(props: Props) {
   const { podeGerir, migrationPendente, trilhas, meuProgresso, alunos, abaInicial } = props
   const router = useRouter()
+  const sp = useSearchParams()
   // A aba inicial vem dos sub-itens do menu lateral (/universidade?aba=…). Só admin/gestor abre "Gerenciar".
   const [tab, setTab] = useState<Tab>(abaInicial && (abaInicial !== 'gerenciar' || podeGerir) ? abaInicial : 'trilhas')
+  // Sincroniza a aba quando o usuário clica num sub-item do menu lateral (muda só a querystring
+  // ?aba=…, sem remontar o componente — por isso o useState sozinho não trocava).
+  useEffect(() => {
+    const a = sp.get('aba')
+    const validas: Tab[] = ['trilhas', 'alunos', 'dash', 'gerenciar']
+    if (a && (validas as string[]).includes(a) && (a !== 'gerenciar' || podeGerir)) setTab(a as Tab)
+  }, [sp, podeGerir])
   const [trAberta, setTrAberta] = useState<string | null>(null) // detalhe de trilha
   const [quiz, setQuiz] = useState<QuizCtx>(null)
   const [editTr, setEditTr] = useState<string | null>(null) // editor (gerenciar)
@@ -89,7 +97,7 @@ export function UniversidadeManager(props: Props) {
         />
       ) : (
         <>
-          <div className="rel-legend">Cada cargo tem a sua <b>trilha de vídeos</b> (links não listados do YouTube, sem custo). Ao final de cada etapa há uma <b>prova escrita</b>, e uma <b>prova final</b> libera o certificado. <b>Só com o curso online concluído</b> o colaborador evolui no treinamento presencial.</div>
+          <div className="rel-legend">Cada cargo tem a sua <b>trilha de vídeos</b> (hospedados no <b>Bunny</b>). Ao final de cada etapa há uma <b>prova escrita</b>, e uma <b>prova final</b> libera o certificado. <b>Só com o curso online concluído</b> o colaborador evolui no treinamento presencial.</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 14, marginTop: 14 }}>
             {trilhas.map((tr) => {
               const dn = doneCount(tr), pc = tr.etapas.length ? Math.round((dn / tr.etapas.length) * 100) : 0
@@ -399,7 +407,7 @@ function Gerenciar(props: { trilhas: Trilha[]; onEditar: (id: string) => void; o
   const { trilhas, onEditar, onNova, onExcluir, busy } = props
   return (
     <>
-      <div className="rel-legend">Crie e edite as <b>trilhas por cargo</b>, adicione/edite <b>vídeos</b> (cole o link não listado do YouTube), monte as <b>provas</b> e defina o <b>prazo</b>. As mudanças refletem na hora na aba Trilhas.</div>
+      <div className="rel-legend">Crie e edite as <b>trilhas por cargo</b>, <b>envie os vídeos</b> (pelo Bunny, direto no botão de cada etapa), monte as <b>provas</b> e defina o <b>prazo</b>. As mudanças refletem na hora na aba Trilhas.</div>
       <div className="rel-acts" style={{ justifyContent: 'flex-end', margin: '6px 0 14px' }}>
         <button className="btn btn-primary" onClick={onNova} disabled={busy}><i className="ti ti-plus" /> Nova trilha</button>
       </div>

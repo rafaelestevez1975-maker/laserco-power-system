@@ -279,6 +279,7 @@ export function ehFuncional(href: string): boolean {
 /** Rotas funcionais que não constam no MENU (CRUDs acessados por link direto) — sem isso o
  *  fallback exibia "Dashboard" no topo dessas telas. */
 const TITULOS_EXTRA: Record<string, { icon: string; title: string }> = {
+  '/universidade': { icon: 'ti-school', title: 'Universidade' },
   '/descontos': { icon: 'ti-discount', title: 'Descontos' },
   '/planos': { icon: 'ti-id-badge-2', title: 'Planos de Assinatura' },
   '/pacotes': { icon: 'ti-packages', title: 'Pacotes' },

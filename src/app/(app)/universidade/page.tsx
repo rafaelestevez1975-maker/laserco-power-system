@@ -20,8 +20,8 @@ export default async function UniversidadePage({ searchParams }: { searchParams:
   const ctx = await getSessionContext()
   const sb = await createClient()
   const isAdmin = ehAdmin(ctx?.papel)
-  // Pode gerenciar: admin_geral OU cargo "Admin Universidade" (recurso treinamento.curso).
-  const podeGerir = isAdmin || !!ctx?.recursos.includes('treinamento.curso')
+  // Pode gerenciar: admin_geral OU qualquer cargo com recurso de treinamento (ex.: Admin Universidade).
+  const podeGerir = isAdmin || !!ctx?.recursos.some((r) => r.startsWith('treinamento'))
 
   let migrationPendente = false
 

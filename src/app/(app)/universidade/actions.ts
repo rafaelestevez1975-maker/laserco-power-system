@@ -18,7 +18,7 @@ async function podeGerirUni(): Promise<{ ok: true; op: Operador } | { ok: false;
   if (!op) return { ok: false, error: error ?? 'Sessão expirada.' }
   if (ehAdmin(op.papel)) return { ok: true, op }
   const ctx = await getSessionContext()
-  if (ctx?.recursos.includes('treinamento.curso')) return { ok: true, op }
+  if (ctx?.recursos.some((r) => r.startsWith('treinamento'))) return { ok: true, op }
   return { ok: false, error: 'Sem permissão para gerenciar a Universidade.' }
 }
 
