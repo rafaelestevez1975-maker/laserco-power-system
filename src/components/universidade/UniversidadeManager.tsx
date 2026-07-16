@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   submeterProva, criarTrilha, salvarTrilha, excluirTrilha,
   adicionarEtapa, salvarEtapa, excluirEtapa,
-  subirVideoEtapa, removerVideoEtapa,
+  iniciarUploadVideoTus, removerVideoEtapa,
 } from '@/app/(app)/universidade/actions'
 import { ytUrl, UNI_NOTA_MIN, type Questao } from '@/lib/marketing'
 
@@ -478,24 +478,39 @@ function EtapaEditor(props: { etapa: Etapa; setBusy: (b: boolean) => void; flash
   const [opcoes, setOpcoes] = useState((q0?.opts || []).join(';'))
   const [edProva, setEdProva] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [prog, setProg] = useState(0)
 
-  // Lê o arquivo como data URI e envia ao Bunny Stream (via server action).
+  // Upload DIRETO do navegador → Bunny (TUS): aguenta vídeo grande de treinamento sem bater no
+  // limite de body do servidor. A assinatura vem do servidor (a chave nunca vai pro cliente).
   async function enviarVideo(file: File) {
-    setUploading(true)
+    setUploading(true); setProg(0)
     try {
-      const dataUri = await new Promise<string>((resolve, reject) => {
-        const fr = new FileReader()
-        fr.onload = () => resolve(String(fr.result))
-        fr.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
-        fr.readAsDataURL(file)
+      const init = await iniciarUploadVideoTus(etapa.id, nome || etapa.nome || 'Aula')
+      if (!init.ok) { flash(init.error || 'Erro ao iniciar o envio.'); setUploading(false); return }
+      const { Upload } = await import('tus-js-client')
+      await new Promise<void>((resolve, reject) => {
+        const up = new Upload(file, {
+          endpoint: init.endpoint,
+          retryDelays: [0, 2000, 5000, 10000, 20000],
+          headers: {
+            AuthorizationSignature: init.signature,
+            AuthorizationExpire: String(init.expiration),
+            VideoId: init.guid,
+            LibraryId: init.libraryId,
+          },
+          metadata: { filetype: file.type || 'video/mp4', title: nome || etapa.nome || 'Aula' },
+          onError: (e) => reject(e),
+          onProgress: (sent, total) => setProg(total ? Math.round((sent / total) * 100) : 0),
+          onSuccess: () => resolve(),
+        })
+        up.start()
       })
-      const r = await subirVideoEtapa(etapa.id, dataUri, nome || etapa.nome || 'Aula')
-      if (!r.ok) flash(r.error || 'Erro ao enviar vídeo.')
-      else { flash('Vídeo enviado ✓'); router.refresh() }
+      flash('Vídeo enviado ✓ (processando no Bunny)')
+      router.refresh()
     } catch (err) {
-      flash((err as Error).message || 'Erro ao ler o vídeo.')
+      flash('Falha no envio do vídeo: ' + ((err as Error).message || 'erro'))
     } finally {
-      setUploading(false)
+      setUploading(false); setProg(0)
     }
   }
   async function removerVideo() {
@@ -534,7 +549,7 @@ function EtapaEditor(props: { etapa: Etapa; setBusy: (b: boolean) => void; flash
           </div>
         ) : (
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
-            <i className="ti ti-cloud-upload" /> {uploading ? 'Enviando…' : 'Enviar vídeo (Bunny)'}
+            <i className="ti ti-cloud-upload" /> {uploading ? `Enviando… ${prog}%` : 'Enviar vídeo (Bunny)'}
             <input type="file" accept="video/*" disabled={uploading || busy} style={{ fontSize: 12 }}
               onChange={(ev) => { const f = ev.target.files?.[0]; if (f) enviarVideo(f); ev.target.value = '' }} />
           </label>

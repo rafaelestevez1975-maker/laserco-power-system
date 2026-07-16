@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireOperador, msgErro, type SB, type Operador } from '@/lib/sb'
 import { ehAdmin } from '@/lib/rbac'
 import { getSessionContext } from '@/lib/session'
-import { bunnyStreamOn, bunnyStreamCriarVideo, bunnyStreamUpload, bunnyStreamRemover } from '@/lib/bunny'
+import { bunnyStreamOn, bunnyStreamCriarVideo, bunnyStreamUpload, bunnyStreamRemover, bunnyStreamTus } from '@/lib/bunny'
 import { uniNota, UNI_NOTA_MIN, type Questao } from '@/lib/marketing'
 
 /**
@@ -271,6 +271,37 @@ export async function subirVideoEtapa(etapaId: string, dataUri: string, titulo: 
 
   revalidatePath('/universidade')
   return { ok: true, guid }
+}
+
+export type TusInit =
+  | { ok: true; endpoint: string; libraryId: string; guid: string; signature: string; expiration: number }
+  | { ok: false; error: string }
+
+/**
+ * Inicia um upload DIRETO do navegador → Bunny (TUS): cria o vídeo, já vincula o guid à etapa
+ * e devolve a assinatura temporária. Serve p/ vídeos GRANDES de treinamento (não passa pelo
+ * nosso servidor, então não bate no limite de body do Vercel). Gate: podeGerirUni.
+ */
+export async function iniciarUploadVideoTus(etapaId: string, titulo: string): Promise<TusInit> {
+  const g = await podeGerirUni()
+  if (!g.ok) return { ok: false, error: g.error }
+  const { op } = g
+  if (!etapaId) return { ok: false, error: 'Etapa inválida.' }
+  if (!bunnyStreamOn()) return { ok: false, error: 'Configure o Bunny Stream para enviar vídeos.' }
+
+  const criado = await bunnyStreamCriarVideo((titulo || 'Aula').trim() || 'Aula')
+  if ('error' in criado) return { ok: false, error: criado.error }
+  const guid = criado.guid
+
+  const tus = bunnyStreamTus(guid)
+  if (!tus) { await bunnyStreamRemover(guid); return { ok: false, error: 'Falha ao assinar o upload.' } }
+
+  // vincula já o guid (o vídeo processa no Bunny; o player passa a usá-lo)
+  const { error: e } = await op.sb.from('uni_etapas').update({ bunny_guid: guid }).eq('id', etapaId)
+  if (e) { await bunnyStreamRemover(guid); return { ok: false, error: msgErro(e.message, 'vincular vídeo') } }
+
+  revalidatePath('/universidade')
+  return { ok: true, ...tus }
 }
 
 /** Remove o vídeo do Bunny e zera uni_etapas.bunny_guid (volta ao fallback YouTube). */

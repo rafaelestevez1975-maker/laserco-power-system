@@ -155,3 +155,18 @@ export function bunnyStreamEmbedUrl(guid: string): string {
 export function bunnyStreamHlsUrl(guid: string): string {
   return STREAM_CDN ? `https://${STREAM_CDN}/${guid}/playlist.m3u8` : ''
 }
+
+/**
+ * Dados para upload DIRETO do navegador → Bunny (TUS), sem passar pelo nosso servidor
+ * (contorna o limite de body do Vercel; serve p/ vídeos grandes de treinamento).
+ * A assinatura = SHA256(libraryId + apiKey + expiration + guid) é calculada no servidor —
+ * a apiKey NUNCA vai para o cliente; o browser só recebe a assinatura temporária.
+ */
+export function bunnyStreamTus(guid: string, expiresSec = 3 * 3600): {
+  endpoint: string; libraryId: string; guid: string; signature: string; expiration: number
+} | null {
+  if (!bunnyStreamOn()) return null
+  const expiration = Math.floor(Date.now() / 1000) + expiresSec
+  const signature = crypto.createHash('sha256').update(`${STREAM_LIB}${STREAM_KEY}${expiration}${guid}`).digest('hex')
+  return { endpoint: 'https://video.bunnycdn.com/tusupload', libraryId: STREAM_LIB, guid, signature, expiration }
+}
