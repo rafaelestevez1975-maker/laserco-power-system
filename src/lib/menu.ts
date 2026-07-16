@@ -203,6 +203,13 @@ export const MENU: Section[] = [
       { label: 'Exportações', href: '/exportacoes', icon: 'ti-download' },
     ],
   },
+  {
+    title: 'Configurações',
+    items: [
+      { label: 'Usuários', href: '/configuracoes/usuarios', icon: 'ti-user-cog', admin: true },
+      { label: 'Perfis de acesso', href: '/cadastros/perfis', icon: 'ti-shield-lock', perm: 'sistema.cargo' },
+    ],
+  },
 ]
 
 /**
@@ -242,6 +249,8 @@ export const ROTAS_FUNCIONAIS = new Set<string>([
   '/juridico', '/auditoria',
   // Rede & Conta
   '/unidades', '/minha-conta', '/exportacoes', '/ajuda', '/minha-unidade', '/app-cliente',
+  // Configurações
+  '/configuracoes/usuarios',
   // Re-classificação 2026-06-29 (certificação botão-a-botão, 6 agentes): estas telas já estão
   // funcionais (queries reais / empty-state honesto) e antes apareciam apagadas como "prévia".
   // Dashboards de vendas (migrados p/ VendasReal):
