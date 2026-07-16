@@ -46,10 +46,13 @@ const BUNNY_ZONE = env.BUNNY_STORAGE_ZONE
 const BUNNY_KEY = env.BUNNY_STORAGE_KEY
 const BUNNY_BUCKET = 'clientes-docs'
 async function subirBunny(path, bytes, mime) {
-  const r = await fetch(`https://${BUNNY_HOST}/${BUNNY_ZONE}/${BUNNY_BUCKET}/${path}`, {
-    method: 'PUT', headers: { AccessKey: BUNNY_KEY, 'Content-Type': mime || 'application/octet-stream' }, body: Buffer.from(bytes),
-  })
-  return r.ok
+  try {
+    const r = await fetch(`https://${BUNNY_HOST}/${BUNNY_ZONE}/${BUNNY_BUCKET}/${path}`, {
+      method: 'PUT', headers: { AccessKey: BUNNY_KEY, 'Content-Type': mime || 'application/octet-stream' },
+      body: Buffer.from(bytes), signal: AbortSignal.timeout(60000),
+    })
+    return r.ok
+  } catch { return false }
 }
 
 // ─────────────────────────── BEMP: login + sessão (cookie jar) ───────────────────────────
@@ -61,7 +64,7 @@ async function loginBemp() {
   const guarda = (res) => { for (const c of (res.headers.getSetCookie?.() || [])) { const nv = c.split(';')[0]; const i = nv.indexOf('='); if (i > 0) jar[nv.slice(0, i).trim()] = nv.slice(i + 1) } }
   const cookie = () => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ')
 
-  const r1 = await fetch(`${BEMP_WEB_BASE}/users/sign_in`, { headers: { 'User-Agent': UA } })
+  const r1 = await fetch(`${BEMP_WEB_BASE}/users/sign_in`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(45000) })
   guarda(r1)
   const csrf = (await r1.text()).match(/name="authenticity_token"\s+value="([^"]+)"/)?.[1]
   if (!csrf) throw new Error('CSRF não encontrado na página de login')
@@ -73,7 +76,7 @@ async function loginBemp() {
   const r2 = await fetch(`${BEMP_WEB_BASE}/users/sign_in`, {
     method: 'POST', redirect: 'manual',
     headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookie() },
-    body: body.toString(),
+    body: body.toString(), signal: AbortSignal.timeout(45000),
   })
   guarda(r2)
   const loc = r2.headers.get('location') || ''
@@ -83,10 +86,10 @@ async function loginBemp() {
 
 // GET autenticado com re-login automático se a sessão expirou (BEMP redireciona p/ /users/sign_in).
 async function authFetch(url) {
-  let res = await fetch(url, { headers: sessao.headers })
+  let res = await fetch(url, { headers: sessao.headers, signal: AbortSignal.timeout(45000) })
   if (/\/users\/sign_in/.test(res.url) || res.status === 401) {
     sessao = await loginBemp()
-    res = await fetch(url, { headers: sessao.headers })
+    res = await fetch(url, { headers: sessao.headers, signal: AbortSignal.timeout(45000) })
   }
   return res
 }
@@ -140,25 +143,29 @@ async function processarCliente(cli) {
   if (docs.length) clientesComDoc++
   // idempotência em lote: paths já registrados deste cliente
   let jaSet = new Set()
-  try { const arr = await (await fetch(`${SB}/rest/v1/clientes_documentos?select=arquivo_path&bemp_customer_id=eq.${cli.id}`, { headers: H })).json(); if (Array.isArray(arr)) jaSet = new Set(arr.map((r) => r.arquivo_path)) } catch {}
+  try { const arr = await (await fetch(`${SB}/rest/v1/clientes_documentos?select=arquivo_path&bemp_customer_id=eq.${cli.id}`, { headers: H, signal: AbortSignal.timeout(30000) })).json(); if (Array.isArray(arr)) jaSet = new Set(arr.map((r) => r.arquivo_path)) } catch {}
   const pend = docs.filter((d) => !jaSet.has(`bemp/${cli.id}/${d.tipo}/${d.nome}`))
   pulados += docs.length - pend.length
   await mapPool(pend, N_ARQUIVOS, async (d) => {
     const path = `bemp/${cli.id}/${d.tipo}/${d.nome}`
     let bin = null
-    for (let t = 0; t < 2 && !bin; t++) { try { const r = await authFetch(d.url); if (r.ok) { const ab = await r.arrayBuffer(); if (ab && ab.byteLength) bin = ab } } catch {} }
+    for (let t = 0; t < 3 && !bin; t++) { try { const r = await authFetch(d.url); if (r.ok) { const ab = await r.arrayBuffer(); if (ab && ab.byteLength) bin = ab } } catch {} }
     if (!bin) { falhas++; return }
     if (!(await subirBunny(path, bin, d.mime))) { falhas++; return }
-    const ins = await fetch(`${SB}/rest/v1/clientes_documentos`, {
-      method: 'POST', headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({
-        bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || d.nome,
-        arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
-        origem: 'bemp', baixado_em: new Date().toISOString(),
-      }),
-    })
-    if (!ins.ok) { falhas++; return }
-    baixados++
+    try {
+      const ins = await fetch(`${SB}/rest/v1/clientes_documentos`, {
+        method: 'POST', headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || d.nome,
+          arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
+          origem: 'bemp', baixado_em: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(30000),
+      })
+      if (ins.status === 409) { pulados++; return }  // já existe (corrida) — unique em arquivo_path
+      if (!ins.ok) { falhas++; return }
+      baixados++
+    } catch { falhas++ }
   })
 }
 
