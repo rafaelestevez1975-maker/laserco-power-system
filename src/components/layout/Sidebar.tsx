@@ -26,7 +26,12 @@ function hasPerm(perm: string, recursos: string[]) {
 
 /** Perfis de MÓDULO ÚNICO (pedido do cliente: menu personalizado, como o SAC): usuário cujo
  *  cargo só tem recursos de UM módulo enxerga apenas aquele módulo + Minha conta. */
-type SoModulo = '' | 'sac' | 'financeiro'
+type SoModulo = '' | 'sac' | 'financeiro' | 'universidade'
+
+// Módulo → prefixo do recurso (RBAC) e prefixo da rota. O nome do módulo nem sempre é igual ao
+// prefixo do recurso (universidade usa recursos 'treinamento.*').
+const MOD_PERM: Record<Exclude<SoModulo, ''>, string> = { sac: 'sac', financeiro: 'financeiro', universidade: 'treinamento' }
+const MOD_HREF: Record<Exclude<SoModulo, ''>, string> = { sac: '/sac', financeiro: '/financeiro', universidade: '/universidade' }
 
 /** Regra de visibilidade: admin_geral vê tudo; senão, exige o recurso (ou nenhum = visível).
  *  - soModulo: usuário de módulo único (sac/financeiro) enxerga apenas o próprio módulo.
@@ -40,8 +45,9 @@ function canSee(item: Item, isAdmin: boolean, recursos: string[], soModulo: SoMo
     if (!permitido.has(href)) return false
   }
   if (soModulo) {
-    if (item.perm) return item.perm.startsWith(soModulo) ? hasPerm(item.perm, recursos) : false
-    if (href.startsWith(`/${soModulo === 'financeiro' ? 'financeiro' : 'sac'}`)) return true
+    const permPrefix = MOD_PERM[soModulo]
+    if (item.perm) return item.perm.startsWith(permPrefix) ? hasPerm(item.perm, recursos) : false
+    if (href.startsWith(MOD_HREF[soModulo])) return true
     return href === '/minha-conta' || (soModulo === 'sac' && href === '/ajuda')
   }
   if (item.perm) return hasPerm(item.perm, recursos)
@@ -54,6 +60,7 @@ function ehSoModulo(isAdmin: boolean, recursos: string[]): SoModulo {
   if (isAdmin || recursos.length === 0) return ''
   if (recursos.every((r) => r.startsWith('sac'))) return 'sac'
   if (recursos.every((r) => r.startsWith('financeiro'))) return 'financeiro'
+  if (recursos.every((r) => r.startsWith('treinamento'))) return 'universidade'
   return ''
 }
 

@@ -14,5 +14,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   // Perfil Financeiro (módulo único): cai direto no Financeiro da franqueadora (padrão do SAC).
   const finOnly = !!ctx && !ctx.isAdmin && (ctx.papel === 'financeiro' || (ctx.recursos.length > 0 && ctx.recursos.every((r) => r.startsWith('financeiro'))))
   if (finOnly) redirect('/financeiro')
+  // Perfil Universidade (módulo único, recursos só treinamento.*): cai direto na Universidade.
+  const uniOnly = !!ctx && !ctx.isAdmin && ctx.recursos.length > 0 && ctx.recursos.every((r) => r.startsWith('treinamento'))
+  if (uniOnly) redirect('/universidade')
   return <DashboardUnidade searchParams={await searchParams} />
 }

@@ -11,7 +11,12 @@ type EtapaDb = { id: string; trilha_id: string; ordem: number; nome: string; yt:
 type TrilhaDb = { id: string; slug: string; nome: string; role: string; cor: string; prazo: string; ordem: number }
 type ProgDb = { trilha_id: string; perfil_id: string; etapa_key: string; concluido: boolean; nota: number | null }
 
-export default async function UniversidadePage() {
+const ABAS_VALIDAS = ['trilhas', 'alunos', 'dash', 'gerenciar'] as const
+type AbaUni = (typeof ABAS_VALIDAS)[number]
+
+export default async function UniversidadePage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const sp = await searchParams
+  const abaInicial: AbaUni = (ABAS_VALIDAS as readonly string[]).includes(sp.aba || '') ? (sp.aba as AbaUni) : 'trilhas'
   const ctx = await getSessionContext()
   const sb = await createClient()
   const isAdmin = ehAdmin(ctx?.papel)
@@ -100,6 +105,7 @@ export default async function UniversidadePage() {
         trilhas={trilhas}
         meuProgresso={meuProgresso}
         alunos={alunos}
+        abaInicial={abaInicial}
       />
     </div>
   )

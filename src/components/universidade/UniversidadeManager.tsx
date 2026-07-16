@@ -25,6 +25,7 @@ type Props = {
   trilhas: Trilha[]
   meuProgresso: ProgressoUsuario
   alunos: AlunoRow[]
+  abaInicial?: 'trilhas' | 'alunos' | 'dash' | 'gerenciar'
 }
 
 type Tab = 'trilhas' | 'alunos' | 'dash' | 'gerenciar'
@@ -38,9 +39,10 @@ const TABS: [Tab, string, string][] = [
 ]
 
 export function UniversidadeManager(props: Props) {
-  const { podeGerir, migrationPendente, trilhas, meuProgresso, alunos } = props
+  const { podeGerir, migrationPendente, trilhas, meuProgresso, alunos, abaInicial } = props
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>('trilhas')
+  // A aba inicial vem dos sub-itens do menu lateral (/universidade?aba=…). Só admin/gestor abre "Gerenciar".
+  const [tab, setTab] = useState<Tab>(abaInicial && (abaInicial !== 'gerenciar' || podeGerir) ? abaInicial : 'trilhas')
   const [trAberta, setTrAberta] = useState<string | null>(null) // detalhe de trilha
   const [quiz, setQuiz] = useState<QuizCtx>(null)
   const [editTr, setEditTr] = useState<string | null>(null) // editor (gerenciar)

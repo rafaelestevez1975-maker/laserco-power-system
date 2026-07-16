@@ -137,7 +137,14 @@ export const MENU: Section[] = [
       { label: 'Comunicados', href: '/comunicados', icon: 'ti-speakerphone', perm: 'operacoes.' },
       { label: 'Chamados', href: '/chamados', icon: 'ti-ticket', perm: 'operacoes.' },
       { label: 'Checklist de Indicadores', href: '/checklist', icon: 'ti-checklist', perm: 'operacoes.' },
-      { label: 'Universidade Corporativa', href: '/universidade', icon: 'ti-school', perm: 'treinamento.curso' },
+      {
+        label: 'Universidade', icon: 'ti-school', key: 'unim', perm: 'treinamento.', children: [
+          { label: 'Trilhas', href: '/universidade?aba=trilhas', icon: 'ti-school', title: 'Universidade · Trilhas' },
+          { label: 'Alunos & Notas', href: '/universidade?aba=alunos', icon: 'ti-users', title: 'Universidade · Alunos & Notas' },
+          { label: 'Dashboards', href: '/universidade?aba=dash', icon: 'ti-gauge', title: 'Universidade · Dashboards' },
+          { label: 'Gerenciar conteúdo', href: '/universidade?aba=gerenciar', icon: 'ti-settings', title: 'Universidade · Gerenciar' },
+        ],
+      },
       { label: 'Disco Virtual', href: '/disco', icon: 'ti-cloud', perm: 'operacoes.' },
       { label: 'Notas Fiscais', href: '/notas', icon: 'ti-file-invoice', badge: 'EM BREVE', perm: 'financeiro.' },
     ],
@@ -156,7 +163,7 @@ export const MENU: Section[] = [
           { label: 'Tipo de Lead', href: '/expansao/tipos', icon: 'ti-tag', title: 'Expansão · Tipo de Lead' },
         ],
       },
-      { label: 'Implantação de Unidade', href: '/implantacao', icon: 'ti-building-plus' },
+      { label: 'Implantação de Unidade', href: '/implantacao', icon: 'ti-building-plus', perm: 'crm.lead' },
       {
         label: 'SAC', icon: 'ti-headset', key: 'sacm', perm: 'sac.', children: [
           { label: 'Dashboard', href: '/sac', icon: 'ti-layout-dashboard', title: 'SAC · Dashboard' },
