@@ -1,57 +1,42 @@
 /**
- * ROBÔ de resgate dos DOCUMENTOS dos clientes no BEMP (fotos, anamneses, termos, contratos).
- * Autorizado pelo cliente em 04/07/2026 ("pode fazer")  a API do BEMP NÃO expõe arquivos
- * (docs/BACKLOG.md EPIC 14.1), então o caminho é o APP WEB, um cliente por vez, começando
- * pelos 8.363 com pacote em andamento (docs/clientes-pacote-andamento-90d.csv).
+ * ROBÔ de resgate dos DOCUMENTOS/ARQUIVOS dos clientes no BEMP (fotos de tratamento,
+ * anamneses/fichas, anexos). Autorizado pelo cliente em 04/07/2026.
  *
- * DESTINO (já provisionado 04/07):
- *   - Storage bucket `clientes-docs` (privado)  path bemp/<customer_id>/<tipo>/<arquivo>
- *   - Tabela `clientes_documentos` (cliente_id via bemp_id, tipo, arquivo_path, mime, …)
+ * DESTINO (regra do cliente): o ARQUIVO vai pro BUNNY (Bunny Storage, bucket clientes-docs)
+ * e no SUPABASE entra só o VÍNCULO (linha em clientes_documentos com o caminho no Bunny +
+ * metadados). NENHUM arquivo é salvo no Supabase.
  *
- * FALTA (único elo pendente): o LOGIN do app web do BEMP.
- *   Defina em ../.env.local:  BEMP_WEB_BASE=…  BEMP_WEB_EMAIL=…  BEMP_WEB_SENHA=…
- *   Com o login em mãos: 1) mapear a rota de auth e as rotas de documentos do cliente
- *   (uma sessão de inspeção no DevTools resolve  os endpoints entram em fetchDocsDoCliente),
- *   2) rodar:  node scripts/baixar-docs-bemp.mjs [maxClientes]
+ * COMO OS DOCS FICAM NO BEMP (mapeado em 16/07 com login mateus@lasercompany.com):
+ *   - App web Rails/Devise em https://laserco.bemp.app (login: POST /users/sign_in com
+ *     user[organization][subdomain]=laserco, user[username], user[password], authenticity_token).
+ *   - Detalhe do cliente: /customers/<id>/edit  (abas #events, #customer_contracts, ...).
+ *   - As FOTOS/anexos das anamneses vêm no fragmento AJAX  /customers/<id>/events  como blobs
+ *     ActiveStorage:  /storage/blobs/redirect/<token>/<nome>  (o redirect resolve numa URL S3
+ *     assinada de 300s — basta seguir o redirect autenticado p/ baixar os bytes).
+ *   - Contratos: /customers/<id>/contracts lista /customer_contracts/<id>/edit (assinados).
  *
- * Regras de execução: ritmo lento (1 cliente/2s  não derrubar o BEMP), idempotente
- * (pula documento já registrado em clientes_documentos), tolerante a falha (loga e segue).
+ * EXECUÇÃO:  node scripts/baixar-docs-bemp.mjs [maxClientes]
+ *   Idempotente (pula arquivo já registrado por arquivo_path), tolerante a falha (loga e segue),
+ *   ritmo gentil (pausa entre clientes) e re-login automático se a sessão expirar.
  */
 import { readFileSync } from 'fs'
+import { createHash } from 'crypto'
 
-const lerEnv = (p) => Object.fromEntries(readFileSync(p, 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]))
+const lerEnv = (p) => Object.fromEntries(readFileSync(p, 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim().replace(/^"|"$/g, '')]))
 const env = lerEnv(new URL('../.env.local', import.meta.url).pathname)
 
-// APP WEB DO BEMP  MAPEADO em 05/07 (login lucas@lasercompany.com confirmado):
-//   Base (tenant Laser):  https://laserco.bemp.app
-//   Login (Rails/Devise): POST /users/sign_in  com os campos:
-//     user[organization][subdomain] = laserco
-//     user[username] = <email>      user[password] = <senha>
-//     authenticity_token = <csrf da página /users/sign_in>
-//   Rotas úteis logado: /customers, /schedules, /custom_entities/customer_event,
-//     /customer_contract_templates, /report/*  (fotos/anamneses ficam no detalhe do cliente).
-//
-// BLOQUEIO ATUAL: a conta lucas@lasercompany.com cai numa TAREFA OBRIGATÓRIA de 1º acesso
-// (/mandatory_task/profile/edit) que exige DEFINIR UMA SENHA PERMANENTE e trava todo o resto
-// (clientes/documentos) até ser concluída. Concluir mudaria a senha e invalidaria a credencial
-// 123456  então NÃO fazemos isso. Peça ao Lucas para: 1) entrar no BEMP, 2) completar o "Perfil"
-// (definir a senha definitiva), 3) repassar a nova senha. Aí este robô destrava e mapeia os docs.
 const BEMP_WEB_BASE = env.BEMP_WEB_BASE || 'https://laserco.bemp.app'
 const { BEMP_WEB_EMAIL, BEMP_WEB_SENHA } = env
 if (!BEMP_WEB_EMAIL || !BEMP_WEB_SENHA) {
-  console.error(`Defina no .env.local a credencial JÁ com a tarefa obrigatória concluída:
-  BEMP_WEB_EMAIL=lucas@lasercompany.com
-  BEMP_WEB_SENHA=<senha DEFINITIVA, depois que o Lucas completar o Perfil no BEMP>
-Destino já pronto: bucket clientes-docs + tabela clientes_documentos + fila (8.363 c/ pacote).`)
-  process.exit(2)
+  console.error('Defina BEMP_WEB_EMAIL e BEMP_WEB_SENHA no .env.local.'); process.exit(2)
 }
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) LaserCoMigracao/1.0'
 
-// ── A partir daqui o fluxo está pronto; os dois TODO dependem de inspecionar o app logado. ──
 const SB = env.NEXT_PUBLIC_SUPABASE_URL
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_KEY
 const MAX = Number(process.argv[2]) || Infinity
 
-// Destino dos arquivos: Bunny Storage (não mais Supabase Storage).
+// Destino dos arquivos: Bunny Storage (NÃO Supabase Storage).
 const BUNNY_HOST = env.BUNNY_STORAGE_HOST || 'br.storage.bunnycdn.com'
 const BUNNY_ZONE = env.BUNNY_STORAGE_ZONE
 const BUNNY_KEY = env.BUNNY_STORAGE_KEY
@@ -63,40 +48,106 @@ async function subirBunny(path, bytes, mime) {
   return r.ok
 }
 
+// ─────────────────────────── BEMP: login + sessão (cookie jar) ───────────────────────────
+const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', pdf: 'application/pdf', heic: 'image/heic' }
+
+let sessao = null
 async function loginBemp() {
-  // TODO(1 sessão de DevTools): POST de login do app (rota, campos, cookie/bearer de sessão).
-  throw new Error('mapear rota de login do app BEMP (aguardando credenciais)')
-}
-async function fetchDocsDoCliente(_sessao, _customerId) {
-  // TODO: rotas de fotos/anamneses/termos do cliente no app; devolve [{tipo, titulo, url, mime}].
-  throw new Error('mapear rotas de documentos (aguardando credenciais)')
+  const jar = {}
+  const guarda = (res) => { for (const c of (res.headers.getSetCookie?.() || [])) { const nv = c.split(';')[0]; const i = nv.indexOf('='); if (i > 0) jar[nv.slice(0, i).trim()] = nv.slice(i + 1) } }
+  const cookie = () => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ')
+
+  const r1 = await fetch(`${BEMP_WEB_BASE}/users/sign_in`, { headers: { 'User-Agent': UA } })
+  guarda(r1)
+  const csrf = (await r1.text()).match(/name="authenticity_token"\s+value="([^"]+)"/)?.[1]
+  if (!csrf) throw new Error('CSRF não encontrado na página de login')
+
+  const body = new URLSearchParams({
+    authenticity_token: csrf, 'user[organization][subdomain]': 'laserco',
+    'user[username]': BEMP_WEB_EMAIL, 'user[password]': BEMP_WEB_SENHA,
+  })
+  const r2 = await fetch(`${BEMP_WEB_BASE}/users/sign_in`, {
+    method: 'POST', redirect: 'manual',
+    headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookie() },
+    body: body.toString(),
+  })
+  guarda(r2)
+  const loc = r2.headers.get('location') || ''
+  if (r2.status >= 400 || /sign_in/.test(loc)) throw new Error(`Login BEMP falhou (status ${r2.status}, loc ${loc}) — checar credencial/tarefa obrigatória.`)
+  return { headers: { 'User-Agent': UA, Cookie: cookie(), 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html, */*' } }
 }
 
-const csv = readFileSync(new URL('../docs/clientes-pacote-andamento-90d.csv', import.meta.url), 'utf8')
-const clientes = csv.split('\n').slice(1).filter(Boolean).map((l) => ({ id: l.split(',')[0], nome: l.split(',').slice(1).join(',') }))
-console.log(`${clientes.length} clientes na fila de prioridade (pacote em andamento).`)
+// GET autenticado com re-login automático se a sessão expirou (BEMP redireciona p/ /users/sign_in).
+async function authFetch(url) {
+  let res = await fetch(url, { headers: sessao.headers })
+  if (/\/users\/sign_in/.test(res.url) || res.status === 401) {
+    sessao = await loginBemp()
+    res = await fetch(url, { headers: sessao.headers })
+  }
+  return res
+}
+
+/** Documentos de um cliente: fotos/anexos (ActiveStorage) das anamneses/eventos. */
+async function fetchDocsDoCliente(_sessao, customerId) {
+  const docs = []
+  const vistos = new Set()
+  for (const [ep, tipo] of [['events', 'foto'], ['contracts', 'contrato']]) {
+    let html = ''
+    try { html = await (await authFetch(`${BEMP_WEB_BASE}/customers/${customerId}/${ep}`)).text() } catch { continue }
+    for (const m of html.matchAll(/\/storage\/blobs\/redirect\/[^"'\s?)>]+/g)) {
+      const path = m[0]
+      const token = path.split('/redirect/')[1].split('/')[0]
+      const filename = (path.split('/').pop() || 'arquivo').split('?')[0]
+      const hash = createHash('sha1').update(token).digest('hex').slice(0, 16)
+      if (vistos.has(hash)) continue
+      vistos.add(hash)
+      const ext = (filename.match(/\.([a-z0-9]+)$/i)?.[1] || 'bin').toLowerCase()
+      docs.push({ tipo, titulo: filename, url: BEMP_WEB_BASE + path, mime: MIME[ext] || 'application/octet-stream', nome: `${hash}-${filename}` })
+    }
+  }
+  return docs
+}
+
+// ─────────────────────────────────── execução ───────────────────────────────────
+const csv = readFileSync(new URL('../docs/clientes-pacote-andamento-90d.csv', import.meta.url).pathname, 'utf8')
+const clientes = csv.split('\n').slice(1).filter(Boolean).map((l) => ({ id: l.split(',')[0].trim(), nome: l.split(',').slice(1).join(',').trim() })).filter((c) => /^\d+$/.test(c.id))
+console.log(`${clientes.length} clientes na fila (pacote em andamento). Limite: ${MAX === Infinity ? 'todos' : MAX}.`)
 
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` }
-const sessao = await loginBemp()
-let baixados = 0, pulados = 0, falhas = 0
+sessao = await loginBemp()
+console.log('login BEMP ok.')
+
+let baixados = 0, pulados = 0, falhas = 0, clientesComDoc = 0, i = 0
 for (const cli of clientes.slice(0, MAX)) {
+  i++
   try {
     const docs = await fetchDocsDoCliente(sessao, cli.id)
+    if (docs.length) clientesComDoc++
+    // idempotência em lote: paths já registrados deste cliente
+    const jaResp = await fetch(`${SB}/rest/v1/clientes_documentos?select=arquivo_path&bemp_customer_id=eq.${cli.id}`, { headers: H })
+    const jaSet = new Set((await jaResp.json().catch(() => [])).map((r) => r.arquivo_path))
+
     for (const d of docs) {
-      const nomeArq = d.url.split('/').pop().split('?')[0] || `doc-${Date.now()}`
-      const path = `bemp/${cli.id}/${d.tipo}/${nomeArq}`
-      // idempotência: já registrado?
-      const ja = await (await fetch(`${SB}/rest/v1/clientes_documentos?select=id&arquivo_path=eq.${encodeURIComponent(path)}&limit=1`, { headers: H })).json()
-      if (ja.length) { pulados++; continue }
-      const bin = await (await fetch(d.url, { headers: sessao.headers })).arrayBuffer()
-      const ok = await subirBunny(path, bin, d.mime) // Bunny Storage (bucket clientes-docs)
+      const path = `bemp/${cli.id}/${d.tipo}/${d.nome}`
+      if (jaSet.has(path)) { pulados++; continue }
+      let bin
+      try { bin = await (await authFetch(d.url)).arrayBuffer() } catch { falhas++; continue }
+      if (!bin || bin.byteLength === 0) { falhas++; continue }
+      const ok = await subirBunny(path, bin, d.mime)
       if (!ok) { falhas++; continue }
-      await fetch(`${SB}/rest/v1/clientes_documentos`, { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({
-        bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || nomeArq, arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
-      }) })
+      const ins = await fetch(`${SB}/rest/v1/clientes_documentos`, {
+        method: 'POST', headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || d.nome,
+          arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
+          origem: 'bemp', baixado_em: new Date().toISOString(),
+        }),
+      })
+      if (!ins.ok) { falhas++; continue }
       baixados++
     }
-  } catch (e) { falhas++; console.error(cli.id, e.message) }
-  await new Promise((ok) => setTimeout(ok, 2000)) // ritmo gentil com o BEMP
+  } catch (e) { falhas++; console.error(`cliente ${cli.id}: ${e.message}`) }
+  if (i % 25 === 0 || i === 1) console.log(`[${i}/${Math.min(MAX, clientes.length)}] baixados=${baixados} pulados=${pulados} falhas=${falhas} c/doc=${clientesComDoc}`)
+  await new Promise((ok) => setTimeout(ok, 1200)) // ritmo gentil com o BEMP
 }
-console.log(`RESULTADO: ${baixados} baixado(s) · ${pulados} já existiam · ${falhas} falha(s)`)
+console.log(`\nFIM: ${baixados} arquivo(s) novo(s) · ${pulados} já existiam · ${falhas} falha(s) · ${clientesComDoc} clientes com documento (de ${Math.min(MAX, clientes.length)}).`)
