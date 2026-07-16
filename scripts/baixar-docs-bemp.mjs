@@ -108,46 +108,63 @@ async function fetchDocsDoCliente(_sessao, customerId) {
   return docs
 }
 
-// ─────────────────────────────────── execução ───────────────────────────────────
+// ─────────────────────────────── execução (pool paralelo) ───────────────────────────────
 const csv = readFileSync(new URL('../docs/clientes-pacote-andamento-90d.csv', import.meta.url).pathname, 'utf8')
 const clientes = csv.split('\n').slice(1).filter(Boolean).map((l) => ({ id: l.split(',')[0].trim(), nome: l.split(',').slice(1).join(',').trim() })).filter((c) => /^\d+$/.test(c.id))
-console.log(`${clientes.length} clientes na fila (pacote em andamento). Limite: ${MAX === Infinity ? 'todos' : MAX}.`)
+
+const N_CLIENTES = Number(env.ROBO_CLIENTES_CONC || 5)  // clientes em paralelo (cada um = só 2 GETs no BEMP)
+const N_ARQUIVOS = Number(env.ROBO_ARQUIVOS_CONC || 6)  // arquivos em paralelo por cliente (download S3 → Bunny)
+const fila = clientes.slice(0, MAX)
+console.log(`${clientes.length} clientes na fila. Processando ${fila.length} com paralelismo ${N_CLIENTES}×${N_ARQUIVOS}.`)
 
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` }
 sessao = await loginBemp()
 console.log('login BEMP ok.')
 
-let baixados = 0, pulados = 0, falhas = 0, clientesComDoc = 0, i = 0
-for (const cli of clientes.slice(0, MAX)) {
-  i++
-  try {
-    const docs = await fetchDocsDoCliente(sessao, cli.id)
-    if (docs.length) clientesComDoc++
-    // idempotência em lote: paths já registrados deste cliente
-    const jaResp = await fetch(`${SB}/rest/v1/clientes_documentos?select=arquivo_path&bemp_customer_id=eq.${cli.id}`, { headers: H })
-    const jaSet = new Set((await jaResp.json().catch(() => [])).map((r) => r.arquivo_path))
-
-    for (const d of docs) {
-      const path = `bemp/${cli.id}/${d.tipo}/${d.nome}`
-      if (jaSet.has(path)) { pulados++; continue }
-      let bin
-      try { bin = await (await authFetch(d.url)).arrayBuffer() } catch { falhas++; continue }
-      if (!bin || bin.byteLength === 0) { falhas++; continue }
-      const ok = await subirBunny(path, bin, d.mime)
-      if (!ok) { falhas++; continue }
-      const ins = await fetch(`${SB}/rest/v1/clientes_documentos`, {
-        method: 'POST', headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({
-          bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || d.nome,
-          arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
-          origem: 'bemp', baixado_em: new Date().toISOString(),
-        }),
-      })
-      if (!ins.ok) { falhas++; continue }
-      baixados++
-    }
-  } catch (e) { falhas++; console.error(`cliente ${cli.id}: ${e.message}`) }
-  if (i % 25 === 0 || i === 1) console.log(`[${i}/${Math.min(MAX, clientes.length)}] baixados=${baixados} pulados=${pulados} falhas=${falhas} c/doc=${clientesComDoc}`)
-  await new Promise((ok) => setTimeout(ok, 1200)) // ritmo gentil com o BEMP
+// pool de concorrência simples
+async function mapPool(items, conc, fn) {
+  let idx = 0
+  await Promise.all(Array.from({ length: Math.min(conc, items.length) }, async () => {
+    while (idx < items.length) { const i = idx++; try { await fn(items[i]) } catch { /* contabilizado dentro */ } }
+  }))
 }
-console.log(`\nFIM: ${baixados} arquivo(s) novo(s) · ${pulados} já existiam · ${falhas} falha(s) · ${clientesComDoc} clientes com documento (de ${Math.min(MAX, clientes.length)}).`)
+
+let baixados = 0, pulados = 0, falhas = 0, clientesComDoc = 0, feitos = 0
+async function processarCliente(cli) {
+  let docs = []
+  try { docs = await fetchDocsDoCliente(sessao, cli.id) } catch { falhas++; return }
+  if (docs.length) clientesComDoc++
+  // idempotência em lote: paths já registrados deste cliente
+  let jaSet = new Set()
+  try { const arr = await (await fetch(`${SB}/rest/v1/clientes_documentos?select=arquivo_path&bemp_customer_id=eq.${cli.id}`, { headers: H })).json(); if (Array.isArray(arr)) jaSet = new Set(arr.map((r) => r.arquivo_path)) } catch {}
+  const pend = docs.filter((d) => !jaSet.has(`bemp/${cli.id}/${d.tipo}/${d.nome}`))
+  pulados += docs.length - pend.length
+  await mapPool(pend, N_ARQUIVOS, async (d) => {
+    const path = `bemp/${cli.id}/${d.tipo}/${d.nome}`
+    let bin = null
+    for (let t = 0; t < 2 && !bin; t++) { try { const r = await authFetch(d.url); if (r.ok) { const ab = await r.arrayBuffer(); if (ab && ab.byteLength) bin = ab } } catch {} }
+    if (!bin) { falhas++; return }
+    if (!(await subirBunny(path, bin, d.mime))) { falhas++; return }
+    const ins = await fetch(`${SB}/rest/v1/clientes_documentos`, {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        bemp_customer_id: Number(cli.id), tipo: d.tipo, titulo: d.titulo || d.nome,
+        arquivo_path: path, mime: d.mime || null, tamanho_bytes: bin.byteLength,
+        origem: 'bemp', baixado_em: new Date().toISOString(),
+      }),
+    })
+    if (!ins.ok) { falhas++; return }
+    baixados++
+  })
+}
+
+let qi = 0
+await Promise.all(Array.from({ length: N_CLIENTES }, async () => {
+  while (qi < fila.length) {
+    const cli = fila[qi++]
+    await processarCliente(cli)
+    feitos++
+    if (feitos % 25 === 0) console.log(`[${feitos}/${fila.length}] baixados=${baixados} pulados=${pulados} falhas=${falhas} c/doc=${clientesComDoc}`)
+  }
+}))
+console.log(`\nFIM: ${baixados} arquivo(s) novo(s) · ${pulados} já existiam · ${falhas} falha(s) · ${clientesComDoc} clientes com documento (de ${fila.length}).`)
