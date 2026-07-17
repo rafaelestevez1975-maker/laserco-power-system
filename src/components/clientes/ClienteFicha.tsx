@@ -61,7 +61,21 @@ export type ContratoRow = {
   assinado_em: string | null
 }
 
-type Tab = 'dados' | 'agendamentos' | 'carteira' | 'os' | 'contratos' | 'acompanhamento'
+/**
+ * Documento do cliente migrado do BEMP. O ARQUIVO mora no Bunny (bucket clientes-docs);
+ * aqui vem só o vínculo + uma URL assinada de curta duração (proxy /api/arquivo).
+ */
+export type DocumentoRow = {
+  id: string
+  tipo: string // 'foto' (fotos/anamneses) | 'contrato' (PDF assinado)
+  titulo: string | null
+  url: string
+  mime: string | null
+  tamanho_bytes: number | null
+  baixado_em: string | null
+}
+
+type Tab = 'dados' | 'agendamentos' | 'carteira' | 'os' | 'contratos' | 'acompanhamento' | 'documentos'
 
 const GENEROS: [string, string][] = [['', ''], ['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']]
 
@@ -90,7 +104,7 @@ function contratoStatusMeta(s: string | null): { label: string; cls: string } {
 }
 
 export function ClienteFicha({
-  cliente, agendamentos, agendamentosTotal, ordens, ordensTotal, contratos, duplicados, unidadeOrigemNome, podeEscrever,
+  cliente, agendamentos, agendamentosTotal, ordens, ordensTotal, contratos, documentos, duplicados, unidadeOrigemNome, podeEscrever,
 }: {
   cliente: ClienteFull
   agendamentos: AgendamentoRow[]
@@ -98,6 +112,7 @@ export function ClienteFicha({
   ordens: OSRow[]
   ordensTotal: number
   contratos: ContratoRow[]
+  documentos: DocumentoRow[]
   duplicados: number
   unidadeOrigemNome: string | null
   podeEscrever: boolean
@@ -189,7 +204,13 @@ export function ClienteFicha({
     ['acompanhamento', 'ti-clipboard-heart', 'Acompanhamento'],
     ['os', 'ti-clipboard-list', `Ordens de Serviço${ordensTotal ? ` (${ordensTotal})` : ''}`],
     ['contratos', 'ti-file-description', 'Contratos'],
+    ['documentos', 'ti-photo', `Documentos${documentos.length ? ` (${documentos.length})` : ''}`],
   ]
+
+  // Documentos migrados do BEMP: fotos/anamneses e contratos assinados (PDF).
+  const docsFotos = documentos.filter((d) => d.tipo === 'foto')
+  const docsContratos = documentos.filter((d) => d.tipo === 'contrato')
+  const kb = (b: number | null) => (b ? (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`) : '')
 
   const saldoCashback = Math.max(0, Math.round(cliente.saldo_creditos ?? 0))
   const contratosViaOS = ordens.filter((o) => o.status === 'fechada')
@@ -517,6 +538,54 @@ export function ClienteFicha({
                 </div>
               )}
           </div>
+        </div>
+      )}
+
+      {/* ── Documentos (importados do BEMP; arquivo no Bunny, aqui só o vínculo + URL assinada) ── */}
+      {tab === 'documentos' && (
+        <div style={{ display: 'grid', gap: 16 }}>
+          {documentos.length === 0 && (
+            <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18, color: 'var(--text-3)', fontSize: 13 }}>
+              Nenhum documento deste cliente. As fotos, anamneses e contratos assinados importados do BEMP aparecem aqui.
+            </div>
+          )}
+
+          {docsContratos.length > 0 && (
+            <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
+              <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-type-pdf" /> Contratos assinados ({docsContratos.length})</h3>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {docsContratos.map((d) => (
+                  <a key={d.id} href={d.url} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
+                    <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--red)' }}><i className="ti ti-file-type-pdf" /></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{d.titulo || 'Contrato'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>PDF assinado · {kb(d.tamanho_bytes)}</div>
+                    </div>
+                    <span style={{ fontSize: 12.5, color: 'var(--brand-500)', fontWeight: 600, flexShrink: 0 }}><i className="ti ti-external-link" /> Abrir</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {docsFotos.length > 0 && (
+            <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
+              <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-photo" /> Fotos e anamneses ({docsFotos.length})</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+                {docsFotos.map((d) => (
+                  <a key={d.id} href={d.url} target="_blank" rel="noopener" title={d.titulo || ''} style={{ display: 'block', border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface-2)', textDecoration: 'none', color: 'inherit' }}>
+                    {(d.mime || '').startsWith('image/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={d.url} alt={d.titulo || 'Foto'} loading="lazy" style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block', background: '#000' }} />
+                    ) : (
+                      <div style={{ height: 110, display: 'grid', placeItems: 'center', color: 'var(--text-3)' }}><i className="ti ti-file" style={{ fontSize: 26 }} /></div>
+                    )}
+                    <div style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{kb(d.tamanho_bytes)}</div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

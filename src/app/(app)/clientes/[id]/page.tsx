@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionContext } from '@/lib/session'
 import { ehAdmin } from '@/lib/rbac'
-import { ClienteFicha, type ClienteFull, type AgendamentoRow, type OSRow, type ContratoRow } from '@/components/clientes/ClienteFicha'
+import { bunnySignedUrl } from '@/lib/bunny'
+import { ClienteFicha, type ClienteFull, type AgendamentoRow, type OSRow, type ContratoRow, type DocumentoRow } from '@/components/clientes/ClienteFicha'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,6 +110,29 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
     }
   }
 
+  // Documentos do cliente importados do BEMP (fotos/anamneses + contratos assinados em PDF).
+  // O ARQUIVO mora no Bunny (bucket clientes-docs); a tabela guarda só o vínculo. A URL é
+  // assinada aqui no servidor (proxy /api/arquivo valida o HMAC e faz o stream com a AccessKey).
+  const DOCS_BUCKET = 'clientes-docs'
+  let documentos: DocumentoRow[] = []
+  {
+    const { data: docsRaw, error: dErr } = await sb
+      .from('clientes_documentos')
+      .select('id, tipo, titulo, arquivo_path, mime, tamanho_bytes, baixado_em')
+      .eq('cliente_id', id)
+      .order('tipo', { ascending: true })
+      .order('baixado_em', { ascending: false })
+      .limit(500)
+    if (!dErr) {
+      type RawDoc = { id: string; tipo: string; titulo: string | null; arquivo_path: string; mime: string | null; tamanho_bytes: number | null; baixado_em: string | null }
+      documentos = ((docsRaw ?? []) as RawDoc[]).map((d) => ({
+        id: d.id, tipo: d.tipo, titulo: d.titulo, mime: d.mime,
+        tamanho_bytes: d.tamanho_bytes, baixado_em: d.baixado_em,
+        url: bunnySignedUrl(DOCS_BUCKET, d.arquivo_path, 60 * 60), // 1h: cobre a navegação na aba
+      }))
+    }
+  }
+
   // Contagem de cadastros com o MESMO nome (badge de duplicidade na ficha)
   let duplicados = 0
   if (cliente.nome) {
@@ -130,6 +154,7 @@ export default async function ClienteFichaPage({ params }: { params: Promise<{ i
         ordens={ordens}
         ordensTotal={osTotal ?? ordens.length}
         contratos={contratos}
+        documentos={documentos}
         duplicados={duplicados}
         unidadeOrigemNome={unidadeOrigemNome}
         podeEscrever={podeEscrever}
