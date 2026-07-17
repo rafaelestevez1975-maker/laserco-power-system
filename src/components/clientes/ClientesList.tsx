@@ -71,12 +71,13 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                 <th className="num-r">Pontos / Créditos</th>
                 <th>Ativo</th>
                 <th>Verif.</th>
+                <th>Ficha</th>
               </tr>
             </thead>
             <tbody>
               {clientes.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum cliente encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -87,7 +88,8 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                 return (
                   <tr key={c.id} style={{ opacity: c.ativo === false ? 0.6 : 1 }}>
                     <td>
-                      <Link href={`/clientes/${c.id}`} className="cli-name" style={{ textDecoration: 'none', color: 'var(--text)' }}>
+                      {/* os-link: cor da marca + sublinhado no hover — deixa claro que abre a ficha */}
+                      <Link href={`/clientes/${c.id}`} className="os-link" title="Abrir ficha do cliente">
                         {c.nome || '(sem nome)'}
                       </Link>
                     </td>
@@ -117,6 +119,12 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       {c.verificado
                         ? <span className="os-st os-fechada">Sim</span>
                         : <span className="os-st os-cancelada">Não</span>}
+                    </td>
+                    {/* Ação explícita: abre a ficha (dados, agendamentos, OS, fotos e contratos) */}
+                    <td>
+                      <Link href={`/clientes/${c.id}`} className="os-link" title="Abrir ficha: dados, agendamentos, fotos e contratos" style={{ whiteSpace: 'nowrap' }}>
+                        <i className="ti ti-folder-open" /> Abrir
+                      </Link>
                     </td>
                   </tr>
                 )
