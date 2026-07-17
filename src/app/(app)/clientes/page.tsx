@@ -74,9 +74,14 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   // Ordena por nome (alfabético, como o BEMP). Isto só é viável porque: (1) existe índice
   // btree em clientes(nome); (2) a RLS de SELECT foi reescrita com (select tem_acesso_cliente_final())
   // — sem isso a função rodava por-linha nas 350k e travava a tela em "0 clientes" (timeout 57014).
+  // Contagem: 'estimated' é a estatística do planner — instantânea, mas MENTE quando há filtro
+  // (o filtro de arquivos dizia 58.434 onde o real é 8.353). Como todo filtro estreita muito o
+  // conjunto e a contagem exata dele custa ~0,7-2s (índices trigram/parciais), usamos 'exact'
+  // quando o usuário filtra e 'estimated' só na lista crua (176k, onde ±0,1% não importa).
+  const temFiltroEstreito = !!(q || arquivos || verificado || genero || doc || bloqueado || app || cidade || estado || unidadeFiltro)
   let query = sb
     .from('clientes')
-    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado, total_documentos, total_contratos', { count: 'estimated' })
+    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado, total_documentos, total_contratos', { count: temFiltroEstreito ? 'exact' : 'estimated' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
