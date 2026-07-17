@@ -73,6 +73,13 @@ export function ClientesFiltros({ unidades = [] }: { unidades?: Unidade[] }) {
             <option value="rg">Com RG</option>
             <option value="sem">Sem documento</option>
           </select>
+          {/* Arquivos importados do BEMP: usa os contadores denormalizados (clientes.total_*) */}
+          <select value={sp.get('arquivos') ?? ''} onChange={(e) => setParams({ arquivos: e.target.value })} style={sel} title="Fotos, anamneses e contratos assinados importados do BEMP">
+            <option value="">Arquivos (todos)</option>
+            <option value="com">Com fotos/documentos</option>
+            <option value="contrato">Com contrato assinado</option>
+            <option value="sem">Sem arquivos</option>
+          </select>
           <select value={sp.get('bloqueado') ?? ''} onChange={(e) => setParams({ bloqueado: e.target.value })} style={sel}>
             <option value="">Bloqueado (todos)</option>
             <option value="sim">Bloqueados</option>

@@ -16,6 +16,7 @@ type SP = {
   verificado?: string // 'sim' | 'nao' | ''
   genero?: string // 'female' | 'male' | 'other' | ''
   doc?: string // 'cpf' | 'rg' | 'sem' — tipo de documento (paridade BEMP)
+  arquivos?: string // 'com' | 'contrato' | 'sem' — fotos/contratos do BEMP (contadores denormalizados)
   bloqueado?: string // 'sim' | 'nao' | '' — coluna direta clientes.bloqueado (paridade BEMP)
   app?: string // 'sim' | 'nao' | '' — coluna direta clientes.tem_app (paridade BEMP)
   cidade?: string
@@ -29,7 +30,7 @@ const PAPEIS_ESCRITA = ['admin_geral', 'sac', 'crm', 'operacoes'] // alinhado à
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
-  const { q, ativo = 'sim', verificado, genero, doc, bloqueado, app, cidade, estado, unidade, page: pageRaw } = sp
+  const { q, ativo = 'sim', verificado, genero, doc, arquivos, bloqueado, app, cidade, estado, unidade, page: pageRaw } = sp
   const ctx = await getSessionContext()
   const sb = await createClient()
   const activeUnit = ctx?.activeUnitId ?? null
@@ -75,7 +76,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   // — sem isso a função rodava por-linha nas 350k e travava a tela em "0 clientes" (timeout 57014).
   let query = sb
     .from('clientes')
-    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado', { count: 'estimated' })
+    .select('id, nome, telefone, cpf, email, genero, cidade, estado, saldo_pontos, saldo_creditos, ativo, verificado, total_documentos, total_contratos', { count: 'estimated' })
     .order('nome', { ascending: true })
     .range(from, from + PAGE_SIZE - 1)
 
@@ -89,6 +90,11 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   if (doc === 'cpf') query = query.not('cpf', 'is', null)
   else if (doc === 'rg') query = query.not('rg', 'is', null)
   else if (doc === 'sem') query = query.is('cpf', null).is('rg', null)
+  // Arquivos do BEMP (fotos/anamneses/contratos): filtro barato via contador denormalizado
+  // (clientes.total_documentos / total_contratos, mantidos por trigger em clientes_documentos).
+  if (arquivos === 'com') query = query.gt('total_documentos', 0)
+  else if (arquivos === 'contrato') query = query.gt('total_contratos', 0)
+  else if (arquivos === 'sem') query = query.eq('total_documentos', 0)
   // Bloqueado / Com app (paridade BEMP): colunas booleanas diretas → filtro barato via .eq().
   if (bloqueado === 'sim') query = query.eq('bloqueado', true)
   else if (bloqueado === 'nao') query = query.eq('bloqueado', false)

@@ -16,6 +16,9 @@ export type ClienteRow = {
   saldo_creditos: number | null
   ativo: boolean | null
   verificado: boolean | null
+  // Contadores denormalizados (trigger em clientes_documentos) — fotos/contratos do BEMP.
+  total_documentos?: number | null
+  total_contratos?: number | null
 }
 
 const GENERO_LABEL: Record<string, string> = { female: 'Feminino', male: 'Masculino', other: 'Outro' }
@@ -71,13 +74,14 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                 <th className="num-r">Pontos / Créditos</th>
                 <th>Ativo</th>
                 <th>Verif.</th>
+                <th>Arquivos</th>
                 <th>Ficha</th>
               </tr>
             </thead>
             <tbody>
               {clientes.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={11} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum cliente encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -119,6 +123,21 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       {c.verificado
                         ? <span className="os-st os-fechada">Sim</span>
                         : <span className="os-st os-cancelada">Não</span>}
+                    </td>
+                    {/* Fotos/contratos importados do BEMP — leva direto para a aba Documentos */}
+                    <td>
+                      {(c.total_documentos ?? 0) > 0 ? (
+                        <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 12, whiteSpace: 'nowrap' }}>
+                          <span title={`${c.total_documentos} arquivo(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--text-2)' }}>
+                            <i className="ti ti-photo" /> {c.total_documentos}
+                          </span>
+                          {(c.total_contratos ?? 0) > 0 && (
+                            <span title={`${c.total_contratos} contrato(s) assinado(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--red)' }}>
+                              <i className="ti ti-file-type-pdf" /> {c.total_contratos}
+                            </span>
+                          )}
+                        </span>
+                      ) : <span className="muted">—</span>}
                     </td>
                     {/* Ação explícita: abre a ficha (dados, agendamentos, OS, fotos e contratos) */}
                     <td>
