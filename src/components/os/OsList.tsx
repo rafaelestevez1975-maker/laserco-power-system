@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { moedaBR, dataHoraBR, dataBR } from '@/lib/fmt'
 import { OsDetalheModal } from './OsDetalheModal'
@@ -45,10 +45,18 @@ type Props = {
 export function OsList({ rows, page, totalPages, total, searchParams, podeEscrever, activeUnitId, servicos }: Props) {
   const [verRow, setVerRow] = useState<OsRow | null>(null)
 
+  // Deep-link /os?abrir=<osId>: abre o modal da OS já ao carregar (link vindo da ficha do cliente).
+  const abrirId = searchParams.abrir
+  useEffect(() => {
+    if (!abrirId) return
+    const r = rows.find((x) => x.id === abrirId)
+    if (r) setVerRow(r)
+  }, [abrirId, rows])
+
   const urlComPagina = (p: number) => {
     const sp = new URLSearchParams()
     for (const [k, v] of Object.entries(searchParams)) {
-      if (v && k !== 'page') sp.set(k, v)
+      if (v && k !== 'page' && k !== 'abrir') sp.set(k, v) // 'abrir' é one-shot: não propaga na paginação
     }
     if (p > 1) sp.set('page', String(p))
     const s = sp.toString()

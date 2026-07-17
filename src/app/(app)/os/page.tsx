@@ -20,6 +20,7 @@ type SP = {
   di?: string // criado_em >= (data)
   df?: string // criado_em <= (data)
   page?: string
+  abrir?: string // os_id: abre o modal desta OS ao carregar (deep-link da ficha do cliente)
 }
 
 const STATUS_FILTRO = ['aberta', 'fechada', 'cancelada'] as const

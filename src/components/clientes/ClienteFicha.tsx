@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { moedaBR, dataBR, dataHoraBR, waHref, telBR55 } from '@/lib/fmt'
 import { salvarCliente, inativarCliente, reativarCliente } from '@/app/(app)/clientes/actions'
@@ -465,19 +466,29 @@ export function ClienteFicha({
         <div className="cli-card">
           <div className="cli-scroll">
             <table className="cli-table">
-              <thead><tr><th>Comanda</th><th>Descrição</th><th>Origem</th><th>Status</th><th>Data</th><th className="num-r">Total</th></tr></thead>
+              <thead><tr><th>Comanda</th><th>Descrição</th><th>Origem</th><th>Status</th><th>Data</th><th className="num-r">Total</th><th></th></tr></thead>
               <tbody>
                 {ordens.length === 0 && (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24, color: 'var(--text-3)' }}>Este cliente ainda não tem ordens de serviço.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: 'var(--text-3)' }}>Este cliente ainda não tem ordens de serviço.</td></tr>
                 )}
                 {ordens.map((o) => (
-                  <tr key={o.id} style={{ cursor: 'default' }}>
-                    <td>{o.numero != null ? `#${o.numero}` : <span className="muted"></span>}</td>
+                  <tr key={o.id}>
+                    {/* Deep-link: abre a lista de OS do cliente já com o modal desta OS aberto */}
+                    <td>
+                      <Link href={`/os?cliente=${cliente.id}&abrir=${o.id}`} className="os-link" title="Abrir esta ordem de serviço">
+                        {o.numero != null ? `#${o.numero}` : 'Abrir'}
+                      </Link>
+                    </td>
                     <td>{o.observacao || <span className="muted"></span>}</td>
                     <td>{o.origem || <span className="muted"></span>}</td>
                     <td><span style={statusPill(o.status)}>{o.status || ''}</span></td>
                     <td>{dataHoraBR(o.criado_em)}</td>
                     <td className="num-r">{moedaBR(o.total)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <Link href={`/os?cliente=${cliente.id}&abrir=${o.id}`} className="os-link" style={{ whiteSpace: 'nowrap' }}>
+                        <i className="ti ti-eye" /> Visualizar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -494,10 +505,29 @@ export function ClienteFicha({
       {/* ── Contratos ── */}
       {tab === 'contratos' && (
         <div style={{ display: 'grid', gap: 16 }}>
+          {/* Contratos ASSINADOS (PDF importado do BEMP). Vêm primeiro: é o documento real. */}
+          {docsContratos.length > 0 && (
+            <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
+              <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-type-pdf" /> Contratos assinados ({docsContratos.length})</h3>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {docsContratos.map((d) => (
+                  <a key={d.id} href={d.url} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
+                    <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--red)' }}><i className="ti ti-file-type-pdf" /></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{d.titulo || 'Contrato'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>PDF assinado · {kb(d.tamanho_bytes)}</div>
+                    </div>
+                    <span className="os-link" style={{ flexShrink: 0 }}><i className="ti ti-external-link" /> Abrir</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="doc-card" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 13, padding: 18 }}>
-            <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-description" /> Contratos do cliente</h3>
+            <h3 style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 10 }}><i className="ti ti-file-description" /> Planos / assinatura</h3>
             {contratos.length === 0
-              ? <div style={{ color: 'var(--text-3)', fontSize: 13, padding: 6 }}>Este cliente ainda não tem contratos/assinatura registrados.</div>
+              ? <div style={{ color: 'var(--text-3)', fontSize: 13, padding: 6 }}>Nenhum plano de assinatura registrado para este cliente.</div>
               : (
                 <div style={{ display: 'grid', gap: 8 }}>
                   {contratos.map((c) => {
@@ -526,14 +556,15 @@ export function ClienteFicha({
               : (
                 <div style={{ display: 'grid', gap: 8 }}>
                   {contratosViaOS.map((o) => (
-                    <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
+                    <Link key={o.id} href={`/os?cliente=${cliente.id}&abrir=${o.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', textDecoration: 'none', color: 'inherit' }}>
                       <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 8, background: 'var(--surface-2)', color: 'var(--brand-500)' }}><i className="ti ti-file-description" /></span>
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 13.5 }}>OS {o.numero != null ? `#${o.numero}` : ''} · {o.observacao || 'Venda'}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Fechada em {dataBR(o.fechada_em || o.criado_em)} · {moedaBR(o.total)}</div>
                       </div>
                       <span className="os-st os-fechada">Assinado</span>
-                    </div>
+                      <span className="os-link" style={{ flexShrink: 0 }}><i className="ti ti-eye" /> Abrir</span>
+                    </Link>
                   ))}
                 </div>
               )}
