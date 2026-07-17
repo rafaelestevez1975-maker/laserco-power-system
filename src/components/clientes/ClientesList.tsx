@@ -74,14 +74,13 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                 <th className="num-r">Pontos / Créditos</th>
                 <th>Ativo</th>
                 <th>Verif.</th>
-                <th>Arquivos</th>
                 <th>Ficha</th>
               </tr>
             </thead>
             <tbody>
               {clientes.length === 0 && (
                 <tr>
-                  <td colSpan={11} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: 28, color: 'var(--text-3)' }}>
                     Nenhum cliente encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -96,6 +95,20 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       <Link href={`/clientes/${c.id}`} className="os-link" title="Abrir ficha do cliente">
                         {c.nome || '(sem nome)'}
                       </Link>
+                      {/* Contadores do BEMP colados no nome: a tabela é larga e uma coluna à
+                          direita ficaria fora da tela sem rolagem horizontal. */}
+                      {(c.total_documentos ?? 0) > 0 && (
+                        <span style={{ display: 'inline-flex', gap: 7, alignItems: 'center', marginLeft: 8, fontSize: 11.5, verticalAlign: 'middle' }}>
+                          <span title={`${c.total_documentos} foto(s)/documento(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--text-3)' }}>
+                            <i className="ti ti-photo" /> {c.total_documentos}
+                          </span>
+                          {(c.total_contratos ?? 0) > 0 && (
+                            <span title={`${c.total_contratos} contrato(s) assinado(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--red)' }}>
+                              <i className="ti ti-file-type-pdf" /> {c.total_contratos}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </td>
                     <td>
                       {fmtTel(c.telefone) || <span className="muted"></span>}
@@ -123,21 +136,6 @@ export function ClientesList({ clientes, page, totalPages, basePath, searchParam
                       {c.verificado
                         ? <span className="os-st os-fechada">Sim</span>
                         : <span className="os-st os-cancelada">Não</span>}
-                    </td>
-                    {/* Fotos/contratos importados do BEMP — leva direto para a aba Documentos */}
-                    <td>
-                      {(c.total_documentos ?? 0) > 0 ? (
-                        <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 12, whiteSpace: 'nowrap' }}>
-                          <span title={`${c.total_documentos} arquivo(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--text-2)' }}>
-                            <i className="ti ti-photo" /> {c.total_documentos}
-                          </span>
-                          {(c.total_contratos ?? 0) > 0 && (
-                            <span title={`${c.total_contratos} contrato(s) assinado(s)`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--red)' }}>
-                              <i className="ti ti-file-type-pdf" /> {c.total_contratos}
-                            </span>
-                          )}
-                        </span>
-                      ) : <span className="muted">—</span>}
                     </td>
                     {/* Ação explícita: abre a ficha (dados, agendamentos, OS, fotos e contratos) */}
                     <td>
