@@ -50,6 +50,7 @@ export function AppShell({
           units={units}
           activeUnitId={activeUnitId}
           activeUnitName={activeUnitName}
+          podeVender={user.isAdmin || recursos.some((r) => r.startsWith('operacoes.os'))}
           onOpenMenu={() => setMobOpen(true)}
         />
         <main className="content">{children}</main>

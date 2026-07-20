@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { titleFor } from '@/lib/menu'
@@ -9,12 +10,13 @@ import { definirPresencaSac } from '@/app/(app)/sac/atendentes/actions'
 import type { SessionUser, Unidade } from './AppShell'
 
 export function Topbar({
-  user, units, activeUnitId, activeUnitName, onOpenMenu,
+  user, units, activeUnitId, activeUnitName, podeVender = false, onOpenMenu,
 }: {
   user: SessionUser
   units: Unidade[]
   activeUnitId: string | null
   activeUnitName: string
+  podeVender?: boolean
   onOpenMenu: () => void
 }) {
   const pathname = usePathname()
@@ -58,6 +60,13 @@ export function Topbar({
       </div>
 
       <div className="topbar-spacer" />
+
+      {/* Nova Venda mora aqui (saiu do menu lateral em 17/07): abre o PDV. */}
+      {podeVender && (
+        <Link href="/pdv" className="btn btn-primary" style={{ padding: '7px 14px', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Abrir o PDV e registrar uma venda">
+          <i className="ti ti-shopping-cart" /> <span className="hidden-xs">Nova Venda</span>
+        </Link>
+      )}
 
       <div className="role-wrap">
         <div className="role-pill" style={{ cursor: 'default' }}>
