@@ -94,13 +94,13 @@ async function authFetch(url) {
   return res
 }
 
+const MAX_PAG_EVENTOS = 25 // teto de segurança; para no fim real das páginas
+
 /** Documentos de um cliente: fotos/anexos (ActiveStorage) das anamneses/eventos. */
 async function fetchDocsDoCliente(_sessao, customerId) {
   const docs = []
   const vistos = new Set()
-  for (const [ep, tipo] of [['events', 'foto'], ['contracts', 'contrato']]) {
-    let html = ''
-    try { html = await (await authFetch(`${BEMP_WEB_BASE}/customers/${customerId}/${ep}`)).text() } catch { continue }
+  const coletar = (html, tipo) => {
     for (const m of html.matchAll(/\/storage\/blobs\/redirect\/[^"'\s?)>]+/g)) {
       const path = m[0]
       const token = path.split('/redirect/')[1].split('/')[0]
@@ -112,6 +112,18 @@ async function fetchDocsDoCliente(_sessao, customerId) {
       docs.push({ tipo, titulo: filename, url: BEMP_WEB_BASE + path, mime: MIME[ext] || 'application/octet-stream', nome: `${hash}-${filename}` })
     }
   }
+
+  // /customers/<id>/events é PAGINADO (?page=N). A 1ª versão do robô lia só a página 1 e
+  // perdia as fotos das páginas seguintes (ex.: cliente 3124234 tinha +13 blobs na pág. 2).
+  // Percorre até a página sem nenhum /customer_events/<id> (= passou da última).
+  for (let pg = 1; pg <= MAX_PAG_EVENTOS; pg++) {
+    let html = ''
+    try { html = await (await authFetch(`${BEMP_WEB_BASE}/customers/${customerId}/events?page=${pg}`)).text() } catch { break }
+    coletar(html, 'foto')
+    if (!/\/customer_events\/\d+/.test(html)) break
+  }
+  // /contracts NÃO pagina (validado: 36 contratos numa única página, sem link page=2).
+  try { coletar(await (await authFetch(`${BEMP_WEB_BASE}/customers/${customerId}/contracts`)).text(), 'contrato') } catch {}
   return docs
 }
 
