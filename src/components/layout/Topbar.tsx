@@ -65,8 +65,34 @@ export function Topbar({
         </div>
       </div>
 
-      {/* Seletor de unidade removido do header (pedido do cliente 03/07)  o escopo
-          por unidade agora vem só do perfil do usuário (franqueado vê a própria loja). */}
+      {/* Seletor de unidade: some p/ quem tem uma loja só (o franqueado continua vendo apenas
+          a sua, motivo da remoção em 03/07) e volta para admin/franqueadora, que precisa
+          filtrar entre as unidades. Grava o cookie lc_unit → activeUnitId em getSessionContext. */}
+      {units.length > 1 && (
+        <div className="role-wrap" style={{ position: 'relative' }}>
+          <div className="role-pill" onClick={() => setUnitOpen((v) => !v)} style={{ cursor: 'pointer' }} title="Filtrar por unidade">
+            <i className="ti ti-building-store" />
+            <span style={{ maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeUnitName}</span>
+            <i className="ti ti-chevron-down" style={{ fontSize: 13 }} />
+          </div>
+          {unitOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setUnitOpen(false)} />
+              <div className="role-dd" style={{ display: 'block', right: 0, top: 'calc(100% + 6px)', zIndex: 50, maxHeight: 380, overflowY: 'auto', minWidth: 240 }}>
+                <div className="dd-head">Filtrar por unidade</div>
+                <div className="role-opt" onClick={() => selectUnit(null)} style={{ fontWeight: activeUnitId ? 400 : 700 }}>
+                  <i className="ti ti-world" /> Todas as unidades
+                </div>
+                {units.map((u) => (
+                  <div key={u.id} className="role-opt" onClick={() => selectUnit(u.id)} style={{ fontWeight: activeUnitId === u.id ? 700 : 400 }}>
+                    <i className="ti ti-building-store" /> {u.nome}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <NotificacoesSino />
 

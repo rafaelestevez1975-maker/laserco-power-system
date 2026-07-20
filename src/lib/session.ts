@@ -126,11 +126,12 @@ export const getSessionContext = cache(async (): Promise<SessionContext | null> 
     .map((u: { id: string; nome: string }) => ({ id: u.id, nome: (u.nome ?? '').trim() }))
     .filter((u) => u.nome && !u.nome.startsWith('[INATIVA]'))
 
-  // Unidade ativa: SÓ a unidade do perfil (franqueado vê a própria loja). O seletor do
-  // header foi removido (03/07) e o cookie lc_unit deixou de ser honrado  evita escopo
-  // fantasma de cookies antigos.
-  const ck = undefined as string | undefined
+  // Unidade ativa: o cookie lc_unit (seletor do header) volta a valer, mas SÓ para quem tem
+  // mais de uma unidade — admin/franqueadora. Quem tem uma loja só continua preso à unidade do
+  // perfil, que era o motivo de o seletor ter saído em 03/07 (escopo fantasma do franqueado).
+  // O id do cookie ainda é validado contra `allowed`, então nunca dá acesso a unidade alheia.
   const allowed = new Set(unidades.map((u) => u.id))
+  const ck = unidades.length > 1 ? (await cookies()).get('lc_unit')?.value || undefined : undefined
   let activeUnitId: string | null = ck && allowed.has(ck) ? ck : p?.unidade_id ?? null
   if (activeUnitId && !allowed.has(activeUnitId)) activeUnitId = null
 
