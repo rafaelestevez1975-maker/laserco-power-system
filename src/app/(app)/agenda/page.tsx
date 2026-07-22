@@ -50,7 +50,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     .order('nome', { ascending: true })
   if (unidadeId) qCol = qCol.eq('unidade_id', unidadeId)
   const { data: colsRaw } = await qCol
-  const profissionais: Profissional[] = ((colsRaw ?? []) as Array<{ id: string; nome: string | null; cargo: string | null; perfil_id: string | null }>)
+  let profissionais: Profissional[] = ((colsRaw ?? []) as Array<{ id: string; nome: string | null; cargo: string | null; perfil_id: string | null }>)
     .map((c) => ({ id: c.id, perfilId: c.perfil_id, nome: (c.nome || 'Profissional').trim(), cargo: c.cargo }))
 
   // ── Agendamentos do dia (só o dia/unidade  nunca os 136k) ──
@@ -86,6 +86,16 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     servicoDuracao: pick(a.servico)?.duracao_min ?? null,
     profissionalNome: pick(a.profissional)?.nome_completo ?? null,
   }))
+
+  // Sem unidade escolhida a grade montava uma coluna para CADA colaborador ativo da rede
+  // (349) — a agenda virava um paredão vazio e parecia "sem agendamentos". Nesse caso mostra
+  // só quem tem agendamento no dia; com unidade escolhida segue com a equipe toda (para dar
+  // para agendar em quem está livre).
+  if (!unidadeId) {
+    const comAgenda = new Set(agendamentos.map((a) => a.profissionalPerfilId).filter(Boolean))
+    const soComAgenda = profissionais.filter((p) => p.perfilId && comAgenda.has(p.perfilId))
+    if (soComAgenda.length) profissionais = soComAgenda
+  }
 
   // ── Bloqueios de agenda do dia (introspectado: data_inicio/data_fim date, hora_inicio/fim time) ──
   let qBl = sb
