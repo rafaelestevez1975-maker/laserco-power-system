@@ -415,9 +415,10 @@ function NovaIndicacao({ unidades, activeUnitId, link, onClose, onSaved }: { uni
     e.preventDefault(); setErr('')
     if (!f.indicador_nome.trim()) { setErr('Informe quem indicou.'); return }
     if (!f.unidade_id) { setErr('Selecione a unidade da indicação.'); return }
-    // Legado: ao menos 3 indicados com NOME (telefone opcional).
-    const validos = indicados.filter((i) => i.nome.trim())
-    if (validos.length < 3) { setErr('Informe ao menos 3 pessoas indicadas (nome obrigatório; WhatsApp opcional).'); return }
+    // WhatsApp passa a ser OBRIGATÓRIO: sem telefone não há como abordar o indicado, então a
+    // indicação nascia inútil (o legado deixava opcional).
+    const validos = indicados.filter((i) => i.nome.trim() && (i.telefone ?? '').replace(/\D/g, '').length >= 10)
+    if (validos.length < 3) { setErr('Informe ao menos 3 pessoas indicadas com nome E WhatsApp — sem o número não há como entrar em contato.'); return }
     setSaving(true)
     const res = await criarIndicacao({ ...f, unidade_id: f.unidade_id || null, indicados })
     setSaving(false)
@@ -447,7 +448,7 @@ function NovaIndicacao({ unidades, activeUnitId, link, onClose, onSaved }: { uni
         {indicados.map((ind, i) => (
           <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
             <input style={inp} placeholder={`Nome do indicado ${i + 1}${i < 3 ? ' *' : ' (opcional)'}`} value={ind.nome} onChange={(e) => setInd(i, 'nome', e.target.value)} />
-            <input style={inp} placeholder="WhatsApp (opcional)" value={ind.telefone ?? ''} onChange={(e) => setInd(i, 'telefone', e.target.value)} />
+            <input style={inp} placeholder="WhatsApp *" value={ind.telefone ?? ''} onChange={(e) => setInd(i, 'telefone', e.target.value)} />
           </div>
         ))}
         {indicados.length < 5 && <button type="button" className="btn" style={{ justifySelf: 'start' }} onClick={() => setIndicados((p) => [...p, { nome: '', telefone: '' }])}><i className="ti ti-plus" /> Adicionar indicado</button>}

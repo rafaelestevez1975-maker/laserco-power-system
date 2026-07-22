@@ -62,7 +62,9 @@ export function NovoChamado({ unidades, atendentes, activeUnitId }: { unidades: 
       <button className="btn btn-primary" onClick={() => setOpen(true)}><i className="ti ti-plus" /> Novo chamado</button>
       {open && (
         <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false) }}>
-          <form onSubmit={submit} className="modal" style={{ maxWidth: 840 }}>
+          {/* .modal do legacy.css fixa width:580px — só passar maxWidth não alarga nada e o
+              grid de 3 colunas cortava os campos da direita. Precisa sobrescrever o width. */}
+          <form onSubmit={submit} className="modal" style={{ width: 'min(1040px, 96vw)', maxWidth: 'min(1040px, 96vw)' }}>
             <div className="modal-head"><h3><i className="ti ti-headset" /> Novo chamado</h3><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button></div>
             <div className="modal-body" style={{ display: 'block' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>

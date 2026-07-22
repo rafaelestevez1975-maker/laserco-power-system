@@ -85,6 +85,7 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
 }
 
 function EditModal({ t, atendentes, motivos, unidades, onClose, onSaved }: { t: ChamadoRow; atendentes: Atend[]; motivos: string[]; unidades: Unidade[]; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter()
   const meta = lerObsMeta(t.observacoes)
   const [f, setF] = useState({
     nome_cliente: t.nome_cliente || '', telefone_cliente: t.telefone_cliente || '', email_cliente: t.email_cliente || '', cpf_cliente: t.cpf_cliente || '',
@@ -130,8 +131,27 @@ function EditModal({ t, atendentes, motivos, unidades, onClose, onSaved }: { t: 
   const fin: React.CSSProperties = { padding: 8, border: '1px solid var(--line)', borderRadius: 8 }
   return (
     <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal" style={{ maxWidth: 840 }}>
-        <div className="modal-head"><h3><i className="ti ti-headset" /> Chamado {t.protocolo || `SAC-${t.numero ?? ''}`}</h3><button className="modal-close" onClick={onClose}>×</button></div>
+      {/* .modal do legacy.css fixa width:580px — só passar maxWidth não alarga, e o grid de
+          3 colunas cortava os campos da direita (WhatsApp, Unidade, Reembolso). */}
+      <div className="modal" style={{ width: 'min(1040px, 96vw)', maxWidth: 'min(1040px, 96vw)' }}>
+        <div className="modal-head">
+          <h3><i className="ti ti-headset" /> Chamado {t.protocolo || `SAC-${t.numero ?? ''}`}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* Atalho para a conversa: abre a triagem já no chat desta cliente. */}
+            {(t.telefone_cliente || t.nome_cliente) && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ padding: '6px 12px', whiteSpace: 'nowrap' }}
+                title="Abrir a conversa desta cliente no WhatsApp (triagem)"
+                onClick={() => router.push(`/sac/triagem?tel=${encodeURIComponent(t.telefone_cliente || '')}&nome=${encodeURIComponent(t.nome_cliente || '')}&ticket=${t.id}`)}
+              >
+                <i className="ti ti-brand-whatsapp" /> Falar com a cliente
+              </button>
+            )}
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
+        </div>
         <div className="modal-body" style={{ display: 'block' }}>
           {err && <div className="modal-note" style={{ background: 'var(--red-bg)', color: 'var(--red)', marginBottom: 10 }}>{err}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>

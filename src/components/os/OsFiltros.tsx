@@ -50,6 +50,21 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
   const df = sp.get('df') ?? ''
   const temFiltro = !!(status || cliente || colaborador || origem || pagamento || di || df)
 
+  // Atalhos de período (hoje/ontem/7d/mês...) — antes só havia campo de data livre, que
+  // obrigava a digitar as duas pontas para qualquer consulta trivial.
+  const iso = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(d)
+  const hojeD = new Date()
+  const menos = (n: number) => new Date(hojeD.getTime() - n * 86400000)
+  const inicioMes = () => { const d = new Date(hojeD); d.setDate(1); return d }
+  const PRESETS: [string, () => { di: string; df: string }][] = [
+    ['Hoje', () => ({ di: iso(hojeD), df: iso(hojeD) })],
+    ['Ontem', () => ({ di: iso(menos(1)), df: iso(menos(1)) })],
+    ['7 dias', () => ({ di: iso(menos(6)), df: iso(hojeD) })],
+    ['30 dias', () => ({ di: iso(menos(29)), df: iso(hojeD) })],
+    ['Este mês', () => ({ di: iso(inicioMes()), df: iso(hojeD) })],
+  ]
+  const presetAtivo = (p: () => { di: string; df: string }) => { const r = p(); return di === r.di && df === r.df }
+
   return (
     <div className="rel-card" style={{ padding: 14, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontWeight: 600, fontSize: 13 }}>
@@ -64,6 +79,27 @@ export function OsFiltros({ clientes, colaboradores }: { clientes: Opt[]; colabo
             </button>
           )}
         </div>
+      </div>
+      {/* Atalhos de período */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        {PRESETS.map(([nome, calc]) => {
+          const on = presetAtivo(calc)
+          return (
+            <button
+              key={nome}
+              className={on ? 'btn btn-primary' : 'btn'}
+              style={{ padding: '4px 12px', fontSize: 12.5 }}
+              onClick={() => { const r = calc(); setParams({ di: r.di, df: r.df }) }}
+            >
+              {nome}
+            </button>
+          )
+        })}
+        {(di || df) && (
+          <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 12.5 }} onClick={() => setParams({ di: '', df: '' })}>
+            <i className="ti ti-x" /> Período
+          </button>
+        )}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10 }}>
         <div>
