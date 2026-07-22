@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     cpf: (body?.cpf ?? '').trim() || null,
     curriculo_url: (body?.curriculo_url ?? '').trim() || null,
     linkedin_url: (body?.linkedin_url ?? '').trim() || null,
-    fonte: 'site',
+    fonte: 'portal', // constraint candidatos_fonte_check: portal|whatsapp|indicacao|linkedin|outro
     estagio_kanban: 'triagem',
     notas_internas: notas,
   }).select('id').single()

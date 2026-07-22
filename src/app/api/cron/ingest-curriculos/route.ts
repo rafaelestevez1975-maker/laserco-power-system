@@ -89,7 +89,7 @@ async function ingerir() {
       email: (l.email || d.email || '')?.trim() || null,
       telefone: (l.telefone || d.telefone || '')?.trim() || '',
       cpf: (d.cpf || '')?.trim() || null,
-      fonte: 'site',
+      fonte: 'portal', // constraint candidatos_fonte_check: portal|whatsapp|indicacao|linkedin|outro
       estagio_kanban: 'triagem',
       notas_internas: notas,
       criado_em: l.created_at || new Date().toISOString(),
