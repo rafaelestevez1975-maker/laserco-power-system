@@ -46,6 +46,17 @@ function classificarTipo(mt?: string): string {
 const PREVIEW: Record<string, string> = { text: '', image: '📷 Imagem', audio: '🎤 Áudio', video: '🎬 Vídeo', document: '📎 Documento', sticker: '🏷️ Figurinha', location: '📍 Localização', contact: '👤 Contato', outro: '📩 Mensagem' }
 function preview(tipo: string, texto: string) { return tipo === 'text' ? texto.slice(0, 120) : (texto ? `${PREVIEW[tipo]} · ${texto.slice(0, 100)}` : PREVIEW[tipo]) }
 
+/**
+ * O senderName às vezes chega como variável de template não substituída
+ * (ex.: "{{whatsappQuestion_niwwk0xy07m}}") e virava o NOME do cliente no sistema —
+ * 26 cadastros nasceram assim. Descarta qualquer nome com {{...}} ou {…}.
+ */
+function nomeLimpo(n: string | null | undefined): string | null {
+  const s = (n ?? '').trim()
+  if (!s || /\{\{|\}\}|^\{.*\}$/.test(s)) return null
+  return s
+}
+
 /** Em produção SEMPRE exige secret OU token. Só aceita anônimo em desenvolvimento
  *  (NODE_ENV !== 'production') quando nenhum secret está configurado  evita que uma env
  *  ausente no deploy abra o endpoint para gravações não autenticadas. */
@@ -143,7 +154,7 @@ export async function POST(req: NextRequest) {
 
   if (!chat) {
     const baseInsert: Record<string, unknown> = {
-      telefone, wa_chatid: msg.chatid, nome: !fromMe ? (msg.senderName || null) : null,
+      telefone, wa_chatid: msg.chatid, nome: !fromMe ? nomeLimpo(msg.senderName) : null,
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando, nao_lidas: fromMe ? 0 : 1,
     }
     // Só inclui as chaves de escopo quando há valor  evita forçar null numa coluna NOT NULL.
@@ -158,7 +169,7 @@ export async function POST(req: NextRequest) {
     const basePatch: Record<string, unknown> = {
       ultima_msg: preview(tipo, texto), ultima_msg_tipo: tipo, ultima_msg_em: quando,
       nao_lidas: fromMe ? chat.nao_lidas : (chat.nao_lidas ?? 0) + 1,
-      ...(!fromMe && msg.senderName && !chat.nome ? { nome: msg.senderName } : {}),
+      ...(!fromMe && nomeLimpo(msg.senderName) && !chat.nome ? { nome: nomeLimpo(msg.senderName) } : {}),
     }
     // Reafirma o escopo no chat existente (caso tenha entrado antes do carimbo de unidade).
     const comEscopo = { ...basePatch, ...(unidadeOrigem ? { unidade_id: unidadeOrigem } : {}), ...(canalNome ? { canal_nome: canalNome } : {}) }
@@ -215,7 +226,7 @@ export async function POST(req: NextRequest) {
   // "cliente mandou e não apareceu no sistema" relatado pelas atendentes.)
   const { error: eMsg } = await sb.from('sac_whatsapp_mensagens').insert({
     chat_id: chat.id, wa_id: waId, direcao: fromMe ? 'saida' : 'entrada',
-    autor: fromMe ? (msg.senderName || 'WhatsApp') : (msg.senderName || chat.nome || telefone),
+    autor: fromMe ? (nomeLimpo(msg.senderName) || 'WhatsApp') : (nomeLimpo(msg.senderName) || chat.nome || telefone),
     tipo, texto: texto || null,
     midia_url: midiaUrl, midia_mimetype: midiaMime,
     status: msg.status ?? null, criado_em: quando,
@@ -261,7 +272,7 @@ export async function POST(req: NextRequest) {
                 const cpfDig = (r.cpf || '').replace(/\D/g, '')
                 const { data: tIns, error: eT } = await sb.from('sac_tickets').insert({
                   empresa_id: FRANQUEADORA_EMPRESA_ID, unidade_id: unidadeOrigem, // SAC centralizado (rede)  carimba a unidade se o canal tiver
-                  nome_cliente: (r.nomeCliente || chat.nome || telefone).trim(),
+                  nome_cliente: (nomeLimpo(r.nomeCliente) || nomeLimpo(chat.nome) || telefone).trim(),
                   cpf_cliente: cpfDig.length === 11 ? cpfDig : null,
                   telefone_cliente: telefone,
                   assunto: (r.motivo || 'Atendimento WhatsApp (IA)').slice(0, 120),
