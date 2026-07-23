@@ -439,3 +439,21 @@ export async function validarAcordo(acordoId: string): Promise<{ ok: boolean; er
   revalidatePath('/sac/pagamentos'); revalidatePath('/financeiro')
   return { ok: true }
 }
+
+/** Define as TAGS de um chamado (Reestruturação do SAC: classificação/organização). Substitui o
+ *  conjunto atual pelas tagIds informadas. Qualquer operador do SAC pode etiquetar. */
+export async function definirTagsChamado(ticketId: string, tagIds: string[]): Promise<{ ok: boolean; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!ticketId) return { ok: false, error: 'Chamado inválido.' }
+  const ids = [...new Set((Array.isArray(tagIds) ? tagIds : []).filter(Boolean))]
+  // Substitui o conjunto: apaga os vínculos atuais e insere os novos (idempotente).
+  const { error: eDel } = await op.sb.from('sac_ticket_tags').delete().eq('ticket_id', ticketId)
+  if (eDel) return { ok: false, error: msgErro(eDel.message, 'atualizar tags') }
+  if (ids.length) {
+    const { error: eIns } = await op.sb.from('sac_ticket_tags').insert(ids.map((tag_id) => ({ ticket_id: ticketId, tag_id })))
+    if (eIns) return { ok: false, error: msgErro(eIns.message, 'salvar tags') }
+  }
+  revalidatePath('/sac/chamados'); revalidatePath('/sac/kanban')
+  return { ok: true }
+}

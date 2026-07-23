@@ -3,7 +3,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { normTel, listInstances, sendText, resolverInstancia, downloadMessage, type Instancia } from '@/lib/uazapi'
 import { reHostMidia } from '@/lib/sac-midia'
 import { escolherAtendenteOnline } from '@/lib/sac-distribuicao'
-import { gerarRespostaSAC, iaConfigurada, type MensagemHistorico } from '@/lib/ia'
+import { gerarRespostaSAC, iaConfigurada, expedienteSac, type MensagemHistorico } from '@/lib/ia'
 import { FRANQUEADORA_EMPRESA_ID, resolverMotivoSac } from '@/lib/sac-ingest'
 
 /**
@@ -301,6 +301,40 @@ export async function POST(req: NextRequest) {
       const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
       if (alvo) await sb.from('sac_whatsapp_chats').update({ atendente_id: alvo }).eq('id', chat.id)
     }
+  }
+
+  // ── MENSAGEM AUTOMÁTICA DE ESPERA (Reestruturação do SAC) ──
+  // Cliente escreveu e a conversa já está com um humano (bot off) mas ninguém respondeu ainda:
+  // manda UM aviso de "você está na fila" para reduzir ansiedade e os contatos repetidos. Dedupe:
+  // só envia se a ÚLTIMA mensagem de saída não for já um aviso de fila (evita spam a cada msg).
+  const FILA_AUTOR = 'Sistema · Fila'
+  if (!fromMe && chat?.atendente_id && !botAtivo) {
+    try {
+      const { data: ult } = await sb.from('sac_whatsapp_mensagens')
+        .select('direcao, autor').eq('chat_id', chat.id).order('criado_em', { ascending: false }).limit(6)
+      // Já mandamos aviso de fila desde a última resposta humana? (procura antes de qualquer saída não-fila)
+      let jaAvisou = false
+      for (const m of (ult ?? []) as { direcao: string | null; autor: string | null }[]) {
+        if ((m.direcao || '') === 'saida') { if ((m.autor || '') === FILA_AUTOR) jaAvisou = true; break }
+      }
+      if (!jaAvisou) {
+        const exp = expedienteSac()
+        const msgFila = exp.aberto
+          ? 'Recebemos a sua mensagem! ✅ Você está na fila de atendimento e uma de nossas consultoras já vai te responder por aqui. Obrigado pela paciência. 🙏'
+          : 'Recebemos a sua mensagem! ✅ Nosso atendimento é de segunda a sexta, das 9h às 18h. Uma consultora dá sequência no próximo horário comercial. Obrigado pela paciência. 🙏'
+        const canal = (inst && inst.status === 'connected' && inst.token)
+          ? inst : instancias.find((i) => /laser/i.test(i.name) && i.status === 'connected')
+        if (canal?.token) {
+          const env = await sendText(canal.token, telefone, msgFila)
+          const ag = new Date().toISOString()
+          await sb.from('sac_whatsapp_mensagens').insert({
+            chat_id: chat.id, wa_id: env.messageid ?? null, direcao: 'saida', autor: FILA_AUTOR,
+            tipo: 'text', texto: msgFila, status: env.ok ? (env.status ?? 'sent') : 'failed', criado_em: ag,
+          })
+          await sb.from('sac_whatsapp_chats').update({ ultima_msg: msgFila.slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: ag }).eq('id', chat.id)
+        }
+      }
+    } catch (e) { console.error('webhook msg-espera:', (e as Error).message) }
   }
 
   return NextResponse.json({ ok: true, telefone, direcao: fromMe ? 'saida' : 'entrada', unidade: unidadeOrigem })

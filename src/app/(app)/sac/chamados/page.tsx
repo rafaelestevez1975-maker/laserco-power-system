@@ -68,6 +68,19 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
   if (ctx?.activeUnitId) totalGeralQ = totalGeralQ.eq('unidade_id', ctx.activeUnitId)
   const [{ data, count, error }, { count: countGeral }] = await Promise.all([query, totalGeralQ])
   const tickets = (data ?? []) as ChamadoRow[]
+
+  // Tags (Reestruturação do SAC): catálogo ativo + as tags já aplicadas em cada chamado da página.
+  const [{ data: tagsRaw }, { data: vincRaw }] = await Promise.all([
+    sb.from('sac_tags').select('id, nome, cor').eq('ativo', true).order('nome', { ascending: true }),
+    tickets.length ? sb.from('sac_ticket_tags').select('ticket_id, tag_id').in('ticket_id', tickets.map((t) => t.id)) : Promise.resolve({ data: [] as { ticket_id: string; tag_id: string }[] }),
+  ])
+  const todasTags = ((tagsRaw ?? []) as { id: string; nome: string; cor: string | null }[])
+  const tagsPorTicket = new Map<string, string[]>()
+  for (const v of (vincRaw ?? []) as { ticket_id: string; tag_id: string }[]) {
+    const arr = tagsPorTicket.get(v.ticket_id) ?? []; arr.push(v.tag_id); tagsPorTicket.set(v.ticket_id, arr)
+  }
+  for (const t of tickets) (t as ChamadoRow).tags = tagsPorTicket.get(t.id) ?? []
+
   const total = count ?? 0
   const totalGeral = countGeral ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -97,7 +110,7 @@ export default async function SacChamadosPage({ searchParams }: { searchParams: 
             <i className="ti ti-filter" /> {total} de {totalGeral} chamado(s){temFiltro ? ' (filtrado)' : ''} · página {page} de {totalPages} · <span style={{ color: 'var(--text-3)' }}>clique numa linha ou no lápis para editar</span>
           </div>
 
-          <ChamadosTabela tickets={tickets} atendentes={atendentes} motivos={motivos} uniNome={uniNome} unidades={ctx?.unidades ?? []} />
+          <ChamadosTabela tickets={tickets} atendentes={atendentes} motivos={motivos} uniNome={uniNome} unidades={ctx?.unidades ?? []} todasTags={todasTags} />
         </>
       )}
 

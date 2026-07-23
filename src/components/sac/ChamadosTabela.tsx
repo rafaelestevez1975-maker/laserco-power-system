@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { atualizarChamado, solicitarReembolso, criarAcordo } from '@/app/(app)/sac/actions'
+import { atualizarChamado, solicitarReembolso, criarAcordo, definirTagsChamado } from '@/app/(app)/sac/actions'
 import { buscarClientePorContato, type ClienteResumo } from '@/app/(app)/sac/triagem/actions'
 import { moedaBR, dataBR, dataHoraBR } from '@/lib/fmt'
 import { calcReembolso, primeiroPagamentoValido, MSG_DIA15, lerObsMeta, situacaoChamado, type Situacao } from '@/lib/sac'
@@ -14,9 +14,11 @@ export type ChamadoRow = {
   atribuido_para: string | null; observacoes: string | null
   area_reclamada?: string | null; valor_pago?: number | null; valor_devolucao?: number | null
   multa_aplicada?: boolean | null; pago?: boolean | null; criado_em?: string | null
+  tags?: string[]
 }
 type Atend = { id: string; nome: string }
 type Unidade = { id: string; nome: string }
+export type TagOpt = { id: string; nome: string; cor: string | null }
 
 const PRIORIDADES: { k: string; l: string }[] = [
   { k: 'baixa', l: 'Baixa' }, { k: 'media', l: 'Média' }, { k: 'alta', l: 'Alta' }, { k: 'urgente', l: 'Crítica' },
@@ -31,8 +33,8 @@ const prioPill = (p: string | null) => (p === 'urgente' ? pill('#FBE6E6', '#B91C
 // Cores do "Status" idênticas ao sacBadgeStatus do legado (index.html:8961).
 const sitPill = (s: Situacao) => (s === 'Concluído' ? pill('#E7F0EC', '#0F6B3A') : s === 'Em atraso' ? pill('#FBE6E6', '#B91C1C') : pill('#E7EEFB', '#1E3A8A'))
 
-export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades }: {
-  tickets: ChamadoRow[]; atendentes: Atend[]; motivos: string[]; uniNome: Record<string, string>; unidades: Unidade[]
+export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades, todasTags = [] }: {
+  tickets: ChamadoRow[]; atendentes: Atend[]; motivos: string[]; uniNome: Record<string, string>; unidades: Unidade[]; todasTags?: TagOpt[]
 }) {
   const [edit, setEdit] = useState<ChamadoRow | null>(null)
   const router = useRouter()
@@ -79,14 +81,23 @@ export function ChamadosTabela({ tickets, atendentes, motivos, uniNome, unidades
           </table>
         </div>
       </div>
-      {edit && <EditModal t={edit} atendentes={atendentes} motivos={motivos} unidades={unidades} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); router.refresh() }} />}
+      {edit && <EditModal t={edit} atendentes={atendentes} motivos={motivos} unidades={unidades} todasTags={todasTags} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); router.refresh() }} />}
     </>
   )
 }
 
-function EditModal({ t, atendentes, motivos, unidades, onClose, onSaved }: { t: ChamadoRow; atendentes: Atend[]; motivos: string[]; unidades: Unidade[]; onClose: () => void; onSaved: () => void }) {
+function EditModal({ t, atendentes, motivos, unidades, todasTags, onClose, onSaved }: { t: ChamadoRow; atendentes: Atend[]; motivos: string[]; unidades: Unidade[]; todasTags: TagOpt[]; onClose: () => void; onSaved: () => void }) {
   const router = useRouter()
   const meta = lerObsMeta(t.observacoes)
+  const [tags, setTags] = useState<Set<string>>(new Set(t.tags ?? []))
+  const [tagBusy, setTagBusy] = useState(false)
+  async function toggleTag(id: string) {
+    const nova = new Set(tags); nova.has(id) ? nova.delete(id) : nova.add(id)
+    setTags(nova); setTagBusy(true)
+    const r = await definirTagsChamado(t.id, [...nova])
+    setTagBusy(false)
+    if (r.ok) router.refresh()
+  }
   const [f, setF] = useState({
     nome_cliente: t.nome_cliente || '', telefone_cliente: t.telefone_cliente || '', email_cliente: t.email_cliente || '', cpf_cliente: t.cpf_cliente || '',
     canal: t.canal || 'Manual', unidade_id: t.unidade_id || '', tipo: meta.tipo || '', data_reclamacao: meta.dataRecl || '',
@@ -198,6 +209,26 @@ function EditModal({ t, atendentes, motivos, unidades, onClose, onSaved }: { t: 
             <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}><input type="checkbox" checked={f.pago} onChange={(e) => set('pago', e.target.checked)} /> Pagamento/reembolso realizado</label>
           </div>
           <div style={{ marginTop: 10, ...col }}><label style={flab}>Observações / tratativa</label><textarea rows={3} style={{ ...fin, resize: 'vertical' }} value={f.observacoes} onChange={(e) => set('observacoes', e.target.value)} /></div>
+
+          {/* Tags (Reestruturação do SAC): classificação do atendimento; salva ao clicar. */}
+          {todasTags.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <label style={flab}><i className="ti ti-tags" /> Tags {tagBusy && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>· salvando…</span>}</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                {todasTags.map((tag) => {
+                  const on = tags.has(tag.id)
+                  const cor = tag.cor || '#8A2A41'
+                  return (
+                    <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)}
+                      style={{ fontSize: 12, fontWeight: 600, padding: '4px 11px', borderRadius: 20, cursor: 'pointer',
+                        border: `1px solid ${cor}`, background: on ? cor : 'transparent', color: on ? '#fff' : cor }}>
+                      {on && <i className="ti ti-check" style={{ marginRight: 3 }} />}{tag.nome}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div style={{ marginTop: 14, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <b style={{ fontSize: 13 }}><i className="ti ti-id-badge-2" style={{ color: 'var(--brand-500)' }} /> Ficha do cliente no sistema</b>
