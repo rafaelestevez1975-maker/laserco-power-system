@@ -6,6 +6,7 @@ import { temPapel, ehAdmin } from '@/lib/rbac'
 import { adminClient } from '@/lib/supabase/admin'
 import { getSessionContext } from '@/lib/session'
 import { candidatosOnline } from '@/lib/sac-distribuicao'
+import { SAC_ESPECIALIDADES } from '@/lib/sac-especialidades'
 import type { SB } from '@/lib/sb'
 
 export type DistribResult = { ok: boolean; error?: string; conversas?: number; tickets?: number; atendentes?: number }
@@ -311,15 +312,6 @@ export async function reequilibrarBacklog(): Promise<{ ok: boolean; movidas?: nu
   revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem')
   return { ok: true, movidas, atendentes: cands.length }
 }
-
-/** Lista oficial de assuntos que uma atendente pode ter como especialidade (Reestruturação do
- *  SAC). Espelha os motivos que a IA classifica em resolverMotivoSac (sac-ingest). */
-export const SAC_ESPECIALIDADES = [
-  'Cancelamento', 'Transferência de Pacotes', 'Encerramento da unidade', 'Sessões Expiradas',
-  'Ausência de resultados', 'Intercorrência', 'Máquina Quebrada', 'Falha operacional',
-  'Laser Club', 'Agendamento (site)', 'Promoção do site', 'Cortesia/Brinde', 'Avaliação gratuita',
-  'Financeiro', 'Outros',
-] as const
 
 /** Define os assuntos que a atendente atende (roteamento por especialidade). Só admin. */
 export async function salvarEspecialidadesAtendente(id: string, especialidades: string[]): Promise<{ ok: boolean; error?: string }> {

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente, reequilibrarBacklog, salvarEspecialidadesAtendente, SAC_ESPECIALIDADES } from '@/app/(app)/sac/atendentes/actions'
+import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente, reequilibrarBacklog, salvarEspecialidadesAtendente } from '@/app/(app)/sac/atendentes/actions'
+import { SAC_ESPECIALIDADES } from '@/lib/sac-especialidades'
 
 export type AtendenteRow = {
   id: string; nome: string; papel: string; cargo: string | null; area: string | null
