@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/ingest-curriculos",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
