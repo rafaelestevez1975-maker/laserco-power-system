@@ -32,6 +32,8 @@ ETAPA 1  IDENTIFICAÇÃO: cumprimente e peça nome completo, telefone cadastrado
 
 CLASSIFIQUE O MOTIVO: 1) cancelamento/reembolso · 2) agendamento · 3) informações sobre serviços · 4) promoção/oferta do site · 5) cortesia/brinde · 6) outro.
 
+REGRA CRÍTICA  NUNCA INDUZA CANCELAMENTO: você JAMAIS oferece, sugere, menciona ou pergunta sobre cancelamento/reembolso por iniciativa própria. Só trate desse assunto se o CLIENTE pedir de forma EXPLÍCITA (ex.: "quero cancelar", "quero meu dinheiro de volta"). Se o cliente escolher "outro/outros" ou não deixar claro o que precisa, PERGUNTE gentilmente qual é a dúvida ou solicitação  sem NUNCA citar a palavra cancelamento. Ao transferir, descreva o pedido REAL do cliente; é PROIBIDO escrever algo como "seguir com o cancelamento" se ele não pediu isso.
+
 LEADS DO SITE (v1.1  04/07): muita gente chega dizendo que veio do SITE (promoção, oferta, agendamento online, cortesia, avaliação gratuita). NUNCA mande a pessoa "voltar ao site" ou "preencher o formulário"  ela JÁ veio de lá. Faça o primeiro atendimento completo: dê boas-vindas, colete nome completo + telefone + CIDADE/BAIRRO (para saber a franquia mais próxima), registre no motivo o tipo (promoção, agendamento, cortesia, avaliação) e TRANSFIRA (transferir=true)  a consultora só confirma a unidade correta e passa o contato da franquia. No campo "motivo" do JSON use exatamente: "Promoção do site", "Agendamento (site)", "Cortesia/Brinde" ou "Avaliação gratuita" conforme o caso.
 
 AGENDAMENTO/REAGENDAMENTO: transfira SEMPRE (a agenda é em tempo real, você não agenda). Colete antes nome + unidade/cidade desejada.
@@ -49,7 +51,7 @@ CANCELAMENTO/REEMBOLSO  REGRAS QUE VOCÊ PODE EXPLICAR (mas a execução é semp
 
 QUANDO TRANSFERIR (transferir=true): agendamento; execução de cancelamento/reembolso; análise de comprovante; dados bancários; reclamação; assunto sensível; cliente pediu humano; cliente questionou/quer negociar valores; ou quando você já coletou nome + CPF/telefone + motivo.
 
-HORÁRIO DO ATENDIMENTO HUMANO: as consultoras atendem de segunda a sexta, das 9h às 19h. Ao transferir FORA desse horário (fim de semana ou noite), avise com gentileza que uma consultora dá sequência no próximo horário comercial, mas SIGA fazendo o primeiro atendimento e coletando os dados normalmente (nunca deixe a pessoa sem resposta).
+HORÁRIO DO SAC: segunda a sexta, das 9h às 18h; NÃO atende fim de semana nem feriado. Use SEMPRE o bloco "CONTEXTO ATUAL" (enviado a cada mensagem) como a ÚNICA verdade sobre a hora atual  nunca deduza nem invente o horário. Quando o CONTEXTO disser que o SAC está FECHADO: deixe claro, com gentileza, que estamos fora do horário de atendimento (seg a sex, 9h às 18h) e que uma consultora dá sequência no próximo horário comercial; é PROIBIDO dizer "vou transferir agora", "um momento" ou qualquer coisa que dê a entender que alguém vai atender imediatamente. Ainda assim, faça o primeiro atendimento e colete os dados (nunca deixe a pessoa sem resposta).
 
 LGPD: ao coletar CPF, diga que é para localizar o cadastro com segurança. O cliente pode encerrar o atendimento a qualquer momento.
 
@@ -64,6 +66,22 @@ export function formatarParaWhatsApp(texto: string): string {
     .replace(/^\s*#{1,6}\s*/gm, '')
     .replace(/__(.+?)__/g, '*$1*')
     .trim()
+}
+
+/**
+ * Expediente do SAC calculado NO CÓDIGO (a IA não sabe a hora sozinha e ficava prometendo
+ * "transferir para uma consultora" às 19h/fim de semana, gerando conflito com as unidades).
+ * Oficial (Reestruturação do SAC): seg a sex, 9h às 18h; sem fim de semana/feriado.
+ */
+export function expedienteSac(now: Date = new Date()): { aberto: boolean; agoraBR: string; motivo: string } {
+  const tz = 'America/Sao_Paulo'
+  const diaEn = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now) // Mon..Sun
+  const hora = Number(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }).format(now))
+  const fimDeSemana = diaEn === 'Sat' || diaEn === 'Sun'
+  const aberto = !fimDeSemana && hora >= 9 && hora < 18
+  const agoraBR = new Intl.DateTimeFormat('pt-BR', { timeZone: tz, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(now)
+  const motivo = fimDeSemana ? 'fim de semana' : hora < 9 ? 'antes das 9h' : 'após as 18h'
+  return { aberto, agoraBR, motivo }
 }
 
 export type MensagemHistorico = { autor: 'cliente' | 'atendente' | 'ia' | 'sistema'; texto: string }
@@ -84,7 +102,13 @@ function parseJson(texto: string): RespostaIA | null {
 export async function gerarRespostaSAC(historico: MensagemHistorico[]): Promise<RespostaIA | null> {
   const apiKey = chaveApi()
   if (!apiKey) return null
-  const mensagens: { role: 'system' | 'user' | 'assistant'; content: string }[] = [{ role: 'system', content: SISTEMA }]
+  // Injeta a hora REAL (BR) e o status aberto/fechado — determinístico, não deixa a IA "chutar".
+  const exp = expedienteSac()
+  const contexto = `CONTEXTO ATUAL (fonte da verdade  NÃO deduza nem invente a hora): agora é ${exp.agoraBR} (horário de Brasília). O SAC está ${exp.aberto ? 'ABERTO (dentro do horário)' : `FECHADO (${exp.motivo})`}. Horário oficial: seg a sex, 9h às 18h; sem fim de semana/feriado.${exp.aberto ? '' : ' Como está FECHADO: informe com gentileza que estamos fora do horário e que uma consultora retorna no próximo horário comercial; NÃO diga que vai transferir agora nem "um momento". Mesmo assim, faça o primeiro atendimento e colete os dados.'}`
+  const mensagens: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    { role: 'system', content: SISTEMA },
+    { role: 'system', content: contexto },
+  ]
   for (const m of historico) {
     if (!m.texto.trim()) continue
     if (m.autor === 'cliente') mensagens.push({ role: 'user', content: m.texto })
