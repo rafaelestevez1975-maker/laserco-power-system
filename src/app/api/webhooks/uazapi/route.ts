@@ -261,9 +261,12 @@ export async function POST(req: NextRequest) {
           })
           const patch: Record<string, unknown> = { ultima_msg: r.resposta.slice(0, 120), ultima_msg_tipo: 'text', ultima_msg_em: ag }
           if (r.transferir) {
-            // Assunto sensível/que a IA não resolve → desliga o bot e passa pra fila humana (menos carregada).
+            // Assunto sensível/que a IA não resolve → desliga o bot e passa pra fila humana.
+            // Roteamento por ESPECIALIDADE: usa o motivo já classificado pela IA para escolher
+            // o analista do assunto (Reestruturação do SAC); cai para menos carregada se ninguém.
             patch.bot_ativo = false
-            const alvo = await escolherAtendenteOnline(sb, unidadeOrigem).catch(() => null)
+            const motivoLabel = resolverMotivoSac({ motivo: r.motivo, assunto: r.motivo, mensagem: texto })
+            const alvo = await escolherAtendenteOnline(sb, unidadeOrigem, motivoLabel).catch(() => null)
             if (alvo) patch.atendente_id = alvo
             // Pedido do Julio (02/07): quando a IA identifica o problema, ela JÁ ABRE o chamado
             // (nome/CPF/motivo coletados) e distribui  a atendente não precisa abrir manual.
@@ -276,7 +279,7 @@ export async function POST(req: NextRequest) {
                   cpf_cliente: cpfDig.length === 11 ? cpfDig : null,
                   telefone_cliente: telefone,
                   assunto: (r.motivo || 'Atendimento WhatsApp (IA)').slice(0, 120),
-                  motivo_label: resolverMotivoSac({ motivo: r.motivo, assunto: r.motivo, mensagem: texto }),
+                  motivo_label: motivoLabel,
                   canal: 'WhatsApp', status: 'aberto', prioridade: 'media', fase: 'Novo',
                   atribuido_para: alvo ?? null,
                   observacoes: `Aberto automaticamente pela IA na triagem do WhatsApp.${r.motivo ? ' Motivo relatado: ' + r.motivo : ''}`,

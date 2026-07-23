@@ -43,9 +43,22 @@ export async function candidatosOnline(sb: SB, unidadeId: string | null): Promis
     .map((p) => p.id)
 }
 
-export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null): Promise<string | null> {
-  const cands = await candidatosOnline(sb, unidadeId)
+/**
+ * Roteamento por ASSUNTO (Reestruturação do SAC): entre as online, prioriza quem tem o assunto
+ * na sua especialidade (perfis_usuario.sac_especialidades). Se ninguém for especialista naquele
+ * assunto, cai para todas as online (menos carregada) — nunca deixa o cliente sem atendente.
+ */
+export async function escolherAtendenteOnline(sb: SB, unidadeId: string | null, assunto?: string | null): Promise<string | null> {
+  let cands = await candidatosOnline(sb, unidadeId)
   if (cands.length === 0) return null
+
+  if (assunto && cands.length > 1) {
+    const { data: esp } = await sb.from('perfis_usuario').select('id, sac_especialidades').in('id', cands)
+    const especialistas = ((esp ?? []) as { id: string; sac_especialidades: string[] | null }[])
+      .filter((p) => (p.sac_especialidades ?? []).includes(assunto))
+      .map((p) => p.id)
+    if (especialistas.length) cands = especialistas // restringe ao time do assunto
+  }
   if (cands.length === 1) return cands[0]
 
   // Menos carregada: menor nº de conversas ABERTAS atualmente atribuídas (carga viva).

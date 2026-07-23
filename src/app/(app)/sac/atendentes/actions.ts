@@ -311,3 +311,26 @@ export async function reequilibrarBacklog(): Promise<{ ok: boolean; movidas?: nu
   revalidatePath('/sac/atendentes'); revalidatePath('/sac/triagem')
   return { ok: true, movidas, atendentes: cands.length }
 }
+
+/** Lista oficial de assuntos que uma atendente pode ter como especialidade (Reestruturação do
+ *  SAC). Espelha os motivos que a IA classifica em resolverMotivoSac (sac-ingest). */
+export const SAC_ESPECIALIDADES = [
+  'Cancelamento', 'Transferência de Pacotes', 'Encerramento da unidade', 'Sessões Expiradas',
+  'Ausência de resultados', 'Intercorrência', 'Máquina Quebrada', 'Falha operacional',
+  'Laser Club', 'Agendamento (site)', 'Promoção do site', 'Cortesia/Brinde', 'Avaliação gratuita',
+  'Financeiro', 'Outros',
+] as const
+
+/** Define os assuntos que a atendente atende (roteamento por especialidade). Só admin. */
+export async function salvarEspecialidadesAtendente(id: string, especialidades: string[]): Promise<{ ok: boolean; error?: string }> {
+  const { op, error } = await requireOperador()
+  if (!op) return { ok: false, error }
+  if (!ehAdmin(op.papel)) return { ok: false, error: 'Apenas o administrador pode definir especialidades.' }
+  if (!id) return { ok: false, error: 'Atendente inválida.' }
+  const validos = (Array.isArray(especialidades) ? especialidades : []).filter((e) => (SAC_ESPECIALIDADES as readonly string[]).includes(e))
+  const { error: e } = await adminClient().from('perfis_usuario').update({ sac_especialidades: validos }).eq('id', id)
+  if (e) return { ok: false, error: msgErro(e.message, 'salvar especialidades') }
+  await audit(op.userId, 'sac.atendente.especialidades', `Especialidades: ${validos.join(', ') || '(nenhuma)'}`)
+  revalidatePath('/sac/atendentes')
+  return { ok: true }
+}

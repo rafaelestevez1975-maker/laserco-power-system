@@ -30,13 +30,17 @@ export default async function SacAtendentesPage() {
   const ids = atendentes.map((a) => a.id)
   const onlinePorId = new Map<string, boolean>()
   const cargoSacPorId = new Map<string, string>()
+  const espPorId = new Map<string, string[]>()
   if (ids.length) {
     const rankCargo = (s: string) => (s === 'supervisor_sac' ? 3 : s === 'atendente_sac' ? 2 : s === 'consulta_sac' ? 1 : 0)
     const [{ data: pres }, { data: ucs }] = await Promise.all([
-      sb.from('perfis_usuario').select('id, sac_online').in('id', ids),
+      sb.from('perfis_usuario').select('id, sac_online, sac_especialidades').in('id', ids),
       sb.from('usuario_cargos').select('perfil_id, cargos(slug)').in('perfil_id', ids),
     ])
-    for (const r of (pres ?? []) as { id: string; sac_online: boolean | null }[]) onlinePorId.set(r.id, !!r.sac_online)
+    for (const r of (pres ?? []) as { id: string; sac_online: boolean | null; sac_especialidades: string[] | null }[]) {
+      onlinePorId.set(r.id, !!r.sac_online)
+      espPorId.set(r.id, r.sac_especialidades ?? [])
+    }
     for (const r of (ucs ?? []) as { perfil_id: string; cargos: { slug?: string } | { slug?: string }[] | null }[]) {
       const arr = Array.isArray(r.cargos) ? r.cargos : r.cargos ? [r.cargos] : []
       for (const c of arr) if (c.slug && rankCargo(c.slug) > rankCargo(cargoSacPorId.get(r.perfil_id) ?? '')) cargoSacPorId.set(r.perfil_id, c.slug)
@@ -73,6 +77,7 @@ export default async function SacAtendentesPage() {
       id: a.id, nome: a.nome, papel: a.papel, cargo: a.cargo, area: a.area,
       unidadeNome: a.unidadeId ? (uniNome.get(a.unidadeId) ?? null) : null, email: a.email, ativo: a.ativo,
       sacOnline: onlinePorId.get(a.id) ?? false, cargoSac: cargoSacPorId.get(a.id) ?? null,
+      especialidades: espPorId.get(a.id) ?? [],
       conversas: conversas ?? 0, tickets: tickets ?? 0,
       chamadosTotal: tot, resolvidos: con, slaPct, premio: a.ativo ? Math.round(premioValor(metricas, prem)) : 0,
     }

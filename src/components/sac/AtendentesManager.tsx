@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente, reequilibrarBacklog } from '@/app/(app)/sac/atendentes/actions'
+import { distribuirFila, criarAcessoAtendente, setAtendenteAtivo, definirPresencaAtendente, definirCargoAtendente, reequilibrarBacklog, salvarEspecialidadesAtendente, SAC_ESPECIALIDADES } from '@/app/(app)/sac/atendentes/actions'
 
 export type AtendenteRow = {
   id: string; nome: string; papel: string; cargo: string | null; area: string | null
   unidadeNome: string | null; email: string | null; ativo: boolean; conversas: number; tickets: number
   chamadosTotal: number; resolvidos: number; slaPct: number | null; premio: number
-  sacOnline: boolean; cargoSac: string | null
+  sacOnline: boolean; cargoSac: string | null; especialidades: string[]
 }
 export type UnidadeOpt = { id: string; nome: string }
 
@@ -47,6 +47,18 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
   const [msg, setMsg] = useState('')
   const [novo, setNovo] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [espEdit, setEspEdit] = useState<AtendenteRow | null>(null)
+  const [espSel, setEspSel] = useState<Set<string>>(new Set())
+  const [espBusy, setEspBusy] = useState(false)
+
+  async function salvarEsp() {
+    if (!espEdit) return
+    setEspBusy(true)
+    const r = await salvarEspecialidadesAtendente(espEdit.id, [...espSel])
+    setEspBusy(false)
+    if (!r.ok) { setMsg(r.error || 'Erro ao salvar assuntos.'); return }
+    setEspEdit(null); router.refresh()
+  }
 
   const temFila = filaConversas > 0 || filaTickets > 0
   const ativos = atendentes.filter((a) => a.ativo)
@@ -171,6 +183,15 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
                       ) : (
                         <span style={pill('#EFE9F7', '#6b1f3a')}>{SAC_CARGOS.find((c) => c.slug === a.cargoSac)?.label ?? a.papel}</span>
                       )}
+                      {/* Especialidades (Reestruturação do SAC): a conversa vai pro analista do assunto. */}
+                      {podeCriar && (
+                        <div style={{ marginTop: 5 }}>
+                          <button className="btn btn-ghost" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => { setEspEdit(a); setEspSel(new Set(a.especialidades)) }}
+                            title="Assuntos que esta atendente atende (roteamento automático)">
+                            <i className="ti ti-tags" /> Assuntos{a.especialidades.length ? ` (${a.especialidades.length})` : ''}
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       {podeCriar ? (
@@ -234,6 +255,38 @@ export function AtendentesManager({ atendentes, filaConversas, filaTickets, pode
       </div>
 
       {novo && <NovoAtendenteModal unidades={unidades} onClose={() => setNovo(false)} onCriado={() => router.refresh()} />}
+
+      {/* Modal de especialidades: roteamento automático da conversa para o analista do assunto. */}
+      {espEdit && (
+        <div className="modal-ov open" onClick={(e) => { if (e.target === e.currentTarget) setEspEdit(null) }}>
+          <div className="modal" style={{ width: 'min(560px, 96vw)', maxWidth: 'min(560px, 96vw)' }}>
+            <div className="modal-head">
+              <h3><i className="ti ti-tags" /> Assuntos de {espEdit.nome}</h3>
+              <button className="modal-close" onClick={() => setEspEdit(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ display: 'block' }}>
+              <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 12 }}>
+                A IA classifica o motivo do cliente e envia a conversa para quem tem o assunto marcado. Sem ninguém marcado no assunto, cai para o de menor carga (nunca fica sem atendente).
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 6 }}>
+                {SAC_ESPECIALIDADES.map((e) => {
+                  const on = espSel.has(e)
+                  return (
+                    <label key={e} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', border: `1px solid ${on ? 'var(--brand-500)' : 'var(--line)'}`, borderRadius: 8, cursor: 'pointer', fontSize: 12.5, background: on ? 'rgba(138,42,65,.06)' : 'transparent' }}>
+                      <input type="checkbox" checked={on} onChange={() => setEspSel((prev) => { const n = new Set(prev); n.has(e) ? n.delete(e) : n.add(e); return n })} />
+                      {e}
+                    </label>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                <button className="btn btn-ghost" onClick={() => setEspEdit(null)} disabled={espBusy}>Cancelar</button>
+                <button className="btn btn-primary" onClick={salvarEsp} disabled={espBusy}><i className="ti ti-device-floppy" /> {espBusy ? 'Salvando…' : 'Salvar assuntos'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
