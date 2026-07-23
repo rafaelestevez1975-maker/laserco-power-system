@@ -102,6 +102,9 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
   const [uploading, setUploading] = useState(false)
   const [prog, setProg] = useState(0)
   const [removing, setRemoving] = useState(false)
+  // Player carrega SÓ ao clicar: uma trilha com 24 etapas renderizava 23 iframes do Bunny de
+  // uma vez e travava a aba (as meninas relataram). Aqui é miniatura leve até pedir "Ver".
+  const [verVideo, setVerVideo] = useState(false)
 
   // Salva o array de prova COMPLETO junto com nome/minutos atuais. `prova` sempre explícito:
   //  - blur de nome/minutos → passa a prova JÁ gravada (etapa.prova), preservando as questões;
@@ -196,16 +199,23 @@ function EtapaEditorRow(props: { etapa: EtapaEdit; indice?: number; isFinal?: bo
           </div>
         ) : etapa.bunny_guid ? (
           <>
-            {etapa.bunnyEmbed && (
+            {etapa.bunnyEmbed && (verVideo ? (
               <iframe
+                key={etapa.bunnyEmbed}
                 src={etapa.bunnyEmbed}
                 title={etapa.nome}
-                loading="lazy"
                 allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture"
                 allowFullScreen
                 style={{ width: 200, height: 112, borderRadius: 8, background: '#000', border: 0, flexShrink: 0 }}
               />
-            )}
+            ) : (
+              // Miniatura leve: NÃO carrega o player até clicar (evita 20+ iframes juntos).
+              <button type="button" onClick={() => setVerVideo(true)} title="Ver o vídeo"
+                style={{ width: 200, height: 112, borderRadius: 8, background: '#000', border: 0, flexShrink: 0, cursor: 'pointer', color: '#fff', display: 'grid', placeItems: 'center', position: 'relative' }}>
+                <i className="ti ti-player-play-filled" style={{ fontSize: 30 }} />
+                <span style={{ position: 'absolute', bottom: 6, fontSize: 10, opacity: 0.85 }}>Ver vídeo</span>
+              </button>
+            ))}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 12.5, color: 'var(--green)', fontWeight: 600 }}><i className="ti ti-circle-check" /> Vídeo enviado ✓ (Bunny)</span>
               <button className="btn btn-ghost" style={{ color: 'var(--red)', padding: '5px 10px', alignSelf: 'flex-start' }} disabled={removing || busy} onClick={removerVideo}>
